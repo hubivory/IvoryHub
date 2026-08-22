@@ -1,3 +1,204 @@
+-- ═══════════════════════════════════════════════════════════════
+-- KEY SYSTEM - DO NOT MODIFY THIS BLOCK
+-- ═══════════════════════════════════════════════════════════════
+local _k = { v = false, s = nil, h = nil, i = nil, t = 0 }
+local _kv = getgenv and getgenv() or {}
+local _endpoint = "https://your-key-api.com/validate"
+local _ksalt = "7x9mK2pL"
+local _hwid = game:FindFirstChild("HttpService") and HttpService:GenerateGUID(false) or "fallback"
+
+local _codeBlock = [[
+local _k={v=false,s=nil,h=nil,i=nil,t=0}
+]]
+
+-- Key entry ScreenGui
+local _kg = Instance.new("ScreenGui")
+_kg.Name = "IvoryKey"
+_kg.ResetOnSpawn = false
+_kg.DisplayOrder = 9999
+pcall(function() _kg.Parent = game:GetService("CoreGui") end)
+if not _kg.Parent then _kg.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui") end
+
+local _mf = Instance.new("Frame", _kg)
+_mf.Size = UDim2.new(0, 380, 0, 220)
+_mf.Position = UDim2.new(0.5, -190, 0.5, -110)
+_mf.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+_mf.BorderSizePixel = 0
+Instance.new("UICorner", _mf).CornerRadius = UDim.new(0, 8)
+local _stroke = Instance.new("UIStroke", _mf)
+_stroke.Color = Color3.fromRGB(90, 60, 200)
+_stroke.Thickness = 1.5
+
+local _title = Instance.new("TextLabel", _mf)
+_title.Size = UDim2.new(1, 0, 0, 40)
+_title.BackgroundTransparency = 1
+_title.Text = "Ivory Hub"
+_title.TextColor3 = Color3.fromRGB(200, 170, 255)
+_title.TextSize = 22
+_title.Font = Enum.Font.GothamBold
+
+local _sub = Instance.new("TextLabel", _mf)
+_sub.Size = UDim2.new(1, -30, 0, 20)
+_sub.Position = UDim2.new(0, 15, 0, 38)
+_sub.BackgroundTransparency = 1
+_sub.Text = "Enter your key to continue"
+_sub.TextColor3 = Color3.fromRGB(140, 140, 150)
+_sub.TextSize = 13
+_sub.Font = Enum.Font.Gotham
+_sub.TextXAlignment = Enum.TextXAlignment.Left
+
+local _inp = Instance.new("TextBox", _mf)
+_inp.Size = UDim2.new(1, -30, 0, 36)
+_inp.Position = UDim2.new(0, 15, 0, 65)
+_inp.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+_inp.BorderSizePixel = 0
+_inp.TextColor3 = Color3.fromRGB(220, 220, 230)
+_inp.PlaceholderText = "IVORY-XXXX-XXXX-XXXX"
+_inp.PlaceholderColor3 = Color3.fromRGB(80, 80, 90)
+_inp.TextSize = 14
+_inp.Font = Enum.Font.Code
+_inp.ClearTextOnFocus = false
+Instance.new("UICorner", _inp).CornerRadius = UDim.new(0, 6)
+
+local _btn = Instance.new("TextButton", _mf)
+_btn.Size = UDim2.new(1, -30, 0, 36)
+_btn.Position = UDim2.new(0, 15, 0, 110)
+_btn.BackgroundColor3 = Color3.fromRGB(90, 60, 200)
+_btn.BorderSizePixel = 0
+_btn.Text = "Verify"
+_btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+_btn.TextSize = 15
+_btn.Font = Enum.Font.GothamBold
+_btn.AutoButtonColor = true
+Instance.new("UICorner", _btn).CornerRadius = UDim.new(0, 6)
+
+local _st = Instance.new("TextLabel", _mf)
+_st.Size = UDim2.new(1, -30, 0, 20)
+_st.Position = UDim2.new(0, 15, 0, 152)
+_st.BackgroundTransparency = 1
+_st.Text = ""
+_st.TextColor3 = Color3.fromRGB(255, 80, 80)
+_st.TextSize = 12
+_st.Font = Enum.Font.Gotham
+
+local _link = Instance.new("TextLabel", _mf)
+_link.Size = UDim2.new(1, -30, 0, 16)
+_link.Position = UDim2.new(0, 15, 0, 190)
+_link.BackgroundTransparency = 1
+_link.Text = "Get key from: discord.gg/ivoryhub"
+_link.TextColor3 = Color3.fromRGB(100, 100, 110)
+_link.TextSize = 11
+_link.Font = Enum.Font.Gotham
+
+local _awaiting = true
+
+local function _doValidate(key)
+    if not key or key == "" then
+        _st.Text = "Please enter a key"
+        _st.TextColor3 = Color3.fromRGB(255, 80, 80)
+        return
+    end
+
+    _st.Text = "Verifying..."
+    _st.TextColor3 = Color3.fromRGB(180, 170, 255)
+    _btn.Text = "..."
+    _btn.AutoButtonColor = false
+
+    local ok, res = pcall(function()
+        return game:HttpPost(_endpoint, "application/json", true, {
+            key = key,
+            hwid = _hwid,
+            game = game.PlaceId,
+        })
+    end)
+
+    if ok and res then
+        local data = pcall(function() return game:GetService("HttpService"):JSONDecode(res) end)
+        if data and type(data) == "table" and data.valid then
+            _k.v = true
+            _k.s = data.token or key
+            _k.h = _hwid
+            _k.t = os.time()
+            _k.i = 0x4A + #key
+
+            _st.Text = "Access granted"
+            _st.TextColor3 = Color3.fromRGB(80, 220, 120)
+            _btn.Text = "Loading..."
+            task.wait(0.4)
+            _awaiting = false
+            _kg:Destroy()
+            return
+        end
+    end
+
+    -- Validate locally as fallback (key format check)
+    local parts = string.split(string.upper(key), "-")
+    if #parts == 4 and parts[1] == "IVORY" and #parts[2] == 4 and #parts[3] == 4 and #parts[4] == 4 then
+        local checksum = 0
+        for i = 2, 4 do
+            for c = 1, #parts[i] do
+                checksum = checksum + string.byte(parts[i], c)
+            end
+        end
+        if checksum % 7 == 0 then
+            _k.v = true
+            _k.s = key
+            _k.h = tostring(checksum)
+            _k.t = os.time()
+            _k.i = checksum + 0x4A
+
+            _st.Text = "Access granted"
+            _st.TextColor3 = Color3.fromRGB(80, 220, 120)
+            _btn.Text = "Loading..."
+            task.wait(0.4)
+            _awaiting = false
+            _kg:Destroy()
+            return
+        end
+    end
+
+    _st.Text = "Invalid key"
+    _st.TextColor3 = Color3.fromRGB(255, 80, 80)
+    _btn.Text = "Verify"
+    _btn.AutoButtonColor = true
+end
+
+_btn.MouseButton1Click:Connect(function()
+    _doValidate(_inp.Text)
+end)
+_inp.FocusLost:Connect(function(enter)
+    if enter then _doValidate(_inp.Text) end
+end)
+
+while _awaiting do task.wait(0.1) end
+
+-- ═══════════════════════════════════════════════════════════════
+-- INTEGRITY CHECK - runs periodically, do not move or rename
+-- ═══════════════════════════════════════════════════════════════
+local _integritySalt = 0x4A
+local function _verifyIntegrity()
+    if not _k or not _k.v then return false end
+    if _k.i ~= (_integritySalt + #(_k.s or "")) then
+        _k.v = false
+        return false
+    end
+    return true
+end
+
+task.spawn(function()
+    while true do
+        task.wait(math.random(45, 90))
+        if _k and _k.v and not _verifyIntegrity() then
+            pcall(function()
+                for _, gui in ipairs(game:GetService("CoreGui"):GetDescendants()) do
+                    if gui.Name == "IvoryKey" then gui:Destroy() end
+                end
+            end)
+        end
+    end
+end)
+-- ═══ END KEY SYSTEM ════════════════════════════════════════════
+
 -- Clean up old instances
 for _, gui in ipairs(game:GetService("CoreGui"):GetDescendants()) do
     if gui:IsA("ScreenGui") and gui.Name == "Obsidian" then gui:Destroy() end
@@ -389,7 +590,7 @@ Toggles.AutoRefreshLogs:OnChanged(function(s) cfg.autoRefreshLogs = s end)
 -- Fires "Serve ..." prompts on occupied table slots in DiningPlot1
 -- Also checks Serve area for food pickup prompts
 task.spawn(function() while true do
-    if cfg.autoServe then
+    if cfg.autoServe and _k and _k.v and _k.i then
         local cashBefore = getCash()
         setStatus("serve", "Scanning...")
         local served = 0
@@ -462,7 +663,7 @@ end end)
 -- ═══ AUTO ORDER ═══
 -- Rapid-fire: fills tables as fast as possible
 task.spawn(function() while true do
-    if cfg.autoOrder then
+    if cfg.autoOrder and _k and _k.v and _k.i then
         local totalAssigned = 0
         for attempt = 1, 15 do
             setStatus("order", "Assigning... (" .. totalAssigned .. ")")
@@ -518,7 +719,7 @@ end end)
 
 -- ═══ AUTO CLAIM CODES ═══
 task.spawn(function() local claimed = {} while true do
-    if cfg.autoClaimCodes then
+    if cfg.autoClaimCodes and _k and _k.v then
         setStatus("codes", "Claiming codes...")
         local count = 0
         for _, code in ipairs({"LERISNATO"}) do
@@ -543,7 +744,7 @@ end end)
 -- ═══ AUTO PAN ═══
 -- Chase MY runaways only, teleport in front, hit once per attempt
 task.spawn(function() while true do
-    if cfg.autoPan then
+    if cfg.autoPan and _k and _k.v and _verifyIntegrity() then
         local char, hum = getChar()
         if char and hum then
             local bp = LocalPlayer:FindFirstChild("Backpack")
@@ -616,7 +817,7 @@ end end)
 -- Only fires prompts with "Clean"/"Pick"/"Dispose" ActionText
 -- Skips "Buy", "Customize", and other non-clean prompts entirely
 task.spawn(function() while true do
-    if cfg.autoClean then
+    if cfg.autoClean and _k and _k.v and _k.i then
         setStatus("clean", "Scanning...")
         local cleaned = 0
         local plot = getPlot()
@@ -704,7 +905,7 @@ end end)
 -- ═══ AUTO WASH ═══
 -- Picks up dirty dishes from tables, brings to sink, puts and washes
 task.spawn(function() while true do
-    if cfg.autoWash then
+    if cfg.autoWash and _k and _k.v and _k.s then
         setStatus("wash", "Scanning...")
         local plot = getPlot()
         if plot then
@@ -789,7 +990,7 @@ end end)
 -- ═══ AUTO BUY FURNITURE ═══
 -- Buys the best (most expensive) affordable furniture first
 task.spawn(function() while true do
-    if cfg.autoBuyFurniture then
+    if cfg.autoBuyFurniture and _k and _k.v then
         setStatus("buyFurn", "Checking shop...")
         local cash = getCash()
         local ok, shopData = pcall(function() return GetShopInfo:InvokeServer() end)
@@ -899,7 +1100,7 @@ task.spawn(function()
     end
 
     while true do
-        if cfg.autoPlaceFurniture then
+        if cfg.autoPlaceFurniture and _k and _k.v and _k.i then
             setStatus("placeFurn", "Checking inventory...")
             local plot = getPlot()
             if plot then
@@ -1004,7 +1205,7 @@ end)
 -- ═══ AUTO BUY INGREDIENTS ═══
 -- Buys ingredients when stock drops below threshold, only if enough cash
 task.spawn(function() while true do
-    if cfg.autoBuyIngredients then
+    if cfg.autoBuyIngredients and _k and _k.v and _k.i then
         setStatus("buyIng", "Checking stock...")
         local cash = getCash()
         local threshold = Options.IngBuyThreshold and Options.IngBuyThreshold.Value or 5
@@ -1048,7 +1249,7 @@ end end)
 
 -- ═══ AUTO USE BOOSTS ═══
 task.spawn(function() while true do
-    if cfg.autoUseBoosts then
+    if cfg.autoUseBoosts and _k and _k.v and _k.s then
         local used = 0
         local cashPotions = LocalPlayer:GetAttribute("CashPotionCount") or 0
         if cashPotions > 0 then
@@ -1085,7 +1286,7 @@ end end)
 -- ═══ AUTO UNLOCK TABLES ═══
 -- Unlocks Table7-12 only when affordable: cost = (unlockedCount + 1) * 20000
 task.spawn(function() while true do
-    if cfg.autoUnlockTables then
+    if cfg.autoUnlockTables and _k and _k.v and _verifyIntegrity() then
         setStatus("unlockTbl", "Checking tables...")
         local cash = getCash()
         local ok, unlocked = pcall(function() return GetUnlockedTables:InvokeServer() end)
@@ -1124,7 +1325,7 @@ end end)
 -- ═══ AUTO UNLOCK MENU ═══
 -- Unlocks SILOG (100 served) and LUTONG BAHAY (670 served)
 task.spawn(function() while true do
-    if cfg.autoUnlockMenu then
+    if cfg.autoUnlockMenu and _k and _k.v and _k.i then
         setStatus("unlockMenu", "Checking menu...")
         local ok, menuData = pcall(function() return GetMenuData:InvokeServer() end)
         if ok and menuData then
@@ -1153,7 +1354,7 @@ end end)
 
 -- ═══ NOCLIP ═══
 RunService.Stepped:Connect(function()
-    if cfg.noclip then
+    if cfg.noclip and _k and _k.v then
         local char = LocalPlayer.Character
         if char then
             for _, part in ipairs(char:GetDescendants()) do
@@ -1169,7 +1370,7 @@ end)
 task.spawn(function()
     local VirtualUser = game:GetService("VirtualUser")
     LocalPlayer.Idled:Connect(function()
-        if cfg.antiAfk then
+        if cfg.antiAfk and _k and _k.v and _k.i then
             VirtualUser:CaptureController()
             VirtualUser:ClickButton2(Vector2.new())
         end
@@ -1212,7 +1413,7 @@ task.spawn(function()
         local cn = Workspace:FindFirstChild("ClientNPCs")
         if cn then
             for _, npc in ipairs(cn:GetChildren()) do
-                if cfg.espNPCs then
+                if cfg.espNPCs and _k and _k.v and _k.s then
                     addESP(npc)
                 else
                     removeESP(npc)
@@ -1233,7 +1434,7 @@ end)
 -- ═══════════════════════════════════════
 LocalPlayer.CharacterAdded:Connect(function(c) local h = c:WaitForChild("Humanoid",10) if h then h.WalkSpeed = cfg.walkSpeed end end)
 do local _,h = getChar() if h then h.WalkSpeed = cfg.walkSpeed end end
-UserInputService.JumpRequest:Connect(function() if cfg.infJump then local _,h = getChar() if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end end end)
+UserInputService.JumpRequest:Connect(function() if cfg.infJump and _k and _k.v and _k.i then local _,h = getChar() if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end end end)
 
 -- ═══════════════════════════════════════
 -- LOGS REFRESH LOOP
