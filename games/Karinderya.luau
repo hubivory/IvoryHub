@@ -20,7 +20,7 @@ pcall(function() _kg.Parent = game:GetService("CoreGui") end)
 if not _kg.Parent then _kg.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui") end
 
 local _mf = Instance.new("Frame", _kg)
-_mf.Size = UDim2.new(0, 380, 0, 235)
+_mf.Size = UDim2.new(0, 380, 0, 265)
 _mf.Position = UDim2.new(0.5, -190, 0.5, -110)
 _mf.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 _mf.BorderSizePixel = 0
@@ -108,6 +108,32 @@ _link.Text = "Get Key - work.ink/2STL/Ivory"
 end)
 
 local _awaiting = true
+
+local _discord = Instance.new("TextButton", _mf)
+_discord.Size = UDim2.new(1, -30, 0, 22)
+_discord.Position = UDim2.new(0, 15, 0, 216)
+_discord.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+_discord.BorderSizePixel = 0
+_discord.Text = "Join for dupe"
+_discord.TextColor3 = Color3.fromRGB(255, 255, 255)
+_discord.TextSize = 11
+_discord.Font = Enum.Font.GothamBold
+_discord.AutoButtonColor = true
+Instance.new("UICorner", _discord).CornerRadius = UDim.new(0, 4)
+_discord.MouseButton1Click:Connect(function()
+    pcall(function()
+        if setclipboard then
+            setclipboard("https://discord.gg/mrQFkCJfEe")
+            _discord.Text = "Copied!"
+            _discord.TextColor3 = Color3.fromRGB(80, 220, 120)
+            task.wait(1.5)
+            _discord.Text = "Join for dupe"
+            _discord.TextColor3 = Color3.fromRGB(255, 255, 255)
+        else
+            _discord.Text = "discord.gg/mrQFkCJfEe"
+        end
+    end)
+end)
 
 local function _doValidate(key)
     if not key or key == "" then

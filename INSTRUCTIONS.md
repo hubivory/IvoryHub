@@ -36,7 +36,7 @@ pcall(function() _kg.Parent = game:GetService("CoreGui") end)
 if not _kg.Parent then _kg.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui") end
 ```
 
-### Key UI Layout (Frame: 380x235)
+### Key UI Layout (Frame: 380x265)
 
 - Window: Dark Color3.fromRGB(20, 20, 25), UICorner 8, UIStroke purple 90, 60, 200
 - Title: "Ivory Hub", color 200, 170, 255, size 22, GothamBold
@@ -47,7 +47,11 @@ if not _kg.Parent then _kg.Parent = game:GetService("Players").LocalPlayer:WaitF
 - Get Key Button: Clickable, dark 35, 35, 42 background, blue text 120, 180, 255, UICorner 4
   - Text: "Get Key - work.ink/2STL/Ivory"
   - On click: setclipboard("https://work.ink/2STL/Ivory") then show "Copied!" in green 80, 220, 120
-  - Fallback: if setclipboard unavailable, show the URL as text
+   - Fallback: if setclipboard unavailable, show the URL as text
+- Discord Button: Clickable, Discord blurple 88, 101, 242 background, white text, UICorner 4
+  - Text: "Join for dupe"
+  - On click: setclipboard("https://discord.gg/mrQFkCJfEe") then show "Copied!" in green
+  - Fallback: if setclipboard unavailable, show "discord.gg/mrQFkCJfEe"
 
 ### Validation
 
