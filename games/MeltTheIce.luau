@@ -768,14 +768,37 @@ MenuGroup:AddButton("Unload", function()
 	Library:Unload()
 end)
 
+local _meltActivated = false
+
 task.spawn(function()
 	while true do
-		task.wait(0.3)
+		task.wait(0.5)
 		if STATE.AutoMelt and _k and _k.v and _k.i then
 			pcall(function()
 				local hrp = getHRP()
 				local hum = getHum()
 				if not hrp or not hum then return end
+
+				if not _meltActivated then
+					LP:SetAttribute("Set_AutoMeltBtn", true)
+					LP:SetAttribute("AutoMelt", true)
+					task.wait(0.5)
+
+					local HUD = LP:WaitForChild("PlayerGui"):WaitForChild("HUD", 5)
+					if HUD then
+						local btn = HUD:FindFirstChild("AutoMeltBTN", true)
+						if btn and btn.Visible then
+							local onBtn = btn:FindFirstChild("AutoMeltOn", true)
+							if onBtn and onBtn:IsA("ImageButton") then
+								local pos = onBtn.AbsolutePosition + onBtn.AbsoluteSize / 2
+								mousemoveabs(pos.X, pos.Y)
+								task.wait(0.1)
+								mouse1click()
+								_meltActivated = true
+							end
+						end
+					end
+				end
 
 				local wall = nil
 				local bestDist = math.huge
@@ -796,12 +819,12 @@ task.spawn(function()
 
 				local wallPos = wall.Position
 				local toWall = Vector3.new(wallPos.X - hrp.Position.X, 0, wallPos.Z - hrp.Position.Z)
-				if toWall.Magnitude > 3 then
+				if toWall.Magnitude > 5 then
 					hum:MoveTo(hrp.Position + toWall.Unit * 8)
-				else
-					Remotes.MountainMelt:FireServer()
 				end
 			end)
+		else
+			_meltActivated = false
 		end
 	end
 end)
