@@ -54,9 +54,9 @@ end
 
 -- WINDOW
 local Window = Library:CreateWindow({
-    Title = "Karinderya",
+    Title = "Ivory",
     Footer = {
-        "Karinderya Script |",
+        "Ivory | Karinderya",
         { Text = "v1.0", Copyable = true },
     },
     Minimizable = true,
