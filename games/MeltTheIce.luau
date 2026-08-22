@@ -259,6 +259,17 @@ local Remotes = {
 
 local Map = Workspace:WaitForChild("Map")
 
+local GameConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("GameConfig"))
+
+local _nameToRarity = {}
+do
+	for _, v in pairs(GameConfig.ItemById) do
+		if type(v) == "table" and v.name and v.rarity then
+			_nameToRarity[v.name] = v.rarity
+		end
+	end
+end
+
 local function httpGet(url)
 	local ok, res = pcall(function()
 		return request({ Url = url, Method = "GET" })
@@ -280,13 +291,12 @@ local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
 
 local STATE = {
 	AutoMelt = false,
-	AutoMeltSpeed = 0.05,
 	AutoSell = false,
-	AutoSellInterval = 5,
 	AutoCollect = false,
 	AutoBuyWeapon = false,
 	AutoBuyBackpack = false,
 	AutoBuyUpgrade = false,
+	AutoBuyPotion = false,
 	AutoSpin = false,
 	AutoPlaytime = false,
 	TeleportStage = 1,
@@ -297,6 +307,7 @@ local STATE = {
 	ESPColor = Color3.fromRGB(255, 100, 100),
 	WalkSpeed = 22,
 	JumpPower = 50,
+	CollectRarities = { Common = true, Uncommon = true, Rare = false, Epic = false, Legendary = false, Transcendent = false, Secret = false },
 }
 
 local function getHRP()
@@ -505,6 +516,15 @@ CollectGroup:AddToggle("AutoCollect", {
 	Callback = function(v) STATE.AutoCollect = v end,
 })
 
+local rarityOrder = { "Common", "Rare", "Epic", "Legendary", "Transcendent", "Secret" }
+for _, rarity in ipairs(rarityOrder) do
+	CollectGroup:AddToggle("Rarity_" .. rarity, {
+		Text = rarity,
+		Default = STATE.CollectRarities[rarity] or false,
+		Callback = function(v) STATE.CollectRarities[rarity] = v end,
+	})
+end
+
 SpinGroup:AddToggle("AutoSpin", {
 	Text = "Auto Spin",
 	Default = false,
@@ -563,9 +583,29 @@ UpgradeGroup:AddToggle("AutoBuyUpgrade", {
 	Callback = function(v) STATE.AutoBuyUpgrade = v end,
 })
 
-UpgradeGroup:AddButton("Buy Upgrade Now", function()
+UpgradeGroup:AddButton("Buy Melt Power", function()
 	if _k and _k.v and _k.i then
-		pcall(function() Remotes.BuyUpgrade:InvokeServer() end)
+		pcall(function() Remotes.BuyUpgrade:InvokeServer("melt", 1) end)
+	end
+end)
+
+UpgradeGroup:AddButton("Buy Speed", function()
+	if _k and _k.v and _k.i then
+		pcall(function() Remotes.BuyUpgrade:InvokeServer("speed", 1) end)
+	end
+end)
+
+UpgradeGroup:AddButton("Buy Warmth", function()
+	if _k and _k.v and _k.i then
+		pcall(function() Remotes.BuyUpgrade:InvokeServer("warmth", 1) end)
+	end
+end)
+
+UpgradeGroup:AddButton("Buy Max Melt", function()
+	if _k and _k.v and _k.i then
+		pcall(function()
+			local data = Remotes.BuyUpgrade:InvokeServer("milt", 999)
+		end)
 	end
 end)
 
@@ -598,11 +638,36 @@ BackpackGroup:AddButton("Buy Backpack Now", function()
 	end
 end)
 
-local PotionGroup = WeaponSub:AddLeftGroupbox("Potions", "droplet")
+local PotionSub = ShopTab:AddSubTab("Potions", "droplet")
+local PotionGroup = PotionSub:AddLeftGroupbox("Potions", "droplet")
 
-PotionGroup:AddButton("Buy Potion", function()
-	if _k and _k.v and _k.s then
-		pcall(function() Remotes.BuyPotion:InvokeServer() end)
+PotionGroup:AddToggle("AutoBuyPotion", {
+	Text = "Auto Buy Melt Potion",
+	Default = false,
+	Callback = function(v) STATE.AutoBuyPotion = v end,
+})
+
+PotionGroup:AddButton("Buy Melt Potion", function()
+	if _k and _k.v and _k.i then
+		pcall(function() Remotes.BuyPotion:InvokeServer("melt_1") end)
+	end
+end)
+
+PotionGroup:AddButton("Buy Big Melt Potion", function()
+	if _k and _k.v and _k.i then
+		pcall(function() Remotes.BuyPotion:InvokeServer("melt_2") end)
+	end
+end)
+
+PotionGroup:AddButton("Buy Luck Potion", function()
+	if _k and _k.v and _k.i then
+		pcall(function() Remotes.BuyPotion:InvokeServer("luck_1") end)
+	end
+end)
+
+PotionGroup:AddButton("Buy Cash Potion", function()
+	if _k and _k.v and _k.i then
+		pcall(function() Remotes.BuyPotion:InvokeServer("coins_1") end)
 	end
 end)
 
@@ -802,10 +867,13 @@ local function findNearestDrop()
 		if obj:IsA("ProximityPrompt") and obj.Name == "DropPrompt" and obj.Enabled then
 			local parent = obj.Parent
 			if parent and parent:IsA("BasePart") then
-				local d = (parent.Position - hrp.Position).Magnitude
-				if d < bestDist then
-					bestDist = d
-					best = parent
+				local rarity = _nameToRarity[parent.Name] or "Common"
+				if STATE.CollectRarities[rarity] then
+					local d = (parent.Position - hrp.Position).Magnitude
+					if d < bestDist then
+						bestDist = d
+						best = parent
+					end
 				end
 			end
 		end
@@ -983,7 +1051,22 @@ task.spawn(function()
 	while true do
 		task.wait(3)
 		if STATE.AutoBuyUpgrade and _k and _k.v and _k.i then
-			pcall(function() Remotes.BuyUpgrade:InvokeServer() end)
+			pcall(function()
+				Remotes.BuyUpgrade:InvokeServer("speed", 1)
+				task.wait(0.5)
+				Remotes.BuyUpgrade:InvokeServer("melt", 1)
+				task.wait(0.5)
+				Remotes.BuyUpgrade:InvokeServer("warmth", 1)
+			end)
+		end
+	end
+end)
+
+task.spawn(function()
+	while true do
+		task.wait(5)
+		if STATE.AutoBuyPotion and _k and _k.v and _k.i then
+			pcall(function() Remotes.BuyPotion:InvokeServer("melt_1") end)
 		end
 	end
 end)
