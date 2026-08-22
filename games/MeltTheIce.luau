@@ -1062,7 +1062,7 @@ end
 
 task.spawn(function()
 	while true do
-		task.wait(2)
+		task.wait(0.15)
 		if STATE.AutoMelt and _k and _k.v and _k.i then
 			pcall(function()
 				if _goingToFire then return end
@@ -1072,10 +1072,10 @@ task.spawn(function()
 					_meltActivated = false
 					teleportToCurrentStage()
 					task.wait(1)
-					activateGameAutoMelt()
-				elseif not _meltActivated then
-					activateGameAutoMelt()
+					equipBestTool()
 				end
+				equipBestTool()
+				Remotes.MountainMelt:FireServer()
 			end)
 		else
 			_meltActivated = false
@@ -1172,7 +1172,7 @@ task.spawn(function()
 		if STATE.AutoMelt and _k and _k.v and _k.i then
 			pcall(function()
 				if _goingToFire then return end
-				if _coldLevel < 70 then return end
+				if _coldLevel < 50 then return end
 
 				local hrp = getHRP()
 				if not hrp then return end
@@ -1303,7 +1303,7 @@ LP.CharacterAdded:Connect(function(char)
 			teleportToCurrentStage()
 			task.wait(1)
 		end
-		activateGameAutoMelt()
+		equipBestTool()
 	end
 end)
 
