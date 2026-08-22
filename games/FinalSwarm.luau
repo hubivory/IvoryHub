@@ -84,8 +84,8 @@ _link.Size = UDim2.new(1, -30, 0, 22)
 _link.Position = UDim2.new(0, 15, 0, 188)
 _link.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
 _link.BorderSizePixel = 0
-_link.Text = "Get Key - work.ink/ivoryhub"
-_link.TextColor3 = Color3.fromRGB(120, 180, 255)
+_link.Text = "Get Key - work.ink/2STL/Ivory"
+            _link.TextColor3 = Color3.fromRGB(120, 180, 255)
 _link.TextSize = 11
 _link.Font = Enum.Font.GothamBold
 _link.AutoButtonColor = true
@@ -93,14 +93,14 @@ Instance.new("UICorner", _link).CornerRadius = UDim.new(0, 4)
 _link.MouseButton1Click:Connect(function()
     pcall(function()
         if setclipboard then
-            setclipboard("https://work.ink/ivoryhub")
+            setclipboard("https://work.ink/2STL/Ivory")
             _link.Text = "Copied!"
             _link.TextColor3 = Color3.fromRGB(80, 220, 120)
             task.wait(1.5)
-            _link.Text = "Get Key - work.ink/ivoryhub"
+_link.Text = "Get Key - work.ink/2STL/Ivory"
             _link.TextColor3 = Color3.fromRGB(120, 180, 255)
         else
-            _link.Text = "work.ink/ivoryhub"
+            _link.Text = "work.ink/2STL/Ivory"
         end
     end)
 end)
@@ -149,7 +149,7 @@ local function _doValidate(key)
             return
         end
     end
-    _st.Text = "Invalid key - get one at work.ink/ivoryhub"
+    _st.Text = "Invalid key - get one at work.ink/2STL/Ivory"
     _st.TextColor3 = Color3.fromRGB(255, 80, 80)
     _btn.Text = "Verify"
     _btn.AutoButtonColor = true
