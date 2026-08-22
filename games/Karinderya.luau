@@ -211,26 +211,39 @@ local Window = Library:CreateWindow({
 local MainTab = Window:AddTab({ Name = "Main", Icon = "utensils", Description = "Core Automation" })
 local ShopTab = Window:AddTab({ Name = "Shop", Icon = "shopping-cart", Description = "Buying & Inventory" })
 local PlayerTab = Window:AddTab({ Name = "Player", Icon = "user", Description = "Character Mods" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings", Description = "Themes & UI" })
 local LogsTab = Window:AddTab({ Name = "Logs", Icon = "scroll-text", Description = "Money & Status" })
 
--- MAIN TAB
-local FoodBox = MainTab:AddLeftGroupbox("Food", "utensils")
+-- ═══ MAIN TAB: Automation Sub-Tab ═══
+local AutoSub = MainTab:AddSubTab({ Name = "Automation", Icon = "zap" })
+
+local FoodBox = AutoSub:AddLeftGroupbox("Food", "utensils")
 FoodBox:AddToggle("AutoServe", { Text = "Auto Serve Food", Default = false })
 FoodBox:AddToggle("AutoOrder", { Text = "Auto Assign Customers", Default = false })
 
-local KitchenBox = MainTab:AddLeftGroupbox("Kitchen", "chef-hat")
+local KitchenBox = AutoSub:AddLeftGroupbox("Kitchen", "chef-hat")
 KitchenBox:AddToggle("AutoClean", { Text = "Auto Clean Tables", Default = false })
 KitchenBox:AddToggle("AutoWash", { Text = "Auto Wash Dishes", Default = false, Tooltip = "Auto-collects dirty dishes, puts in sink, and washes them" })
 KitchenBox:AddToggle("AutoPan", { Text = "Auto Pan (Hit Runaway)", Default = false })
 
-local CodesBox = MainTab:AddRightGroupbox("Codes", "ticket")
+local CodesBox = AutoSub:AddRightGroupbox("Codes", "ticket")
 CodesBox:AddToggle("AutoClaimCodes", { Text = "Auto Claim Codes", Default = false })
 
-local FurnBox = MainTab:AddRightGroupbox("Furniture", "armchair")
+local DelaysBox = AutoSub:AddRightGroupbox("Delays", "settings")
+DelaysBox:AddSlider("ServeDelay", { Text = "Serve Delay", Default = 1, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
+DelaysBox:AddSlider("OrderDelay", { Text = "Order Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
+DelaysBox:AddSlider("CleanDelay", { Text = "Clean Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
+DelaysBox:AddSlider("WashDelay", { Text = "Wash Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
+
+-- ═══ MAIN TAB: Furniture & Menu Sub-Tab ═══
+local FurnMenuSub = MainTab:AddSubTab({ Name = "Furniture & Menu", Icon = "armchair" })
+
+local FurnBox = FurnMenuSub:AddLeftGroupbox("Furniture", "armchair")
 FurnBox:AddToggle("AutoBuyFurniture", { Text = "Auto Buy Furniture", Default = false })
 FurnBox:AddToggle("AutoPlaceFurniture", { Text = "Auto Place Furniture", Default = false })
+FurnBox:AddSlider("FurnDelay", { Text = "Furniture Delay", Default = 5, Min = 2, Max = 20, Rounding = 1, Suffix = "s" })
 
-local MenuBox = MainTab:AddRightGroupbox("Menu", "book-open")
+local MenuBox = FurnMenuSub:AddRightGroupbox("Menu", "book-open")
 MenuBox:AddToggle("AutoUnlockMenu", { Text = "Auto Unlock Menu", Default = false, Tooltip = "Unlocks SILOG & LUTONG BAHAY when requirements met" })
 MenuBox:AddButton({ Text = "Enable All Menus", Func = function()
     pcall(function() ToggleMenu:InvokeServer("LUGAW", true) end)
@@ -238,53 +251,57 @@ MenuBox:AddButton({ Text = "Enable All Menus", Func = function()
     pcall(function() ToggleMenu:InvokeServer("LUTONG BAHAY", true) end)
 end })
 
-local SetBox = MainTab:AddLeftGroupbox("Settings", "settings")
-SetBox:AddSlider("ServeDelay", { Text = "Serve Delay", Default = 1, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
-SetBox:AddSlider("OrderDelay", { Text = "Order Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
-SetBox:AddSlider("CleanDelay", { Text = "Clean Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
-SetBox:AddSlider("FurnDelay", { Text = "Furniture Delay", Default = 5, Min = 2, Max = 20, Rounding = 1, Suffix = "s" })
-SetBox:AddSlider("WashDelay", { Text = "Wash Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
+-- ═══ SHOP TAB: Groceries Sub-Tab ═══
+local GrocerySub = ShopTab:AddSubTab({ Name = "Groceries", Icon = "apple" })
 
--- SHOP TAB
-local GroceryBox = ShopTab:AddLeftGroupbox("Grocery", "apple")
+local GroceryBox = GrocerySub:AddLeftGroupbox("Ingredients", "apple")
 GroceryBox:AddToggle("AutoBuyIngredients", { Text = "Auto Buy Ingredients", Default = false, Tooltip = "Auto-buys ingredients when stock is low" })
 GroceryBox:AddSlider("IngBuyThreshold", { Text = "Buy When Below", Default = 5, Min = 1, Max = 50, Rounding = 1, Tooltip = "Buy ingredient when count drops below this" })
 
-local BoostBox = ShopTab:AddRightGroupbox("Boosts", "zap")
+local UnlockBox = GrocerySub:AddRightGroupbox("Unlocks", "lock-open")
+UnlockBox:AddToggle("AutoUnlockTables", { Text = "Auto Unlock Tables", Default = false, Tooltip = "Auto-unlocks Table7-12 when affordable" })
+UnlockBox:AddButton({ Text = "Upgrade to Golden Pan", Func = function() pcall(function() UpgradeToGoldenPan:InvokeServer() end) end })
+
+-- ═══ SHOP TAB: Boosts & Store Sub-Tab ═══
+local BoostStoreSub = ShopTab:AddSubTab({ Name = "Boosts & Store", Icon = "zap" })
+
+local BoostBox = BoostStoreSub:AddLeftGroupbox("Boosts", "zap")
 BoostBox:AddToggle("AutoUseBoosts", { Text = "Auto Use Boosts", Default = false, Tooltip = "Auto-uses Cash/Luck/UltraLuck potions" })
 BoostBox:AddButton({ Text = "Use Cash Potion", Func = function() pcall(function() UseBoostEvent:FireServer("CashPotion") end) end })
 BoostBox:AddButton({ Text = "Use Luck Potion", Func = function() pcall(function() UseBoostEvent:FireServer("LuckPotion") end) end })
 BoostBox:AddButton({ Text = "Use Ultra Luck Potion", Func = function() pcall(function() UseBoostEvent:FireServer("UltraLuckPotion") end) end })
 
-local UnlockBox = ShopTab:AddLeftGroupbox("Unlock", "lock-open")
-UnlockBox:AddToggle("AutoUnlockTables", { Text = "Auto Unlock Tables", Default = false, Tooltip = "Auto-unlocks Table7-12 when affordable" })
-UnlockBox:AddButton({ Text = "Upgrade to Golden Pan", Func = function() pcall(function() UpgradeToGoldenPan:InvokeServer() end) end })
-
-local StoreBox = ShopTab:AddRightGroupbox("Store", "store")
+local StoreBox = BoostStoreSub:AddRightGroupbox("Store", "store")
 StoreBox:AddButton({ Text = "Toggle Store Open/Close", Func = function() pcall(function() ToggleStoreStatus:InvokeServer() end) end })
 
--- PLAYER TAB
-local CharBox = PlayerTab:AddLeftGroupbox("Character", "person-standing")
+-- ═══ PLAYER TAB: Character Sub-Tab ═══
+local CharSub = PlayerTab:AddSubTab({ Name = "Character", Icon = "person-standing" })
+
+local CharBox = CharSub:AddLeftGroupbox("Movement", "person-standing")
 CharBox:AddSlider("WalkSpeed", { Text = "Walk Speed", Default = 16, Min = 16, Max = 100, Rounding = 0 })
 CharBox:AddToggle("InfJump", { Text = "Infinite Jump", Default = false })
 CharBox:AddToggle("NoClip", { Text = "NoClip", Default = false, Tooltip = "Walk through walls" })
 CharBox:AddToggle("AntiAfk", { Text = "Anti-AFK", Default = false, Tooltip = "Prevents AFK kick" })
 
-local EspBox = PlayerTab:AddRightGroupbox("Visuals", "eye")
+local EspBox = CharSub:AddRightGroupbox("Visuals", "eye")
 EspBox:AddToggle("EspNPCs", { Text = "ESP NPCs", Default = false, Tooltip = "Highlights all NPCs with colored boxes" })
 
-local MiscBox = PlayerTab:AddLeftGroupbox("Teleports", "map-pin")
-MiscBox:AddButton({ Text = "Teleport to Counter", Func = function() local p = getPlot() if p then local c = p:FindFirstChild("Counter") if c then local cp = c:FindFirstChild("Comp", true) if cp then tp(cp.CFrame * CFrame.new(0,3,0)) end end end end })
-MiscBox:AddButton({ Text = "Teleport to Kitchen", Func = function() local p = getPlot() if p then local k = p:FindFirstChild("KitchenPlot1") if k then local f = k:GetChildren()[1] if f then tp(f:GetPivot() * CFrame.new(0,3,0)) end end end end })
-MiscBox:AddButton({ Text = "Teleport to Serve Area", Func = function() local p = getPlot() if p then local s = p:FindFirstChild("Serve") if s then local f = s:GetChildren()[1] if f then tp(f:GetPivot() * CFrame.new(0,3,0)) end end end end })
+-- ═══ PLAYER TAB: Teleports Sub-Tab ═══
+local TPSub = PlayerTab:AddSubTab({ Name = "Teleports", Icon = "map-pin" })
 
-local MoreTPBox = PlayerTab:AddRightGroupbox("More Teleports", "navigation")
-MoreTPBox:AddButton({ Text = "Teleport to Grocery", Func = function() local g = Workspace:FindFirstChild("Grocery") if g then local c = g:FindFirstChild("Comp", true) if c then tp(c.CFrame * CFrame.new(0,3,0)) end end end })
-MoreTPBox:AddButton({ Text = "Teleport to NPC Spawn", Func = function() local p = getPlot() if p then local ns = p:FindFirstChild("NpcSpawn") if ns then tp(ns:GetPivot() * CFrame.new(0,3,0)) end end end })
-MoreTPBox:AddButton({ Text = "Teleport to Shop", Func = function() local s = Workspace:FindFirstChild("SHOP") if s then local sh = s:FindFirstChild("Shop") if sh then local pp = sh:FindFirstChild("ProximityPrompt") if pp and pp.Parent:IsA("BasePart") then tp(pp.Parent.CFrame * CFrame.new(0,3,0)) end end end end })
-MiscBox:AddButton({ Text = "Teleport to Shop", Func = function() local s = Workspace:FindFirstChild("SHOP") if s then local sh = s:FindFirstChild("Shop") if sh then local pp = sh:FindFirstChild("ProximityPrompt") if pp and pp.Parent:IsA("BasePart") then tp(pp.Parent.CFrame * CFrame.new(0,3,0)) end end end end })
-MiscBox:AddButton({ Text = "Teleport to Grocery", Func = function() local g = Workspace:FindFirstChild("Grocery") if g then local c = g:FindFirstChild("Comp") if c then tp(c.CFrame * CFrame.new(0,3,0)) end end end })
-MiscBox:AddButton({ Text = "Teleport to NPC Spawn", Func = function() local p = getPlot() if p then local ns = p:FindFirstChild("NpcSpawn") if ns then tp(ns:GetPivot() * CFrame.new(0,3,0)) end end end })
+local PlotTPBox = TPSub:AddLeftGroupbox("My Plot", "map-pin")
+PlotTPBox:AddButton({ Text = "Teleport to Counter", Func = function() local p = getPlot() if p then local c = p:FindFirstChild("Counter") if c then local cp = c:FindFirstChild("Comp", true) if cp then tp(cp.CFrame * CFrame.new(0,3,0)) end end end end })
+PlotTPBox:AddButton({ Text = "Teleport to Kitchen", Func = function() local p = getPlot() if p then local k = p:FindFirstChild("KitchenPlot1") if k then local f = k:GetChildren()[1] if f then tp(f:GetPivot() * CFrame.new(0,3,0)) end end end end })
+PlotTPBox:AddButton({ Text = "Teleport to Serve Area", Func = function() local p = getPlot() if p then local s = p:FindFirstChild("Serve") if s then local f = s:GetChildren()[1] if f then tp(f:GetPivot() * CFrame.new(0,3,0)) end end end end })
+PlotTPBox:AddButton({ Text = "Teleport to NPC Spawn", Func = function() local p = getPlot() if p then local ns = p:FindFirstChild("NpcSpawn") if ns then tp(ns:GetPivot() * CFrame.new(0,3,0)) end end end })
+
+local WorldTPBox = TPSub:AddRightGroupbox("World", "globe")
+WorldTPBox:AddButton({ Text = "Teleport to Grocery", Func = function() local g = Workspace:FindFirstChild("Grocery") if g then local c = g:FindFirstChild("Comp", true) if c then tp(c.CFrame * CFrame.new(0,3,0)) end end end })
+WorldTPBox:AddButton({ Text = "Teleport to Shop", Func = function() local s = Workspace:FindFirstChild("SHOP") if s then local sh = s:FindFirstChild("Shop") if sh then local pp = sh:FindFirstChild("ProximityPrompt") if pp and pp.Parent:IsA("BasePart") then tp(pp.Parent.CFrame * CFrame.new(0,3,0)) end end end end })
+
+-- ═══ SETTINGS TAB ═══
+local ThemesSub = SettingsTab:AddSubTab({ Name = "Themes & UI", Icon = "palette" })
+local ConfigSub = SettingsTab:AddSubTab({ Name = "Config", Icon = "save" })
 
 -- LOGS TAB
 local StatusBox = LogsTab:AddLeftGroupbox("Status", "activity")
@@ -692,17 +709,6 @@ task.spawn(function() while true do
         local plot = getPlot()
         if plot then
             local sink = plot:FindFirstChild("Sink")
-            local sinkPut = nil
-            local sinkWash = nil
-            if sink then
-                for _, desc in ipairs(sink:GetDescendants()) do
-                    if desc:IsA("ProximityPrompt") and desc.Enabled then
-                        if desc.Name == "Put" then sinkPut = desc end
-                        if desc.Name == "Wash" then sinkWash = desc end
-                    end
-                end
-            end
-
             local washed = 0
             local dp = plot:FindFirstChild("DiningPlot1")
             if dp then
@@ -720,14 +726,27 @@ task.spawn(function() while true do
                                         task.wait(0.15)
                                         fireproximityprompt(desc)
                                         release()
-                                        washed = washed + 1
+                                        -- Wait for dish tool to appear in character
+                                        for _ = 1, 20 do
+                                            local c = LocalPlayer.Character
+                                            if c and c:FindFirstChildOfClass("Tool") then break end
+                                            task.wait(0.1)
+                                        end
                                         task.wait(0.3)
 
-                                        if sinkPut and sinkPut.Enabled then
-                                            tp(sinkPut.Parent.CFrame * CFrame.new(0, 3, 0))
-                                            task.wait(0.15)
-                                            fireproximityprompt(sinkPut)
-                                            task.wait(0.3)
+                                        -- Re-find the Put prompt (it should be enabled now that we hold a dish)
+                                        if sink then
+                                            for _, pd in ipairs(sink:GetDescendants()) do
+                                                if pd:IsA("ProximityPrompt") and pd.Name == "Put" then
+                                                    local release2 = acquireTp()
+                                                    tp(pd.Parent.CFrame * CFrame.new(0, 3, 0))
+                                                    task.wait(0.2)
+                                                    fireproximityprompt(pd)
+                                                    release2()
+                                                    task.wait(0.5)
+                                                    break
+                                                end
+                                            end
                                         end
                                     end
                                 end
@@ -737,12 +756,22 @@ task.spawn(function() while true do
                 end
             end
 
-            if sinkWash and sinkWash.Enabled then
-                tp(sinkWash.Parent.CFrame * CFrame.new(0, 3, 0))
-                task.wait(0.15)
-                fireproximityprompt(sinkWash)
-                task.wait(0.3)
-                washed = washed + 1
+            -- Final Wash step
+            if sink then
+                for _, pd in ipairs(sink:GetDescendants()) do
+                    if pd:IsA("ProximityPrompt") and pd.Name == "Wash" then
+                        local release3 = acquireTp()
+                        tp(pd.Parent.CFrame * CFrame.new(0, 3, 0))
+                        task.wait(0.15)
+                        if pd.Enabled then
+                            fireproximityprompt(pd)
+                            washed = washed + 1
+                        end
+                        release3()
+                        task.wait(0.5)
+                        break
+                    end
+                end
             end
 
             if washed > 0 then
@@ -1253,8 +1282,8 @@ end)
 ThemeManager:SetLibrary(Library) SaveManager:SetLibrary(Library)
 SaveManager:IgnoreThemeSettings() SaveManager:SetIgnoreIndexes({})
 ThemeManager:SetFolder("KarinderyaScript") SaveManager:SetFolder("KarinderyaScript/saves")
-ThemeManager:ApplyToTab(MainTab)
-SaveManager:BuildConfigSection(MainTab) SaveManager:LoadAutoloadConfig()
+ThemeManager:ApplyToTab(ThemesSub)
+SaveManager:BuildConfigSection(ConfigSub) SaveManager:LoadAutoloadConfig()
 
 if not Library.Toggled then Library:Toggle() end
 print("[Karinderya] Loaded - RightControl to toggle")
