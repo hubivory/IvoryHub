@@ -104,34 +104,40 @@ local function _doValidate(key)
     _btn.Text = "..."
     _btn.AutoButtonColor = false
 
-    -- Try Work.ink first, then Lootlabs
-    for _, provider in ipairs({"workink", "lootlabs"}) do
-        local ok, res = pcall(function()
-            return game:HttpPost(_endpoint, "application/json", true, {
-                key = key,
-                provider = provider,
-            })
+    -- Work.ink public validation (no API key needed)
+    local ok, res = pcall(function()
+        return game:HttpGet("https://work.ink/_api/v2/token/isValid/" .. key .. "?deleteToken=1", true)
+    end)
+
+    if ok and res then
+        local s, data = pcall(function()
+            return game:GetService("HttpService"):JSONDecode(res)
         end)
-
-        if ok and res then
-            local s, data = pcall(function()
-                return game:GetService("HttpService"):JSONDecode(res)
-            end)
-            if s and type(data) == "table" and data.valid then
-                _k.v = true
-                _k.s = key
-                _k.h = _hwid
-                _k.t = os.time()
-                _k.i = 0x4A + #key
-
-                _st.Text = "Access granted"
-                _st.TextColor3 = Color3.fromRGB(80, 220, 120)
-                _btn.Text = "Loading..."
-                task.wait(0.4)
-                _awaiting = false
-                _kg:Destroy()
-                return
+        if s and type(data) == "table" and data.valid then
+            -- Check expiry (24h)
+            if data.info and data.info.expiresAfter then
+                if os.time() * 1000 > data.info.expiresAfter then
+                    _st.Text = "Key expired - get a new one"
+                    _st.TextColor3 = Color3.fromRGB(255, 80, 80)
+                    _btn.Text = "Verify"
+                    _btn.AutoButtonColor = true
+                    return
+                end
             end
+
+            _k.v = true
+            _k.s = key
+            _k.h = _hwid
+            _k.t = os.time()
+            _k.i = 0x4A + #key
+
+            _st.Text = "Access granted"
+            _st.TextColor3 = Color3.fromRGB(80, 220, 120)
+            _btn.Text = "Loading..."
+            task.wait(0.4)
+            _awaiting = false
+            _kg:Destroy()
+            return
         end
     end
 

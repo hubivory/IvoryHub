@@ -1,0 +1,5 @@
+{
+  "name": "ivoryhub",
+  "version": "1.0.0",
+  "main": "backend/worker.js"
+}

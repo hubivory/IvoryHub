@@ -6,6 +6,8 @@ local GITHUB_RAW = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/"
 
 local GameScripts = {
     [116497287371701] = "games/Karinderya.luau",
+    [99521272836282] = "games/FinalSwarm.luau",
+    [79787558257549] = "games/FinalSwarm.luau",
     -- Add more: [PlaceId] = "games/ScriptName.luau"
 }
 
