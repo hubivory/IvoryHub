@@ -2,7 +2,7 @@
 -- KEY SYSTEM - DO NOT MODIFY THIS BLOCK
 -- ═══════════════════════════════════════════════════════════════
 local _k = { v = false, s = nil, h = nil, i = nil, t = 0 }
-local _hwid = game:FindFirstChild("HttpService") and HttpService:GenerateGUID(false) or "fallback"
+local _hwid = (function() local s,h=pcall(function() return game:GetService("HttpService"):GenerateGUID(false) end); return s and h or "fallback" end)()
 local _integritySalt = 0x4A
 local function _verifyIntegrity()
     if not _k or not _k.v then return false end
