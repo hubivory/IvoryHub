@@ -3,7 +3,7 @@
 -- ═══════════════════════════════════════════════════════════════
 local _k = { v = false, s = nil, h = nil, i = nil, t = 0 }
 local _kv = getgenv and getgenv() or {}
-local _endpoint = "https://your-key-api.com/validate"
+local _endpoint = "https://work.ink/_api/v2/token/isValid/"
 local _ksalt = "7x9mK2pL"
 local _hwid = game:FindFirstChild("HttpService") and HttpService:GenerateGUID(false) or "fallback"
 
@@ -85,7 +85,7 @@ local _link = Instance.new("TextLabel", _mf)
 _link.Size = UDim2.new(1, -30, 0, 16)
 _link.Position = UDim2.new(0, 15, 0, 190)
 _link.BackgroundTransparency = 1
-_link.Text = "Get key from: discord.gg/ivoryhub"
+_link.Text = "Get key from: work.ink/ivoryhub"
 _link.TextColor3 = Color3.fromRGB(100, 100, 110)
 _link.TextSize = 11
 _link.Font = Enum.Font.Gotham
@@ -104,19 +104,18 @@ local function _doValidate(key)
     _btn.Text = "..."
     _btn.AutoButtonColor = false
 
+    -- Work.ink validation
     local ok, res = pcall(function()
-        return game:HttpPost(_endpoint, "application/json", true, {
-            key = key,
-            hwid = _hwid,
-            game = game.PlaceId,
-        })
+        return game:HttpGet(_endpoint .. key, true)
     end)
 
     if ok and res then
-        local data = pcall(function() return game:GetService("HttpService"):JSONDecode(res) end)
-        if data and type(data) == "table" and data.valid then
+        local s, data = pcall(function()
+            return game:GetService("HttpService"):JSONDecode(res)
+        end)
+        if s and type(data) == "table" and data.valid then
             _k.v = true
-            _k.s = data.token or key
+            _k.s = data.info and data.info.token or key
             _k.h = _hwid
             _k.t = os.time()
             _k.i = 0x4A + #key
@@ -131,21 +130,20 @@ local function _doValidate(key)
         end
     end
 
-    -- Validate locally as fallback (key format check)
-    local parts = string.split(string.upper(key), "-")
-    if #parts == 4 and parts[1] == "IVORY" and #parts[2] == 4 and #parts[3] == 4 and #parts[4] == 4 then
-        local checksum = 0
-        for i = 2, 4 do
-            for c = 1, #parts[i] do
-                checksum = checksum + string.byte(parts[i], c)
-            end
-        end
-        if checksum % 7 == 0 then
+    -- Lootlabs fallback validation
+    local ok2, res2 = pcall(function()
+        return game:HttpGet("https://creators.lootlabs.gg/api/public/validate?key=" .. key, true)
+    end)
+    if ok2 and res2 then
+        local s2, data2 = pcall(function()
+            return game:GetService("HttpService"):JSONDecode(res2)
+        end)
+        if s2 and type(data2) == "table" and (data2.valid or data2.success) then
             _k.v = true
             _k.s = key
-            _k.h = tostring(checksum)
+            _k.h = _hwid
             _k.t = os.time()
-            _k.i = checksum + 0x4A
+            _k.i = 0x4A + #key
 
             _st.Text = "Access granted"
             _st.TextColor3 = Color3.fromRGB(80, 220, 120)
@@ -157,7 +155,7 @@ local function _doValidate(key)
         end
     end
 
-    _st.Text = "Invalid key"
+    _st.Text = "Invalid key - get one at discord.gg/ivoryhub"
     _st.TextColor3 = Color3.fromRGB(255, 80, 80)
     _btn.Text = "Verify"
     _btn.AutoButtonColor = true
