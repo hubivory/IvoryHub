@@ -188,14 +188,14 @@ Instance.new("UICorner", _lootlabs).CornerRadius = UDim.new(0, 4)
 _lootlabs.MouseButton1Click:Connect(function()
     pcall(function()
         if setclipboard then
-            setclipboard("https://lootlinks.co/s/REPLACE_WITH_YOUR_LOOTLABS_LINK")
+            setclipboard("https://loot-link.com/s?L6z5Q0nE")
             _lootlabs.Text = "Copied!"
             _lootlabs.TextColor3 = Color3.fromRGB(80, 220, 120)
             task.wait(1.5)
             _lootlabs.Text = "Get Key - LootLabs"
             _lootlabs.TextColor3 = Color3.fromRGB(200, 130, 255)
         else
-            _lootlabs.Text = "lootlinks.co/s/REPLACE_WITH_YOUR_LOOTLABS_LINK"
+            _lootlabs.Text = "loot-link.com/s?L6z5Q0nE"
         end
     end)
 end)
