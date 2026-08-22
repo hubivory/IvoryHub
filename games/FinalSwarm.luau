@@ -18,7 +18,7 @@ pcall(function() _kg.Parent = game:GetService("CoreGui") end)
 if not _kg.Parent then _kg.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui") end
 
 local _mf = Instance.new("Frame", _kg)
-_mf.Size = UDim2.new(0, 380, 0, 220)
+_mf.Size = UDim2.new(0, 380, 0, 235)
 _mf.Position = UDim2.new(0.5, -190, 0.5, -110)
 _mf.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 _mf.BorderSizePixel = 0
@@ -79,14 +79,31 @@ _st.TextColor3 = Color3.fromRGB(255, 80, 80)
 _st.TextSize = 12
 _st.Font = Enum.Font.Gotham
 
-local _link = Instance.new("TextLabel", _mf)
-_link.Size = UDim2.new(1, -30, 0, 16)
-_link.Position = UDim2.new(0, 15, 0, 190)
-_link.BackgroundTransparency = 1
-_link.Text = "Get key from: work.ink/ivoryhub"
-_link.TextColor3 = Color3.fromRGB(100, 100, 110)
+local _link = Instance.new("TextButton", _mf)
+_link.Size = UDim2.new(1, -30, 0, 22)
+_link.Position = UDim2.new(0, 15, 0, 188)
+_link.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+_link.BorderSizePixel = 0
+_link.Text = "Get Key - work.ink/ivoryhub"
+_link.TextColor3 = Color3.fromRGB(120, 180, 255)
 _link.TextSize = 11
-_link.Font = Enum.Font.Gotham
+_link.Font = Enum.Font.GothamBold
+_link.AutoButtonColor = true
+Instance.new("UICorner", _link).CornerRadius = UDim.new(0, 4)
+_link.MouseButton1Click:Connect(function()
+    pcall(function()
+        if setclipboard then
+            setclipboard("https://work.ink/ivoryhub")
+            _link.Text = "Copied!"
+            _link.TextColor3 = Color3.fromRGB(80, 220, 120)
+            task.wait(1.5)
+            _link.Text = "Get Key - work.ink/ivoryhub"
+            _link.TextColor3 = Color3.fromRGB(120, 180, 255)
+        else
+            _link.Text = "work.ink/ivoryhub"
+        end
+    end)
+end)
 
 local _awaiting = true
 
