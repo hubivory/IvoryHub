@@ -20,7 +20,7 @@ pcall(function() _kg.Parent = game:GetService("CoreGui") end)
 if not _kg.Parent then _kg.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui") end
 
 local _mf = Instance.new("Frame", _kg)
-_mf.Size = UDim2.new(0, 380, 0, 265)
+_mf.Size = UDim2.new(0, 380, 0, 295)
 _mf.Position = UDim2.new(0.5, -190, 0.5, -110)
 _mf.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 _mf.BorderSizePixel = 0
@@ -125,8 +125,8 @@ if _savedKey and _savedExpiry and os.time() * 1000 < _savedExpiry then
 end
 
 local _discord = Instance.new("TextButton", _mf)
-_discord.Size = UDim2.new(1, -30, 0, 22)
-_discord.Position = UDim2.new(0, 15, 0, 216)
+_discord.Size = UDim2.new(1, -30, 0, 20)
+_discord.Position = UDim2.new(0, 15, 0, 188)
 _discord.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
 _discord.BorderSizePixel = 0
 _discord.Text = "Join for dupe"
@@ -150,6 +150,64 @@ _discord.MouseButton1Click:Connect(function()
     end)
 end)
 
+local _workink = Instance.new("TextButton", _mf)
+_workink.Size = UDim2.new(1, -30, 0, 20)
+_workink.Position = UDim2.new(0, 15, 0, 212)
+_workink.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+_workink.BorderSizePixel = 0
+_workink.Text = "Get Key - Work.ink"
+_workink.TextColor3 = Color3.fromRGB(120, 180, 255)
+_workink.TextSize = 11
+_workink.Font = Enum.Font.GothamBold
+_workink.AutoButtonColor = true
+Instance.new("UICorner", _workink).CornerRadius = UDim.new(0, 4)
+_workink.MouseButton1Click:Connect(function()
+    pcall(function()
+        if setclipboard then
+            setclipboard("https://work.ink/2STL/Ivory")
+            _workink.Text = "Copied!"
+            _workink.TextColor3 = Color3.fromRGB(80, 220, 120)
+            task.wait(1.5)
+            _workink.Text = "Get Key - Work.ink"
+            _workink.TextColor3 = Color3.fromRGB(120, 180, 255)
+        else
+            _workink.Text = "work.ink/2STL/Ivory"
+        end
+    end)
+end)
+
+local _lootlabs = Instance.new("TextButton", _mf)
+_lootlabs.Size = UDim2.new(1, -30, 0, 20)
+_lootlabs.Position = UDim2.new(0, 15, 0, 236)
+_lootlabs.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+_lootlabs.BorderSizePixel = 0
+_lootlabs.Text = "Get Key - LootLabs"
+_lootlabs.TextColor3 = Color3.fromRGB(200, 130, 255)
+_lootlabs.TextSize = 11
+_lootlabs.Font = Enum.Font.GothamBold
+_lootlabs.AutoButtonColor = true
+Instance.new("UICorner", _lootlabs).CornerRadius = UDim.new(0, 4)
+_lootlabs.MouseButton1Click:Connect(function()
+    pcall(function()
+        if setclipboard then
+            setclipboard("https://lootlinks.co/s/REPLACE_WITH_YOUR_LOOTLABS_LINK")
+            _lootlabs.Text = "Copied!"
+            _lootlabs.TextColor3 = Color3.fromRGB(80, 220, 120)
+            task.wait(1.5)
+            _lootlabs.Text = "Get Key - LootLabs"
+            _lootlabs.TextColor3 = Color3.fromRGB(200, 130, 255)
+        else
+            _lootlabs.Text = "lootlinks.co/s/REPLACE_WITH_YOUR_LOOTLABS_LINK"
+        end
+    end)
+end)
+
+local _lootKey = ""
+pcall(function()
+    _lootKey = game:HttpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/lootlabs-key.txt")
+    _lootKey = _lootKey:match("^%s*(.-)%s*$")
+end)
+
 local function _doValidate(key)
     if not key or key == "" then
         _st.Text = "Please enter a key"
@@ -161,6 +219,25 @@ local function _doValidate(key)
     _st.TextColor3 = Color3.fromRGB(180, 170, 255)
     _btn.Text = "..."
     _btn.AutoButtonColor = false
+
+    if _lootKey ~= "" and key == _lootKey then
+        _k.v = true
+        _k.s = key
+        _k.h = _hwid
+        _k.t = os.time()
+        _k.i = 0x4A + #key
+        pcall(function()
+            getgenv()._ivoryKey = key
+            getgenv()._ivoryExpiry = os.time() * 1000 + 43200000
+        end)
+        _st.Text = "Access granted"
+        _st.TextColor3 = Color3.fromRGB(80, 220, 120)
+        _btn.Text = "Loading..."
+        task.wait(0.4)
+        _awaiting = false
+        _kg:Destroy()
+        return
+    end
 
     -- Work.ink public validation (no API key needed)
     local ok, res = pcall(function()
