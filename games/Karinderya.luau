@@ -5,7 +5,7 @@ local _k = { v = false, s = nil, h = nil, i = nil, t = 0 }
 local _kv = getgenv and getgenv() or {}
 local _endpoint = "https://ivoryhub.hubivory.workers.dev/validate"
 local _ksalt = "7x9mK2pL"
-local _hwid = (function() local s,h=pcall(function() return game:GetService("HttpService"):GenerateGUID(false) end); return s and h or "fallback" end)()
+local _hwid = tostring(math.random(100000,999999)) .. tostring(tick()):sub(-6)
 
 local _codeBlock = [[
 local _k={v=false,s=nil,h=nil,i=nil,t=0}
