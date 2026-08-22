@@ -945,11 +945,12 @@ task.spawn(function()
 				local fire = findNearestWarmthFire()
 				if fire then
 					_goingToFire = true
-					hrp.CFrame = fire.CFrame + Vector3.new(0, 3, 0)
+
+					local firePos = fire.Position
+					hrp.CFrame = CFrame.new(firePos.X + 6, firePos.Y + 3, firePos.Z + 6)
 
 					while _coldLevel > 15 do
-						task.wait(1)
-						hrp.CFrame = fire.CFrame + Vector3.new(0, 3, 0)
+						task.wait(2)
 						if not (_k and _k.v and _k.i) then break end
 					end
 
