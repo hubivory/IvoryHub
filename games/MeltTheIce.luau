@@ -456,9 +456,9 @@ local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
 local AutoSub = MainTab:AddSubTab("Automation", "zap")
 local MeltGroup = AutoSub:AddLeftGroupbox("Melt", "flame")
 local SellGroup = AutoSub:AddRightGroupbox("Sell", "coins")
-local CollectGroup = AutoSub:AddLeftGroupbox("Collect", "package")
-local SpinGroup = AutoSub:AddRightGroupbox("Spin", "refresh-cw")
-local PlaytimeGroup = AutoSub:AddLeftGroupbox("Playtime", "clock")
+local CollectGroup = AutoSub:AddRightGroupbox("Collect", "package")
+local SpinGroup = AutoSub:AddLeftGroupbox("Spin", "refresh-cw")
+local PlaytimeGroup = AutoSub:AddRightGroupbox("Playtime", "clock")
 
 MeltGroup:AddToggle("AutoMelt", {
 	Text = "Auto Melt Ice",
@@ -470,15 +470,6 @@ MeltGroup:AddToggle("AutoMelt", {
 	Mode = "Toggle",
 	SyncToggleState = true,
 	NoUI = false,
-})
-
-MeltGroup:AddSlider("MeltSpeed", {
-	Text = "Melt Interval",
-	Default = 0.05,
-	Min = 0.02,
-	Max = 0.5,
-	Rounding = 2,
-	Callback = function(v) STATE.AutoMeltSpeed = v end,
 })
 
 SellGroup:AddToggle("AutoSell", {
@@ -777,15 +768,13 @@ MenuGroup:AddButton("Unload", function()
 	Library:Unload()
 end)
 
-local _meltedWall = nil
-
 task.spawn(function()
 	while true do
-		task.wait(0.5)
+		task.wait(0.3)
 		if STATE.AutoMelt and _k and _k.v and _k.i then
 			pcall(function()
 				local hrp = getHRP()
-				if not hrp then _meltedWall = nil; return end
+				if not hrp then return end
 
 				if not LP:GetAttribute("HoldingItem") then
 					local tool = getTool()
@@ -796,13 +785,6 @@ task.spawn(function()
 				end
 
 				LP:SetAttribute("AutoMelt", true)
-
-				if LP:GetAttribute("Melting") then
-					_meltedWall = true
-					return
-				end
-
-				if _meltedWall then return end
 
 				local wall = nil
 				local bestDist = math.huge
@@ -822,20 +804,15 @@ task.spawn(function()
 				if not wall then return end
 
 				local wallPos = wall.Position
-				local toWall = (wallPos - hrp.Position)
-				local horizontal = Vector3.new(toWall.X, 0, wallPos.Z - hrp.Position.Z)
-				if horizontal.Magnitude < 8 then
-					_meltedWall = true
-					return
-				end
-				local dir = horizontal.Unit
-				local hum = getHum()
-				if hum then
-					hum:MoveTo(hrp.Position + dir * 15)
+				local toWall = Vector3.new(wallPos.X - hrp.Position.X, 0, wallPos.Z - hrp.Position.Z)
+				if toWall.Magnitude > 1 then
+					local dir = toWall.Unit
+					local hum = getHum()
+					if hum then
+						hum:MoveTo(hrp.Position + dir * 10)
+					end
 				end
 			end)
-		else
-			_meltedWall = nil
 		end
 	end
 end)
@@ -849,19 +826,27 @@ task.spawn(function()
 	end
 end)
 
-local COLLECT_NAMES = { Drop = true, Loot = true, Coin = true, Medal = true, Cash = true }
-
 task.spawn(function()
 	while true do
-		task.wait(1)
+		task.wait(0.5)
 		if STATE.AutoCollect and _k and _k.v and _k.i then
 			pcall(function()
 				local hrp = getHRP()
-				if hrp then
-					for _, obj in ipairs(Map:GetDescendants()) do
-						if obj:IsA("BasePart") and COLLECT_NAMES[obj.Name] then
-							if (obj.Position - hrp.Position).Magnitude < 100 then
-								obj.CFrame = hrp.CFrame
+				if not hrp then return end
+				local charFolder = Workspace:FindFirstChild("Drops") or Workspace:FindFirstChild("Items")
+				local folders = { charFolder, Map }
+				for _, folder in ipairs(folders) do
+					if not folder then continue end
+					for _, obj in ipairs(folder:GetDescendants()) do
+						if obj:IsA("ProximityPrompt") then
+							local promptParent = obj.Parent
+							if promptParent then
+								local dist = (promptParent:GetPivot().Position - hrp.Position).Magnitude
+								if dist < 50 then
+									pcall(function() obj:InputHoldBegin() end)
+									task.wait(0.1)
+									pcall(function() obj:InputHoldEnd() end)
+								end
 							end
 						end
 					end
