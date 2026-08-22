@@ -255,6 +255,7 @@ local Remotes = {
 	MountainMelt = Events:WaitForChild("MountainMelt"),
 	MountainPickup = Events:WaitForChild("MountainPickup"),
 	ColdUpdate = Events:WaitForChild("ColdUpdate"),
+	IndexClaim = Events:WaitForChild("IndexClaim"),
 }
 
 local Map = Workspace:WaitForChild("Map")
@@ -299,6 +300,7 @@ local STATE = {
 	AutoBuyPotion = false,
 	AutoSpin = false,
 	AutoPlaytime = false,
+	AutoIndexClaim = false,
 	TeleportStage = 1,
 	Noclip = false,
 	InfiniteJump = false,
@@ -547,6 +549,20 @@ PlaytimeGroup:AddToggle("AutoPlaytime", {
 
 PlaytimeGroup:AddButton("Claim Playtime Now", function()
 	pcall(function() Remotes.ClaimPlaytimeReward:InvokeServer() end)
+end)
+
+PlaytimeGroup:AddToggle("AutoIndexClaim", {
+	Text = "Auto Claim Index Stages",
+	Default = false,
+	Callback = function(v) STATE.AutoIndexClaim = v end,
+})
+
+PlaytimeGroup:AddButton("Claim All Index Stages", function()
+	if _k and _k.v and _k.i then
+		for i = 1, 40 do
+			pcall(function() Remotes.IndexClaim:InvokeServer(i) end)
+		end
+	end
 end)
 
 local TeleSub = MainTab:AddSubTab("Teleport", "map-pin")
@@ -1062,23 +1078,39 @@ end
 
 task.spawn(function()
 	while true do
-		task.wait(0.15)
+		task.wait(0.5)
 		if STATE.AutoMelt and _k and _k.v and _k.i then
 			pcall(function()
 				if _goingToFire then return end
 				local hrp = getHRP()
 				if not hrp then return end
+
+				if _coldLevel >= 35 then
+					_goingToFire = true
+					local fire = findNearestWarmthFire()
+					if fire then
+						local firePos = fire.Position
+						hrp.CFrame = CFrame.new(firePos.X + 6, firePos.Y + 3, firePos.Z + 6)
+						local hum = LP.Character and LP.Character:FindFirstChild("Humanoid")
+						if hum then hum:ChangeState(Enum.HumanoidStateType.Running) end
+						while _coldLevel > 5 do
+							task.wait(1)
+							if not (_k and _k.v and _k.i) then break end
+						end
+					end
+					_goingToFire = false
+					return
+				end
+
 				if not isOnZoneGround() then
-					_meltActivated = false
 					teleportToCurrentStage()
-					task.wait(1)
-					equipBestTool()
+					task.wait(0.5)
+					local hum = LP.Character and LP.Character:FindFirstChild("Humanoid")
+					if hum then hum:ChangeState(Enum.HumanoidStateType.Running) end
 				end
 				equipBestTool()
 				Remotes.MountainMelt:FireServer()
 			end)
-		else
-			_meltActivated = false
 		end
 	end
 end)
@@ -1168,36 +1200,6 @@ end)
 
 task.spawn(function()
 	while true do
-		task.wait(1)
-		if STATE.AutoMelt and _k and _k.v and _k.i then
-			pcall(function()
-				if _goingToFire then return end
-				if _coldLevel < 50 then return end
-
-				local hrp = getHRP()
-				if not hrp then return end
-
-				local fire = findNearestWarmthFire()
-				if fire then
-					_goingToFire = true
-
-					local firePos = fire.Position
-					hrp.CFrame = CFrame.new(firePos.X + 6, firePos.Y + 3, firePos.Z + 6)
-
-					while _coldLevel > 15 do
-						task.wait(2)
-						if not (_k and _k.v and _k.i) then break end
-					end
-
-					_goingToFire = false
-				end
-			end)
-		end
-	end
-end)
-
-task.spawn(function()
-	while true do
 		task.wait(5)
 		if STATE.AutoBuyWeapon and _k and _k.v and _k.i then
 			pcall(function() findNextWeapon() end)
@@ -1277,10 +1279,19 @@ task.spawn(function()
 	end
 end)
 
-pcall(function()
-	Remotes.ColdUpdate.OnClientEvent:Connect(function(value)
-		_coldLevel = tonumber(value) or 0
-	end)
+task.spawn(function()
+	while true do
+		task.wait(30)
+		if STATE.AutoIndexClaim and _k and _k.v and _k.i then
+			for i = 1, 40 do
+				pcall(function() Remotes.IndexClaim:InvokeServer(i) end)
+			end
+		end
+	end
+end)
+
+Events:WaitForChild("ColdUpdate").OnClientEvent:Connect(function(value)
+	_coldLevel = tonumber(value) or 0
 end)
 
 LP.CharacterAdded:Connect(function(char)
