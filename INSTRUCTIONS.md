@@ -2,10 +2,10 @@
 
 ## Branding
 
-- Window Title: "Ivory"
-- Footer: "v1.4 | Lobby/Game | UserId" (copyable)
+- Window Title: `"Ivory"`
+- Footer: `"v1.4 | Lobby/Game | UserId"` (copyable)
 - All GUI text must say "Ivory" -- never display the game name
-- Key UI header: "Ivory Hub"
+- Key UI header: `"Ivory Hub"`
 
 ## Key System
 
@@ -36,85 +36,123 @@ pcall(function() _kg.Parent = game:GetService("CoreGui") end)
 if not _kg.Parent then _kg.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui") end
 ```
 
-### Key UI Layout (Frame: 380x265)
+### Key UI Layout (Frame: 380x295)
 
-- Window: Dark Color3.fromRGB(20, 20, 25), UICorner 8, UIStroke purple 90, 60, 200
-- Title: "Ivory Hub", color 200, 170, 255, size 22, GothamBold
-- Subtitle: "Enter your key to continue", color 140, 140, 150, size 13
-- TextBox: Dark input 30, 30, 38, placeholder "Paste your key here", Gotham code font, UICorner 6
-- Verify Button: Purple 90, 60, 200, white text, GothamBold size 15, UICorner 6
+- Window: Dark `Color3.fromRGB(20, 20, 25)`, UICorner 8, UIStroke purple `90, 60, 200`
+- Title: "Ivory Hub", color `200, 170, 255`, size 22, GothamBold
+- Subtitle: "Enter your key to continue", color `140, 140, 150`, size 13
+- TextBox: Dark input `30, 30, 38`, placeholder "Paste your key here", Gotham code font, UICorner 6
+- Verify Button: Purple `90, 60, 200`, white text, GothamBold size 15, UICorner 6
 - Status Label: Below verify button, shows errors/success
-- Get Key Button: Clickable, dark 35, 35, 42 background, blue text 120, 180, 255, UICorner 4
-  - Text: "Get Key - work.ink/2STL/Ivory"
-  - On click: setclipboard("https://work.ink/2STL/Ivory") then show "Copied!" in green 80, 220, 120
-   - Fallback: if setclipboard unavailable, show the URL as text
-- Discord Button: Clickable, Discord blurple 88, 101, 242 background, white text, UICorner 4
-  - Text: "Join for dupe"
-  - On click: setclipboard("https://discord.gg/mrQFkCJfEe") then show "Copied!" in green
-  - Fallback: if setclipboard unavailable, show "discord.gg/mrQFkCJfEe"
 
-### Validation
+### 3 Key Buttons (below status label, stacked vertically)
+
+**Button 1 - Discord (y=188, height=20)**
+- Background: Discord blurple `88, 101, 242`
+- Text: `"Join for dupe"`, white, GothamBold size 11
+- UICorner 4
+- On click: `setclipboard("https://discord.gg/mrQFkCJfEe")`, show "Copied!" in green `80, 220, 120`, revert after 1.5s
+- Fallback: display URL as text
+
+**Button 2 - Work.ink (y=212, height=20)**
+- Background: dark `35, 35, 42`
+- Text: `"Get Key - Work.ink"`, blue `120, 180, 255`, GothamBold size 11
+- UICorner 4
+- On click: `setclipboard("https://work.ink/2STL/Ivory")`, show "Copied!" in green, revert after 1.5s
+- Fallback: display URL as text
+
+**Button 3 - LootLabs (y=236, height=20)**
+- Background: dark `35, 35, 42`
+- Text: `"Get Key - LootLabs"`, purple `200, 130, 255`, GothamBold size 11
+- UICorner 4
+- On click: `setclipboard("https://loot-link.com/s?L6z5Q0nE")`, show "Copied!" in green, revert after 1.5s
+- Fallback: display URL as text
+
+### LootLabs Key (Embedded Obfuscated)
+
+The LootLabs key is embedded directly in the script, NOT fetched from a public file.
+Split into table parts and concatenated at runtime to avoid plain text in source:
 
 ```lua
+local _lootKey = ""
+do
+    local _e = {"IVORY","-","GHRR","-","6PUO","-","8P69","-","ZKGY"}
+    for _, _p in ipairs(_e) do _lootKey = _lootKey .. _p end
+end
+```
+
+To rotate the LootLabs key: update the table entries in both scripts and push to repo.
+
+### Dual Validation (Work.ink + LootLabs)
+
+In `_doValidate(key)`, check LootLabs key FIRST (exact match), then fall back to Work.ink API:
+
+```lua
+-- LootLabs check (exact match against embedded key)
+if _lootKey ~= "" and key == _lootKey then
+    _k.v = true
+    _k.s = key
+    _k.h = _hwid
+    _k.t = os.time()
+    _k.i = 0x4A + #key
+    pcall(function()
+        getgenv()._ivoryKey = key
+        getgenv()._ivoryExpiry = os.time() * 1000 + 43200000
+        writefile("IvoryKey.txt", key .. "\n" .. tostring(os.time() * 1000 + 43200000))
+    end)
+    _st.Text = "Access granted"
+    _st.TextColor3 = Color3.fromRGB(80, 220, 120)
+    _btn.Text = "Loading..."
+    task.wait(0.4)
+    _awaiting = false
+    _kg:Destroy()
+    return
+end
+
+-- Work.ink check (API validation)
 local ok, res = pcall(function()
     return game:HttpGet("https://work.ink/_api/v2/token/isValid/" .. key .. "?deleteToken=1", true)
 end)
 ```
 
-On valid:
+On valid Work.ink response:
 ```lua
 _k.v = true
 _k.s = key
 _k.h = _hwid
 _k.t = os.time()
 _k.i = 0x4A + #key
-```
-
-On invalid: show "Invalid key - get one at work.ink/2STL/Ivory"
-
-### Integrity Check
-
-Run every 45-90 seconds (random interval):
-
-```lua
-task.spawn(function()
-    while true do
-        task.wait(math.random(45, 90))
-        if _k and _k.v and not _verifyIntegrity() then
-            -- destroy the key GUI to lock the script
-        end
-    end
-end)
-```
-
-### Waiting Loop
-
-After key setup, block until validated:
-
-```lua
-local _awaiting = true
--- ... button connections set _awaiting = false on success ...
-while _awaiting do task.wait(0.1) end
-```
-
-### Key Persistence
-
-After successful validation, save the key to `getgenv()` so it persists across rejoins:
-
-```lua
 pcall(function()
     getgenv()._ivoryKey = key
     getgenv()._ivoryExpiry = data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)
+    writefile("IvoryKey.txt", key .. "\n" .. tostring(data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)))
 end)
 ```
 
-On script start, check for a saved key before showing the UI:
+On invalid: show `"Invalid key - get one at work.ink/2STL/Ivory"`
+
+**Do NOT** remove `deleteToken=1` from the Work.ink URL -- required by Work.ink.
+
+### Key Persistence (writefile/readfile)
+
+Saves to disk with `writefile`/`readfile` so it survives rejoins. Falls back to `getgenv()`.
+
+**On startup** (right after `local _awaiting = true`, BEFORE the Discord button):
 
 ```lua
 local _savedKey = nil
-pcall(function() _savedKey = getgenv()._ivoryKey end)
 local _savedExpiry = nil
-pcall(function() _savedExpiry = getgenv()._ivoryExpiry end)
+pcall(function()
+    if isfile("IvoryKey.txt") then
+        local data = readfile("IvoryKey.txt")
+        _savedKey, _savedExpiry = data:match("^(.-)\n(.-)$")
+        _savedExpiry = tonumber(_savedExpiry)
+    end
+end)
+if not _savedKey then
+    pcall(function() _savedKey = getgenv()._ivoryKey end)
+    pcall(function() _savedExpiry = getgenv()._ivoryExpiry end)
+end
 
 if _savedKey and _savedExpiry and os.time() * 1000 < _savedExpiry then
     _k.v = true
@@ -127,20 +165,45 @@ if _savedKey and _savedExpiry and os.time() * 1000 < _savedExpiry then
 end
 ```
 
-This goes right after `local _awaiting = true` and BEFORE the Discord button.
+### Integrity Check
 
-**Do NOT** remove the `deleteToken=1` from the validation URL — it's required by Work.ink.
+Run every 45-90 seconds (random interval):
+
+```lua
+task.spawn(function()
+    while true do
+        task.wait(math.random(45, 90))
+        if _k and _k.v and not _verifyIntegrity() then
+            pcall(function()
+                for _, gui in ipairs(game:GetService("CoreGui"):GetDescendants()) do
+                    if gui.Name == "IvoryKey" then gui:Destroy() end
+                end
+            end)
+        end
+    end
+end)
+```
+
+### Waiting Loop
+
+After key setup, block until validated:
+
+```lua
+local _awaiting = true
+-- ... persistence check, buttons, etc set _awaiting = false on success ...
+while _awaiting do task.wait(0.1) end
+```
 
 ## Scattered Validation Checks
 
-**Every feature loop** must check _k before executing. Use 4 different patterns randomly:
+**Every feature loop** must check `_k` before executing. Use 4 different patterns randomly:
 
 | Pattern | Where |
 |---------|-------|
-| nd _k and _k.v and _k.i | Main automation features |
-| nd _k and _k.v and _k.s | Secondary automation |
-| nd _k and _k.v | Simple toggles |
-| nd _k and _k.v and _verifyIntegrity() | Speed/movement (risky) |
+| `and _k and _k.v and _k.i` | Main automation features |
+| `and _k and _k.v and _k.s` | Secondary automation |
+| `and _k and _k.v` | Simple toggles |
+| `and _k and _k.v and _verifyIntegrity()` | Speed/movement (risky) |
 
 Example:
 ```lua
@@ -159,6 +222,19 @@ local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
 local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 ```
+
+### ObsidianUltra Key API Notes
+
+- `AddSubTab(Name, Icon)` -- creates sidebar dropdown + button row. Parent tab hides its own columns once it has sub tabs.
+- `SubTab:AddLeftGroupbox(Name, Icon)` / `SubTab:AddRightGroupbox(Name, Icon)` -- columns inside sub tabs.
+- `AddToggle`, `AddSlider`, `AddDropdown`, `AddButton`, `AddLabel`, `AddDivider` -- standard elements.
+- `Dropdown` supports `Searchable = true`, `Expandable = true`, `Multi = true`, `SelectAllButtons = true`.
+- `AddKeyPicker` attaches to toggles: `:AddKeyPicker("Name", { Default, Text, Mode, SyncToggleState, NoUI })`.
+- `AddColorPicker` attaches to labels.
+- `Library:Notify({ Title, Description, Type, Time })` -- Type is "Success", "Info", or "Error".
+- `Library.Scheme.BlueColor` -- available for custom elements.
+- `Window:SetMinimized(true/false)`, `Window:ToggleMinimized()`.
+- Minimize keybind, custom cursor, DPI scale, corner radius all configurable in Settings tab.
 
 ## Window Setup
 
@@ -195,7 +271,7 @@ local Window = Library:CreateWindow({
 
 ## Tab Structure (Sub-Tab Sidebar Style)
 
-Use AddSubTab() for sidebar dropdowns. Do NOT create flat tabs for sub-sections.
+Use `AddSubTab()` for sidebar dropdowns. Do NOT create flat tabs for sub-sections.
 
 ```lua
 local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
@@ -205,7 +281,7 @@ local Group = SubTab:AddLeftGroupbox("Feature Group", "box-icon")
 
 ### Typical Tab Layout
 
-`
+```
 Tab: Main
   SubTab: Automation
     LeftGroupbox: Core Features
@@ -230,7 +306,7 @@ Tab: Settings (always last)
   ThemeManager:ApplyToTab(SettingsTab)
   SaveManager:BuildConfigSection(SettingsTab)
   LeftGroupbox: Menu (keybind, cursor, DPI, unload)
-`
+```
 
 ## Theme and Save Manager
 
@@ -279,8 +355,11 @@ local GameScripts = {
 Before submitting a script, verify all of these:
 
 - [ ] Key system block at very top of file
-- [ ] Key UI with Ivory branding, Get Key button, Discord button, work.ink validation
-- [ ] Key persistence: save to getgenv after validation, check on startup
+- [ ] 3 key buttons: Discord ("Join for dupe"), Work.ink, LootLabs
+- [ ] LootLabs key embedded obfuscated (table parts, not fetched from public file)
+- [ ] Dual validation: LootLabs exact match first, then Work.ink API
+- [ ] Key persistence: writefile/readfile to IvoryKey.txt, fallback to getgenv
+- [ ] Key saved after BOTH LootLabs and Work.ink validation
 - [ ] Window title says "Ivory" (not the game name)
 - [ ] Footer shows "v1.4 | Lobby/Game | UserId"
 - [ ] Sub-tab sidebar structure with AddSubTab (not flat tabs)
