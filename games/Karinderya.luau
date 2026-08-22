@@ -3,7 +3,7 @@
 -- ═══════════════════════════════════════════════════════════════
 local _k = { v = false, s = nil, h = nil, i = nil, t = 0 }
 local _kv = getgenv and getgenv() or {}
-local _endpoint = "https://ivory-key.your-name.workers.dev/validate"
+local _endpoint = "https://ivoryhub.hubivory.workers.dev/validate"
 local _ksalt = "7x9mK2pL"
 local _hwid = game:FindFirstChild("HttpService") and HttpService:GenerateGUID(false) or "fallback"
 
