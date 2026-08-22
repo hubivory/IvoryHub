@@ -370,3 +370,7 @@ Before submitting a script, verify all of these:
 - [ ] Game added to IvoryHub.luau loader with correct PlaceId(s)
 - [ ] No game names anywhere in the UI
 - [ ] Make sure that YOU HAVE TESTED THE ENTIRE SCRIPT, MADE SURE EVERYTHING WORKS AND YOU HAVE ADDED EVERY SINGLE POSSIBLE FEATURE.
+
+
+
+
