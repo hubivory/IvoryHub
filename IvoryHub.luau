@@ -8,6 +8,7 @@ local GameScripts = {
     [116497287371701] = "games/Karinderya.luau",
     [99521272836282] = "games/FinalSwarm.luau",
     [79787558257549] = "games/FinalSwarm.luau",
+    [95919006508862] = "games/MeltTheIce.luau",
     -- Add more: [PlaceId] = "games/ScriptName.luau"
 }
 
