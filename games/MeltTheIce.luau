@@ -252,6 +252,7 @@ local Remotes = {
 	BuyPotion = Events:WaitForChild("BuyPotion"),
 	ClaimPlaytimeReward = Events:WaitForChild("ClaimPlaytimeReward"),
 	HoldItem = Events:WaitForChild("HoldItem"),
+	MountainMelt = Events:WaitForChild("MountainMelt"),
 }
 
 local Map = Workspace:WaitForChild("Map")
@@ -337,7 +338,10 @@ local function teleportToZone(zoneNum)
 	if zone then
 		local hrp = getHRP()
 		if hrp then
-			hrp.CFrame = CFrame.new(zone.WorldPivot.Position + Vector3.new(0, 5, 0))
+			local ground = zone:FindFirstChild("ZoneGround") or zone:FindFirstChildWhichIsA("BasePart")
+			if ground then
+				hrp.CFrame = ground.CFrame + Vector3.new(0, 5, 0)
+			end
 		end
 	end
 end
@@ -775,15 +779,21 @@ end)
 
 task.spawn(function()
 	while true do
-		task.wait(0.5)
+		task.wait(STATE.AutoMeltSpeed)
 		if STATE.AutoMelt and _k and _k.v and _k.i then
 			pcall(function()
-				LP:SetAttribute("AutoMelt", true)
-			end)
-		elseif not STATE.AutoMelt then
-			pcall(function()
-				if LP:GetAttribute("AutoMelt") == true then
-					LP:SetAttribute("AutoMelt", false)
+				local tool = getTool()
+				if not tool then
+					for _, t in ipairs(LP.Backpack:GetChildren()) do
+						if t:IsA("Tool") then
+							t.Parent = LP.Character
+							tool = t
+							break
+						end
+					end
+				end
+				if tool then
+					Remotes.MountainMelt:FireServer()
 				end
 			end)
 		end
@@ -799,6 +809,8 @@ task.spawn(function()
 	end
 end)
 
+local COLLECT_NAMES = { Drop = true, Loot = true, Coin = true, Medal = true, Cash = true }
+
 task.spawn(function()
 	while true do
 		task.wait(1)
@@ -807,7 +819,7 @@ task.spawn(function()
 				local hrp = getHRP()
 				if hrp then
 					for _, obj in ipairs(Map:GetDescendants()) do
-						if obj:IsA("BasePart") and obj.Name:match("Drop|Loot|Coin|Medal|Cash") then
+						if obj:IsA("BasePart") and COLLECT_NAMES[obj.Name] then
 							if (obj.Position - hrp.Position).Magnitude < 100 then
 								obj.CFrame = hrp.CFrame
 							end
