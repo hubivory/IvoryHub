@@ -56,7 +56,7 @@ end
 local Window = Library:CreateWindow({
     Title = "Ivory",
     Footer = {
-        "Ivory | Karinderya",
+        "Ivory",
         { Text = "v1.0", Copyable = true },
     },
     Minimizable = true,
