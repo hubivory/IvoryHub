@@ -212,10 +212,10 @@ _lootlabs.MouseButton1Click:Connect(function()
 end)
 
 local _lootKey = ""
-pcall(function()
-    _lootKey = game:HttpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/lootlabs-key.txt")
-    _lootKey = _lootKey:match("^%s*(.-)%s*$")
-end)
+do
+    local _e = {"IVORY","-","GHRR","-","6PUO","-","8P69","-","ZKGY"}
+    for _, _p in ipairs(_e) do _lootKey = _lootKey .. _p end
+end
 
 local function _doValidate(key)
     if not key or key == "" then
