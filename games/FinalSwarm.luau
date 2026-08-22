@@ -107,6 +107,21 @@ end)
 
 local _awaiting = true
 
+local _savedKey = nil
+pcall(function() _savedKey = getgenv()._ivoryKey end)
+local _savedExpiry = nil
+pcall(function() _savedExpiry = getgenv()._ivoryExpiry end)
+
+if _savedKey and _savedExpiry and os.time() * 1000 < _savedExpiry then
+    _k.v = true
+    _k.s = _savedKey
+    _k.h = _hwid
+    _k.t = os.time()
+    _k.i = 0x4A + #_savedKey
+    _awaiting = false
+    pcall(function() _kg:Destroy() end)
+end
+
 local _discord = Instance.new("TextButton", _mf)
 _discord.Size = UDim2.new(1, -30, 0, 22)
 _discord.Position = UDim2.new(0, 15, 0, 216)
@@ -166,6 +181,10 @@ local function _doValidate(key)
             _k.h = _hwid
             _k.t = os.time()
             _k.i = 0x4A + #key
+            pcall(function()
+                getgenv()._ivoryKey = key
+                getgenv()._ivoryExpiry = data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)
+            end)
             _st.Text = "Access granted"
             _st.TextColor3 = Color3.fromRGB(80, 220, 120)
             _btn.Text = "Loading..."
