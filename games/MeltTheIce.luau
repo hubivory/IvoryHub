@@ -774,17 +774,8 @@ task.spawn(function()
 		if STATE.AutoMelt and _k and _k.v and _k.i then
 			pcall(function()
 				local hrp = getHRP()
-				if not hrp then return end
-
-				if not LP:GetAttribute("HoldingItem") then
-					local tool = getTool()
-					if tool then
-						Remotes.HoldItem:FireServer(tool:GetAttribute("WeaponId"))
-					end
-					return
-				end
-
-				LP:SetAttribute("AutoMelt", true)
+				local hum = getHum()
+				if not hrp or not hum then return end
 
 				local wall = nil
 				local bestDist = math.huge
@@ -805,12 +796,10 @@ task.spawn(function()
 
 				local wallPos = wall.Position
 				local toWall = Vector3.new(wallPos.X - hrp.Position.X, 0, wallPos.Z - hrp.Position.Z)
-				if toWall.Magnitude > 1 then
-					local dir = toWall.Unit
-					local hum = getHum()
-					if hum then
-						hum:MoveTo(hrp.Position + dir * 10)
-					end
+				if toWall.Magnitude > 3 then
+					hum:MoveTo(hrp.Position + toWall.Unit * 8)
+				else
+					Remotes.MountainMelt:FireServer()
 				end
 			end)
 		end
@@ -828,25 +817,20 @@ end)
 
 task.spawn(function()
 	while true do
-		task.wait(0.5)
+		task.wait(0.3)
 		if STATE.AutoCollect and _k and _k.v and _k.i then
 			pcall(function()
 				local hrp = getHRP()
 				if not hrp then return end
-				local charFolder = Workspace:FindFirstChild("Drops") or Workspace:FindFirstChild("Items")
-				local folders = { charFolder, Map }
-				for _, folder in ipairs(folders) do
-					if not folder then continue end
-					for _, obj in ipairs(folder:GetDescendants()) do
-						if obj:IsA("ProximityPrompt") then
-							local promptParent = obj.Parent
-							if promptParent then
-								local dist = (promptParent:GetPivot().Position - hrp.Position).Magnitude
-								if dist < 50 then
-									pcall(function() obj:InputHoldBegin() end)
-									task.wait(0.1)
-									pcall(function() obj:InputHoldEnd() end)
-								end
+				for _, obj in ipairs(workspace:GetDescendants()) do
+					if obj:IsA("ProximityPrompt") and obj.Name == "DropPrompt" then
+						local pp = obj.Parent
+						if pp then
+							local pos = pp:IsA("Model") and pp:GetPivot().Position or (pp:IsA("BasePart") and pp.Position or nil)
+							if pos and (pos - hrp.Position).Magnitude < 50 then
+								pcall(function() obj:InputHoldBegin() end)
+								task.wait(0.1)
+								pcall(function() obj:InputHoldEnd() end)
 							end
 						end
 					end
