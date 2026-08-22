@@ -1014,11 +1014,14 @@ local function activateGameAutoMelt()
 	local btn = HUD:FindFirstChild("AutoMeltBTN", true)
 	if btn and btn.Visible then
 		local onBtn = btn:FindFirstChild("AutoMeltOn", true)
-		if onBtn and onBtn:IsA("ImageButton") then
+		local offClip = btn:FindFirstChild("AutoMeltOffClip", true)
+		if onBtn and onBtn.Visible then
 			local pos = onBtn.AbsolutePosition + onBtn.AbsoluteSize / 2
 			mousemoveabs(pos.X, pos.Y)
 			task.wait(0.1)
 			mouse1click()
+			_meltActivated = true
+		elseif offClip and offClip.Visible then
 			_meltActivated = true
 		end
 	end
@@ -1030,20 +1033,26 @@ local function teleportToCurrentStage()
 	local level = getCurrentStage()
 	for _, obj in ipairs(Map:GetDescendants()) do
 		if obj:IsA("BasePart") and obj:GetAttribute("MountainWall") and obj:GetAttribute("Level") == level then
+			local icePos = obj.Position
+			local iceSize = obj.Size
 			local zoneGround = nil
 			for _, zg in ipairs(Map:GetDescendants()) do
 				if zg:IsA("BasePart") and zg.Name == "ZoneGround" then
-					local zLevel = zg.Parent and zg.Parent.Name and zg.Parent.Name:match("Zone (%d+)")
-					if zLevel and tonumber(zLevel) == level then
+					if zg:IsDescendantOf(obj.Parent) then
 						zoneGround = zg
 						break
 					end
 				end
 			end
+			local groundY = 3
 			if zoneGround then
-				hrp.CFrame = CFrame.new(zoneGround.Position.X, zoneGround.Position.Y + 4, zoneGround.Position.Z - 30)
-			else
-				hrp.CFrame = CFrame.new(obj.Position.X, 3, obj.Position.Z - 60)
+				groundY = zoneGround.Position.Y + zoneGround.Size.Y / 2 + 3
+			end
+			local spawnZ = icePos.Z - iceSize.Z / 2 - 15
+			hrp.CFrame = CFrame.new(icePos.X, groundY, spawnZ)
+			local humanoid = LP.Character and LP.Character:FindFirstChild("Humanoid")
+			if humanoid then
+				humanoid:ChangeState(Enum.HumanoidStateType.Running)
 			end
 			return true
 		end
@@ -1053,7 +1062,7 @@ end
 
 task.spawn(function()
 	while true do
-		task.wait(1)
+		task.wait(2)
 		if STATE.AutoMelt and _k and _k.v and _k.i then
 			pcall(function()
 				if _goingToFire then return end
@@ -1063,13 +1072,8 @@ task.spawn(function()
 					_meltActivated = false
 					teleportToCurrentStage()
 					task.wait(1)
-				end
-				if not _meltActivated then
 					activateGameAutoMelt()
-				end
-				if LP:GetAttribute("Melting") ~= true then
-					_meltActivated = false
-					aimCameraAtIceWall(getCurrentStage())
+				elseif not _meltActivated then
 					activateGameAutoMelt()
 				end
 			end)
