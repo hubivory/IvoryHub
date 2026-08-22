@@ -796,15 +796,16 @@ end
 
 local function findNearestDrop()
 	local hrp = getHRP()
-	if not hrp then return nil end
+	if not hrp then return nil, math.huge end
 	local best, bestDist = nil, math.huge
 	for _, obj in ipairs(workspace:GetDescendants()) do
-		if obj:IsA("BasePart") and obj:GetAttribute("MountainIdx") then
-			if obj:FindFirstChildWhichIsA("ProximityPrompt") then
-				local d = (obj.Position - hrp.Position).Magnitude
+		if obj:IsA("ProximityPrompt") and obj.Name == "DropPrompt" and obj.Enabled then
+			local parent = obj.Parent
+			if parent and parent:IsA("BasePart") then
+				local d = (parent.Position - hrp.Position).Magnitude
 				if d < bestDist then
 					bestDist = d
-					best = obj
+					best = parent
 				end
 			end
 		end
@@ -838,35 +839,8 @@ task.spawn(function()
 		if STATE.AutoMelt and _k and _k.v and _k.i then
 			pcall(function()
 				local hrp = getHRP()
-				local hum = getHum()
-				if not hrp or not hum then return end
-
+				if not hrp then return end
 				activateGameAutoMelt()
-
-				if _goingToFire or _collectingDrop then return end
-
-				local wall = nil
-				local bestDist = math.huge
-				for _, obj in ipairs(Map:GetDescendants()) do
-					if obj:IsA("BasePart") and obj:GetAttribute("MountainWall") then
-						local rem = obj:GetAttribute("VisRem") or 0
-						if rem > 0.01 then
-							local dist = (obj.Position - hrp.Position).Magnitude
-							if dist < bestDist then
-								bestDist = dist
-								wall = obj
-							end
-						end
-					end
-				end
-
-				if wall then
-					local wallPos = wall.Position
-					local toWall = Vector3.new(wallPos.X - hrp.Position.X, 0, wallPos.Z - hrp.Position.Z)
-					if toWall.Magnitude > 5 then
-						hum:MoveTo(hrp.Position + toWall.Unit * 8)
-					end
-				end
 			end)
 		else
 			_meltActivated = false
@@ -893,30 +867,26 @@ task.spawn(function()
 				if _collectingDrop then return end
 
 				local drop, dist = findNearestDrop()
-				if drop and dist < 80 then
+				if drop and dist < 200 then
 					_collectingDrop = true
-					local idx = drop:GetAttribute("MountainIdx")
-					local targetPos = drop.Position
 
-					hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 3, 0))
-					task.wait(0.2)
+					hrp.CFrame = CFrame.new(drop.Position + Vector3.new(0, 3, 0))
+					task.wait(0.15)
 
-					if idx then
-						pcall(function() Remotes.MountainPickup:FireServer(idx) end)
-						task.wait(0.3)
-					end
-
-					if drop and drop.Parent then
+					local prompt = drop:FindFirstChildWhichIsA("ProximityPrompt")
+					if prompt and prompt.Enabled then
+						local idx = prompt:GetAttribute("MountainIdx")
+						if idx then
+							pcall(function() Remotes.MountainPickup:FireServer(idx) end)
+						end
 						pcall(function()
-							local pp = drop:FindFirstChildWhichIsA("ProximityPrompt")
-							if pp then
-								pp:InputHoldBegin()
-								task.wait(pp.HoldDuration + 0.2)
-								pp:InputHoldEnd()
-							end
+							prompt:InputHoldBegin()
+							task.wait(prompt.HoldDuration + 0.3)
+							prompt:InputHoldEnd()
 						end)
 					end
 
+					task.wait(0.3)
 					_collectingDrop = false
 				end
 			end)
