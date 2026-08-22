@@ -848,11 +848,48 @@ task.spawn(function()
 	end
 end)
 
+local function isBagFull()
+	local ok, result = pcall(function()
+		local HUD = LP:WaitForChild("PlayerGui"):WaitForChild("HUD", 5)
+		if not HUD then return false end
+
+		local toast = HUD:FindFirstChild("notificationToast", true)
+		if toast then
+			local ml = toast:FindFirstChild("MedalsLabel", true)
+			if ml and ml:IsA("TextLabel") and ml.Text:find("FULL") then
+				return true
+			end
+		end
+
+		local amt = HUD:FindFirstChild("Boosts", true)
+		if amt then
+			amt = amt:FindFirstChild("backpack", true)
+			if amt then
+				amt = amt:FindFirstChild("amount", true)
+				if amt and amt:IsA("TextLabel") then
+					local cur, max = amt.Text:match("(%d+)/(%d+)")
+					if cur and max then
+						return tonumber(cur) >= tonumber(max)
+					end
+				end
+			end
+		end
+
+		return false
+	end)
+	return ok and result
+end
+
 task.spawn(function()
 	while true do
-		task.wait(STATE.AutoSellInterval)
+		task.wait(1)
 		if STATE.AutoSell and _k and _k.v and _k.s then
-			pcall(function() Remotes.SellAll:InvokeServer() end)
+			pcall(function()
+				if isBagFull() then
+					Remotes.SellAll:InvokeServer()
+					task.wait(2)
+				end
+			end)
 		end
 	end
 end)
