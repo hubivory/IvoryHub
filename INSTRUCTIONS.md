@@ -369,3 +369,4 @@ Before submitting a script, verify all of these:
 - [ ] Settings tab with menu controls (always last tab)
 - [ ] Game added to IvoryHub.luau loader with correct PlaceId(s)
 - [ ] No game names anywhere in the UI
+- [ ] Make sure that YOU HAVE TESTED THE ENTIRE SCRIPT, MADE SURE EVERYTHING WORKS AND YOU HAVE ADDED EVERY SINGLE POSSIBLE FEATURE.
