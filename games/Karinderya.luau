@@ -67,49 +67,43 @@ local Window = Library:CreateWindow({
 -- TABS
 local MainTab = Window:AddTab({ Name = "Main", Icon = "utensils", Description = "Core Automation" })
 local PlayerTab = Window:AddTab({ Name = "Player", Icon = "user", Description = "Character Mods" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings", Description = "Theme & Config" })
 
--- ============================================
--- MAIN TAB - Automation
--- ============================================
+-- MAIN TAB
+local AutomationBox = MainTab:AddLeftGroupbox("Automation", "zap")
 
--- Auto Section
-local AutoSection = MainTab:AddLeftGroupbox("Automation", "zap")
-
-AutoSection:AddToggle("AutoServe", {
+AutomationBox:AddToggle("AutoServe", {
     Text = "Auto Serve Food",
     Default = false,
     Tooltip = "Automatically serves cooked food to tables",
 })
 
-AutoSection:AddToggle("AutoOrder", {
+AutomationBox:AddToggle("AutoOrder", {
     Text = "Auto Assign Customers",
     Default = false,
     Tooltip = "Automatically assigns waiting customers to available tables",
 })
 
-AutoSection:AddToggle("AutoClaimCodes", {
+AutomationBox:AddToggle("AutoClaimCodes", {
     Text = "Auto Claim Codes",
     Default = false,
     Tooltip = "Automatically redeems the current active code",
 })
 
-AutoSection:AddToggle("AutoPan", {
+AutomationBox:AddToggle("AutoPan", {
     Text = "Auto Pan (Hit Runaway)",
     Default = false,
     Tooltip = "Automatically equips Pan and hits runaway NPCs",
 })
 
-AutoSection:AddToggle("AutoCleanTrash", {
+AutomationBox:AddToggle("AutoCleanTrash", {
     Text = "Auto Clean Tables",
     Default = false,
     Tooltip = "Automatically cleans dirty tables after customers leave",
 })
 
--- Delays Section
-local DelaysSection = MainTab:AddRightGroupbox("Delays", "clock")
+local SettingsBox = MainTab:AddRightGroupbox("Settings", "settings")
 
-DelaysSection:AddSlider("ServeDelay", {
+SettingsBox:AddSlider("ServeDelay", {
     Text = "Serve Check Delay",
     Default = 2,
     Min = 0.5,
@@ -119,7 +113,7 @@ DelaysSection:AddSlider("ServeDelay", {
     Tooltip = "Delay between auto serve checks",
 })
 
-DelaysSection:AddSlider("OrderDelay", {
+SettingsBox:AddSlider("OrderDelay", {
     Text = "Order Check Delay",
     Default = 2,
     Min = 0.5,
@@ -129,7 +123,7 @@ DelaysSection:AddSlider("OrderDelay", {
     Tooltip = "Delay between auto order checks",
 })
 
-DelaysSection:AddSlider("CleanDelay", {
+SettingsBox:AddSlider("CleanDelay", {
     Text = "Clean Check Delay",
     Default = 3,
     Min = 1,
@@ -139,14 +133,10 @@ DelaysSection:AddSlider("CleanDelay", {
     Tooltip = "Delay between table clean checks",
 })
 
--- ============================================
 -- PLAYER TAB
--- ============================================
+local CharacterBox = PlayerTab:AddLeftGroupbox("Character", "person-standing")
 
--- Character Section
-local CharacterSection = PlayerTab:AddLeftGroupbox("Character", "person-standing")
-
-CharacterSection:AddSlider("WalkSpeed", {
+CharacterBox:AddSlider("WalkSpeed", {
     Text = "Walk Speed",
     Default = 16,
     Min = 16,
@@ -155,94 +145,81 @@ CharacterSection:AddSlider("WalkSpeed", {
     Tooltip = "Character walk speed (default: 16)",
 })
 
-CharacterSection:AddToggle("InfiniteJump", {
+CharacterBox:AddToggle("InfiniteJump", {
     Text = "Infinite Jump",
     Default = false,
     Tooltip = "Allows unlimited jumping",
 })
 
--- Teleports Section
-local TeleportSection = PlayerTab:AddRightGroupbox("Teleports", "map-pin")
+local MiscBox = PlayerTab:AddRightGroupbox("Miscellaneous", "wrench")
 
-TeleportSection:AddButton("Counter", function()
-    local plot = getPlot()
-    if plot then
-        local counter = plot:FindFirstChild("Counter")
-        if counter then
-            local comp = counter:FindFirstChild("Comp", true)
-            if comp then
-                local char = LocalPlayer.Character
-                if char then
-                    local hrp = char:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        hrp.CFrame = comp.CFrame * CFrame.new(0, 3, 0)
+MiscBox:AddButton({
+    Text = "Teleport to Counter",
+    Func = function()
+        local plot = getPlot()
+        if plot then
+            local counter = plot:FindFirstChild("Counter")
+            if counter then
+                local comp = counter:FindFirstChild("Comp")
+                if comp and comp:FindFirstChild("ProximityPrompt") then
+                    local char = LocalPlayer.Character
+                    if char then
+                        local hrp = char:FindFirstChild("HumanoidRootPart")
+                        if hrp then
+                            hrp.CFrame = comp.CFrame * CFrame.new(0, 3, 0)
+                        end
                     end
                 end
             end
         end
-    end
-end)
+    end,
+})
 
-TeleportSection:AddButton("Kitchen", function()
-    local plot = getPlot()
-    if plot then
-        local kitchen = plot:FindFirstChild("KitchenPlot1")
-        if kitchen then
-            local first = kitchen:GetChildren()[1]
-            if first then
-                local char = LocalPlayer.Character
-                if char then
-                    local hrp = char:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        hrp.CFrame = first:GetPivot() * CFrame.new(0, 3, 0)
+MiscBox:AddButton({
+    Text = "Teleport to Kitchen",
+    Func = function()
+        local plot = getPlot()
+        if plot then
+            local kitchen = plot:FindFirstChild("KitchenPlot1")
+            if kitchen then
+                local first = kitchen:GetChildren()[1]
+                if first then
+                    local char = LocalPlayer.Character
+                    if char then
+                        local hrp = char:FindFirstChild("HumanoidRootPart")
+                        if hrp then
+                            hrp.CFrame = first:GetPivot() * CFrame.new(0, 3, 0)
+                        end
                     end
                 end
             end
         end
-    end
-end)
+    end,
+})
 
-TeleportSection:AddButton("Serve Area", function()
-    local plot = getPlot()
-    if plot then
-        local serve = plot:FindFirstChild("Serve")
-        if serve then
-            local first = serve:GetChildren()[1]
-            if first then
-                local char = LocalPlayer.Character
-                if char then
-                    local hrp = char:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        hrp.CFrame = first:GetPivot() * CFrame.new(0, 3, 0)
+MiscBox:AddButton({
+    Text = "Teleport to Serve Area",
+    Func = function()
+        local plot = getPlot()
+        if plot then
+            local serve = plot:FindFirstChild("Serve")
+            if serve then
+                local first = serve:GetChildren()[1]
+                if first then
+                    local char = LocalPlayer.Character
+                    if char then
+                        local hrp = char:FindFirstChild("HumanoidRootPart")
+                        if hrp then
+                            hrp.CFrame = first:GetPivot() * CFrame.new(0, 3, 0)
+                        end
                     end
                 end
             end
         end
-    end
-end)
+    end,
+})
 
--- ============================================
--- SETTINGS TAB
--- ============================================
-
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({})
-
-ThemeManager:SetFolder("IvoryScript")
-SaveManager:SetFolder("IvoryScript/saves")
-
-ThemeManager:ApplyToTab(SettingsTab)
-
-SaveManager:BuildConfigSection(SettingsTab)
-SaveManager:LoadAutoloadConfig()
-
--- ============================================
 -- TOGGLE CALLBACKS
--- ============================================
-
 Toggles.AutoServe:OnChanged(function(state)
     autoServeEnabled = state
 end)
@@ -274,10 +251,6 @@ end)
 Toggles.InfiniteJump:OnChanged(function(state)
     infiniteJumpEnabled = state
 end)
-
--- ============================================
--- LOOPS
--- ============================================
 
 -- AUTO SERVE LOOP
 task.spawn(function()
@@ -481,5 +454,20 @@ UserInputService.JumpRequest:Connect(function()
         end
     end
 end)
+
+-- THEME MANAGER & SAVE MANAGER
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({})
+
+ThemeManager:SetFolder("KarinderyaScript")
+SaveManager:SetFolder("KarinderyaScript/saves")
+
+ThemeManager:ApplyToTab(MainTab)
+
+SaveManager:BuildConfigSection(MainTab)
+SaveManager:LoadAutoloadConfig()
 
 Library:Toggle()
