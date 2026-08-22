@@ -775,17 +775,15 @@ end)
 
 task.spawn(function()
 	while true do
-		task.wait(STATE.AutoMeltSpeed)
+		task.wait(0.5)
 		if STATE.AutoMelt and _k and _k.v and _k.i then
 			pcall(function()
-				local tool = getTool()
-				if tool then
-					if not LP.Character:FindFirstChild(tool.Name) then
-						tool.Parent = LP.Character
-					end
-					mouse1press()
-					task.wait(0.05)
-					mouse1release()
+				LP:SetAttribute("AutoMelt", true)
+			end)
+		elseif not STATE.AutoMelt then
+			pcall(function()
+				if LP:GetAttribute("AutoMelt") == true then
+					LP:SetAttribute("AutoMelt", false)
 				end
 			end)
 		end
