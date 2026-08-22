@@ -97,6 +97,40 @@ local _awaiting = true
 while _awaiting do task.wait(0.1) end
 ```
 
+### Key Persistence
+
+After successful validation, save the key to `getgenv()` so it persists across rejoins:
+
+```lua
+pcall(function()
+    getgenv()._ivoryKey = key
+    getgenv()._ivoryExpiry = data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)
+end)
+```
+
+On script start, check for a saved key before showing the UI:
+
+```lua
+local _savedKey = nil
+pcall(function() _savedKey = getgenv()._ivoryKey end)
+local _savedExpiry = nil
+pcall(function() _savedExpiry = getgenv()._ivoryExpiry end)
+
+if _savedKey and _savedExpiry and os.time() * 1000 < _savedExpiry then
+    _k.v = true
+    _k.s = _savedKey
+    _k.h = _hwid
+    _k.t = os.time()
+    _k.i = 0x4A + #_savedKey
+    _awaiting = false
+    pcall(function() _kg:Destroy() end)
+end
+```
+
+This goes right after `local _awaiting = true` and BEFORE the Discord button.
+
+**Do NOT** remove the `deleteToken=1` from the validation URL — it's required by Work.ink.
+
 ## Scattered Validation Checks
 
 **Every feature loop** must check _k before executing. Use 4 different patterns randomly:
@@ -245,7 +279,8 @@ local GameScripts = {
 Before submitting a script, verify all of these:
 
 - [ ] Key system block at very top of file
-- [ ] Key UI with Ivory branding, Get Key button, work.ink validation
+- [ ] Key UI with Ivory branding, Get Key button, Discord button, work.ink validation
+- [ ] Key persistence: save to getgenv after validation, check on startup
 - [ ] Window title says "Ivory" (not the game name)
 - [ ] Footer shows "v1.4 | Lobby/Game | UserId"
 - [ ] Sub-tab sidebar structure with AddSubTab (not flat tabs)
