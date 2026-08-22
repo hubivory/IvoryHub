@@ -111,7 +111,7 @@ end
 
 -- Work.ink check (API validation)
 local ok, res = pcall(function()
-    return game:HttpGet("https://work.ink/_api/v2/token/isValid/" .. key .. "?deleteToken=1", true)
+    return request({ Url = "https://work.ink/_api/v2/token/isValid/" .. key .. "?deleteToken=1", Method = "GET" })
 end)
 ```
 
@@ -218,19 +218,23 @@ end
 
 ```lua
 local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+local function httpGet(url)
+    return request({ Url = url, Method = "GET" }).Body
+end
+local Library = loadstring(httpGet(repo .. "Library.lua"))()
+local ThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
+local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
 ```
 
 ### ObsidianUltra Key API Notes
 
 - `AddSubTab(Name, Icon)` -- creates sidebar dropdown + button row. Parent tab hides its own columns once it has sub tabs.
 - `SubTab:AddLeftGroupbox(Name, Icon)` / `SubTab:AddRightGroupbox(Name, Icon)` -- columns inside sub tabs.
-- `AddToggle`, `AddSlider`, `AddDropdown`, `AddButton`, `AddLabel`, `AddDivider` -- standard elements.
+- `AddToggle`, `AddSlider`, `AddDropdown`, `AddLabel`, `AddDivider` -- standard elements.
+- `AddButton` takes a string and callback: `Group:AddButton("Text", function() ... end)` -- do NOT use `{Text = ..., Func = ...}`.
 - `Dropdown` supports `Searchable = true`, `Expandable = true`, `Multi = true`, `SelectAllButtons = true`.
 - `AddKeyPicker` attaches to toggles: `:AddKeyPicker("Name", { Default, Text, Mode, SyncToggleState, NoUI })`.
-- `AddColorPicker` attaches to labels.
+- `AddColorPicker` must be chained on a label: `Group:AddLabel("Label Text"):AddColorPicker("Name", { Default, Title, Callback })`.
 - `Library:Notify({ Title, Description, Type, Time })` -- Type is "Success", "Info", or "Error".
 - `Library.Scheme.BlueColor` -- available for custom elements.
 - `Window:SetMinimized(true/false)`, `Window:ToggleMinimized()`.
@@ -363,6 +367,8 @@ Before submitting a script, verify all of these:
 - [ ] Window title says "Ivory" (not the game name)
 - [ ] Footer shows "v1.4 | Lobby/Game | UserId"
 - [ ] Sub-tab sidebar structure with AddSubTab (not flat tabs)
+- [ ] All AddButton calls use `Group:AddButton("Text", function() ... end)` format (not `{Text=..., Func=...}`)
+- [ ] All AddColorPicker calls chained on AddLabel (not called directly on group)
 - [ ] Scattered _k checks across ALL feature loops using 4 different patterns
 - [ ] Integrity check running in background (45-90s interval)
 - [ ] ThemeManager + SaveManager setup

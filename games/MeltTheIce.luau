@@ -840,6 +840,76 @@ local _coldLevel = 0
 local _goingToFire = false
 local _collectingDrop = false
 
+local function isOnZoneGround()
+	local hrp = getHRP()
+	if not hrp then return false end
+	for _, obj in ipairs(Map:GetDescendants()) do
+		if obj:IsA("BasePart") and obj.Name == "ZoneGround" then
+			local pos = obj.Position
+			local size = obj.Size
+			local lp = hrp.Position
+			if math.abs(lp.X - pos.X) < size.X / 2 + 10
+				and math.abs(lp.Z - pos.Z) < size.Z / 2 + 10
+				and math.abs(lp.Y - pos.Y) < 30 then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+local function getMedals()
+	local ok, v = pcall(function()
+		return LP:FindFirstChild("leaderstats") and LP.leaderstats:FindFirstChild("Medals") and LP.leaderstats.Medals.Value
+	end)
+	return ok and v or 0
+end
+
+local function getCash()
+	local ok, v = pcall(function()
+		return LP:FindFirstChild("leaderstats") and LP.leaderstats:FindFirstChild("Cash") and LP.leaderstats.Cash.Value
+	end)
+	return ok and v or 0
+end
+
+local _ownedWeapons = {}
+local _ownedBackpacks = {}
+local _lastOwnedCheck = 0
+
+local function findNextWeapon()
+	local cash = getCash()
+	for _, w in ipairs(GameConfig.WEAPONS) do
+		if w.cost > 0 and w.cost <= cash and not _ownedWeapons[w.id] then
+			local ok, res = pcall(function() return Remotes.BuyWeapon:InvokeServer(w.id) end)
+			if ok and res == true then
+				_ownedWeapons[w.id] = true
+				return w.id
+			elseif ok then
+				_ownedWeapons[w.id] = true
+			end
+		end
+	end
+	return nil
+end
+
+local function findNextBackpack()
+	local cash = getCash()
+	for _, b in ipairs(GameConfig.BACKPACKS) do
+		if b.cost > 0 and b.cost <= cash and not _ownedBackpacks[b.id] then
+			local ok, res = pcall(function() return Remotes.BuyBackpack:InvokeServer(b.id) end)
+			if ok and res == true then
+				_ownedBackpacks[b.id] = true
+				return b.id
+			elseif ok then
+				_ownedBackpacks[b.id] = true
+			end
+		end
+	end
+	return nil
+end
+
+local _upgradeFailCount = 0
+
 local function findNearestWarmthFire()
 	local hrp = getHRP()
 	if not hrp then return nil end
@@ -908,7 +978,13 @@ task.spawn(function()
 			pcall(function()
 				local hrp = getHRP()
 				if not hrp then return end
-				activateGameAutoMelt()
+				if not _goingToFire then
+					activateGameAutoMelt()
+					if not isNearWall() then
+						Remotes.TeleportToStage:FireServer()
+						task.wait(3)
+					end
+				end
 			end)
 		else
 			_meltActivated = false
@@ -1031,32 +1107,42 @@ end)
 
 task.spawn(function()
 	while true do
-		task.wait(2)
+		task.wait(5)
 		if STATE.AutoBuyWeapon and _k and _k.v and _k.i then
-			pcall(function() Remotes.BuyWeapon:InvokeServer() end)
+			pcall(function() findNextWeapon() end)
 		end
 	end
 end)
 
 task.spawn(function()
 	while true do
-		task.wait(2)
-		if STATE.AutoBuyBackpack and _k and _k.v and _k.s then
-			pcall(function() Remotes.BuyBackpack:InvokeServer() end)
+		task.wait(5)
+		if STATE.AutoBuyBackpack and _k and _k.v and _k.i then
+			pcall(function() findNextBackpack() end)
 		end
 	end
 end)
 
 task.spawn(function()
 	while true do
-		task.wait(3)
+		task.wait(STATE.AutoBuyUpgrade and _upgradeFailCount > 0 and math.min(30, 5 * _upgradeFailCount) or 5)
 		if STATE.AutoBuyUpgrade and _k and _k.v and _k.i then
 			pcall(function()
-				Remotes.BuyUpgrade:InvokeServer("speed", 1)
-				task.wait(0.5)
-				Remotes.BuyUpgrade:InvokeServer("melt", 1)
-				task.wait(0.5)
-				Remotes.BuyUpgrade:InvokeServer("warmth", 1)
+				local medals = getMedals()
+				local bought = false
+				for _, key in ipairs({"speed", "melt", "warmth"}) do
+					local ok, res = Remotes.BuyUpgrade:InvokeServer(key, 1)
+					if ok and res then
+						local success = (type(res) == "table") and (res.success ~= false) or (res == true)
+						if success then
+							bought = true
+							_upgradeFailCount = 0
+						end
+					end
+				end
+				if not bought then
+					_upgradeFailCount = _upgradeFailCount + 1
+				end
 			end)
 		end
 	end
@@ -1066,7 +1152,16 @@ task.spawn(function()
 	while true do
 		task.wait(5)
 		if STATE.AutoBuyPotion and _k and _k.v and _k.i then
-			pcall(function() Remotes.BuyPotion:InvokeServer("melt_1") end)
+			pcall(function()
+				local cash = getCash()
+				for i = #GameConfig.POTIONS, 1, -1 do
+					local p = GameConfig.POTIONS[i]
+					if cash >= p.cost then
+						Remotes.BuyPotion:InvokeServer(p.id)
+						break
+					end
+				end
+			end)
 		end
 	end
 end)
