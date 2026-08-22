@@ -178,10 +178,10 @@ if _awaiting then
             return
         end
         local ok, res = pcall(function()
-            return game:HttpGet("https://work.ink/_api/v2/token/isValid/" .. key .. "?deleteToken=1", true)
+            return request({ Url = "https://work.ink/_api/v2/token/isValid/" .. key .. "?deleteToken=1", Method = "GET" })
         end)
-        if ok and res then
-            local data = game:GetService("HttpService"):JSONDecode(res)
+        if ok and res and res.Body then
+            local data = json.decode(res.Body)
             if data and data.isValid then
                 _k.v = true
                 _k.s = key
@@ -270,13 +270,23 @@ local Map = Workspace:WaitForChild("Map")
 
 local LocalPlayer = LP
 
+local function httpGet(url)
+    local ok, res = pcall(function()
+        return request({ Url = url, Method = "GET" })
+    end)
+    if ok and res and res.Body then
+        return res.Body
+    end
+    return nil
+end
+
 -- ═══════════════════════════════════════════════════════════════
 -- UI LIBRARY
 -- ═══════════════════════════════════════════════════════════════
 local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+local Library = loadstring(httpGet(repo .. "Library.lua"))()
+local ThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
+local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
 
 -- ═══════════════════════════════════════════════════════════════
 -- STATE
