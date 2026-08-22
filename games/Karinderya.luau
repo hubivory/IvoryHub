@@ -214,13 +214,17 @@ local PlayerTab = Window:AddTab({ Name = "Player", Icon = "user", Description = 
 local LogsTab = Window:AddTab({ Name = "Logs", Icon = "scroll-text", Description = "Money & Status" })
 
 -- MAIN TAB
-local AutoBox = MainTab:AddLeftGroupbox("Automation", "zap")
-AutoBox:AddToggle("AutoServe", { Text = "Auto Serve Food", Default = false })
-AutoBox:AddToggle("AutoOrder", { Text = "Auto Assign Customers", Default = false })
-AutoBox:AddToggle("AutoClaimCodes", { Text = "Auto Claim Codes", Default = false })
-AutoBox:AddToggle("AutoPan", { Text = "Auto Pan (Hit Runaway)", Default = false })
-AutoBox:AddToggle("AutoClean", { Text = "Auto Clean Tables", Default = false })
-AutoBox:AddToggle("AutoWash", { Text = "Auto Wash Dishes", Default = false, Tooltip = "Auto-collects dirty dishes, puts in sink, and washes them" })
+local FoodBox = MainTab:AddLeftGroupbox("Food", "utensils")
+FoodBox:AddToggle("AutoServe", { Text = "Auto Serve Food", Default = false })
+FoodBox:AddToggle("AutoOrder", { Text = "Auto Assign Customers", Default = false })
+
+local KitchenBox = MainTab:AddLeftGroupbox("Kitchen", "chef-hat")
+KitchenBox:AddToggle("AutoClean", { Text = "Auto Clean Tables", Default = false })
+KitchenBox:AddToggle("AutoWash", { Text = "Auto Wash Dishes", Default = false, Tooltip = "Auto-collects dirty dishes, puts in sink, and washes them" })
+KitchenBox:AddToggle("AutoPan", { Text = "Auto Pan (Hit Runaway)", Default = false })
+
+local CodesBox = MainTab:AddRightGroupbox("Codes", "ticket")
+CodesBox:AddToggle("AutoClaimCodes", { Text = "Auto Claim Codes", Default = false })
 
 local FurnBox = MainTab:AddRightGroupbox("Furniture", "armchair")
 FurnBox:AddToggle("AutoBuyFurniture", { Text = "Auto Buy Furniture", Default = false })
@@ -234,7 +238,7 @@ MenuBox:AddButton({ Text = "Enable All Menus", Func = function()
     pcall(function() ToggleMenu:InvokeServer("LUTONG BAHAY", true) end)
 end })
 
-local SetBox = MainTab:AddRightGroupbox("Settings", "settings")
+local SetBox = MainTab:AddLeftGroupbox("Settings", "settings")
 SetBox:AddSlider("ServeDelay", { Text = "Serve Delay", Default = 1, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
 SetBox:AddSlider("OrderDelay", { Text = "Order Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
 SetBox:AddSlider("CleanDelay", { Text = "Clean Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
@@ -246,13 +250,13 @@ local GroceryBox = ShopTab:AddLeftGroupbox("Grocery", "apple")
 GroceryBox:AddToggle("AutoBuyIngredients", { Text = "Auto Buy Ingredients", Default = false, Tooltip = "Auto-buys ingredients when stock is low" })
 GroceryBox:AddSlider("IngBuyThreshold", { Text = "Buy When Below", Default = 5, Min = 1, Max = 50, Rounding = 1, Tooltip = "Buy ingredient when count drops below this" })
 
-local BoostBox = ShopTab:AddLeftGroupbox("Boosts", "zap")
+local BoostBox = ShopTab:AddRightGroupbox("Boosts", "zap")
 BoostBox:AddToggle("AutoUseBoosts", { Text = "Auto Use Boosts", Default = false, Tooltip = "Auto-uses Cash/Luck/UltraLuck potions" })
 BoostBox:AddButton({ Text = "Use Cash Potion", Func = function() pcall(function() UseBoostEvent:FireServer("CashPotion") end) end })
 BoostBox:AddButton({ Text = "Use Luck Potion", Func = function() pcall(function() UseBoostEvent:FireServer("LuckPotion") end) end })
 BoostBox:AddButton({ Text = "Use Ultra Luck Potion", Func = function() pcall(function() UseBoostEvent:FireServer("UltraLuckPotion") end) end })
 
-local UnlockBox = ShopTab:AddRightGroupbox("Unlock", "lock-open")
+local UnlockBox = ShopTab:AddLeftGroupbox("Unlock", "lock-open")
 UnlockBox:AddToggle("AutoUnlockTables", { Text = "Auto Unlock Tables", Default = false, Tooltip = "Auto-unlocks Table7-12 when affordable" })
 UnlockBox:AddButton({ Text = "Upgrade to Golden Pan", Func = function() pcall(function() UpgradeToGoldenPan:InvokeServer() end) end })
 
@@ -265,12 +269,19 @@ CharBox:AddSlider("WalkSpeed", { Text = "Walk Speed", Default = 16, Min = 16, Ma
 CharBox:AddToggle("InfJump", { Text = "Infinite Jump", Default = false })
 CharBox:AddToggle("NoClip", { Text = "NoClip", Default = false, Tooltip = "Walk through walls" })
 CharBox:AddToggle("AntiAfk", { Text = "Anti-AFK", Default = false, Tooltip = "Prevents AFK kick" })
-CharBox:AddToggle("EspNPCs", { Text = "ESP NPCs", Default = false, Tooltip = "Highlights all NPCs with colored boxes" })
 
-local MiscBox = PlayerTab:AddRightGroupbox("Teleports", "map-pin")
+local EspBox = PlayerTab:AddRightGroupbox("Visuals", "eye")
+EspBox:AddToggle("EspNPCs", { Text = "ESP NPCs", Default = false, Tooltip = "Highlights all NPCs with colored boxes" })
+
+local MiscBox = PlayerTab:AddLeftGroupbox("Teleports", "map-pin")
 MiscBox:AddButton({ Text = "Teleport to Counter", Func = function() local p = getPlot() if p then local c = p:FindFirstChild("Counter") if c then local cp = c:FindFirstChild("Comp", true) if cp then tp(cp.CFrame * CFrame.new(0,3,0)) end end end end })
 MiscBox:AddButton({ Text = "Teleport to Kitchen", Func = function() local p = getPlot() if p then local k = p:FindFirstChild("KitchenPlot1") if k then local f = k:GetChildren()[1] if f then tp(f:GetPivot() * CFrame.new(0,3,0)) end end end end })
 MiscBox:AddButton({ Text = "Teleport to Serve Area", Func = function() local p = getPlot() if p then local s = p:FindFirstChild("Serve") if s then local f = s:GetChildren()[1] if f then tp(f:GetPivot() * CFrame.new(0,3,0)) end end end end })
+
+local MoreTPBox = PlayerTab:AddRightGroupbox("More Teleports", "navigation")
+MoreTPBox:AddButton({ Text = "Teleport to Grocery", Func = function() local g = Workspace:FindFirstChild("Grocery") if g then local c = g:FindFirstChild("Comp", true) if c then tp(c.CFrame * CFrame.new(0,3,0)) end end end })
+MoreTPBox:AddButton({ Text = "Teleport to NPC Spawn", Func = function() local p = getPlot() if p then local ns = p:FindFirstChild("NpcSpawn") if ns then tp(ns:GetPivot() * CFrame.new(0,3,0)) end end end })
+MoreTPBox:AddButton({ Text = "Teleport to Shop", Func = function() local s = Workspace:FindFirstChild("SHOP") if s then local sh = s:FindFirstChild("Shop") if sh then local pp = sh:FindFirstChild("ProximityPrompt") if pp and pp.Parent:IsA("BasePart") then tp(pp.Parent.CFrame * CFrame.new(0,3,0)) end end end end })
 MiscBox:AddButton({ Text = "Teleport to Shop", Func = function() local s = Workspace:FindFirstChild("SHOP") if s then local sh = s:FindFirstChild("Shop") if sh then local pp = sh:FindFirstChild("ProximityPrompt") if pp and pp.Parent:IsA("BasePart") then tp(pp.Parent.CFrame * CFrame.new(0,3,0)) end end end end })
 MiscBox:AddButton({ Text = "Teleport to Grocery", Func = function() local g = Workspace:FindFirstChild("Grocery") if g then local c = g:FindFirstChild("Comp") if c then tp(c.CFrame * CFrame.new(0,3,0)) end end end })
 MiscBox:AddButton({ Text = "Teleport to NPC Spawn", Func = function() local p = getPlot() if p then local ns = p:FindFirstChild("NpcSpawn") if ns then tp(ns:GetPivot() * CFrame.new(0,3,0)) end end end })
