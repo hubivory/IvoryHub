@@ -231,297 +231,224 @@ task.spawn(function()
 end)
 
 while _awaiting do task.wait(0.1) end
-
-
--- ═══════════════════════════════════════════════════════════════
--- SERVICES
--- ═══════════════════════════════════════════════════════════════
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
-local VirtualUser = game:GetService("VirtualUser")
-local VirtualInputManager = game:GetService("VirtualInputManager")
-local HttpService = game:GetService("HttpService")
-local StarterGui = game:GetService("StarterGui")
+local Workspace = game:GetService("Workspace")
 
 local LP = Players.LocalPlayer
-local Mouse = LP:GetMouse()
-
 local Events = ReplicatedStorage:WaitForChild("Events")
 local Remotes = {
-    SellAll = Events:WaitForChild("SellAll"),
-    BuyWeapon = Events:WaitForChild("BuyWeapon"),
-    BuyBackpack = Events:WaitForChild("BuyBackpack"),
-    BuyUpgrade = Events:WaitForChild("BuyUpgrade"),
-    TeleportToStage = Events:WaitForChild("TeleportToStage"),
-    SpinRoll = Events:WaitForChild("SpinRoll"),
-    SpinClaim = Events:WaitForChild("SpinClaim"),
-    EquipWeapon = Events:WaitForChild("EquipWeapon"),
-    EquipBackpack = Events:WaitForChild("EquipBackpack"),
-    BuyPotion = Events:WaitForChild("BuyPotion"),
-    IndexClaim = Events:WaitForChild("IndexClaim"),
-    ClaimPlaytimeReward = Events:WaitForChild("ClaimPlaytimeReward"),
-    HoldItem = Events:WaitForChild("HoldItem"),
+	SellAll = Events:WaitForChild("SellAll"),
+	BuyWeapon = Events:WaitForChild("BuyWeapon"),
+	BuyBackpack = Events:WaitForChild("BuyBackpack"),
+	BuyUpgrade = Events:WaitForChild("BuyUpgrade"),
+	TeleportToStage = Events:WaitForChild("TeleportToStage"),
+	SpinRoll = Events:WaitForChild("SpinRoll"),
+	SpinClaim = Events:WaitForChild("SpinClaim"),
+	EquipWeapon = Events:WaitForChild("EquipWeapon"),
+	EquipBackpack = Events:WaitForChild("EquipBackpack"),
+	BuyPotion = Events:WaitForChild("BuyPotion"),
+	ClaimPlaytimeReward = Events:WaitForChild("ClaimPlaytimeReward"),
+	HoldItem = Events:WaitForChild("HoldItem"),
 }
 
-local Workspace = game:GetService("Workspace")
 local Map = Workspace:WaitForChild("Map")
 
-local LocalPlayer = LP
-
 local function httpGet(url)
-    local ok, res = pcall(function()
-        return request({ Url = url, Method = "GET" })
-    end)
-    if ok and res and res.Body then
-        local body = res.Body
-        if body:byte(1) == 0xEF and body:byte(2) == 0xBB and body:byte(3) == 0xBF then
-            body = body:sub(4)
-        end
-        return body
-    end
-    return nil
-end
-    return nil
+	local ok, res = pcall(function()
+		return request({ Url = url, Method = "GET" })
+	end)
+	if ok and res and res.Body then
+		local body = res.Body
+		if body:byte(1) == 0xEF and body:byte(2) == 0xBB and body:byte(3) == 0xBF then
+			body = body:sub(4)
+		end
+		return body
+	end
+	return nil
 end
 
--- ═══════════════════════════════════════════════════════════════
--- UI LIBRARY
--- ═══════════════════════════════════════════════════════════════
 local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
 local Library = loadstring(httpGet(repo .. "Library.lua"))()
 local ThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
 local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
 
--- ═══════════════════════════════════════════════════════════════
--- STATE
--- ═══════════════════════════════════════════════════════════════
 local STATE = {
-    AutoMelt = false,
-    AutoMeltSpeed = 0.05,
-    AutoSell = false,
-    AutoSellInterval = 5,
-    AutoCollect = false,
-    AutoBuyWeapon = false,
-    AutoBuyBackpack = false,
-    AutoBuyUpgrade = false,
-    AutoUpgradeType = "All",
-    AutoSpin = false,
-    AutoPlaytime = false,
-    AutoIndex = false,
-    TeleportStage = 1,
-    Noclip = false,
-    InfiniteJump = false,
-    ESP = false,
-    ESPBoxes = false,
-    ESPNames = false,
-    ESPTracers = false,
-    ESPDistance = false,
-    ESPColor = Color3.fromRGB(255, 100, 100),
-    WalkSpeed = 22,
-    JumpPower = 50,
-    Gravity = 196.2,
-    ServerHop = false,
+	AutoMelt = false,
+	AutoMeltSpeed = 0.05,
+	AutoSell = false,
+	AutoSellInterval = 5,
+	AutoCollect = false,
+	AutoBuyWeapon = false,
+	AutoBuyBackpack = false,
+	AutoBuyUpgrade = false,
+	AutoSpin = false,
+	AutoPlaytime = false,
+	TeleportStage = 1,
+	Noclip = false,
+	InfiniteJump = false,
+	ESP = false,
+	ESPDistance = false,
+	ESPColor = Color3.fromRGB(255, 100, 100),
+	WalkSpeed = 22,
+	JumpPower = 50,
 }
 
--- ═══════════════════════════════════════════════════════════════
--- HELPERS
--- ═══════════════════════════════════════════════════════════════
-local function getChar()
-    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-end
-
 local function getHRP()
-    local c = LocalPlayer.Character
-    return c and c:FindFirstChild("HumanoidRootPart")
+	local c = LP.Character
+	return c and c:FindFirstChild("HumanoidRootPart")
 end
 
 local function getHum()
-    local c = LocalPlayer.Character
-    return c and c:FindFirstChildWhichIsA("Humanoid")
+	local c = LP.Character
+	return c and c:FindFirstChildWhichIsA("Humanoid")
 end
 
 local function getTool()
-    local c = LocalPlayer.Character
-    if c then
-        for _, v in ipairs(c:GetChildren()) do
-            if v:IsA("Tool") then return v end
-        end
-    end
-    for _, v in ipairs(LocalPlayer.Backpack:GetChildren()) do
-        if v:IsA("Tool") then return v end
-    end
-    return nil
-end
-
-local function getZones()
-    local zones = {}
-    for _, v in ipairs(Map:GetChildren()) do
-        if v.Name:match("^Zone %d+$") then
-            table.insert(zones, {name = v.Name, num = tonumber(v.Name:match("%d+"))})
-        end
-    end
-    table.sort(zones, function(a, b) return a.num < b.num end)
-    return zones
+	local c = LP.Character
+	if c then
+		for _, v in ipairs(c:GetChildren()) do
+			if v:IsA("Tool") then return v end
+		end
+	end
+	for _, v in ipairs(LP.Backpack:GetChildren()) do
+		if v:IsA("Tool") then return v end
+	end
+	return nil
 end
 
 local function getZoneNames()
-    local names = {}
-    for _, z in ipairs(getZones()) do
-        table.insert(names, z.name)
-    end
-    return names
+	local names = {}
+	for _, v in ipairs(Map:GetChildren()) do
+		if v.Name:match("^Zone %d+$") then
+			table.insert(names, v.Name)
+		end
+	end
+	table.sort(names, function(a, b)
+		return tonumber(a:match("%d+")) < tonumber(b:match("%d+"))
+	end)
+	return names
 end
 
 local function teleportToZone(zoneNum)
-    local zoneName = "Zone " .. tostring(zoneNum)
-    local zone = Map:FindFirstChild(zoneName)
-    if zone then
-        local hrp = getHRP()
-        if hrp then
-            local target = zone.WorldPivot.Position + Vector3.new(0, 5, 0)
-            hrp.CFrame = CFrame.new(target)
-        end
-    end
+	local zone = Map:FindFirstChild("Zone " .. tostring(zoneNum))
+	if zone then
+		local hrp = getHRP()
+		if hrp then
+			hrp.CFrame = CFrame.new(zone.WorldPivot.Position + Vector3.new(0, 5, 0))
+		end
+	end
 end
 
--- ═══════════════════════════════════════════════════════════════
--- ESP MODULE
--- ═══════════════════════════════════════════════════════════════
 local ESPObjects = {}
 
 local function clearESP()
-    for _, obj in ipairs(ESPObjects) do
-        if obj and obj.Parent then obj:Destroy() end
-    end
-    ESPObjects = {}
+	for _, obj in ipairs(ESPObjects) do
+		if obj and obj.Parent then obj:Destroy() end
+	end
+	ESPObjects = {}
 end
 
 local function createESP(part, text, color)
-    if not part or not part.Parent then return end
-    local bb = Instance.new("BillboardGui")
-    bb.Name = "IvoryESP"
-    bb.Size = UDim2.new(0, 120, 0, 40)
-    bb.StudsOffset = Vector3.new(0, 3, 0)
-    bb.AlwaysOnTop = true
-    bb.Adornee = part
-    bb.Parent = part
-
-    local tl = Instance.new("TextLabel")
-    tl.Size = UDim2.new(1, 0, 1, 0)
-    tl.BackgroundTransparency = 1
-    tl.Text = text
-    tl.TextColor3 = color or STATE.ESPColor
-    tl.TextSize = 14
-    tl.Font = Enum.Font.GothamBold
-    tl.TextStrokeTransparency = 0.3
-    tl.TextStrokeColor3 = Color3.new(0, 0, 0)
-    tl.Parent = bb
-
-    table.insert(ESPObjects, bb)
-    return bb
+	if not part or not part.Parent then return end
+	local bb = Instance.new("BillboardGui")
+	bb.Name = "IvoryESP"
+	bb.Size = UDim2.new(0, 120, 0, 40)
+	bb.StudsOffset = Vector3.new(0, 3, 0)
+	bb.AlwaysOnTop = true
+	bb.Adornee = part
+	bb.Parent = part
+	local tl = Instance.new("TextLabel")
+	tl.Size = UDim2.new(1, 0, 1, 0)
+	tl.BackgroundTransparency = 1
+	tl.Text = text
+	tl.TextColor3 = color or STATE.ESPColor
+	tl.TextSize = 14
+	tl.Font = Enum.Font.GothamBold
+	tl.TextStrokeTransparency = 0.3
+	tl.TextStrokeColor3 = Color3.new(0, 0, 0)
+	tl.Parent = bb
+	table.insert(ESPObjects, bb)
 end
 
 local function updateESP()
-    clearESP()
-    if not (STATE.ESP and _k and _k.v and _k.i) then return end
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer and plr.Character then
-            local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local label = plr.Name
-                if STATE.ESPDistance then
-                    local myHRP = getHRP()
-                    if myHRP then
-                        local dist = math.floor((myHRP.Position - hrp.Position).Magnitude)
-                        label = label .. " [" .. dist .. "m]"
-                    end
-                end
-                createESP(hrp, label, STATE.ESPColor)
-            end
-        end
-    end
+	clearESP()
+	if not (STATE.ESP and _k and _k.v and _k.i) then return end
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr ~= LP and plr.Character then
+			local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+			if hrp then
+				local label = plr.Name
+				if STATE.ESPDistance then
+					local myHRP = getHRP()
+					if myHRP then
+						label = label .. " [" .. math.floor((myHRP.Position - hrp.Position).Magnitude) .. "m]"
+					end
+				end
+				createESP(hrp, label, STATE.ESPColor)
+			end
+		end
+	end
 end
 
--- ═══════════════════════════════════════════════════════════════
--- NOCLIP
--- ═══════════════════════════════════════════════════════════════
 local noclipConn = nil
 local function setNoclip(on)
-    if noclipConn then noclipConn:Disconnect(); noclipConn = nil end
-    if on and _k and _k.v and _verifyIntegrity() then
-        noclipConn = RunService.Stepped:Connect(function()
-            local c = LocalPlayer.Character
-            if c then
-                for _, p in ipairs(c:GetDescendants()) do
-                    if p:IsA("BasePart") then p.CanCollide = false end
-                end
-            end
-        end)
-    end
+	if noclipConn then noclipConn:Disconnect(); noclipConn = nil end
+	if on and _k and _k.v and _verifyIntegrity() then
+		noclipConn = RunService.Stepped:Connect(function()
+			local c = LP.Character
+			if c then
+				for _, p in ipairs(c:GetDescendants()) do
+					if p:IsA("BasePart") then p.CanCollide = false end
+				end
+			end
+		end)
+	end
 end
 
--- ═══════════════════════════════════════════════════════════════
--- INFINITE JUMP
--- ═══════════════════════════════════════════════════════════════
 local ijConn = nil
 local function setInfiniteJump(on)
-    if ijConn then ijConn:Disconnect(); ijConn = nil end
-    if on and _k and _k.v and _k.i then
-        ijConn = UserInputService.JumpRequest:Connect(function()
-            local c = LocalPlayer.Character
-            if c then
-                local h = c:FindFirstChildWhichIsA("Humanoid")
-                if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end
-            end
-        end)
-    end
+	if ijConn then ijConn:Disconnect(); ijConn = nil end
+	if on and _k and _k.v and _k.i then
+		ijConn = UserInputService.JumpRequest:Connect(function()
+			local c = LP.Character
+			if c then
+				local h = c:FindFirstChildWhichIsA("Humanoid")
+				if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end
+			end
+		end)
+	end
 end
 
-
--- ═══════════════════════════════════════════════════════════════
--- WINDOW
--- ═══════════════════════════════════════════════════════════════
 local Window = Library:CreateWindow({
-    Title = "Ivory",
-    Icon = "flame",
-    Footer = {
-        "v1.4 |",
-        { Text = "Game", Copyable = true },
-        "|",
-        { Text = tostring(LocalPlayer.UserId), Copyable = true },
-    },
-    CopyableFooter = true,
-    FuzzySearch = true,
-    SearchValues = true,
-    Minimizable = true,
-    MinimizeKeybind = Enum.KeyCode.RightBracket,
-    MinimizedWidth = 280,
-    NotifySide = "Right",
-    ShowCustomCursor = true,
-    SearchKeybind = Enum.KeyCode.F,
-    CornerRadius = 4,
-    Animations = {
-        ToggleWindow = false,
-        TabSwitch = false,
-        Groupbox = false,
-        Dropdown = false,
-        KeyPicker = false,
-        SubTabUnderline = true,
-    },
+	Title = "Ivory",
+	Icon = "flame",
+	Footer = {
+		"v1.4 |",
+		{ Text = "Game", Copyable = true },
+		"|",
+		{ Text = tostring(LP.UserId), Copyable = true },
+	},
+	CopyableFooter = true,
+	FuzzySearch = true,
+	SearchValues = true,
+	Minimizable = true,
+	MinimizeKeybind = Enum.KeyCode.RightBracket,
+	MinimizedWidth = 280,
+	NotifySide = "Right",
+	ShowCustomCursor = true,
+	SearchKeybind = Enum.KeyCode.F,
+	CornerRadius = 4,
 })
 
--- ═══════════════════════════════════════════════════════════════
--- TABS
--- ═══════════════════════════════════════════════════════════════
 local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
 local ShopTab = Window:AddTab({ Name = "Shop", Icon = "shopping-cart" })
 local PlayerTab = Window:AddTab({ Name = "Player", Icon = "user" })
 local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "eye" })
 local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
 
--- ─── MAIN: Automation ───────────────────────────────────────
 local AutoSub = MainTab:AddSubTab("Automation", "zap")
 local MeltGroup = AutoSub:AddLeftGroupbox("Melt", "flame")
 local SellGroup = AutoSub:AddRightGroupbox("Sell", "coins")
@@ -530,363 +457,270 @@ local SpinGroup = AutoSub:AddRightGroupbox("Spin", "refresh-cw")
 local PlaytimeGroup = AutoSub:AddLeftGroupbox("Playtime", "clock")
 
 MeltGroup:AddToggle("AutoMelt", {
-    Text = "Auto Melt Ice",
-    Default = false,
-    Callback = function(v)
-        STATE.AutoMelt = v
-    end,
-}):AddKeyPicker("AutoMeltKey", { Default = "None", Text = "Auto Melt Key", Mode = "Toggle", SyncToggleState = true, NoUI = false })
+	Text = "Auto Melt Ice",
+	Default = false,
+	Callback = function(v) STATE.AutoMelt = v end,
+}):AddKeyPicker("AutoMeltKey", {
+	Default = "None",
+	Text = "Auto Melt Key",
+	Mode = "Toggle",
+	SyncToggleState = true,
+	NoUI = false,
+})
 
 MeltGroup:AddSlider("MeltSpeed", {
-    Text = "Melt Interval",
-    Default = 0.05,
-    Min = 0.02,
-    Max = 0.5,
-    Rounding = 2,
-    Suffix = "s",
-    Callback = function(v)
-        STATE.AutoMeltSpeed = v
-    end,
+	Text = "Melt Interval",
+	Default = 0.05,
+	Min = 0.02,
+	Max = 0.5,
+	Rounding = 2,
+	Callback = function(v) STATE.AutoMeltSpeed = v end,
 })
 
 SellGroup:AddToggle("AutoSell", {
-    Text = "Auto Sell",
-    Default = false,
-    Callback = function(v)
-        STATE.AutoSell = v
-    end,
-}):AddKeyPicker("AutoSellKey", { Default = "None", Text = "Auto Sell Key", Mode = "Toggle", SyncToggleState = true, NoUI = false })
+	Text = "Auto Sell",
+	Default = false,
+	Callback = function(v) STATE.AutoSell = v end,
+}):AddKeyPicker("AutoSellKey", {
+	Default = "None",
+	Text = "Auto Sell Key",
+	Mode = "Toggle",
+	SyncToggleState = true,
+	NoUI = false,
+})
 
 SellGroup:AddSlider("SellInterval", {
-    Text = "Sell Interval",
-    Default = 5,
-    Min = 1,
-    Max = 30,
-    Rounding = 0,
-    Suffix = "s",
-    Callback = function(v)
-        STATE.AutoSellInterval = v
-    end,
+	Text = "Sell Interval",
+	Default = 5,
+	Min = 1,
+	Max = 30,
+	Rounding = 0,
+	Callback = function(v) STATE.AutoSellInterval = v end,
 })
 
-SellGroup:AddButton({
-    Text = "Sell All Now",
-    Func = function()
-        pcall(function() Remotes.SellAll:InvokeServer() end)
-    end,
-})
+SellGroup:AddButton("Sell All Now", function()
+	pcall(function() Remotes.SellAll:InvokeServer() end)
+end)
 
 CollectGroup:AddToggle("AutoCollect", {
-    Text = "Auto Collect Drops",
-    Default = false,
-    Callback = function(v)
-        STATE.AutoCollect = v
-    end,
+	Text = "Auto Collect Drops",
+	Default = false,
+	Callback = function(v) STATE.AutoCollect = v end,
 })
 
 SpinGroup:AddToggle("AutoSpin", {
-    Text = "Auto Spin",
-    Default = false,
-    Callback = function(v)
-        STATE.AutoSpin = v
-    end,
+	Text = "Auto Spin",
+	Default = false,
+	Callback = function(v) STATE.AutoSpin = v end,
 })
 
-SpinGroup:AddButton({
-    Text = "Claim Free Spin",
-    Func = function()
-        pcall(function() Remotes.SpinClaim:FireServer() end)
-    end,
-})
+SpinGroup:AddButton("Claim Free Spin", function()
+	pcall(function() Remotes.SpinClaim:FireServer() end)
+end)
 
-SpinGroup:AddButton({
-    Text = "Roll Spin",
-    Func = function()
-        pcall(function() Remotes.SpinRoll:InvokeServer() end)
-    end,
-})
+SpinGroup:AddButton("Roll Spin", function()
+	pcall(function() Remotes.SpinRoll:InvokeServer() end)
+end)
 
 PlaytimeGroup:AddToggle("AutoPlaytime", {
-    Text = "Auto Claim Playtime",
-    Default = false,
-    Callback = function(v)
-        STATE.AutoPlaytime = v
-    end,
+	Text = "Auto Claim Playtime",
+	Default = false,
+	Callback = function(v) STATE.AutoPlaytime = v end,
 })
 
-PlaytimeGroup:AddButton({
-    Text = "Claim Playtime Now",
-    Func = function()
-        pcall(function() Remotes.ClaimPlaytimeReward:InvokeServer() end)
-    end,
-})
+PlaytimeGroup:AddButton("Claim Playtime Now", function()
+	pcall(function() Remotes.ClaimPlaytimeReward:InvokeServer() end)
+end)
 
--- ─── MAIN: Teleport ─────────────────────────────────────────
 local TeleSub = MainTab:AddSubTab("Teleport", "map-pin")
 local TeleGroup = TeleSub:AddLeftGroupbox("Stage Teleport", "navigation")
 
 TeleGroup:AddDropdown("TeleportDropdown", {
-    Text = "Select Stage",
-    Values = getZoneNames(),
-    Default = "Zone 1",
-    Multi = false,
-    Callback = function(v)
-        local num = tonumber(v:match("%d+"))
-        if num then STATE.TeleportStage = num end
-    end,
+	Values = getZoneNames(),
+	Default = "Zone 1",
+	Text = "Select Stage",
+	Callback = function(v)
+		local num = tonumber(v:match("%d+"))
+		if num then STATE.TeleportStage = num end
+	end,
 })
 
-TeleGroup:AddButton({
-    Text = "Teleport to Selected",
-    Func = function()
-        if _k and _k.v and _k.s then
-            teleportToZone(STATE.TeleportStage)
-        end
-    end,
-})
+TeleGroup:AddButton("Teleport to Selected", function()
+	if _k and _k.v and _k.s then
+		teleportToZone(STATE.TeleportStage)
+	end
+end)
 
-TeleGroup:AddButton({
-    Text = "TP to Current Stage",
-    Func = function()
-        if _k and _k.v and _k.i then
-            pcall(function()
-                Remotes.TeleportToStage:FireServer()
-            end)
-        end
-    end,
-})
+TeleGroup:AddButton("TP to Current Stage", function()
+	if _k and _k.v and _k.i then
+		pcall(function() Remotes.TeleportToStage:FireServer() end)
+	end
+end)
 
--- ─── SHOP: Upgrades ─────────────────────────────────────────
 local UpgradeSub = ShopTab:AddSubTab("Upgrades", "arrow-up-circle")
 local UpgradeGroup = UpgradeSub:AddLeftGroupbox("Upgrades", "trending-up")
 
-UpgradeGroup:AddDropdown("UpgradeType", {
-    Text = "Upgrade Type",
-    Values = {"All", "Fire Power", "Speed", "Backpack"},
-    Default = "All",
-    Multi = false,
-    Callback = function(v)
-        STATE.AutoUpgradeType = v
-    end,
-})
-
 UpgradeGroup:AddToggle("AutoBuyUpgrade", {
-    Text = "Auto Buy Upgrades",
-    Default = false,
-    Callback = function(v)
-        STATE.AutoBuyUpgrade = v
-    end,
+	Text = "Auto Buy Upgrades",
+	Default = false,
+	Callback = function(v) STATE.AutoBuyUpgrade = v end,
 })
 
-UpgradeGroup:AddButton({
-    Text = "Buy Upgrade Now",
-    Func = function()
-        if _k and _k.v and _k.i then
-            pcall(function() Remotes.BuyUpgrade:InvokeServer() end)
-        end
-    end,
-})
+UpgradeGroup:AddButton("Buy Upgrade Now", function()
+	if _k and _k.v and _k.i then
+		pcall(function() Remotes.BuyUpgrade:InvokeServer() end)
+	end
+end)
 
--- ─── SHOP: Weapons ──────────────────────────────────────────
 local WeaponSub = ShopTab:AddSubTab("Weapons", "swords")
 local WeaponGroup = WeaponSub:AddLeftGroupbox("Weapons", "shield")
 
 WeaponGroup:AddToggle("AutoBuyWeapon", {
-    Text = "Auto Buy Best Weapon",
-    Default = false,
-    Callback = function(v)
-        STATE.AutoBuyWeapon = v
-    end,
+	Text = "Auto Buy Best Weapon",
+	Default = false,
+	Callback = function(v) STATE.AutoBuyWeapon = v end,
 })
 
-WeaponGroup:AddButton({
-    Text = "Buy Weapon Now",
-    Func = function()
-        if _k and _k.v and _k.i then
-            pcall(function() Remotes.BuyWeapon:InvokeServer() end)
-        end
-    end,
-})
+WeaponGroup:AddButton("Buy Weapon Now", function()
+	if _k and _k.v and _k.i then
+		pcall(function() Remotes.BuyWeapon:InvokeServer() end)
+	end
+end)
 
--- ─── SHOP: Backpacks ────────────────────────────────────────
 local BackpackGroup = WeaponSub:AddRightGroupbox("Backpacks", "package")
 
 BackpackGroup:AddToggle("AutoBuyBackpack", {
-    Text = "Auto Buy Backpack",
-    Default = false,
-    Callback = function(v)
-        STATE.AutoBuyBackpack = v
-    end,
+	Text = "Auto Buy Backpack",
+	Default = false,
+	Callback = function(v) STATE.AutoBuyBackpack = v end,
 })
 
-BackpackGroup:AddButton({
-    Text = "Buy Backpack Now",
-    Func = function()
-        if _k and _k.v and _k.i then
-            pcall(function() Remotes.BuyBackpack:InvokeServer() end)
-        end
-    end,
-})
+BackpackGroup:AddButton("Buy Backpack Now", function()
+	if _k and _k.v and _k.i then
+		pcall(function() Remotes.BuyBackpack:InvokeServer() end)
+	end
+end)
 
--- ─── SHOP: Potions ──────────────────────────────────────────
 local PotionGroup = WeaponSub:AddLeftGroupbox("Potions", "droplet")
 
-PotionGroup:AddButton({
-    Text = "Buy Potion",
-    Func = function()
-        if _k and _k.v and _k.s then
-            pcall(function() Remotes.BuyPotion:InvokeServer() end)
-        end
-    end,
-})
+PotionGroup:AddButton("Buy Potion", function()
+	if _k and _k.v and _k.s then
+		pcall(function() Remotes.BuyPotion:InvokeServer() end)
+	end
+end)
 
-
--- ─── PLAYER: Movement ──────────────────────────────────────
 local MoveSub = PlayerTab:AddSubTab("Movement", "move")
 local SpeedGroup = MoveSub:AddLeftGroupbox("Speed", "zap")
 local JumpGroup = MoveSub:AddRightGroupbox("Jump", "arrow-up")
 
 SpeedGroup:AddSlider("WalkSpeed", {
-    Text = "Walk Speed",
-    Default = 22,
-    Min = 16,
-    Max = 200,
-    Rounding = 0,
-    Callback = function(v)
-        STATE.WalkSpeed = v
-        local h = getHum()
-        if h and _k and _k.v and _k.s then h.WalkSpeed = v end
-    end,
+	Text = "Walk Speed",
+	Default = 22,
+	Min = 16,
+	Max = 200,
+	Rounding = 0,
+	Callback = function(v)
+		STATE.WalkSpeed = v
+		local h = getHum()
+		if h and _k and _k.v and _k.s then h.WalkSpeed = v end
+	end,
 })
 
 SpeedGroup:AddToggle("Noclip", {
-    Text = "Noclip",
-    Default = false,
-    Callback = function(v)
-        STATE.Noclip = v
-        setNoclip(v)
-    end,
-}):AddKeyPicker("NoclipKey", { Default = "None", Text = "Noclip Key", Mode = "Toggle", SyncToggleState = true, NoUI = false })
+	Text = "Noclip",
+	Default = false,
+	Callback = function(v)
+		STATE.Noclip = v
+		setNoclip(v)
+	end,
+}):AddKeyPicker("NoclipKey", {
+	Default = "None",
+	Text = "Noclip Key",
+	Mode = "Toggle",
+	SyncToggleState = true,
+	NoUI = false,
+})
 
 JumpGroup:AddSlider("JumpPower", {
-    Text = "Jump Power",
-    Default = 50,
-    Min = 50,
-    Max = 200,
-    Rounding = 0,
-    Callback = function(v)
-        STATE.JumpPower = v
-        local h = getHum()
-        if h and _k and _k.v and _k.i then h.JumpPower = v end
-    end,
+	Text = "Jump Power",
+	Default = 50,
+	Min = 50,
+	Max = 200,
+	Rounding = 0,
+	Callback = function(v)
+		STATE.JumpPower = v
+		local h = getHum()
+		if h and _k and _k.v and _k.i then h.JumpPower = v end
+	end,
 })
 
 JumpGroup:AddToggle("InfJump", {
-    Text = "Infinite Jump",
-    Default = false,
-    Callback = function(v)
-        STATE.InfiniteJump = v
-        setInfiniteJump(v)
-    end,
-}):AddKeyPicker("InfJumpKey", { Default = "None", Text = "Infinite Jump Key", Mode = "Toggle", SyncToggleState = true, NoUI = false })
-
--- ─── PLAYER: Gravity ────────────────────────────────────────
-local GravGroup = MoveSub:AddLeftGroupbox("Gravity", "down")
-
-GravGroup:AddSlider("Gravity", {
-    Text = "Gravity",
-    Default = 196.2,
-    Min = 0,
-    Max = 500,
-    Rounding = 1,
-    Callback = function(v)
-        STATE.Gravity = v
-        if _k and _k.v and _verifyIntegrity() then
-            Workspace.Gravity = v
-        end
-    end,
+	Text = "Infinite Jump",
+	Default = false,
+	Callback = function(v)
+		STATE.InfiniteJump = v
+		setInfiniteJump(v)
+	end,
+}):AddKeyPicker("InfJumpKey", {
+	Default = "None",
+	Text = "Infinite Jump Key",
+	Mode = "Toggle",
+	SyncToggleState = true,
+	NoUI = false,
 })
 
--- ─── VISUALS: ESP ───────────────────────────────────────────
 local ESPSub = VisualsTab:AddSubTab("ESP", "eye")
 local ESPGroup = ESPSub:AddLeftGroupbox("Player ESP", "users")
 
 ESPGroup:AddToggle("ESPEnabled", {
-    Text = "Enable ESP",
-    Default = false,
-    Callback = function(v)
-        STATE.ESP = v
-        if v then updateESP() else clearESP() end
-    end,
-}):AddKeyPicker("ESPKey", { Default = "None", Text = "ESP Key", Mode = "Toggle", SyncToggleState = true, NoUI = false })
-
-ESPGroup:AddToggle("ESPNames", {
-    Text = "Show Names",
-    Default = true,
-    Callback = function(v)
-        STATE.ESPNames = v
-        if STATE.ESP then updateESP() end
-    end,
+	Text = "Enable ESP",
+	Default = false,
+	Callback = function(v)
+		STATE.ESP = v
+		if v then updateESP() else clearESP() end
+	end,
+}):AddKeyPicker("ESPKey", {
+	Default = "None",
+	Text = "ESP Key",
+	Mode = "Toggle",
+	SyncToggleState = true,
+	NoUI = false,
 })
 
 ESPGroup:AddToggle("ESPDistance", {
-    Text = "Show Distance",
-    Default = true,
-    Callback = function(v)
-        STATE.ESPDistance = v
-        if STATE.ESP then updateESP() end
-    end,
+	Text = "Show Distance",
+	Default = true,
+	Callback = function(v)
+		STATE.ESPDistance = v
+		if STATE.ESP then updateESP() end
+	end,
 })
 
-ESPGroup:AddColorPicker("ESPColor", {
-    Text = "ESP Color",
-    Default = Color3.fromRGB(255, 100, 100),
-    Callback = function(v)
-        STATE.ESPColor = v
-        if STATE.ESP then updateESP() end
-    end,
+ESPGroup:AddLabel("ESP Color"):AddColorPicker("ESPColor", {
+	Default = Color3.fromRGB(255, 100, 100),
+	Title = "ESP Color",
+	Callback = function(v)
+		STATE.ESPColor = v
+		if STATE.ESP then updateESP() end
+	end,
 })
 
-ESPGroup:AddSlider("ESPRefresh", {
-    Text = "Refresh Rate",
-    Default = 2,
-    Min = 0.5,
-    Max = 10,
-    Rounding = 1,
-    Suffix = "s",
-})
-
--- ─── VISUALS: World ─────────────────────────────────────────
 local WorldGroup = ESPSub:AddRightGroupbox("World", "globe")
 
-WorldGroup:AddButton({
-    Text = "Full Bright",
-    Func = function()
-        if _k and _k.v and _k.i then
-            local light = Instance.new("PointLight")
-            light.Brightness = 1
-            light.Range = 100
-            light.Parent = getHRP()
-            game:GetService("Lighting").Brightness = 2
-            game:GetService("Lighting").ClockTime = 14
-        end
-    end,
-})
+WorldGroup:AddButton("Full Bright", function()
+	if _k and _k.v and _k.i then
+		game:GetService("Lighting").Brightness = 2
+		game:GetService("Lighting").ClockTime = 14
+	end
+end)
 
-WorldGroup:AddButton({
-    Text = "Remove Fog",
-    Func = function()
-        if _k and _k.v and _k.s then
-            game:GetService("Lighting").FogEnd = 999999
-            game:GetService("Lighting").FogStart = 0
-            game:GetService("Lighting").Atmosphere.Density = 0
-        end
-    end,
-})
+WorldGroup:AddButton("Remove Fog", function()
+	if _k and _k.v and _k.s then
+		game:GetService("Lighting").FogEnd = 999999
+		game:GetService("Lighting").FogStart = 0
+	end
+end)
 
--- ═══════════════════════════════════════════════════════════════
--- SETTINGS TAB
--- ═══════════════════════════════════════════════════════════════
 ThemeManager:SetLibrary(Library)
 SaveManager:SetLibrary(Library)
 SaveManager:IgnoreThemeSettings()
@@ -897,142 +731,159 @@ SaveManager:SetSubFolder("melttheice")
 ThemeManager:ApplyToTab(SettingsTab)
 SaveManager:BuildConfigSection(SettingsTab)
 
-local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "menu")
-MenuGroup:AddToggle("MenuToggle", {
-    Text = "Menu Toggle",
-    Default = true,
-    Callback = function() end,
-}):AddKeyPicker("MenuKeybind", { Default = "RightShift", Text = "Menu Keybind", Mode = "Toggle", NoUI = true })
-
-MenuGroup:AddButton({
-    Text = "Unload Script",
-    Func = function()
-        clearESP()
-        setNoclip(false)
-        setInfiniteJump(false)
-        Workspace.Gravity = 196.2
-        pcall(function() Library:Notify({ Title = "Ivory", Description = "Unloaded", Type = "Info", Time = 3 }) end)
-        task.wait(1)
-        pcall(function() _kg:Destroy() end)
-    end,
+local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "wrench")
+MenuGroup:AddToggle("KeybindMenuOpen", {
+	Default = Library.KeybindFrame.Visible,
+	Text = "Open Keybind Menu",
+	Callback = function(v) Library.KeybindFrame.Visible = v end,
 })
-
--- ═══════════════════════════════════════════════════════════════
--- MAIN LOOPS
--- ═══════════════════════════════════════════════════════════════
-task.spawn(function()
-    while true do
-        task.wait(STATE.AutoMeltSpeed)
-        if STATE.AutoMelt and _k and _k.v and _k.i then
-            pcall(function()
-                local tool = getTool()
-                if tool then
-                    tool:Activate()
-                    task.wait(0.05)
-                    tool:Deactivate()
-                end
-            end)
-        end
-    end
+MenuGroup:AddToggle("ShowCustomCursor", {
+	Text = "Custom Cursor",
+	Default = Library.ShowCustomCursor,
+	Callback = function(v) Library.ShowCustomCursor = v end,
+})
+MenuGroup:AddButton("Test Notification", function()
+	Library:Notify({ Title = "Ivory", Description = "Works!", Time = 4 })
+end)
+MenuGroup:AddDropdown("NotificationSide", {
+	Values = { "Left", "Right" },
+	Default = "Right",
+	Text = "Notification Side",
+	Callback = function(v) Library:SetNotifySide(v) end,
+})
+MenuGroup:AddSlider("UICornerSlider", {
+	Text = "Corner Radius",
+	Default = Library.CornerRadius,
+	Min = 0,
+	Max = 20,
+	Rounding = 0,
+	Callback = function(v) Window:SetCornerRadius(v) end,
+})
+MenuGroup:AddDivider()
+MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", {
+	Default = "RightShift",
+	NoUI = true,
+	Text = "Menu keybind",
+})
+MenuGroup:AddButton("Unload", function()
+	clearESP()
+	setNoclip(false)
+	setInfiniteJump(false)
+	Workspace.Gravity = 196.2
+	Library:Unload()
 end)
 
 task.spawn(function()
-    while true do
-        task.wait(STATE.AutoSellInterval)
-        if STATE.AutoSell and _k and _k.v and _k.s then
-            pcall(function() Remotes.SellAll:InvokeServer() end)
-        end
-    end
+	while true do
+		task.wait(STATE.AutoMeltSpeed)
+		if STATE.AutoMelt and _k and _k.v and _k.i then
+			pcall(function()
+				local tool = getTool()
+				if tool then
+					if not LP.Character:FindFirstChild(tool.Name) then
+						tool.Parent = LP.Character
+					end
+					mouse1press()
+					task.wait(0.05)
+					mouse1release()
+				end
+			end)
+		end
+	end
 end)
 
 task.spawn(function()
-    while true do
-        task.wait(1)
-        if STATE.AutoCollect and _k and _k.v and _k.i then
-            pcall(function()
-                local hrp = getHRP()
-                if hrp then
-                    for _, obj in ipairs(Map:GetDescendants()) do
-                        if obj:IsA("BasePart") and obj.Name:match("Drop|Loot|Coin|Medal|Cash") then
-                            local dist = (obj.Position - hrp.Position).Magnitude
-                            if dist < 100 then
-                                obj.CFrame = hrp.CFrame
-                            end
-                        end
-                    end
-                end
-            end)
-        end
-    end
+	while true do
+		task.wait(STATE.AutoSellInterval)
+		if STATE.AutoSell and _k and _k.v and _k.s then
+			pcall(function() Remotes.SellAll:InvokeServer() end)
+		end
+	end
 end)
 
 task.spawn(function()
-    while true do
-        task.wait(2)
-        if STATE.AutoBuyWeapon and _k and _k.v and _k.i then
-            pcall(function() Remotes.BuyWeapon:InvokeServer() end)
-        end
-    end
+	while true do
+		task.wait(1)
+		if STATE.AutoCollect and _k and _k.v and _k.i then
+			pcall(function()
+				local hrp = getHRP()
+				if hrp then
+					for _, obj in ipairs(Map:GetDescendants()) do
+						if obj:IsA("BasePart") and obj.Name:match("Drop|Loot|Coin|Medal|Cash") then
+							if (obj.Position - hrp.Position).Magnitude < 100 then
+								obj.CFrame = hrp.CFrame
+							end
+						end
+					end
+				end
+			end)
+		end
+	end
 end)
 
 task.spawn(function()
-    while true do
-        task.wait(2)
-        if STATE.AutoBuyBackpack and _k and _k.v and _k.s then
-            pcall(function() Remotes.BuyBackpack:InvokeServer() end)
-        end
-    end
+	while true do
+		task.wait(2)
+		if STATE.AutoBuyWeapon and _k and _k.v and _k.i then
+			pcall(function() Remotes.BuyWeapon:InvokeServer() end)
+		end
+	end
 end)
 
 task.spawn(function()
-    while true do
-        task.wait(3)
-        if STATE.AutoBuyUpgrade and _k and _k.v and _k.i then
-            pcall(function() Remotes.BuyUpgrade:InvokeServer() end)
-        end
-    end
+	while true do
+		task.wait(2)
+		if STATE.AutoBuyBackpack and _k and _k.v and _k.s then
+			pcall(function() Remotes.BuyBackpack:InvokeServer() end)
+		end
+	end
 end)
 
 task.spawn(function()
-    while true do
-        task.wait(5)
-        if STATE.AutoSpin and _k and _k.v and _k.s then
-            pcall(function() Remotes.SpinRoll:InvokeServer() end)
-            task.wait(1)
-            pcall(function() Remotes.SpinClaim:FireServer() end)
-        end
-    end
+	while true do
+		task.wait(3)
+		if STATE.AutoBuyUpgrade and _k and _k.v and _k.i then
+			pcall(function() Remotes.BuyUpgrade:InvokeServer() end)
+		end
+	end
 end)
 
 task.spawn(function()
-    while true do
-        task.wait(10)
-        if STATE.AutoPlaytime and _k and _k.v and _k.i then
-            pcall(function() Remotes.ClaimPlaytimeReward:InvokeServer() end)
-        end
-    end
+	while true do
+		task.wait(5)
+		if STATE.AutoSpin and _k and _k.v and _k.s then
+			pcall(function() Remotes.SpinRoll:InvokeServer() end)
+			task.wait(1)
+			pcall(function() Remotes.SpinClaim:FireServer() end)
+		end
+	end
 end)
 
--- Apply speed on respawn
-LocalPlayer.CharacterAdded:Connect(function(char)
-    task.wait(1)
-    local h = char:WaitForChild("Humanoid", 5)
-    if h and _k and _k.v and _k.s then
-        h.WalkSpeed = STATE.WalkSpeed
-    end
-    if h and _k and _k.v and _k.i then
-        h.JumpPower = STATE.JumpPower
-    end
+task.spawn(function()
+	while true do
+		task.wait(10)
+		if STATE.AutoPlaytime and _k and _k.v and _k.i then
+			pcall(function() Remotes.ClaimPlaytimeReward:InvokeServer() end)
+		end
+	end
 end)
 
--- ═══════════════════════════════════════════════════════════════
--- NOTIFICATION
--- ═══════════════════════════════════════════════════════════════
+LP.CharacterAdded:Connect(function(char)
+	task.wait(1)
+	local h = char:WaitForChild("Humanoid", 5)
+	if h and _k and _k.v and _k.s then
+		h.WalkSpeed = STATE.WalkSpeed
+	end
+	if h and _k and _k.v and _k.i then
+		h.JumpPower = STATE.JumpPower
+	end
+end)
+
 pcall(function()
-    Library:Notify({
-        Title = "Ivory",
-        Description = "Melt The Ice loaded!",
-        Type = "Success",
-        Time = 5,
-    })
+	Library:Notify({
+		Title = "Ivory",
+		Description = "Melt The Ice loaded!",
+		Type = "Success",
+		Time = 5,
+	})
 end)
