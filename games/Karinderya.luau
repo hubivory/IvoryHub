@@ -203,8 +203,8 @@ end end)
 -- WINDOW
 -- ═══════════════════════════════════════
 local Window = Library:CreateWindow({
-    Title = "Karinderya",
-    Footer = { "Karinderya Script |", { Text = "v1.0", Copyable = true } },
+    Title = "Ivory",
+    Footer = { "Ivory | v1.0", { Text = "v1.0", Copyable = true } },
     Minimizable = true, FuzzySearch = true, SearchValues = true,
 })
 
