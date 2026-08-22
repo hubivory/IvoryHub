@@ -700,7 +700,8 @@ task.spawn(function() while true do
                         for _, desc in ipairs(tm:GetDescendants()) do
                             if desc:IsA("ProximityPrompt") and desc.Enabled then
                                 local action = desc.ActionText:lower()
-                                if string.find(action, "wash") or string.find(action, "dirty") or string.find(action, "dish") or string.find(action, "plate") then
+                                local obj = desc.ObjectText:lower()
+                                if string.find(obj, "dirty") or string.find(obj, "dish") or string.find(action, "wash") then
                                     local pp = desc.Parent
                                     if pp and pp:IsA("BasePart") then
                                         local release = acquireTp()
