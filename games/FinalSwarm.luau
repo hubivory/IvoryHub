@@ -108,9 +108,18 @@ end)
 local _awaiting = true
 
 local _savedKey = nil
-pcall(function() _savedKey = getgenv()._ivoryKey end)
 local _savedExpiry = nil
-pcall(function() _savedExpiry = getgenv()._ivoryExpiry end)
+pcall(function()
+    if isfile("IvoryKey.txt") then
+        local data = readfile("IvoryKey.txt")
+        _savedKey, _savedExpiry = data:match("^(.-)\n(.-)$")
+        _savedExpiry = tonumber(_savedExpiry)
+    end
+end)
+if not _savedKey then
+    pcall(function() _savedKey = getgenv()._ivoryKey end)
+    pcall(function() _savedExpiry = getgenv()._ivoryExpiry end)
+end
 
 if _savedKey and _savedExpiry and os.time() * 1000 < _savedExpiry then
     _k.v = true
@@ -226,6 +235,7 @@ local function _doValidate(key)
         pcall(function()
             getgenv()._ivoryKey = key
             getgenv()._ivoryExpiry = os.time() * 1000 + 43200000
+            writefile("IvoryKey.txt", key .. "\n" .. tostring(os.time() * 1000 + 43200000))
         end)
         _st.Text = "Access granted"
         _st.TextColor3 = Color3.fromRGB(80, 220, 120)
@@ -261,6 +271,7 @@ local function _doValidate(key)
             pcall(function()
                 getgenv()._ivoryKey = key
                 getgenv()._ivoryExpiry = data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)
+                writefile("IvoryKey.txt", key .. "\n" .. tostring(data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)))
             end)
             _st.Text = "Access granted"
             _st.TextColor3 = Color3.fromRGB(80, 220, 120)
