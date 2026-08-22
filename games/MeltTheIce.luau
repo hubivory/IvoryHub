@@ -275,8 +275,14 @@ local function httpGet(url)
         return request({ Url = url, Method = "GET" })
     end)
     if ok and res and res.Body then
-        return res.Body
+        local body = res.Body
+        if body:byte(1) == 0xEF and body:byte(2) == 0xBB and body:byte(3) == 0xBF then
+            body = body:sub(4)
+        end
+        return body
     end
+    return nil
+end
     return nil
 end
 
