@@ -3,7 +3,7 @@
 -- ═══════════════════════════════════════════════════════════════
 local _k = { v = false, s = nil, h = nil, i = nil, t = 0 }
 local _kv = getgenv and getgenv() or {}
-local _endpoint = "https://work.ink/_api/v2/token/isValid/"
+local _endpoint = "https://ivory-key.your-name.workers.dev/validate"
 local _ksalt = "7x9mK2pL"
 local _hwid = game:FindFirstChild("HttpService") and HttpService:GenerateGUID(false) or "fallback"
 
@@ -104,58 +104,38 @@ local function _doValidate(key)
     _btn.Text = "..."
     _btn.AutoButtonColor = false
 
-    -- Work.ink validation
-    local ok, res = pcall(function()
-        return game:HttpGet(_endpoint .. key, true)
-    end)
-
-    if ok and res then
-        local s, data = pcall(function()
-            return game:GetService("HttpService"):JSONDecode(res)
+    -- Try Work.ink first, then Lootlabs
+    for _, provider in ipairs({"workink", "lootlabs"}) do
+        local ok, res = pcall(function()
+            return game:HttpPost(_endpoint, "application/json", true, {
+                key = key,
+                provider = provider,
+            })
         end)
-        if s and type(data) == "table" and data.valid then
-            _k.v = true
-            _k.s = data.info and data.info.token or key
-            _k.h = _hwid
-            _k.t = os.time()
-            _k.i = 0x4A + #key
 
-            _st.Text = "Access granted"
-            _st.TextColor3 = Color3.fromRGB(80, 220, 120)
-            _btn.Text = "Loading..."
-            task.wait(0.4)
-            _awaiting = false
-            _kg:Destroy()
-            return
+        if ok and res then
+            local s, data = pcall(function()
+                return game:GetService("HttpService"):JSONDecode(res)
+            end)
+            if s and type(data) == "table" and data.valid then
+                _k.v = true
+                _k.s = key
+                _k.h = _hwid
+                _k.t = os.time()
+                _k.i = 0x4A + #key
+
+                _st.Text = "Access granted"
+                _st.TextColor3 = Color3.fromRGB(80, 220, 120)
+                _btn.Text = "Loading..."
+                task.wait(0.4)
+                _awaiting = false
+                _kg:Destroy()
+                return
+            end
         end
     end
 
-    -- Lootlabs fallback validation
-    local ok2, res2 = pcall(function()
-        return game:HttpGet("https://creators.lootlabs.gg/api/public/validate?key=" .. key, true)
-    end)
-    if ok2 and res2 then
-        local s2, data2 = pcall(function()
-            return game:GetService("HttpService"):JSONDecode(res2)
-        end)
-        if s2 and type(data2) == "table" and (data2.valid or data2.success) then
-            _k.v = true
-            _k.s = key
-            _k.h = _hwid
-            _k.t = os.time()
-            _k.i = 0x4A + #key
-
-            _st.Text = "Access granted"
-            _st.TextColor3 = Color3.fromRGB(80, 220, 120)
-            _btn.Text = "Loading..."
-            task.wait(0.4)
-            _awaiting = false
-            _kg:Destroy()
-            return
-        end
-    end
-
-    _st.Text = "Invalid key - get one at discord.gg/ivoryhub"
+    _st.Text = "Invalid key - get one at work.ink/ivoryhub"
     _st.TextColor3 = Color3.fromRGB(255, 80, 80)
     _btn.Text = "Verify"
     _btn.AutoButtonColor = true
