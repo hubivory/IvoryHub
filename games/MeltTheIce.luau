@@ -777,25 +777,65 @@ MenuGroup:AddButton("Unload", function()
 	Library:Unload()
 end)
 
+local _meltedWall = nil
+
 task.spawn(function()
 	while true do
-		task.wait(STATE.AutoMeltSpeed)
+		task.wait(0.5)
 		if STATE.AutoMelt and _k and _k.v and _k.i then
 			pcall(function()
-				local tool = getTool()
-				if not tool then
-					for _, t in ipairs(LP.Backpack:GetChildren()) do
-						if t:IsA("Tool") then
-							t.Parent = LP.Character
-							tool = t
-							break
+				local hrp = getHRP()
+				if not hrp then _meltedWall = nil; return end
+
+				if not LP:GetAttribute("HoldingItem") then
+					local tool = getTool()
+					if tool then
+						Remotes.HoldItem:FireServer(tool:GetAttribute("WeaponId"))
+					end
+					return
+				end
+
+				LP:SetAttribute("AutoMelt", true)
+
+				if LP:GetAttribute("Melting") then
+					_meltedWall = true
+					return
+				end
+
+				if _meltedWall then return end
+
+				local wall = nil
+				local bestDist = math.huge
+				for _, obj in ipairs(Map:GetDescendants()) do
+					if obj:IsA("BasePart") and obj:GetAttribute("MountainWall") then
+						local rem = obj:GetAttribute("VisRem") or 0
+						if rem > 0.01 then
+							local dist = (obj.Position - hrp.Position).Magnitude
+							if dist < bestDist then
+								bestDist = dist
+								wall = obj
+							end
 						end
 					end
 				end
-				if tool then
-					Remotes.MountainMelt:FireServer()
+
+				if not wall then return end
+
+				local wallPos = wall.Position
+				local toWall = (wallPos - hrp.Position)
+				local horizontal = Vector3.new(toWall.X, 0, wallPos.Z - hrp.Position.Z)
+				if horizontal.Magnitude < 8 then
+					_meltedWall = true
+					return
+				end
+				local dir = horizontal.Unit
+				local hum = getHum()
+				if hum then
+					hum:MoveTo(hrp.Position + dir * 15)
 				end
 			end)
+		else
+			_meltedWall = nil
 		end
 	end
 end)
