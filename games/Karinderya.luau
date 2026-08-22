@@ -32,6 +32,9 @@ local autoOrderEnabled = false
 local autoClaimCodesEnabled = false
 local autoPanEnabled = false
 local autoCleanTrashEnabled = false
+local autoBuyFurnitureEnabled = false
+local autoPlaceFurnitureEnabled = false
+local autoUnlockMenuEnabled = false
 local walkSpeedValue = 16
 local infiniteJumpEnabled = false
 
@@ -66,45 +69,80 @@ local Window = Library:CreateWindow({
 
 -- TABS
 local MainTab = Window:AddTab({ Name = "Main", Icon = "utensils", Description = "Core Automation" })
+local ShopTab = Window:AddTab({ Name = "Shop", Icon = "shopping-cart", Description = "Shop Automation" })
 local PlayerTab = Window:AddTab({ Name = "Player", Icon = "user", Description = "Character Mods" })
+local LogsTab = Window:AddTab({ Name = "Logs", Icon = "scroll", Description = "Activity Logs" })
 
+-- ============================================
 -- MAIN TAB
-local AutomationBox = MainTab:AddLeftGroupbox("Automation", "zap")
+-- ============================================
 
-AutomationBox:AddToggle("AutoServe", {
+-- Automation Section (Left)
+local AutomationSection = MainTab:AddLeftGroupbox("Automation", "zap")
+
+AutomationSection:AddToggle("AutoServe", {
     Text = "Auto Serve Food",
     Default = false,
     Tooltip = "Automatically serves cooked food to tables",
 })
 
-AutomationBox:AddToggle("AutoOrder", {
+AutomationSection:AddToggle("AutoOrder", {
     Text = "Auto Assign Customers",
     Default = false,
     Tooltip = "Automatically assigns waiting customers to available tables",
 })
 
-AutomationBox:AddToggle("AutoClaimCodes", {
+AutomationSection:AddToggle("AutoClaimCodes", {
     Text = "Auto Claim Codes",
     Default = false,
     Tooltip = "Automatically redeems the current active code",
 })
 
-AutomationBox:AddToggle("AutoPan", {
+AutomationSection:AddToggle("AutoPan", {
     Text = "Auto Pan (Hit Runaway)",
     Default = false,
     Tooltip = "Automatically equips Pan and hits runaway NPCs",
 })
 
-AutomationBox:AddToggle("AutoCleanTrash", {
+AutomationSection:AddToggle("AutoCleanTrash", {
     Text = "Auto Clean Tables",
     Default = false,
     Tooltip = "Automatically cleans dirty tables after customers leave",
 })
 
-local SettingsBox = MainTab:AddRightGroupbox("Settings", "settings")
+-- Furniture Section (Right)
+local FurnitureSection = MainTab:AddRightGroupbox("Furniture", "sofa")
 
-SettingsBox:AddSlider("ServeDelay", {
-    Text = "Serve Check Delay",
+FurnitureSection:AddToggle("AutoBuyFurniture", {
+    Text = "Auto Buy Furniture",
+    Default = false,
+    Tooltip = "Automatically purchases available furniture",
+})
+
+FurnitureSection:AddToggle("AutoPlaceFurniture", {
+    Text = "Auto Place Furniture",
+    Default = false,
+    Tooltip = "Automatically places furniture in your restaurant",
+})
+
+-- Menu Section (Right)
+local MenuSection = MainTab:AddRightGroupbox("Menu", "book-open")
+
+MenuSection:AddToggle("AutoUnlockMenu", {
+    Text = "Auto Unlock Menu",
+    Default = false,
+    Tooltip = "Automatically unlocks menu items when available",
+})
+
+MenuSection:AddButton("Enable All Menus", function()
+    -- Placeholder for enabling all menus
+end)
+
+-- Settings Section (Left)
+local SettingsSection = MainTab:AddLeftGroupbox("Settings", "settings")
+
+SettingsSection:AddSlider("ServeDelay", {
+    Text = "Serve Delay",
     Default = 2,
     Min = 0.5,
     Max = 10,
@@ -113,8 +151,8 @@ SettingsBox:AddSlider("ServeDelay", {
     Tooltip = "Delay between auto serve checks",
 })
 
-SettingsBox:AddSlider("OrderDelay", {
-    Text = "Order Check Delay",
+SettingsSection:AddSlider("OrderDelay", {
+    Text = "Order Delay",
     Default = 2,
     Min = 0.5,
     Max = 10,
@@ -123,8 +161,8 @@ SettingsBox:AddSlider("OrderDelay", {
     Tooltip = "Delay between auto order checks",
 })
 
-SettingsBox:AddSlider("CleanDelay", {
-    Text = "Clean Check Delay",
+SettingsSection:AddSlider("CleanDelay", {
+    Text = "Clean Delay",
     Default = 3,
     Min = 1,
     Max = 15,
@@ -133,10 +171,45 @@ SettingsBox:AddSlider("CleanDelay", {
     Tooltip = "Delay between table clean checks",
 })
 
--- PLAYER TAB
-local CharacterBox = PlayerTab:AddLeftGroupbox("Character", "person-standing")
+SettingsSection:AddSlider("FurnitureDelay", {
+    Text = "Furniture Delay",
+    Default = 5,
+    Min = 1,
+    Max = 20,
+    Rounding = 0,
+    Suffix = "s",
+    Tooltip = "Delay between furniture actions",
+})
 
-CharacterBox:AddSlider("WalkSpeed", {
+-- Configuration Section (Left)
+local ConfigSection = MainTab:AddLeftGroupbox("Configuration", "folder")
+
+ConfigSection:AddTextBox("ConfigName", {
+    Text = "Config Name",
+    Default = "default",
+    Tooltip = "Name for your configuration",
+})
+
+ConfigSection:AddButton("Save Config", function()
+    SaveManager:SaveConfig(Options.ConfigName.Value)
+end)
+
+ConfigSection:AddButton("Load Config", function()
+    SaveManager:LoadConfig(Options.ConfigName.Value)
+end)
+
+-- ============================================
+-- SHOP TAB
+-- ============================================
+
+-- ============================================
+-- PLAYER TAB
+-- ============================================
+
+-- Character Section (Left)
+local CharacterSection = PlayerTab:AddLeftGroupbox("Character", "person-standing")
+
+CharacterSection:AddSlider("WalkSpeed", {
     Text = "Walk Speed",
     Default = 16,
     Min = 16,
@@ -145,16 +218,17 @@ CharacterBox:AddSlider("WalkSpeed", {
     Tooltip = "Character walk speed (default: 16)",
 })
 
-CharacterBox:AddToggle("InfiniteJump", {
+CharacterSection:AddToggle("InfiniteJump", {
     Text = "Infinite Jump",
     Default = false,
     Tooltip = "Allows unlimited jumping",
 })
 
-local MiscBox = PlayerTab:AddRightGroupbox("Miscellaneous", "wrench")
+-- Teleports Section (Right)
+local TeleportSection = PlayerTab:AddRightGroupbox("Teleports", "map-pin")
 
-MiscBox:AddButton({
-    Text = "Teleport to Counter",
+TeleportSection:AddButton({
+    Text = "Counter",
     Func = function()
         local plot = getPlot()
         if plot then
@@ -175,8 +249,8 @@ MiscBox:AddButton({
     end,
 })
 
-MiscBox:AddButton({
-    Text = "Teleport to Kitchen",
+TeleportSection:AddButton({
+    Text = "Kitchen",
     Func = function()
         local plot = getPlot()
         if plot then
@@ -197,8 +271,8 @@ MiscBox:AddButton({
     end,
 })
 
-MiscBox:AddButton({
-    Text = "Teleport to Serve Area",
+TeleportSection:AddButton({
+    Text = "Serve Area",
     Func = function()
         local plot = getPlot()
         if plot then
@@ -219,25 +293,61 @@ MiscBox:AddButton({
     end,
 })
 
+-- ============================================
+-- LOGS TAB
+-- ============================================
+
+local LogSection = LogsTab:AddLeftGroupbox("Activity Log", "scroll")
+
+local LogLabel = LogSection:AddLabel("No activity yet...")
+
+local function addLog(message)
+    local timestamp = os.date("%H:%M:%S")
+    LogLabel:SetText("[" .. timestamp .. "] " .. message)
+end
+
+-- ============================================
 -- TOGGLE CALLBACKS
+-- ============================================
+
 Toggles.AutoServe:OnChanged(function(state)
     autoServeEnabled = state
+    addLog(state and "Auto Serve enabled" or "Auto Serve disabled")
 end)
 
 Toggles.AutoOrder:OnChanged(function(state)
     autoOrderEnabled = state
+    addLog(state and "Auto Order enabled" or "Auto Order disabled")
 end)
 
 Toggles.AutoClaimCodes:OnChanged(function(state)
     autoClaimCodesEnabled = state
+    addLog(state and "Auto Claim Codes enabled" or "Auto Claim Codes disabled")
 end)
 
 Toggles.AutoPan:OnChanged(function(state)
     autoPanEnabled = state
+    addLog(state and "Auto Pan enabled" or "Auto Pan disabled")
 end)
 
 Toggles.AutoCleanTrash:OnChanged(function(state)
     autoCleanTrashEnabled = state
+    addLog(state and "Auto Clean enabled" or "Auto Clean disabled")
+end)
+
+Toggles.AutoBuyFurniture:OnChanged(function(state)
+    autoBuyFurnitureEnabled = state
+    addLog(state and "Auto Buy Furniture enabled" or "Auto Buy Furniture disabled")
+end)
+
+Toggles.AutoPlaceFurniture:OnChanged(function(state)
+    autoPlaceFurnitureEnabled = state
+    addLog(state and "Auto Place Furniture enabled" or "Auto Place Furniture disabled")
+end)
+
+Toggles.AutoUnlockMenu:OnChanged(function(state)
+    autoUnlockMenuEnabled = state
+    addLog(state and "Auto Unlock Menu enabled" or "Auto Unlock Menu disabled")
 end)
 
 Options.WalkSpeed:OnChanged(function(value)
@@ -251,6 +361,10 @@ end)
 Toggles.InfiniteJump:OnChanged(function(state)
     infiniteJumpEnabled = state
 end)
+
+-- ============================================
+-- LOOPS
+-- ============================================
 
 -- AUTO SERVE LOOP
 task.spawn(function()
@@ -462,8 +576,8 @@ SaveManager:SetLibrary(Library)
 SaveManager:IgnoreThemeSettings()
 SaveManager:SetIgnoreIndexes({})
 
-ThemeManager:SetFolder("KarinderyaScript")
-SaveManager:SetFolder("KarinderyaScript/saves")
+ThemeManager:SetFolder("IvoryScript")
+SaveManager:SetFolder("IvoryScript/saves")
 
 ThemeManager:ApplyToTab(MainTab)
 
