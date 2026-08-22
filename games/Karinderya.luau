@@ -110,6 +110,7 @@ local cfg = {
     autoClaimCodes = false,
     autoPan = false,
     autoClean = false,
+    autoWash = false,
     autoBuyFurniture = false,
     autoPlaceFurniture = false,
     autoBuyIngredients = false,
@@ -219,6 +220,7 @@ AutoBox:AddToggle("AutoOrder", { Text = "Auto Assign Customers", Default = false
 AutoBox:AddToggle("AutoClaimCodes", { Text = "Auto Claim Codes", Default = false })
 AutoBox:AddToggle("AutoPan", { Text = "Auto Pan (Hit Runaway)", Default = false })
 AutoBox:AddToggle("AutoClean", { Text = "Auto Clean Tables", Default = false })
+AutoBox:AddToggle("AutoWash", { Text = "Auto Wash Dishes", Default = false, Tooltip = "Auto-collects dirty dishes, puts in sink, and washes them" })
 
 local FurnBox = MainTab:AddRightGroupbox("Furniture", "armchair")
 FurnBox:AddToggle("AutoBuyFurniture", { Text = "Auto Buy Furniture", Default = false })
@@ -237,6 +239,7 @@ SetBox:AddSlider("ServeDelay", { Text = "Serve Delay", Default = 1, Min = 0.5, M
 SetBox:AddSlider("OrderDelay", { Text = "Order Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
 SetBox:AddSlider("CleanDelay", { Text = "Clean Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
 SetBox:AddSlider("FurnDelay", { Text = "Furniture Delay", Default = 5, Min = 2, Max = 20, Rounding = 1, Suffix = "s" })
+SetBox:AddSlider("WashDelay", { Text = "Wash Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
 
 -- SHOP TAB
 local GroceryBox = ShopTab:AddLeftGroupbox("Grocery", "apple")
@@ -275,8 +278,8 @@ MiscBox:AddButton({ Text = "Teleport to NPC Spawn", Func = function() local p = 
 -- LOGS TAB
 local StatusBox = LogsTab:AddLeftGroupbox("Status", "activity")
 local StatusLabels = {}
-local statusOrder = {"serve", "order", "codes", "pan", "clean", "buyFurn", "placeFurn", "buyIng", "boosts", "unlockTbl", "unlockMenu"}
-local statusNames = {serve="Serve", order="Order", codes="Codes", pan="Pan", clean="Clean", buyFurn="Buy Furn", placeFurn="Place Furn", buyIng="Buy Ing", boosts="Boosts", unlockTbl="Unlock Tbl", unlockMenu="Unlock Menu"}
+local statusOrder = {"serve", "order", "codes", "pan", "clean", "wash", "buyFurn", "placeFurn", "buyIng", "boosts", "unlockTbl", "unlockMenu"}
+local statusNames = {serve="Serve", order="Order", codes="Codes", pan="Pan", clean="Clean", wash="Wash", buyFurn="Buy Furn", placeFurn="Place Furn", buyIng="Buy Ing", boosts="Boosts", unlockTbl="Unlock Tbl", unlockMenu="Unlock Menu"}
 for _, key in ipairs(statusOrder) do
     StatusLabels[key] = StatusBox:AddLabel(statusNames[key] .. ": Idle", true)
 end
@@ -340,6 +343,7 @@ Toggles.AutoOrder:OnChanged(function(s) cfg.autoOrder = s end)
 Toggles.AutoClaimCodes:OnChanged(function(s) cfg.autoClaimCodes = s end)
 Toggles.AutoPan:OnChanged(function(s) cfg.autoPan = s end)
 Toggles.AutoClean:OnChanged(function(s) cfg.autoClean = s end)
+Toggles.AutoWash:OnChanged(function(s) cfg.autoWash = s end)
 Toggles.AutoBuyFurniture:OnChanged(function(s) cfg.autoBuyFurniture = s end)
 Toggles.AutoPlaceFurniture:OnChanged(function(s) cfg.autoPlaceFurniture = s end)
 Toggles.AutoBuyIngredients:OnChanged(function(s) cfg.autoBuyIngredients = s end)
@@ -641,6 +645,78 @@ task.spawn(function() while true do
         setStatus("clean", "Disabled")
     end
     task.wait(Options.CleanDelay and Options.CleanDelay.Value or 2)
+end end)
+
+-- ═══ AUTO WASH ═══
+-- Picks up dirty dishes from tables, brings to sink, puts and washes
+task.spawn(function() while true do
+    if cfg.autoWash then
+        setStatus("wash", "Scanning...")
+        local plot = getPlot()
+        if plot then
+            local sink = plot:FindFirstChild("Sink")
+            local sinkPut = nil
+            local sinkWash = nil
+            if sink then
+                for _, desc in ipairs(sink:GetDescendants()) do
+                    if desc:IsA("ProximityPrompt") and desc.Enabled then
+                        if desc.Name == "Put" then sinkPut = desc end
+                        if desc.Name == "Wash" then sinkWash = desc end
+                    end
+                end
+            end
+
+            local washed = 0
+            local dp = plot:FindFirstChild("DiningPlot1")
+            if dp then
+                for _, tm in ipairs(dp:GetChildren()) do
+                    if tm:IsA("Model") or tm:IsA("Folder") then
+                        for _, desc in ipairs(tm:GetDescendants()) do
+                            if desc:IsA("ProximityPrompt") and desc.Enabled then
+                                local action = desc.ActionText:lower()
+                                if string.find(action, "wash") or string.find(action, "dirty") or string.find(action, "dish") or string.find(action, "plate") then
+                                    local pp = desc.Parent
+                                    if pp and pp:IsA("BasePart") then
+                                        local release = acquireTp()
+                                        tp(pp.CFrame * CFrame.new(0, 3, 0))
+                                        task.wait(0.15)
+                                        fireproximityprompt(desc)
+                                        release()
+                                        washed = washed + 1
+                                        task.wait(0.3)
+
+                                        if sinkPut and sinkPut.Enabled then
+                                            tp(sinkPut.Parent.CFrame * CFrame.new(0, 3, 0))
+                                            task.wait(0.15)
+                                            fireproximityprompt(sinkPut)
+                                            task.wait(0.3)
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+
+            if sinkWash and sinkWash.Enabled then
+                tp(sinkWash.Parent.CFrame * CFrame.new(0, 3, 0))
+                task.wait(0.15)
+                fireproximityprompt(sinkWash)
+                task.wait(0.3)
+                washed = washed + 1
+            end
+
+            if washed > 0 then
+                setStatus("wash", "Washed " .. washed .. " dishes")
+            else
+                setStatus("wash", "Nothing to wash")
+            end
+        end
+    else
+        setStatus("wash", "Disabled")
+    end
+    task.wait(Options.WashDelay and Options.WashDelay.Value or 2)
 end end)
 
 -- ═══ AUTO BUY FURNITURE ═══
