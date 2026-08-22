@@ -951,10 +951,63 @@ local function findNearestDrop()
 	return best, bestDist
 end
 
+local function getCurrentStage()
+	local hrp = getHRP()
+	if not hrp then return 1 end
+	local bestLevel, bestDist = 1, math.huge
+	for _, obj in ipairs(Map:GetDescendants()) do
+		if obj:IsA("BasePart") and obj:GetAttribute("MountainWall") then
+			local level = obj:GetAttribute("Level")
+			if level then
+				local d = (obj.Position - hrp.Position).Magnitude
+				if d < bestDist then
+					bestDist = d
+					bestLevel = level
+				end
+			end
+		end
+	end
+	return bestLevel
+end
+
+local function aimCameraAtIceWall(level)
+	local hrp = getHRP()
+	if not hrp then return end
+	for _, obj in ipairs(Map:GetDescendants()) do
+		if obj:IsA("BasePart") and obj:GetAttribute("MountainWall") and obj:GetAttribute("Level") == level then
+			local cam = workspace.CurrentCamera
+			local eyePos = hrp.Position + Vector3.new(0, 2, 0)
+			cam.CFrame = CFrame.new(eyePos, Vector3.new(obj.Position.X, eyePos.Y, obj.Position.Z))
+			return true
+		end
+	end
+	return false
+end
+
+local function equipBestTool()
+	local LP = game.Players.LocalPlayer
+	local char = LP.Character
+	local humanoid = char and char:FindFirstChild("Humanoid")
+	if not humanoid then return end
+	if char:FindFirstChildWhichIsA("Tool") then return end
+	local backpack = LP:FindFirstChild("Backpack")
+	if backpack then
+		local tool = backpack:FindFirstChildWhichIsA("Tool")
+		if tool then
+			humanoid:EquipTool(tool)
+		end
+	end
+end
+
 local function activateGameAutoMelt()
-	if _meltActivated then return end
 	LP:SetAttribute("Set_AutoMeltBtn", true)
 	LP:SetAttribute("AutoMelt", true)
+
+	equipBestTool()
+
+	local level = getCurrentStage()
+	aimCameraAtIceWall(level)
+
 	task.wait(0.5)
 	local HUD = LP:WaitForChild("PlayerGui"):WaitForChild("HUD", 5)
 	if not HUD then return end
@@ -971,19 +1024,53 @@ local function activateGameAutoMelt()
 	end
 end
 
+local function teleportToCurrentStage()
+	local hrp = getHRP()
+	if not hrp then return end
+	local level = getCurrentStage()
+	for _, obj in ipairs(Map:GetDescendants()) do
+		if obj:IsA("BasePart") and obj:GetAttribute("MountainWall") and obj:GetAttribute("Level") == level then
+			local zoneGround = nil
+			for _, zg in ipairs(Map:GetDescendants()) do
+				if zg:IsA("BasePart") and zg.Name == "ZoneGround" then
+					local zLevel = zg.Parent and zg.Parent.Name and zg.Parent.Name:match("Zone (%d+)")
+					if zLevel and tonumber(zLevel) == level then
+						zoneGround = zg
+						break
+					end
+				end
+			end
+			if zoneGround then
+				hrp.CFrame = CFrame.new(zoneGround.Position.X, zoneGround.Position.Y + 4, zoneGround.Position.Z - 30)
+			else
+				hrp.CFrame = CFrame.new(obj.Position.X, 3, obj.Position.Z - 60)
+			end
+			return true
+		end
+	end
+	return false
+end
+
 task.spawn(function()
 	while true do
 		task.wait(1)
 		if STATE.AutoMelt and _k and _k.v and _k.i then
 			pcall(function()
+				if _goingToFire then return end
 				local hrp = getHRP()
 				if not hrp then return end
-				if not _goingToFire then
+				if not isOnZoneGround() then
+					_meltActivated = false
+					teleportToCurrentStage()
+					task.wait(1)
+				end
+				if not _meltActivated then
 					activateGameAutoMelt()
-					if not isNearWall() then
-						Remotes.TeleportToStage:FireServer()
-						task.wait(3)
-					end
+				end
+				if LP:GetAttribute("Melting") ~= true then
+					_meltActivated = false
+					aimCameraAtIceWall(getCurrentStage())
+					activateGameAutoMelt()
 				end
 			end)
 		else
@@ -1208,6 +1295,10 @@ LP.CharacterAdded:Connect(function(char)
 
 	if STATE.AutoMelt and _k and _k.v and _k.i then
 		task.wait(1)
+		if not isOnZoneGround() then
+			teleportToCurrentStage()
+			task.wait(1)
+		end
 		activateGameAutoMelt()
 	end
 end)
