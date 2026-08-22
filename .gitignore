@@ -1,0 +1,16 @@
+# Lua
+*.luac
+*.luac.out
+
+# Config files
+IvoryHub_Config.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

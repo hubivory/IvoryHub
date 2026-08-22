@@ -1,0 +1,30 @@
+{
+  "library": "ObsidianUltra",
+  "repo": "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/",
+  "window": {
+    "Title": "Ivory Hub",
+    "Icon": "box",
+    "Footer": "v1.0 | Multi-Game Loader",
+    "CopyableFooter": false,
+    "FuzzySearch": true,
+    "SearchValues": true,
+    "Minimizable": true,
+    "MinimizedWidth": 280,
+    "CornerRadius": 8
+  },
+  "theme": {
+    "Accent": "Aqua",
+    "MainColor": "Dark",
+    "FontColor": "White",
+    "Dark": true,
+    "Animations": true
+  },
+  "tabs": [
+    { "name": "Combat", "icon": "swords" },
+    { "name": "Upgrades", "icon": "arrow-up-circle" },
+    { "name": "Player", "icon": "user" },
+    { "name": "Visuals", "icon": "eye" },
+    { "name": "Stats", "icon": "bar-chart-2" },
+    { "name": "Settings", "icon": "settings" }
+  ]
+}
