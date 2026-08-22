@@ -169,8 +169,8 @@ TeleportSection:AddButton("Counter", function()
     if plot then
         local counter = plot:FindFirstChild("Counter")
         if counter then
-            local comp = counter:FindFirstChild("Comp")
-            if comp and comp:FindFirstChild("ProximityPrompt") then
+            local comp = counter:FindFirstChild("Comp", true)
+            if comp then
                 local char = LocalPlayer.Character
                 if char then
                     local hrp = char:FindFirstChild("HumanoidRootPart")
