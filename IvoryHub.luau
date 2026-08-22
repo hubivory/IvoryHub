@@ -14,19 +14,14 @@ local LocalPlayer = Players.LocalPlayer
 --// Script Registry
 --// Format: { PlaceId = { name, icon, scripts = { { name, file, description } } } }
 local GameRegistry = {
-    [85776757589518] = {
-        Name = "Final Swarm [Skills]",
-        Icon = "swords",
+    [116497287371701] = {
+        Name = "Karinderya",
+        Icon = "utensils",
         Scripts = {
             {
-                Name = "Auto Dodge + Float Kill",
-                File = "games/FinalSwarm.luau",
-                Description = "Combat automation with dodge and float"
-            },
-            {
-                Name = "Level Assistant",
-                File = "games/FinalSwarm_Level.luau",
-                Description = "Level progression helper"
+                Name = "Karinderya Script",
+                File = "games/Karinderya.luau",
+                Description = "Auto Serve, Auto Order, Auto Claim Codes, Auto Pan, Auto Clean Trash"
             }
         }
     },
