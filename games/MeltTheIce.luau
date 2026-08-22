@@ -253,6 +253,8 @@ local Remotes = {
 	ClaimPlaytimeReward = Events:WaitForChild("ClaimPlaytimeReward"),
 	HoldItem = Events:WaitForChild("HoldItem"),
 	MountainMelt = Events:WaitForChild("MountainMelt"),
+	MountainPickup = Events:WaitForChild("MountainPickup"),
+	ColdUpdate = Events:WaitForChild("ColdUpdate"),
 }
 
 local Map = Workspace:WaitForChild("Map")
@@ -769,36 +771,79 @@ MenuGroup:AddButton("Unload", function()
 end)
 
 local _meltActivated = false
+local _coldLevel = 0
+local _goingToFire = false
+local _collectingDrop = false
+
+local function findNearestWarmthFire()
+	local hrp = getHRP()
+	if not hrp then return nil end
+	local best, bestDist = nil, math.huge
+	for _, obj in ipairs(Map:GetDescendants()) do
+		if obj:IsA("Model") and obj.Name == "WarmthFire" then
+			local wz = obj:FindFirstChild("WarmZone")
+			if wz and wz:IsA("BasePart") then
+				local d = (wz.Position - hrp.Position).Magnitude
+				if d < bestDist then
+					bestDist = d
+					best = wz
+				end
+			end
+		end
+	end
+	return best
+end
+
+local function findNearestDrop()
+	local hrp = getHRP()
+	if not hrp then return nil end
+	local best, bestDist = nil, math.huge
+	for _, obj in ipairs(workspace:GetDescendants()) do
+		if obj:IsA("BasePart") and obj:GetAttribute("MountainIdx") then
+			if obj:FindFirstChildWhichIsA("ProximityPrompt") then
+				local d = (obj.Position - hrp.Position).Magnitude
+				if d < bestDist then
+					bestDist = d
+					best = obj
+				end
+			end
+		end
+	end
+	return best, bestDist
+end
+
+local function activateGameAutoMelt()
+	if _meltActivated then return end
+	LP:SetAttribute("Set_AutoMeltBtn", true)
+	LP:SetAttribute("AutoMelt", true)
+	task.wait(0.5)
+	local HUD = LP:WaitForChild("PlayerGui"):WaitForChild("HUD", 5)
+	if not HUD then return end
+	local btn = HUD:FindFirstChild("AutoMeltBTN", true)
+	if btn and btn.Visible then
+		local onBtn = btn:FindFirstChild("AutoMeltOn", true)
+		if onBtn and onBtn:IsA("ImageButton") then
+			local pos = onBtn.AbsolutePosition + onBtn.AbsoluteSize / 2
+			mousemoveabs(pos.X, pos.Y)
+			task.wait(0.1)
+			mouse1click()
+			_meltActivated = true
+		end
+	end
+end
 
 task.spawn(function()
 	while true do
-		task.wait(0.5)
+		task.wait(1)
 		if STATE.AutoMelt and _k and _k.v and _k.i then
 			pcall(function()
 				local hrp = getHRP()
 				local hum = getHum()
 				if not hrp or not hum then return end
 
-				if not _meltActivated then
-					LP:SetAttribute("Set_AutoMeltBtn", true)
-					LP:SetAttribute("AutoMelt", true)
-					task.wait(0.5)
+				activateGameAutoMelt()
 
-					local HUD = LP:WaitForChild("PlayerGui"):WaitForChild("HUD", 5)
-					if HUD then
-						local btn = HUD:FindFirstChild("AutoMeltBTN", true)
-						if btn and btn.Visible then
-							local onBtn = btn:FindFirstChild("AutoMeltOn", true)
-							if onBtn and onBtn:IsA("ImageButton") then
-								local pos = onBtn.AbsolutePosition + onBtn.AbsoluteSize / 2
-								mousemoveabs(pos.X, pos.Y)
-								task.wait(0.1)
-								mouse1click()
-								_meltActivated = true
-							end
-						end
-					end
-				end
+				if _goingToFire or _collectingDrop then return end
 
 				local wall = nil
 				local bestDist = math.huge
@@ -815,12 +860,12 @@ task.spawn(function()
 					end
 				end
 
-				if not wall then return end
-
-				local wallPos = wall.Position
-				local toWall = Vector3.new(wallPos.X - hrp.Position.X, 0, wallPos.Z - hrp.Position.Z)
-				if toWall.Magnitude > 5 then
-					hum:MoveTo(hrp.Position + toWall.Unit * 8)
+				if wall then
+					local wallPos = wall.Position
+					local toWall = Vector3.new(wallPos.X - hrp.Position.X, 0, wallPos.Z - hrp.Position.Z)
+					if toWall.Magnitude > 5 then
+						hum:MoveTo(hrp.Position + toWall.Unit * 8)
+					end
 				end
 			end)
 		else
@@ -840,23 +885,68 @@ end)
 
 task.spawn(function()
 	while true do
-		task.wait(0.3)
+		task.wait(0.5)
 		if STATE.AutoCollect and _k and _k.v and _k.i then
 			pcall(function()
 				local hrp = getHRP()
 				if not hrp then return end
-				for _, obj in ipairs(workspace:GetDescendants()) do
-					if obj:IsA("ProximityPrompt") and obj.Name == "DropPrompt" then
-						local pp = obj.Parent
-						if pp then
-							local pos = pp:IsA("Model") and pp:GetPivot().Position or (pp:IsA("BasePart") and pp.Position or nil)
-							if pos and (pos - hrp.Position).Magnitude < 50 then
-								pcall(function() obj:InputHoldBegin() end)
-								task.wait(0.1)
-								pcall(function() obj:InputHoldEnd() end)
-							end
-						end
+				if _collectingDrop then return end
+
+				local drop, dist = findNearestDrop()
+				if drop and dist < 80 then
+					_collectingDrop = true
+					local idx = drop:GetAttribute("MountainIdx")
+					local targetPos = drop.Position
+
+					hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 3, 0))
+					task.wait(0.2)
+
+					if idx then
+						pcall(function() Remotes.MountainPickup:FireServer(idx) end)
+						task.wait(0.3)
 					end
+
+					if drop and drop.Parent then
+						pcall(function()
+							local pp = drop:FindFirstChildWhichIsA("ProximityPrompt")
+							if pp then
+								pp:InputHoldBegin()
+								task.wait(pp.HoldDuration + 0.2)
+								pp:InputHoldEnd()
+							end
+						end)
+					end
+
+					_collectingDrop = false
+				end
+			end)
+		end
+	end
+end)
+
+task.spawn(function()
+	while true do
+		task.wait(1)
+		if STATE.AutoMelt and _k and _k.v and _k.i then
+			pcall(function()
+				if _goingToFire then return end
+				if _coldLevel < 70 then return end
+
+				local hrp = getHRP()
+				if not hrp then return end
+
+				local fire = findNearestWarmthFire()
+				if fire then
+					_goingToFire = true
+					hrp.CFrame = fire.CFrame + Vector3.new(0, 3, 0)
+
+					while _coldLevel > 15 do
+						task.wait(1)
+						hrp.CFrame = fire.CFrame + Vector3.new(0, 3, 0)
+						if not (_k and _k.v and _k.i) then break end
+					end
+
+					_goingToFire = false
 				end
 			end)
 		end
@@ -910,14 +1000,29 @@ task.spawn(function()
 	end
 end)
 
+pcall(function()
+	Remotes.ColdUpdate.OnClientEvent:Connect(function(value)
+		_coldLevel = tonumber(value) or 0
+	end)
+end)
+
 LP.CharacterAdded:Connect(function(char)
-	task.wait(1)
+	_meltActivated = false
+	_goingToFire = false
+	_collectingDrop = false
+
+	task.wait(2)
 	local h = char:WaitForChild("Humanoid", 5)
 	if h and _k and _k.v and _k.s then
 		h.WalkSpeed = STATE.WalkSpeed
 	end
 	if h and _k and _k.v and _k.i then
 		h.JumpPower = STATE.JumpPower
+	end
+
+	if STATE.AutoMelt and _k and _k.v and _k.i then
+		task.wait(1)
+		activateGameAutoMelt()
 	end
 end)
 
