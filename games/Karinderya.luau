@@ -438,6 +438,32 @@ task.spawn(function() while true do
         local totalAssigned = 0
         for attempt = 1, 15 do
             setStatus("order", "Assigning... (" .. totalAssigned .. ")")
+            -- First, fire Take Order prompt at counter if available
+            local plot = getPlot()
+            if plot then
+                local counter = plot:FindFirstChild("Counter")
+                if counter then
+                    local comp = counter:FindFirstChild("Comp", true)
+                    if comp then
+                        for _, desc in ipairs(comp:GetDescendants()) do
+                            if desc:IsA("ProximityPrompt") and desc.Enabled then
+                                local action = desc.ActionText
+                                if string.find(action, "Take Order") or string.find(action, "Take") then
+                                    local pp = desc.Parent
+                                    if pp and pp:IsA("BasePart") then
+                                        local release = acquireTp()
+                                        tp(pp.CFrame * CFrame.new(0, 3, 0))
+                                        task.wait(0.1)
+                                        fireproximityprompt(desc)
+                                        release()
+                                        task.wait(0.15)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
             local ok, npc, tbls = pcall(function() return GetCounterInfo:InvokeServer() end)
             if ok and npc and tbls then
                 local id = npc.NpcId or npc.TemplateName or ""
