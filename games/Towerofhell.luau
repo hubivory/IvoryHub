@@ -305,22 +305,8 @@ local function getTopCFrame()
     local folder = findTowerFolder()
 
     -- Priority 1: exit carpet in finish area (the green win pad)
-    local tower = Workspace:FindFirstChild("tower")
-    if tower then
-        local sections = tower:FindFirstChild("sections")
-        if sections then
-            local finish = sections:FindFirstChild("finish")
-            if finish then
-                local exit = finish:FindFirstChild("exit")
-                if exit then
-                    local carpet = exit:FindFirstChild("carpet")
-                    if carpet and carpet:IsA("BasePart") and carpet.CanCollide then
-                        local topY = carpet.Position.Y + (carpet.Size.Y / 2) + 1
-                        return CFrame.new(carpet.Position.X, topY, carpet.Position.Z)
-                    end
-                end
-            end
-        end
+    if workspace.tower.sections.finish.FinishGlow ~= nil then
+        return workspace.tower.sections.finish.FinishGlow.CFrame
     end
 
     -- Priority 2: highest wide collidable platform
@@ -356,22 +342,10 @@ end
 -- Safe teleport: instant CFrame set (bypasses tween that hits kill bricks)
 local function safeTeleport(cf)
     local hrp = getHRP()
+    print(hrp)
+    print(cf)
     if not hrp or not cf then return end
     hrp.CFrame = cf
-end
-
--- Instant teleport to safe spot, then slowly move down 10 studs
-local function safeTeleport(targetCF)
-    local hrp = getHRP()
-    if not hrp or not targetCF then return end
-    -- Teleport to top of the surface first
-    hrp.CFrame = targetCF
-    -- Then slowly move down 10 studs
-    task.wait(0.3)
-    local downCF = targetCF - Vector3.new(0, 10, 0)
-    local tween = TweenService:Create(hrp, TweenInfo.new(2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { CFrame = downCF })
-    tween:Play()
-    tween.Completed:Wait()
 end
 
 -- ═══════════════════════════════════════════════════════════════
@@ -400,7 +374,16 @@ do
         Text = "Win Now",
         Func = function()
             if not (_k and _k.v and _k.i) then return end
-            local cf = getTopCFrame()
+            local hrp = getHRP()
+            local offset
+            if hrp.Position.Z < getTopCFrame().Position.Z then
+                offset = Vector3.new(0, 0, -1)
+            elseif hrp.Position.Z > getTopCFrame().Position.Z then
+                offset = Vector3.new(0, 0, 1)
+            else 
+                offset = Vector3.new(0, 0, 0)
+            end
+            local cf = getTopCFrame() + offset
             if cf then
                 safeTeleport(cf)
                 Library:Notify({ Title = "Ivory", Description = "Teleported!", Time = 2, Type = "Success" })
