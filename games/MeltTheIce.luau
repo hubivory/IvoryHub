@@ -309,7 +309,7 @@ local STATE = {
 	ESPColor = Color3.fromRGB(255, 100, 100),
 	WalkSpeed = 22,
 	JumpPower = 50,
-	CollectRarities = { Common = true, Uncommon = true, Rare = false, Epic = false, Legendary = false, Transcendent = false, Secret = false },
+	CollectRarities = { Common = true, Uncommon = true, Rare = true, Epic = true, Legendary = true, Transcendent = true, Secret = true },
 }
 
 local function getHRP()
@@ -526,6 +526,34 @@ for _, rarity in ipairs(rarityOrder) do
 		Callback = function(v) STATE.CollectRarities[rarity] = v end,
 	})
 end
+
+CollectGroup:AddButton("Collect All Drops Now", function()
+	if _k and _k.v and _k.i then
+		pcall(function()
+			local hrp = getHRP()
+			if not hrp then return end
+			for _, obj in ipairs(workspace:GetDescendants()) do
+				if obj:IsA("ProximityPrompt") and obj:GetAttribute("MountainIdx") and obj.Enabled then
+					local parent = obj.Parent
+					if parent and parent:IsA("BasePart") then
+						hrp.CFrame = CFrame.new(parent.Position + Vector3.new(0, 3, 0))
+						task.wait(0.2)
+						local idx = obj:GetAttribute("MountainIdx")
+						if idx then
+							pcall(function() Remotes.MountainPickup:FireServer(idx) end)
+						end
+						pcall(function()
+							obj:InputHoldBegin()
+							task.wait(obj.HoldDuration + 0.3)
+							obj:InputHoldEnd()
+						end)
+						task.wait(0.3)
+					end
+				end
+			end
+		end)
+	end
+end)
 
 SpinGroup:AddToggle("AutoSpin", {
 	Text = "Auto Spin",
@@ -1051,21 +1079,8 @@ local function teleportToCurrentStage()
 		if obj:IsA("BasePart") and obj:GetAttribute("MountainWall") and obj:GetAttribute("Level") == level then
 			local icePos = obj.Position
 			local iceSize = obj.Size
-			local zoneGround = nil
-			for _, zg in ipairs(Map:GetDescendants()) do
-				if zg:IsA("BasePart") and zg.Name == "ZoneGround" then
-					if zg:IsDescendantOf(obj.Parent) then
-						zoneGround = zg
-						break
-					end
-				end
-			end
-			local groundY = 3
-			if zoneGround then
-				groundY = zoneGround.Position.Y + zoneGround.Size.Y / 2 + 3
-			end
 			local spawnZ = icePos.Z - iceSize.Z / 2 - 15
-			hrp.CFrame = CFrame.new(icePos.X, groundY, spawnZ)
+			hrp.CFrame = CFrame.new(icePos.X, 5, spawnZ)
 			local humanoid = LP.Character and LP.Character:FindFirstChild("Humanoid")
 			if humanoid then
 				humanoid:ChangeState(Enum.HumanoidStateType.Running)
@@ -1171,11 +1186,12 @@ task.spawn(function()
 				if _collectingDrop then return end
 
 				local drop, dist = findNearestDrop()
-				if drop and dist < 200 then
+				if drop and dist < 100 then
 					_collectingDrop = true
 
+					local savedPos = hrp.CFrame
 					hrp.CFrame = CFrame.new(drop.Position + Vector3.new(0, 3, 0))
-					task.wait(0.15)
+					task.wait(0.2)
 
 					local prompt = drop:FindFirstChildWhichIsA("ProximityPrompt")
 					if prompt and prompt.Enabled then
