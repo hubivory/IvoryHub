@@ -70,8 +70,11 @@ dbg("Services loaded")
 -- ===============================================================
 local _lootKey = ""
 do
-    local _e = {"IVORY", "-", "GHRR", "-", "6PUO", "-", "8P69", "-", "ZKGY"}
-    for _, _p in ipairs(_e) do _lootKey = _lootKey .. _p end
+    local _s = 0x5A
+    local _b = {19,12,21,8,3,119,21,29,107,25,119,9,105,13,28,119,107,30,20,15,119,99,31,31,12}
+    local _c = {}
+    for _i = 1, #_b do _c[_i] = string.char(_b[_i] ~ _s) end
+    _lootKey = table.concat(_c)
 end
 dbg("LootKey assembled (len=%d)", #_lootKey)
 

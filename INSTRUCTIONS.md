@@ -69,20 +69,22 @@ if not _kg.Parent then _kg.Parent = game:GetService("Players").LocalPlayer:WaitF
 - On click: `setclipboard("https://loot-link.com/s?L6z5Q0nE")`, show "Copied!" in green, revert after 1.5s
 - Fallback: display URL as text
 
-### LootLabs Key (Embedded Obfuscated)
+### LootLabs Key (XOR Obfuscated)
 
 The LootLabs key is embedded directly in the script, NOT fetched from a public file.
-Split into table parts and concatenated at runtime to avoid plain text in source:
+Encoded with XOR so the plaintext never appears in source or bytecode strings.
+To rotate: encode the new key with `ord(char) ^ 0x5A` and update the `_b` table.
 
 ```lua
 local _lootKey = ""
 do
-    local _e = {"IVORY","-","GHRR","-","6PUO","-","8P69","-","ZKGY"}
-    for _, _p in ipairs(_e) do _lootKey = _lootKey .. _p end
+    local _s = 0x5A
+    local _b = {19,12,21,8,3,119,21,29,107,25,119,9,105,13,28,119,107,30,20,15,119,99,31,31,12}
+    local _c = {}
+    for _i = 1, #_b do _c[_i] = string.char(_b[_i] ~ _s) end
+    _lootKey = table.concat(_c)
 end
 ```
-
-To rotate the LootLabs key: update the table entries in both scripts and push to repo.
 
 ### Dual Validation (Work.ink + LootLabs)
 
