@@ -2,7 +2,8 @@
 --// https://github.com/hubivory/IvoryHub
 --// Automatically loads the script for your current game
 
-local GITHUB_RAW = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/"
+local GITHUB_RAW = "https://raw.githubusercontent.com/hubivory/IvoryHub/"
+local GITHUB_API = "https://api.github.com/repos/hubivory/IvoryHub/commits?per_page=1"
 
 local GameScripts = {
     [116497287371701] = "games/Karinderya.luau",
@@ -24,7 +25,16 @@ end
 print("[Ivory Hub] Loading for game: " .. PlaceId)
 
 local success, err = pcall(function()
-    local url = GITHUB_RAW .. ScriptFile .. "?t=" .. tostring(tick())
+    -- Get latest commit hash to bypass CDN cache
+    local commitHash = "main"
+    pcall(function()
+        local apiRes = request({ Url = GITHUB_API, Method = "GET" })
+        if apiRes and apiRes.Body then
+            local hash = apiRes.Body:match('"sha":"(%w+)"')
+            if hash then commitHash = hash end
+        end
+    end)
+    local url = GITHUB_RAW .. commitHash .. "/" .. ScriptFile
     local res = request({ Url = url, Method = "GET" })
     local content = res and res.Body or nil
     if not content then error("HTTP fetch failed") end
