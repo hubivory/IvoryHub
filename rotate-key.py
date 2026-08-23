@@ -40,7 +40,11 @@ def encode_key(key):
 
 
 def main():
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    # Find project root (where rotate-key.py lives, or fall back to cwd)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    if os.path.isfile(os.path.join(script_dir, "IvoryHub.luau")):
+        os.chdir(script_dir)
+    # else: assume cwd is already the project root
 
     if len(sys.argv) > 1:
         key = sys.argv[1].upper()
