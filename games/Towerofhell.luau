@@ -23,7 +23,7 @@ if not _kg.Parent then _kg.Parent = game:GetService("Players").LocalPlayer:WaitF
 local _lootKey = ""
 do
     local _s = 0x5A
-    local _b = {19,12,21,8,3,119,21,11,20,104,119,110,23,111,107,119,108,28,2,15,119,108,24,10,108}
+    local _b = {19,12,21,8,3,119,22,11,11,15,119,108,16,30,9,119,13,16,11,30,119,109,0,24,13}
     local _c = {}
     for _i = 1, #_b do _c[_i] = string.char(_b[_i] ~ _s) end
     _lootKey = table.concat(_c)
