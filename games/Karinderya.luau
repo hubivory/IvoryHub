@@ -1,330 +1,1868 @@
--- ═══════════════════════════════════════════════════════════════
+﻿-- ===============================================================
+-- IVORY HUB - KEY SYSTEM UI
+-- "Liquid Glass - Sakura" edition
+-- Central glowing logo, 3 floating buttons, falling sakura petals,
+-- real backdrop blur, animated liquid gradient blobs, spring UI.
+-- ===============================================================
+
+-- ===============================================================
 -- KEY SYSTEM - DO NOT MODIFY THIS BLOCK
--- ═══════════════════════════════════════════════════════════════
+-- ===============================================================
 local _k = { v = false, s = nil, h = nil, i = nil, t = 0 }
-local _genv = getgenv()
-local _hwid = ""
-pcall(function() _hwid = game:GetService("RbxAnalyticsService"):GetClientId() end)
-if _hwid == "" then _hwid = game:GetService("HttpService"):JSONEncode({game.Players.LocalPlayer.UserId, math.random(1,999999)}) end
-
--- Key entry ScreenGui
-local _kg = Instance.new("ScreenGui")
-_kg.Name = "IvoryKey"
-_kg.ResetOnSpawn = false
-_kg.DisplayOrder = 9999
-pcall(function() _kg.Parent = game:GetService("CoreGui") end)
-if not _kg.Parent then _kg.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui") end
-
-local _mf = Instance.new("Frame", _kg)
-_mf.Size = UDim2.new(0, 380, 0, 295)
-_mf.Position = UDim2.new(0.5, -190, 0.5, -110)
-_mf.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-_mf.BorderSizePixel = 0
-Instance.new("UICorner", _mf).CornerRadius = UDim.new(0, 8)
-local _stroke = Instance.new("UIStroke", _mf)
-_stroke.Color = Color3.fromRGB(90, 60, 200)
-_stroke.Thickness = 1.5
-
-local _title = Instance.new("TextLabel", _mf)
-_title.Size = UDim2.new(1, 0, 0, 40)
-_title.BackgroundTransparency = 1
-_title.Text = "Ivory Hub"
-_title.TextColor3 = Color3.fromRGB(200, 170, 255)
-_title.TextSize = 22
-_title.Font = Enum.Font.GothamBold
-
-local _sub = Instance.new("TextLabel", _mf)
-_sub.Size = UDim2.new(1, -30, 0, 20)
-_sub.Position = UDim2.new(0, 15, 0, 38)
-_sub.BackgroundTransparency = 1
-_sub.Text = "Enter your key to continue"
-_sub.TextColor3 = Color3.fromRGB(140, 140, 150)
-_sub.TextSize = 13
-_sub.Font = Enum.Font.Gotham
-_sub.TextXAlignment = Enum.TextXAlignment.Left
-
-local _inp = Instance.new("TextBox", _mf)
-_inp.Size = UDim2.new(1, -30, 0, 36)
-_inp.Position = UDim2.new(0, 15, 0, 65)
-_inp.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
-_inp.BorderSizePixel = 0
-_inp.TextColor3 = Color3.fromRGB(220, 220, 230)
-_inp.PlaceholderText = "IVORY-XXXX-XXXX-XXXX"
-_inp.PlaceholderColor3 = Color3.fromRGB(80, 80, 90)
-_inp.TextSize = 14
-_inp.Font = Enum.Font.Code
-_inp.ClearTextOnFocus = false
-Instance.new("UICorner", _inp).CornerRadius = UDim.new(0, 6)
-
-local _btn = Instance.new("TextButton", _mf)
-_btn.Size = UDim2.new(1, -30, 0, 36)
-_btn.Position = UDim2.new(0, 15, 0, 110)
-_btn.BackgroundColor3 = Color3.fromRGB(90, 60, 200)
-_btn.BorderSizePixel = 0
-_btn.Text = "Verify"
-_btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-_btn.TextSize = 15
-_btn.Font = Enum.Font.GothamBold
-_btn.AutoButtonColor = true
-Instance.new("UICorner", _btn).CornerRadius = UDim.new(0, 6)
-
-local _st = Instance.new("TextLabel", _mf)
-_st.Size = UDim2.new(1, -30, 0, 20)
-_st.Position = UDim2.new(0, 15, 0, 152)
-_st.BackgroundTransparency = 1
-_st.Text = ""
-_st.TextColor3 = Color3.fromRGB(255, 80, 80)
-_st.TextSize = 12
-_st.Font = Enum.Font.Gotham
-
-local _link = Instance.new("TextButton", _mf)
-_link.Size = UDim2.new(1, -30, 0, 22)
-_link.Position = UDim2.new(0, 15, 0, 188)
-_link.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-_link.BorderSizePixel = 0
-_link.Text = "Get Key - work.ink/2STL/Ivory"
-            _link.TextColor3 = Color3.fromRGB(120, 180, 255)
-_link.TextSize = 11
-_link.Font = Enum.Font.GothamBold
-_link.AutoButtonColor = true
-Instance.new("UICorner", _link).CornerRadius = UDim.new(0, 4)
-_link.MouseButton1Click:Connect(function()
-    pcall(function()
-        if setclipboard then
-            setclipboard("https://work.ink/2STL/Ivory")
-            _link.Text = "Copied!"
-            _link.TextColor3 = Color3.fromRGB(80, 220, 120)
-            task.wait(1.5)
-_link.Text = "Get Key - work.ink/2STL/Ivory"
-            _link.TextColor3 = Color3.fromRGB(120, 180, 255)
-        else
-            _link.Text = "work.ink/2STL/Ivory"
-        end
-    end)
-end)
-
-local _awaiting = true
-
-local _savedKey = nil
-local _savedExpiry = nil
-local _savedHwid = nil
-pcall(function()
-    if isfile("IvoryKey.txt") then
-        local data = readfile("IvoryKey.txt")
-        _savedKey, _savedExpiry, _savedHwid = data:match("^(.-)\n(.-)\n?(.-)$")
-        _savedExpiry = tonumber(_savedExpiry)
-        if _savedHwid == "" then _savedHwid = nil end
-    end
-end)
-if not _savedKey then
-    pcall(function() _savedKey = _genv._ivoryKey end)
-    pcall(function() _savedExpiry = _genv._ivoryExpiry end)
+local _hwid = tostring(math.random(100000,999999)) .. tostring(tick()):sub(-6)
+local _integritySalt = 0x4A
+local function _verifyIntegrity()
+    if not _k or not _k.v then return false end
+    if _k.i ~= (_integritySalt + #(_k.s or "")) then _k.v = false; return false end
+    return true
 end
 
-if _savedKey and _savedExpiry and os.time() * 1000 < _savedExpiry then
-    if _savedHwid and _savedHwid ~= _hwid then
-        pcall(function() delfile("IvoryKey.txt") end)
-    else
-        _k.v = true
-        _k.s = _savedKey
-        _k.h = _hwid
-        _k.t = os.time()
-        _k.i = 0x4A + #_savedKey
-        _awaiting = false
-        pcall(function() _kg:Destroy() end)
-    end
-end
+-- ===============================================================
+-- SERVICES
+-- ===============================================================
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local SoundService = game:GetService("SoundService")
+local Camera = workspace.CurrentCamera
 
-local _discord = Instance.new("TextButton", _mf)
-_discord.Size = UDim2.new(1, -30, 0, 20)
-_discord.Position = UDim2.new(0, 15, 0, 188)
-_discord.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-_discord.BorderSizePixel = 0
-_discord.Text = "Join for dupe"
-_discord.TextColor3 = Color3.fromRGB(255, 255, 255)
-_discord.TextSize = 11
-_discord.Font = Enum.Font.GothamBold
-_discord.AutoButtonColor = true
-Instance.new("UICorner", _discord).CornerRadius = UDim.new(0, 4)
-_discord.MouseButton1Click:Connect(function()
-    pcall(function()
-        if setclipboard then
-            setclipboard("https://discord.gg/mrQFkCJfEe")
-            _discord.Text = "Copied!"
-            _discord.TextColor3 = Color3.fromRGB(80, 220, 120)
-            task.wait(1.5)
-            _discord.Text = "Join for dupe"
-            _discord.TextColor3 = Color3.fromRGB(255, 255, 255)
-        else
-            _discord.Text = "discord.gg/mrQFkCJfEe"
-        end
-    end)
-end)
-
-local _workink = Instance.new("TextButton", _mf)
-_workink.Size = UDim2.new(1, -30, 0, 20)
-_workink.Position = UDim2.new(0, 15, 0, 212)
-_workink.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-_workink.BorderSizePixel = 0
-_workink.Text = "Get Key - Work.ink"
-_workink.TextColor3 = Color3.fromRGB(120, 180, 255)
-_workink.TextSize = 11
-_workink.Font = Enum.Font.GothamBold
-_workink.AutoButtonColor = true
-Instance.new("UICorner", _workink).CornerRadius = UDim.new(0, 4)
-_workink.MouseButton1Click:Connect(function()
-    pcall(function()
-        if setclipboard then
-            setclipboard("https://work.ink/2STL/Ivory")
-            _workink.Text = "Copied!"
-            _workink.TextColor3 = Color3.fromRGB(80, 220, 120)
-            task.wait(1.5)
-            _workink.Text = "Get Key - Work.ink"
-            _workink.TextColor3 = Color3.fromRGB(120, 180, 255)
-        else
-            _workink.Text = "work.ink/2STL/Ivory"
-        end
-    end)
-end)
-
-local _lootlabs = Instance.new("TextButton", _mf)
-_lootlabs.Size = UDim2.new(1, -30, 0, 20)
-_lootlabs.Position = UDim2.new(0, 15, 0, 236)
-_lootlabs.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-_lootlabs.BorderSizePixel = 0
-_lootlabs.Text = "Get Key - LootLabs"
-_lootlabs.TextColor3 = Color3.fromRGB(200, 130, 255)
-_lootlabs.TextSize = 11
-_lootlabs.Font = Enum.Font.GothamBold
-_lootlabs.AutoButtonColor = true
-Instance.new("UICorner", _lootlabs).CornerRadius = UDim.new(0, 4)
-_lootlabs.MouseButton1Click:Connect(function()
-    pcall(function()
-        if setclipboard then
-            setclipboard("https://loot-link.com/s?L6z5Q0nE")
-            _lootlabs.Text = "Copied!"
-            _lootlabs.TextColor3 = Color3.fromRGB(80, 220, 120)
-            task.wait(1.5)
-            _lootlabs.Text = "Get Key - LootLabs"
-            _lootlabs.TextColor3 = Color3.fromRGB(200, 130, 255)
-        else
-            _lootlabs.Text = "loot-link.com/s?L6z5Q0nE"
-        end
-    end)
-end)
-
+-- ===============================================================
+-- EMBEDDED LOOTLABS KEY (OBFUSCATED - table parts, concatenated at runtime)
+-- ===============================================================
 local _lootKey = ""
 do
-    local _s = 0x5A
-    local _b = {19,12,21,8,3,119,111,19,27,110,119,104,21,17,110,119,22,111,98,24,119,29,99,106,10}
-    local _c = {}
-    for _i = 1, #_b do _c[_i] = string.char(bit32.bxor(_b[_i], _s)) end
-    _lootKey = table.concat(_c)
+    local _e = {"IVORY", "-", "GHRR", "-", "6PUO", "-", "8P69", "-", "ZKGY"}
+    for _, _p in ipairs(_e) do _lootKey = _lootKey .. _p end
 end
 
-local function _doValidate(key)
-    if not key or key == "" then
-        _st.Text = "Please enter a key"
-        _st.TextColor3 = Color3.fromRGB(255, 80, 80)
-        return
+-- ===============================================================
+-- DESIGN TOKENS  (liquid glass / iOS-26 inspired palette + sakura accents)
+-- ===============================================================
+local Theme = {
+    GlassCard      = Color3.fromRGB(18, 16, 26),
+    GlassCardAlt   = Color3.fromRGB(26, 22, 38),
+    GlassInput     = Color3.fromRGB(255, 255, 255),
+    Stroke         = Color3.fromRGB(255, 255, 255),
+
+    TextPrimary    = Color3.fromRGB(248, 244, 255),
+    TextSecondary  = Color3.fromRGB(184, 176, 205),
+    TextTertiary   = Color3.fromRGB(134, 126, 156),
+
+    AccentA        = Color3.fromRGB(168, 120, 255),
+    AccentB        = Color3.fromRGB(255, 130, 205),
+    AccentC        = Color3.fromRGB(110, 100, 255),
+
+    Sakura         = Color3.fromRGB(255, 183, 206),
+    SakuraLight    = Color3.fromRGB(255, 224, 235),
+
+    Success        = Color3.fromRGB(96, 235, 150),
+    Error          = Color3.fromRGB(255, 108, 108),
+    Discord        = Color3.fromRGB(114, 137, 218),
+    Blue           = Color3.fromRGB(120, 180, 255),
+
+    WorkInkTeal    = Color3.fromRGB(0, 158, 130),
+    LootPurple     = Color3.fromRGB(124, 58, 205),
+    LootGold       = Color3.fromRGB(255, 196, 40),
+}
+
+-- ===============================================================
+-- TWEEN HELPERS
+-- ===============================================================
+local EASE_OUT_SOFT = TweenInfo.new(0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+local EASE_SPRING   = TweenInfo.new(0.4,  Enum.EasingStyle.Back,  Enum.EasingDirection.Out)
+local EASE_QUICK    = TweenInfo.new(0.14, Enum.EasingStyle.Quad,  Enum.EasingDirection.Out)
+local EASE_SLOW     = TweenInfo.new(0.6,  Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+
+local function tw(instance, info, props)
+    local tween = TweenService:Create(instance, info, props)
+    tween:Play()
+    return tween
+end
+
+-- ===============================================================
+-- VECTOR ICON BUILDERS
+-- Every icon is drawn from plain Frames/UIStroke/UIGradient - no
+-- font glyphs, no Unicode, no missing-character "tofu boxes".
+-- Each builder draws into `parent` (any size) centered via scale
+-- anchors, so it drops cleanly into any container.
+-- ===============================================================
+
+-- small rounded-diamond brand mark (used for the central logo)
+local function IconDiamondMark(parent, color, size)
+    size = size or 30
+    local dot = Color3.fromRGB(20, 18, 28)
+    local gem = Instance.new("Frame")
+    gem.Size = UDim2.fromOffset(size, size)
+    gem.Position = UDim2.fromScale(0.5, 0.5)
+    gem.AnchorPoint = Vector2.new(0.5, 0.5)
+    gem.Rotation = 45
+    gem.BackgroundColor3 = color
+    gem.BorderSizePixel = 0
+    gem.ZIndex = parent.ZIndex + 1
+    gem.Parent = parent
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = gem
+    local shine = Instance.new("UIGradient")
+    shine.Rotation = 90
+    shine.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(0.45, color),
+        ColorSequenceKeypoint.new(1, color),
+    })
+    shine.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0.15),
+        NumberSequenceKeypoint.new(0.5, 0.35),
+        NumberSequenceKeypoint.new(1, 0.35),
+    })
+    shine.Parent = gem
+    return gem
+end
+
+-- chat-bubble glyph (Discord) - pill bubble + tail + three "typing" dots
+local function IconChat(parent, color)
+    local dot = Color3.fromRGB(20, 18, 28)
+
+    local bubble = Instance.new("Frame")
+    bubble.Size = UDim2.fromOffset(24, 16)
+    bubble.Position = UDim2.new(0.5, 0, 0.5, -3)
+    bubble.AnchorPoint = Vector2.new(0.5, 0.5)
+    bubble.BackgroundColor3 = color
+    bubble.BorderSizePixel = 0
+    bubble.ZIndex = parent.ZIndex + 1
+    bubble.Parent = parent
+    local bubbleCorner = Instance.new("UICorner")
+    bubbleCorner.CornerRadius = UDim.new(1, 0)
+    bubbleCorner.Parent = bubble
+
+    local tail = Instance.new("Frame")
+    tail.Size = UDim2.fromOffset(7, 7)
+    tail.Position = UDim2.new(0.5, -6, 0.5, 5)
+    tail.AnchorPoint = Vector2.new(0.5, 0.5)
+    tail.Rotation = 45
+    tail.BackgroundColor3 = color
+    tail.BorderSizePixel = 0
+    tail.ZIndex = parent.ZIndex + 1
+    tail.Parent = parent
+    local tailCorner = Instance.new("UICorner")
+    tailCorner.CornerRadius = UDim.new(0, 2)
+    tailCorner.Parent = tail
+
+    for i = 0, 2 do
+        local d = Instance.new("Frame")
+        d.Size = UDim2.fromOffset(3, 3)
+        d.Position = UDim2.new(0.5, -7 + i * 7, 0.5, -3)
+        d.AnchorPoint = Vector2.new(0.5, 0.5)
+        d.BackgroundColor3 = dot
+        d.BorderSizePixel = 0
+        d.ZIndex = parent.ZIndex + 2
+        d.Parent = parent
+        local dCorner = Instance.new("UICorner")
+        dCorner.CornerRadius = UDim.new(1, 0)
+        dCorner.Parent = d
+    end
+end
+
+
+-- Work.ink-inspired mark: a bold rounded "W" built from 4 diagonal bars,
+-- meant to evoke their wordmark on their teal circle badge. Original
+-- geometry (computed zigzag, not a traced copy of their exact letterform).
+local function IconWorkMark(parent, color)
+    local points = {
+        { -11, -7 }, { -5.5, 7 }, { 0, -2 }, { 5.5, 7 }, { 11, -7 },
+    }
+    for i = 1, #points - 1 do
+        local x1, y1 = points[i][1], points[i][2]
+        local x2, y2 = points[i + 1][1], points[i + 1][2]
+        local dx, dy = x2 - x1, y2 - y1
+        local length = math.sqrt(dx * dx + dy * dy)
+        local angle = math.deg(math.atan2(dy, dx))
+        local midX, midY = (x1 + x2) / 2, (y1 + y2) / 2
+
+        local bar = Instance.new("Frame")
+        bar.Size = UDim2.fromOffset(length + 3, 4.4)
+        bar.Position = UDim2.new(0.5, midX, 0.5, midY)
+        bar.AnchorPoint = Vector2.new(0.5, 0.5)
+        bar.Rotation = angle
+        bar.BackgroundColor3 = color
+        bar.BorderSizePixel = 0
+        bar.ZIndex = parent.ZIndex + 1
+        bar.Parent = parent
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = bar
+    end
+end
+
+-- LootLabs-inspired mark: a two-tone faceted gem (purple body, gold
+-- highlight facet) evoking their purple/gold palette without tracing
+-- their actual isometric cube glyph.
+local function IconLootGem(parent, colorA, colorB)
+    local gem = Instance.new("Frame")
+    gem.Size = UDim2.fromOffset(20, 20)
+    gem.Position = UDim2.fromScale(0.5, 0.5)
+    gem.AnchorPoint = Vector2.new(0.5, 0.5)
+    gem.Rotation = 45
+    gem.BackgroundColor3 = colorA
+    gem.BorderSizePixel = 0
+    gem.ZIndex = parent.ZIndex + 1
+    gem.Parent = parent
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 4)
+    corner.Parent = gem
+
+    local facet = Instance.new("Frame")
+    facet.Size = UDim2.fromOffset(9, 9)
+    facet.Position = UDim2.new(0, -1, 0, -1)
+    facet.AnchorPoint = Vector2.new(0, 0)
+    facet.BackgroundColor3 = colorB
+    facet.BorderSizePixel = 0
+    facet.ZIndex = parent.ZIndex + 2
+    facet.Parent = gem
+    local facetCorner = Instance.new("UICorner")
+    facetCorner.CornerRadius = UDim.new(0, 2)
+    facetCorner.Parent = facet
+
+    local shine = Instance.new("UIGradient")
+    shine.Rotation = 90
+    shine.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(0.4, colorA),
+        ColorSequenceKeypoint.new(1, colorA),
+    })
+    shine.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0.35),
+        NumberSequenceKeypoint.new(0.45, 0.55),
+        NumberSequenceKeypoint.new(1, 0.55),
+    })
+    shine.Parent = gem
+end
+
+-- small right-pointing chevron (two angled bars forming a ">") - returns
+-- both bars so callers can slide/fade them for a hover micro-interaction
+local function IconChevron(parent, color, size)
+    size = size or 6
+    local top = Instance.new("Frame")
+    top.Size = UDim2.fromOffset(size, 1.8)
+    top.Position = UDim2.new(0.5, 0, 0.5, -size * 0.36)
+    top.AnchorPoint = Vector2.new(0.5, 0.5)
+    top.Rotation = 45
+    top.BackgroundColor3 = color
+    top.BorderSizePixel = 0
+    top.ZIndex = parent.ZIndex + 1
+    top.Parent = parent
+    local c1 = Instance.new("UICorner")
+    c1.CornerRadius = UDim.new(1, 0)
+    c1.Parent = top
+
+    local bottom = top:Clone()
+    bottom.Position = UDim2.new(0.5, 0, 0.5, size * 0.36)
+    bottom.Rotation = -45
+    bottom.Parent = parent
+
+    return top, bottom
+end
+
+-- tiny left-aligned key icon (used inside the input field)
+local function IconKeyMini(parent, color)
+    local ring = Instance.new("Frame")
+    ring.Size = UDim2.fromOffset(9, 9)
+    ring.Position = UDim2.new(0, 0, 0.5, 0)
+    ring.AnchorPoint = Vector2.new(0, 0.5)
+    ring.BackgroundTransparency = 1
+    ring.ZIndex = parent.ZIndex + 1
+    ring.Parent = parent
+    local ringCorner = Instance.new("UICorner")
+    ringCorner.CornerRadius = UDim.new(1, 0)
+    ringCorner.Parent = ring
+    local ringStroke = Instance.new("UIStroke")
+    ringStroke.Thickness = 1.6
+    ringStroke.Color = color
+    ringStroke.Parent = ring
+
+    local shaft = Instance.new("Frame")
+    shaft.Size = UDim2.fromOffset(9, 1.6)
+    shaft.Position = UDim2.new(0, 8, 0.5, 0)
+    shaft.AnchorPoint = Vector2.new(0, 0.5)
+    shaft.BackgroundColor3 = color
+    shaft.BorderSizePixel = 0
+    shaft.ZIndex = parent.ZIndex + 1
+    shaft.Parent = parent
+
+    local tooth = Instance.new("Frame")
+    tooth.Size = UDim2.fromOffset(1.6, 4)
+    tooth.Position = UDim2.new(0, 15, 0.5, 0)
+    tooth.AnchorPoint = Vector2.new(0, 0)
+    tooth.BackgroundColor3 = color
+    tooth.BorderSizePixel = 0
+    tooth.ZIndex = parent.ZIndex + 1
+    tooth.Parent = parent
+end
+
+-- crossed-bar "x" mark (used for the unload button) - returns both bars so callers can recolor them
+local function IconCross(parent, color, size)
+    size = size or 14
+    local bar1 = Instance.new("Frame")
+    bar1.Size = UDim2.fromOffset(size, 2)
+    bar1.Position = UDim2.fromScale(0.5, 0.5)
+    bar1.AnchorPoint = Vector2.new(0.5, 0.5)
+    bar1.Rotation = 45
+    bar1.BackgroundColor3 = color
+    bar1.BorderSizePixel = 0
+    bar1.ZIndex = parent.ZIndex + 1
+    bar1.Parent = parent
+    local c1 = Instance.new("UICorner")
+    c1.CornerRadius = UDim.new(1, 0)
+    c1.Parent = bar1
+    local bar2 = bar1:Clone()
+    bar2.Rotation = -45
+    bar2.Parent = parent
+    return bar1, bar2
+end
+
+-- 4-point sparkle (two crossed bars) - returns both bars so callers can animate a twinkle
+local function IconSparkle(parent, color, size)
+    size = size or 10
+    local bar1 = Instance.new("Frame")
+    bar1.Size = UDim2.fromOffset(size, 2)
+    bar1.Position = UDim2.fromScale(0.5, 0.5)
+    bar1.AnchorPoint = Vector2.new(0.5, 0.5)
+    bar1.BackgroundColor3 = color
+    bar1.BackgroundTransparency = 0.6
+    bar1.BorderSizePixel = 0
+    bar1.ZIndex = parent.ZIndex + 1
+    bar1.Parent = parent
+    local c1 = Instance.new("UICorner")
+    c1.CornerRadius = UDim.new(1, 0)
+    c1.Parent = bar1
+    local bar2 = bar1:Clone()
+    bar2.Rotation = 90
+    bar2.Parent = parent
+    return bar1, bar2
+end
+
+-- ===============================================================
+-- ROOT SCREENGUI
+-- ===============================================================
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "IvoryKey"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.DisplayOrder = 9999
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
+if not ScreenGui.Parent then
+    ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+end
+
+-- ===============================================================
+-- REAL BACKDROP BLUR
+-- ===============================================================
+local BackdropBlur = Instance.new("BlurEffect")
+BackdropBlur.Name = "IvoryBackdropBlur"
+BackdropBlur.Size = 0
+pcall(function() BackdropBlur.Parent = Lighting end)
+tw(BackdropBlur, EASE_SLOW, { Size = 22 })
+
+local Dim = Instance.new("Frame")
+Dim.Name = "Dim"
+Dim.Size = UDim2.fromScale(1, 1)
+Dim.BackgroundColor3 = Color3.fromRGB(8, 6, 14)
+Dim.BackgroundTransparency = 1
+Dim.BorderSizePixel = 0
+Dim.ZIndex = 1
+Dim.Parent = ScreenGui
+tw(Dim, EASE_SLOW, { BackgroundTransparency = 0.5 })
+
+-- forward declarations - assigned once the full UI exists, but referenced by
+-- handlers (unload button, music fade) that get wired up earlier in the file
+local _unloaded = false
+local unloadUI
+
+-- -- large soft ambient aura glow drifting behind the whole card --
+local Aura = Instance.new("Frame")
+Aura.Name = "Aura"
+Aura.AnchorPoint = Vector2.new(0.5, 0.5)
+Aura.Position = UDim2.fromScale(0.5, 0.5)
+Aura.Size = UDim2.fromOffset(640, 640)
+Aura.BackgroundColor3 = Theme.AccentA
+Aura.BackgroundTransparency = 1
+Aura.BorderSizePixel = 0
+Aura.ZIndex = 2
+Aura.Parent = ScreenGui
+local AuraCorner = Instance.new("UICorner")
+AuraCorner.CornerRadius = UDim.new(1, 0)
+AuraCorner.Parent = Aura
+local AuraGradient = Instance.new("UIGradient")
+AuraGradient.Rotation = 45
+AuraGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Theme.AccentA),
+    ColorSequenceKeypoint.new(0.5, Theme.AccentC),
+    ColorSequenceKeypoint.new(1, Theme.AccentB),
+})
+AuraGradient.Parent = Aura
+local AuraScale = Instance.new("UIScale")
+AuraScale.Parent = Aura
+tw(Aura, EASE_SLOW, { BackgroundTransparency = 0.88 })
+
+task.spawn(function()
+    while Aura.Parent do
+        tw(AuraScale, TweenInfo.new(3.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Scale = 1.1 })
+        tw(Aura, TweenInfo.new(3.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.93 })
+        task.wait(3.2)
+        tw(AuraScale, TweenInfo.new(3.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Scale = 1 })
+        tw(Aura, TweenInfo.new(3.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.88 })
+        task.wait(3.2)
+    end
+end)
+
+-- -- cloud curtain system --
+-- Coverage and decoration are split into two completely separate layers:
+--   - a solid opaque PANEL that is the only thing responsible for hiding
+--     the game - it sweeps between fully covering the screen and fully
+--     off-screen, so opacity is never in question.
+--   - small decorative PUFFS that never move to "cover" anything; they
+--     just sit at the screen edge, gently drifting, all the time. Their
+--     only job is texture on top of the panel, so they stay small and few
+--     enough to read as a soft accent instead of a wall of overlapping
+--     circles (that muddy look was 15 puffs per side, up to 460px each,
+--     spreading toward center - way too much translucent stacking).
+local CLOUD_PALETTE = { Theme.AccentA, Theme.AccentB, Theme.AccentC, Theme.SakuraLight }
+
+local function makeCloudCluster(side)
+    local root = Instance.new("Frame")
+    root.Name = "Cloud" .. side
+    root.Size = UDim2.fromScale(1, 1)
+    root.BackgroundTransparency = 1
+    root.ZIndex = 2
+    root.Parent = ScreenGui
+
+    local state = { puffs = {} }
+
+    -- solid opaque panel - the only thing that hides the game. Sized with
+    -- generous overlap so both sides' panels meet with margin to spare,
+    -- and slides fully off-screen once open.
+    local panel = Instance.new("Frame")
+    panel.Name = "CurtainPanel"
+    panel.Size = UDim2.new(0.58, 0, 1.3, 0)
+    panel.BackgroundColor3 = Theme.GlassCard
+    panel.BorderSizePixel = 0
+    panel.ZIndex = 2
+    panel.Parent = root
+    local panelGradient = Instance.new("UIGradient")
+    panelGradient.Rotation = side == "left" and 25 or -25
+    panelGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Theme.AccentC),
+        ColorSequenceKeypoint.new(0.55, Theme.GlassCard),
+        ColorSequenceKeypoint.new(1, Theme.AccentA),
+    })
+    panelGradient.Parent = panel
+
+    local panelCoverX = side == "left" and -0.08 or 0.46
+    local panelRestX = side == "left" and -0.62 or 1.04
+    panel.Position = UDim2.fromScale(panelCoverX, -0.15)
+    state.panel = { inst = panel, restX = panelRestX, coverX = panelCoverX, y = -0.15 }
+
+    -- decorative edge puffs - small, few, permanently parked at the edge
+    local puffCount = 8
+    for i = 1, puffCount do
+        local size = math.random(90, 190)
+        local puff = Instance.new("Frame")
+        puff.Size = UDim2.fromOffset(size, size)
+        puff.AnchorPoint = Vector2.new(0.5, 0.5)
+        puff.BackgroundColor3 = CLOUD_PALETTE[math.random(1, #CLOUD_PALETTE)]
+        puff.BackgroundTransparency = 0.8 + math.random() * 0.12
+        puff.BorderSizePixel = 0
+        puff.ZIndex = 2
+        puff.Parent = root
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = puff
+
+        local edge = (i - 1) / (puffCount - 1)
+        local restX = side == "left"
+            and (-0.09 + edge * 0.14 + (math.random() - 0.5) * 0.025)
+            or (0.95 + edge * 0.14 + (math.random() - 0.5) * 0.025)
+        local restY = 0.08 + edge * 0.84 + (math.random() - 0.5) * 0.04
+
+        puff.Position = UDim2.fromScale(restX, restY)
+
+        table.insert(state.puffs, {
+            inst = puff,
+            restX = restX, restY = restY,
+            phase = math.random() * 6.28,
+            speed = 0.1 + math.random() * 0.16,
+            amp = 0.007 + math.random() * 0.01,
+        })
     end
 
-    _st.Text = "Verifying..."
-    _st.TextColor3 = Color3.fromRGB(180, 170, 255)
-    _btn.Text = "..."
-    _btn.AutoButtonColor = false
+    -- puffs drift continuously, independent of the panel's open/closed state
+    task.spawn(function()
+        local t0 = tick()
+        while root.Parent do
+            local t = tick() - t0
+            for _, p in ipairs(state.puffs) do
+                local dx = math.sin(t * p.speed + p.phase) * p.amp
+                local dy = math.cos(t * p.speed * 0.8 + p.phase) * p.amp
+                p.inst.Position = UDim2.fromScale(p.restX + dx, p.restY + dy)
+            end
+            RunService.Heartbeat:Wait()
+        end
+    end)
 
+    return root, state
+end
+
+local CloudLeftRoot, CloudLeftState = makeCloudCluster("left")
+local CloudRightRoot, CloudRightState = makeCloudCluster("right")
+
+-- Sine is the gentlest easing curve Roblox offers - none of Quint's sharp
+-- snap, which reads mechanical rather than like drifting cloud mass.
+-- Only the solid panel moves here; the puffs have their own permanent
+-- drift loop and are left alone.
+local function sweepClouds(open, duration)
+    for _, state in ipairs({ CloudLeftState, CloudRightState }) do
+        local panelX = open and state.panel.restX or state.panel.coverX
+        tw(state.panel.inst, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+            Position = UDim2.fromScale(panelX, state.panel.y),
+        })
+    end
+end
+
+local function revealClouds(duration) sweepClouds(true, duration or 1.1) end
+local function concealClouds(duration) sweepClouds(false, duration or 0.65) end
+
+-- how long the curtains take to fully open + dissolve away on exit - used
+-- both here and by closeUI/unloadUI so the final ScreenGui:Destroy() never
+-- cuts the animation off mid-flight
+local CURTAIN_EXIT_OPEN = 0.9
+local CURTAIN_EXIT_SETTLE = 0.4
+local CURTAIN_EXIT_FADE = 0.35
+local CURTAIN_EXIT_TOTAL = CURTAIN_EXIT_OPEN + CURTAIN_EXIT_SETTLE + CURTAIN_EXIT_FADE + 0.15
+
+-- -- slow-rotating light-ray burst radiating from behind the card --
+local RayBurst = Instance.new("Frame")
+RayBurst.Name = "RayBurst"
+RayBurst.Size = UDim2.fromScale(1, 1)
+RayBurst.BackgroundTransparency = 1
+RayBurst.ZIndex = 2
+RayBurst.Parent = ScreenGui
+
+local rays = {}
+local RAY_COUNT = 12
+for i = 1, RAY_COUNT do
+    local ray = Instance.new("Frame")
+    ray.Size = UDim2.fromOffset(3, 820)
+    ray.AnchorPoint = Vector2.new(0.5, 0.5)
+    ray.Position = UDim2.fromScale(0.5, 0.5)
+    ray.Rotation = (360 / RAY_COUNT) * i
+    ray.BackgroundColor3 = Color3.fromRGB(220, 195, 255)
+    ray.BorderSizePixel = 0
+    ray.ZIndex = 2
+    ray.Parent = RayBurst
+    local grad = Instance.new("UIGradient")
+    grad.Rotation = 90
+    grad.Color = ColorSequence.new(Color3.fromRGB(230, 205, 255))
+    grad.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 1),
+        NumberSequenceKeypoint.new(0.46, 0.95),
+        NumberSequenceKeypoint.new(0.5, 0.9),
+        NumberSequenceKeypoint.new(0.54, 0.95),
+        NumberSequenceKeypoint.new(1, 1),
+    })
+    grad.Parent = ray
+    table.insert(rays, ray)
+end
+
+task.spawn(function()
+    while RayBurst.Parent do
+        for _, ray in ipairs(rays) do
+            ray.Rotation = ray.Rotation + 0.025
+        end
+        RunService.Heartbeat:Wait()
+    end
+end)
+
+-- Exit sequence: the curtains stay shut for the entire key view, so leaving
+-- (success or unload) needs to explicitly part them again before anything
+-- disappears - otherwise the game would stay hidden forever. They sweep
+-- open, hold a beat, then the decorative puffs dissolve away entirely so
+-- nothing curtain-related is left on screen once the game is visible again.
+local function teardownBackdrop()
+    tw(Dim, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
+    tw(Aura, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
+    local t = tw(BackdropBlur, EASE_OUT_SOFT, { Size = 0 })
+    t.Completed:Connect(function()
+        pcall(function() BackdropBlur:Destroy() end)
+    end)
+    for _, ray in ipairs(rays) do
+        tw(ray, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
+    end
+
+    revealClouds(CURTAIN_EXIT_OPEN)
+    task.delay(CURTAIN_EXIT_OPEN + CURTAIN_EXIT_SETTLE, function()
+        for _, state in ipairs({ CloudLeftState, CloudRightState }) do
+            for _, p in ipairs(state.puffs) do
+                tw(p.inst, TweenInfo.new(CURTAIN_EXIT_FADE, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+                    BackgroundTransparency = 1,
+                })
+            end
+        end
+    end)
+end
+
+-- ===============================================================
+-- AMBIENT MUSIC (optional)
+-- Plug in your own uploaded/licensed rbxassetid below - a real
+-- copyrighted track can't be embedded here, only wired up.
+-- ===============================================================
+local IntroMusic = Instance.new("Sound")
+IntroMusic.Name = "IvoryAmbientMusic"
+IntroMusic.SoundId = "rbxassetid://0" -- <- replace with your own track's asset id
+IntroMusic.Volume = 0
+IntroMusic.Looped = true
+pcall(function() IntroMusic.Parent = SoundService end)
+if IntroMusic.SoundId ~= "rbxassetid://0" then
+    pcall(function() IntroMusic:Play() end)
+    tw(IntroMusic, TweenInfo.new(1.5), { Volume = 0.32 })
+end
+
+local function fadeOutMusic()
+    if IntroMusic.SoundId ~= "rbxassetid://0" then
+        local t = tw(IntroMusic, EASE_SLOW, { Volume = 0 })
+        t.Completed:Connect(function()
+            pcall(function() IntroMusic:Stop(); IntroMusic:Destroy() end)
+        end)
+    end
+end
+
+-- ===============================================================
+-- FALLING SAKURA PETALS
+-- ===============================================================
+local function makePetalField(zIndex, count, sizeMin, sizeMax, speedMin, speedMax)
+    local field = Instance.new("Frame")
+    field.Name = "PetalField"
+    field.Size = UDim2.fromScale(1, 1)
+    field.BackgroundTransparency = 1
+    field.ZIndex = zIndex
+    field.Parent = ScreenGui
+
+    local petals = {}
+
+    local function newPetal(initial)
+        local vp = Camera and Camera.ViewportSize or Vector2.new(1280, 720)
+        local size = math.random(sizeMin * 10, sizeMax * 10) / 10
+        local petal = Instance.new("Frame")
+        petal.Size = UDim2.fromOffset(size, size * 0.68)
+        petal.AnchorPoint = Vector2.new(0.5, 0.5)
+        petal.BackgroundColor3 = Theme.SakuraLight
+        petal.BackgroundTransparency = 0.25 + math.random() * 0.4
+        petal.BorderSizePixel = 0
+        petal.Rotation = math.random(0, 360)
+        petal.ZIndex = zIndex
+        petal.Parent = field
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = petal
+
+        local grad = Instance.new("UIGradient")
+        grad.Rotation = math.random(0, 180)
+        grad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Theme.Sakura),
+            ColorSequenceKeypoint.new(1, Theme.SakuraLight),
+        })
+        grad.Parent = petal
+
+        return {
+            inst = petal,
+            x = math.random(0, math.floor(vp.X)),
+            y = initial and math.random(-40, math.floor(vp.Y)) or -30,
+            speed = speedMin + math.random() * (speedMax - speedMin),
+            swayAmp = 12 + math.random() * 22,
+            swayFreq = 0.4 + math.random() * 0.8,
+            phase = math.random() * 6.28,
+            rotSpeed = (math.random() - 0.5) * 60,
+        }
+    end
+
+    for _ = 1, count do
+        table.insert(petals, newPetal(true))
+    end
+
+    task.spawn(function()
+        while field.Parent do
+            local dt = RunService.Heartbeat:Wait()
+            local vp = Camera and Camera.ViewportSize or Vector2.new(1280, 720)
+            for _, p in ipairs(petals) do
+                p.y = p.y + p.speed * dt
+                p.phase = p.phase + dt
+                local swayX = math.sin(p.phase * p.swayFreq) * p.swayAmp
+                p.inst.Position = UDim2.fromOffset(p.x + swayX, p.y)
+                p.inst.Rotation = p.inst.Rotation + p.rotSpeed * dt
+                if p.y > vp.Y + 40 then
+                    p.y = -30 - math.random(0, 200)
+                    p.x = math.random(0, math.floor(vp.X))
+                end
+            end
+        end
+    end)
+
+    return field
+end
+
+local PetalsBack = makePetalField(3, 26, 8, 16, 26, 55)   -- drifting behind the card
+local PetalsFront = makePetalField(30, 7, 12, 20, 55, 90) -- a few drifting in front of the glass
+
+-- ===============================================================
+-- SHADOW HELPER
+-- Pure vector (stacked rounded frames, no image asset) - an image-
+-- based 9-slice shadow can mismatch its real pixel layout and bleed
+-- hard-edged notches past a rounded corner; this can't.
+-- ===============================================================
+local function attachShadow(parent, cornerRadius, layers)
+    layers = layers or 7
+    cornerRadius = cornerRadius or 30
+    local holder = Instance.new("Frame")
+    holder.Name = "Shadow"
+    holder.Size = UDim2.fromScale(1, 1)
+    holder.BackgroundTransparency = 1
+    holder.ZIndex = parent.ZIndex - 1
+    holder.Parent = parent.Parent
+    for i = layers, 1, -1 do
+        local grow = i * 12
+        local layer = Instance.new("Frame")
+        layer.AnchorPoint = Vector2.new(0.5, 0.5)
+        layer.Position = UDim2.new(0.5, 0, 0.5, 10)
+        layer.Size = UDim2.new(1, grow, 1, grow)
+        layer.BackgroundColor3 = Color3.fromRGB(5, 3, 10)
+        layer.BackgroundTransparency = 0.9 - (layers - i) * (0.42 / layers)
+        layer.BorderSizePixel = 0
+        layer.ZIndex = holder.ZIndex
+        layer.Parent = holder
+        local c = Instance.new("UICorner")
+        c.CornerRadius = UDim.new(0, cornerRadius + grow / 2)
+        c.Parent = layer
+    end
+    return holder
+end
+
+-- ===============================================================
+-- MAIN GLASS CARD
+-- ===============================================================
+local CardHolder = Instance.new("Frame")
+CardHolder.Name = "CardHolder"
+CardHolder.AnchorPoint = Vector2.new(0.5, 0.5)
+CardHolder.Position = UDim2.fromScale(0.5, 0.5)
+CardHolder.Size = UDim2.fromOffset(420, 580)
+CardHolder.BackgroundTransparency = 1
+CardHolder.ZIndex = 5
+CardHolder.Visible = false -- revealed by revealCard() once the cinematic intro finishes
+CardHolder.Parent = ScreenGui
+
+local CardScale = Instance.new("UIScale")
+CardScale.Scale = 0.86
+CardScale.Parent = CardHolder
+
+local Card = Instance.new("Frame")
+Card.Name = "Card"
+Card.Size = UDim2.fromScale(1, 1)
+Card.BackgroundColor3 = Theme.GlassCard
+Card.BackgroundTransparency = 0.16
+Card.BorderSizePixel = 0
+Card.ClipsDescendants = true
+Card.ZIndex = 5
+Card.Parent = CardHolder
+
+local CardCorner = Instance.new("UICorner")
+CardCorner.CornerRadius = UDim.new(0, 30)
+CardCorner.Parent = Card
+
+attachShadow(Card, 30, 7)
+
+local CardStroke = Instance.new("UIStroke")
+CardStroke.Thickness = 1.4
+CardStroke.Color = Theme.Stroke
+CardStroke.Transparency = 0.55
+CardStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+CardStroke.Parent = Card
+
+local CardStrokeGradient = Instance.new("UIGradient")
+CardStrokeGradient.Rotation = 105
+CardStrokeGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255,255,255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(210, 180, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255,255,255)),
+})
+CardStrokeGradient.Transparency = NumberSequence.new({
+    NumberSequenceKeypoint.new(0, 0.15),
+    NumberSequenceKeypoint.new(0.5, 0.85),
+    NumberSequenceKeypoint.new(1, 0.2),
+})
+CardStrokeGradient.Parent = CardStroke
+
+-- living glass edge - the highlight slowly drifts around the border
+task.spawn(function()
+    while CardStroke.Parent do
+        CardStrokeGradient.Rotation = (CardStrokeGradient.Rotation + 0.15) % 360
+        RunService.Heartbeat:Wait()
+    end
+end)
+
+-- -- liquid animated blob accents --
+local BlobLayer = Instance.new("Frame")
+BlobLayer.Name = "BlobLayer"
+BlobLayer.Size = UDim2.fromScale(1, 1)
+BlobLayer.BackgroundTransparency = 1
+BlobLayer.ZIndex = 5
+BlobLayer.Parent = Card
+
+local function makeBlob(color, size, startPos)
+    local blob = Instance.new("Frame")
+    blob.BackgroundColor3 = color
+    blob.BackgroundTransparency = 0.72
+    blob.Size = UDim2.fromOffset(size, size)
+    blob.Position = startPos
+    blob.AnchorPoint = Vector2.new(0.5, 0.5)
+    blob.BorderSizePixel = 0
+    blob.ZIndex = 4
+    blob.Parent = BlobLayer
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = blob
+    return blob
+end
+
+local blobA = makeBlob(Theme.AccentA, 230, UDim2.fromScale(0.08, 0.05))
+local blobB = makeBlob(Theme.AccentB, 200, UDim2.fromScale(0.95, 0.16))
+local blobC = makeBlob(Theme.AccentC, 250, UDim2.fromScale(0.85, 1.0))
+
+task.spawn(function()
+    local t0 = tick()
+    while BlobLayer.Parent do
+        local t = tick() - t0
+        blobA.Position = UDim2.fromScale(0.08 + math.sin(t * 0.35) * 0.05, 0.05 + math.cos(t * 0.28) * 0.04)
+        blobB.Position = UDim2.fromScale(0.95 + math.sin(t * 0.22 + 2) * 0.04, 0.16 + math.cos(t * 0.31 + 1) * 0.05)
+        blobC.Position = UDim2.fromScale(0.85 + math.sin(t * 0.26 + 4) * 0.05, 1.0 + math.cos(t * 0.24 + 3) * 0.04)
+        RunService.Heartbeat:Wait()
+    end
+end)
+
+-- frosted sheen sweep
+local Sheen = Instance.new("Frame")
+Sheen.BackgroundColor3 = Color3.fromRGB(255,255,255)
+Sheen.BackgroundTransparency = 1
+Sheen.Size = UDim2.fromScale(1, 1)
+Sheen.ZIndex = 6
+Sheen.Parent = Card
+local SheenGradient = Instance.new("UIGradient")
+SheenGradient.Rotation = 115
+SheenGradient.Color = ColorSequence.new(Color3.fromRGB(255,255,255))
+SheenGradient.Transparency = NumberSequence.new({
+    NumberSequenceKeypoint.new(0, 1),
+    NumberSequenceKeypoint.new(0.42, 1),
+    NumberSequenceKeypoint.new(0.5, 0.9),
+    NumberSequenceKeypoint.new(0.58, 1),
+    NumberSequenceKeypoint.new(1, 1),
+})
+SheenGradient.Parent = Sheen
+
+-- ===============================================================
+-- TOP REGION - CENTRAL GLOWING LOGO (draggable handle)
+-- ===============================================================
+local TopRegion = Instance.new("Frame")
+TopRegion.Name = "TopRegion"
+TopRegion.Size = UDim2.new(1, 0, 0, 176)
+TopRegion.BackgroundTransparency = 1
+TopRegion.Active = true
+TopRegion.ZIndex = 6
+TopRegion.Parent = Card
+
+-- drag logic (drag anywhere in the top region)
+do
+    local dragging, dragStart, startPos = false, nil, nil
+
+    local function updateDrag(input)
+        local delta = input.Position - dragStart
+        CardHolder.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
+    end
+
+    TopRegion.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = CardHolder.Position
+            tw(CardScale, EASE_QUICK, { Scale = 0.975 })
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                    tw(CardScale, EASE_SPRING, { Scale = 1 })
+                end
+            end)
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            updateDrag(input)
+        end
+    end)
+end
+
+-- -- unload button - fully tears down the UI if someone changes their mind --
+local UnloadBtn = Instance.new("TextButton")
+UnloadBtn.Name = "UnloadBtn"
+UnloadBtn.Size = UDim2.fromOffset(34, 34)
+UnloadBtn.Position = UDim2.new(1, -16, 0, 16)
+UnloadBtn.AnchorPoint = Vector2.new(1, 0)
+UnloadBtn.BackgroundColor3 = Theme.GlassCardAlt
+UnloadBtn.BackgroundTransparency = 0.35
+UnloadBtn.AutoButtonColor = false
+UnloadBtn.Text = ""
+UnloadBtn.ZIndex = 8
+UnloadBtn.Parent = TopRegion
+local UnloadCorner = Instance.new("UICorner")
+UnloadCorner.CornerRadius = UDim.new(1, 0)
+UnloadCorner.Parent = UnloadBtn
+local UnloadStroke = Instance.new("UIStroke")
+UnloadStroke.Thickness = 1.2
+UnloadStroke.Color = Color3.fromRGB(255, 255, 255)
+UnloadStroke.Transparency = 0.75
+UnloadStroke.Parent = UnloadBtn
+local UnloadScale = Instance.new("UIScale")
+UnloadScale.Parent = UnloadBtn
+
+local xBar1, xBar2 = IconCross(UnloadBtn, Theme.TextSecondary, 13)
+
+local UnloadTip = Instance.new("TextLabel")
+UnloadTip.Size = UDim2.fromOffset(80, 18)
+UnloadTip.Position = UDim2.new(0.5, 0, 1, 8)
+UnloadTip.AnchorPoint = Vector2.new(0.5, 0)
+UnloadTip.BackgroundTransparency = 1
+UnloadTip.Text = "Unload UI"
+UnloadTip.TextColor3 = Theme.Error
+UnloadTip.Font = Enum.Font.GothamMedium
+UnloadTip.TextSize = 11
+UnloadTip.TextTransparency = 1
+UnloadTip.ZIndex = 9
+UnloadTip.Parent = UnloadBtn
+
+UnloadBtn.MouseEnter:Connect(function()
+    tw(UnloadBtn, EASE_QUICK, { BackgroundTransparency = 0.1, BackgroundColor3 = Theme.Error })
+    tw(UnloadStroke, EASE_QUICK, { Transparency = 0.3, Color = Theme.Error })
+    tw(xBar1, EASE_QUICK, { BackgroundColor3 = Color3.fromRGB(255, 255, 255) })
+    tw(xBar2, EASE_QUICK, { BackgroundColor3 = Color3.fromRGB(255, 255, 255) })
+    tw(UnloadScale, EASE_QUICK, { Scale = 1.1 })
+    tw(UnloadTip, EASE_QUICK, { TextTransparency = 0 })
+end)
+UnloadBtn.MouseLeave:Connect(function()
+    tw(UnloadBtn, EASE_QUICK, { BackgroundTransparency = 0.35, BackgroundColor3 = Theme.GlassCardAlt })
+    tw(UnloadStroke, EASE_QUICK, { Transparency = 0.75, Color = Color3.fromRGB(255, 255, 255) })
+    tw(xBar1, EASE_QUICK, { BackgroundColor3 = Theme.TextSecondary })
+    tw(xBar2, EASE_QUICK, { BackgroundColor3 = Theme.TextSecondary })
+    tw(UnloadScale, EASE_QUICK, { Scale = 1 })
+    tw(UnloadTip, EASE_QUICK, { TextTransparency = 1 })
+end)
+UnloadBtn.MouseButton1Down:Connect(function() tw(UnloadScale, EASE_QUICK, { Scale = 0.9 }) end)
+UnloadBtn.MouseButton1Up:Connect(function() tw(UnloadScale, EASE_SPRING, { Scale = 1.1 }) end)
+UnloadBtn.MouseButton1Click:Connect(function()
+    if unloadUI then unloadUI() end
+end)
+
+-- pulsing glow ring behind the logo
+local GlowRing = Instance.new("Frame")
+GlowRing.AnchorPoint = Vector2.new(0.5, 0.5)
+GlowRing.Position = UDim2.new(0.5, 0, 0, 62)
+GlowRing.Size = UDim2.fromOffset(96, 96)
+GlowRing.BackgroundTransparency = 1
+GlowRing.ZIndex = 6
+GlowRing.Parent = TopRegion
+local GlowStroke = Instance.new("UIStroke")
+GlowStroke.Thickness = 2
+GlowStroke.Color = Theme.AccentA
+GlowStroke.Transparency = 0.35
+GlowStroke.Parent = GlowRing
+local GlowCorner = Instance.new("UICorner")
+GlowCorner.CornerRadius = UDim.new(1, 0)
+GlowCorner.Parent = GlowRing
+local GlowScale = Instance.new("UIScale")
+GlowScale.Parent = GlowRing
+
+task.spawn(function()
+    while GlowRing.Parent do
+        tw(GlowScale, TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Scale = 1.18 })
+        tw(GlowStroke, TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Transparency = 0.85 })
+        task.wait(1.6)
+        tw(GlowScale, TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Scale = 1 })
+        tw(GlowStroke, TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Transparency = 0.35 })
+        task.wait(1.6)
+    end
+end)
+
+-- central logo orb
+local Logo = Instance.new("Frame")
+Logo.AnchorPoint = Vector2.new(0.5, 0.5)
+Logo.Position = UDim2.new(0.5, 0, 0, 62)
+Logo.Size = UDim2.fromOffset(76, 76)
+Logo.BackgroundColor3 = Color3.fromRGB(255,255,255)
+Logo.ZIndex = 7
+Logo.Parent = TopRegion
+local LogoCorner = Instance.new("UICorner")
+LogoCorner.CornerRadius = UDim.new(1, 0)
+LogoCorner.Parent = Logo
+local LogoGradient = Instance.new("UIGradient")
+LogoGradient.Rotation = 45
+LogoGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Theme.AccentA),
+    ColorSequenceKeypoint.new(0.5, Theme.AccentC),
+    ColorSequenceKeypoint.new(1, Theme.AccentB),
+})
+LogoGradient.Parent = Logo
+local LogoStroke = Instance.new("UIStroke")
+LogoStroke.Thickness = 1.5
+LogoStroke.Color = Color3.fromRGB(255,255,255)
+LogoStroke.Transparency = 0.4
+LogoStroke.Parent = Logo
+
+IconDiamondMark(Logo, Color3.fromRGB(255, 255, 255), 30)
+
+-- gentle idle float for the whole logo + ring
+task.spawn(function()
+    local t0 = tick()
+    local baseLogoY, baseRingY = 62, 62
+    while Logo.Parent do
+        local t = tick() - t0
+        local bob = math.sin(t * 1.1) * 4
+        Logo.Position = UDim2.new(0.5, 0, 0, baseLogoY + bob)
+        GlowRing.Position = UDim2.new(0.5, 0, 0, baseRingY + bob)
+        RunService.Heartbeat:Wait()
+    end
+end)
+
+-- slow shimmering rotation on the logo gradient
+task.spawn(function()
+    while Logo.Parent do
+        LogoGradient.Rotation = (LogoGradient.Rotation + 0.6) % 360
+        RunService.Heartbeat:Wait()
+    end
+end)
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -40, 0, 26)
+Title.Position = UDim2.new(0, 20, 0, 112)
+Title.BackgroundTransparency = 1
+Title.TextColor3 = Theme.TextPrimary
+Title.TextSize = 22
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Center
+Title.Text = "Ivory Hub"
+Title.ZIndex = 7
+Title.Parent = TopRegion
+
+local Subtitle = Instance.new("TextLabel")
+Subtitle.Size = UDim2.new(1, -40, 0, 16)
+Subtitle.Position = UDim2.new(0, 20, 0, 140)
+Subtitle.BackgroundTransparency = 1
+Subtitle.TextColor3 = Theme.TextTertiary
+Subtitle.TextSize = 12
+Subtitle.Font = Enum.Font.Gotham
+Subtitle.TextXAlignment = Enum.TextXAlignment.Center
+Subtitle.Text = "Enter your key to continue"
+Subtitle.ZIndex = 7
+Subtitle.Parent = TopRegion
+
+-- -- twinkling sparkle accents scattered around the logo --
+local function addSparkle(parent, x, y, size, startDelay)
+    local bar1, bar2 = IconSparkle(parent, Color3.fromRGB(255, 255, 255), size)
+    bar1.Position = UDim2.new(0, x, 0, y)
+    bar2.Position = UDim2.new(0, x, 0, y)
+    task.spawn(function()
+        task.wait(startDelay)
+        while bar1.Parent do
+            tw(bar1, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.1 })
+            tw(bar2, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.1 })
+            task.wait(1.1)
+            tw(bar1, TweenInfo.new(1.3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.9 })
+            tw(bar2, TweenInfo.new(1.3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.9 })
+            task.wait(1.3)
+        end
+    end)
+end
+
+addSparkle(TopRegion, 58, 28, 8, 0)
+addSparkle(TopRegion, 335, 42, 6, 0.5)
+addSparkle(TopRegion, 300, 104, 7, 1.1)
+addSparkle(TopRegion, 48, 108, 6, 1.7)
+
+-- ===============================================================
+-- CONTENT COLUMN
+-- ===============================================================
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1, -48, 1, -196)
+Content.Position = UDim2.new(0, 24, 0, 180)
+Content.BackgroundTransparency = 1
+Content.ZIndex = 7
+Content.Parent = Card
+
+local ContentLayout = Instance.new("UIListLayout")
+ContentLayout.FillDirection = Enum.FillDirection.Vertical
+ContentLayout.Padding = UDim.new(0, 14)
+ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+ContentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+ContentLayout.Parent = Content
+
+-- -- glass pill input --
+local InputWrap = Instance.new("Frame")
+InputWrap.Name = "InputWrap"
+InputWrap.Size = UDim2.new(1, 0, 0, 52)
+InputWrap.BackgroundColor3 = Theme.GlassInput
+InputWrap.BackgroundTransparency = 0.93
+InputWrap.LayoutOrder = 1
+InputWrap.ZIndex = 7
+InputWrap.Parent = Content
+local InputCorner = Instance.new("UICorner")
+InputCorner.CornerRadius = UDim.new(0, 16)
+InputCorner.Parent = InputWrap
+local InputStroke = Instance.new("UIStroke")
+InputStroke.Thickness = 1.2
+InputStroke.Color = Color3.fromRGB(255,255,255)
+InputStroke.Transparency = 0.82
+InputStroke.Parent = InputWrap
+local InputPad = Instance.new("UIPadding")
+InputPad.PaddingLeft = UDim.new(0, 16)
+InputPad.PaddingRight = UDim.new(0, 16)
+InputPad.Parent = InputWrap
+
+local InputIcon = Instance.new("Frame")
+InputIcon.Size = UDim2.fromOffset(20, 18)
+InputIcon.Position = UDim2.new(0, 0, 0.5, 0)
+InputIcon.AnchorPoint = Vector2.new(0, 0.5)
+InputIcon.BackgroundTransparency = 1
+InputIcon.ZIndex = 7
+InputIcon.Parent = InputWrap
+IconKeyMini(InputIcon, Theme.TextTertiary)
+
+local InputBox = Instance.new("TextBox")
+InputBox.Name = "KeyInput"
+InputBox.Size = UDim2.new(1, -28, 1, 0)
+InputBox.Position = UDim2.new(0, 28, 0, 0)
+InputBox.BackgroundTransparency = 1
+InputBox.Text = ""
+InputBox.TextColor3 = Theme.TextPrimary
+InputBox.PlaceholderColor3 = Theme.TextTertiary
+InputBox.PlaceholderText = "Paste your key here"
+InputBox.Font = Enum.Font.Code
+InputBox.TextSize = 14
+InputBox.ClearTextOnFocus = false
+InputBox.TextXAlignment = Enum.TextXAlignment.Left
+InputBox.ZIndex = 7
+InputBox.Parent = InputWrap
+
+InputBox.Focused:Connect(function()
+    tw(InputStroke, EASE_OUT_SOFT, { Transparency = 0.15, Color = Theme.AccentA, Thickness = 1.6 })
+    tw(InputWrap, EASE_OUT_SOFT, { BackgroundTransparency = 0.88 })
+end)
+InputBox.FocusLost:Connect(function(enterPressed)
+    tw(InputStroke, EASE_OUT_SOFT, { Transparency = 0.82, Color = Color3.fromRGB(255,255,255), Thickness = 1.2 })
+    tw(InputWrap, EASE_OUT_SOFT, { BackgroundTransparency = 0.93 })
+    if enterPressed then
+        local key = InputBox.Text:gsub("%s", "")
+        if key ~= "" then ValidateKey(key) end
+    end
+end)
+
+-- -- verify button (liquid gradient pill) --
+local VerifyBtn = Instance.new("TextButton")
+VerifyBtn.Name = "VerifyBtn"
+VerifyBtn.Size = UDim2.new(1, 0, 0, 50)
+VerifyBtn.LayoutOrder = 2
+VerifyBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+VerifyBtn.Text = ""
+VerifyBtn.AutoButtonColor = false
+VerifyBtn.ZIndex = 7
+VerifyBtn.ClipsDescendants = true
+VerifyBtn.Parent = Content
+local VerifyCorner = Instance.new("UICorner")
+VerifyCorner.CornerRadius = UDim.new(0, 16)
+VerifyCorner.Parent = VerifyBtn
+local VerifyGradient = Instance.new("UIGradient")
+VerifyGradient.Rotation = 20
+VerifyGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Theme.AccentA),
+    ColorSequenceKeypoint.new(0.5, Theme.AccentC),
+    ColorSequenceKeypoint.new(1, Theme.AccentB),
+})
+VerifyGradient.Parent = VerifyBtn
+local VerifyScale = Instance.new("UIScale")
+VerifyScale.Parent = VerifyBtn
+
+local VerifyLabel = Instance.new("TextLabel")
+VerifyLabel.BackgroundTransparency = 1
+VerifyLabel.Size = UDim2.fromScale(1, 1)
+VerifyLabel.Position = UDim2.new(0.5, -14, 0.5, 0)
+VerifyLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+VerifyLabel.Text = "Verify Key"
+VerifyLabel.TextColor3 = Color3.fromRGB(255,255,255)
+VerifyLabel.Font = Enum.Font.GothamBold
+VerifyLabel.TextSize = 15
+VerifyLabel.ZIndex = 8
+VerifyLabel.Parent = VerifyBtn
+
+-- trailing chevron - nudges right on hover for a small modern CTA feel
+local ChevronWrap = Instance.new("Frame")
+ChevronWrap.Size = UDim2.fromOffset(14, 14)
+ChevronWrap.Position = UDim2.new(0.5, 46, 0.5, 0)
+ChevronWrap.AnchorPoint = Vector2.new(0.5, 0.5)
+ChevronWrap.BackgroundTransparency = 1
+ChevronWrap.ZIndex = 8
+ChevronWrap.Parent = VerifyBtn
+IconChevron(ChevronWrap, Color3.fromRGB(255, 255, 255), 7)
+
+local VerifyShine = Instance.new("Frame")
+VerifyShine.BackgroundColor3 = Color3.fromRGB(255,255,255)
+VerifyShine.BackgroundTransparency = 1
+VerifyShine.Size = UDim2.fromScale(1, 1)
+VerifyShine.ZIndex = 8
+VerifyShine.Parent = VerifyBtn
+local VerifyShineGradient = Instance.new("UIGradient")
+VerifyShineGradient.Rotation = 15
+VerifyShineGradient.Color = ColorSequence.new(Color3.fromRGB(255,255,255))
+VerifyShineGradient.Transparency = NumberSequence.new({
+    NumberSequenceKeypoint.new(0, 1),
+    NumberSequenceKeypoint.new(0.46, 1),
+    NumberSequenceKeypoint.new(0.5, 0.82),
+    NumberSequenceKeypoint.new(0.54, 1),
+    NumberSequenceKeypoint.new(1, 1),
+})
+VerifyShineGradient.Parent = VerifyShine
+
+-- spinner ring (shown in place of the label while a key is being checked)
+local Spinner = Instance.new("Frame")
+Spinner.Size = UDim2.fromOffset(20, 20)
+Spinner.Position = UDim2.fromScale(0.5, 0.5)
+Spinner.AnchorPoint = Vector2.new(0.5, 0.5)
+Spinner.BackgroundTransparency = 1
+Spinner.Visible = false
+Spinner.ZIndex = 8
+Spinner.Parent = VerifyBtn
+local SpinnerStroke = Instance.new("UIStroke")
+SpinnerStroke.Thickness = 2.4
+SpinnerStroke.Color = Color3.fromRGB(255, 255, 255)
+SpinnerStroke.Parent = Spinner
+local SpinnerGradient = Instance.new("UIGradient")
+SpinnerGradient.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255))
+SpinnerGradient.Transparency = NumberSequence.new({
+    NumberSequenceKeypoint.new(0, 0),
+    NumberSequenceKeypoint.new(0.75, 0.95),
+    NumberSequenceKeypoint.new(1, 0),
+})
+SpinnerGradient.Parent = SpinnerStroke
+
+task.spawn(function()
+    while Spinner.Parent do
+        if Spinner.Visible then
+            SpinnerGradient.Rotation = (SpinnerGradient.Rotation + 8) % 360
+        end
+        RunService.Heartbeat:Wait()
+    end
+end)
+
+local function setVerifying(active)
+    Spinner.Visible = active
+    VerifyLabel.Visible = not active
+    ChevronWrap.Visible = not active
+end
+
+task.spawn(function()
+    while VerifyShine.Parent do
+        VerifyShineGradient.Offset = Vector2.new(-1, 0)
+        tw(VerifyShineGradient, TweenInfo.new(1.8, Enum.EasingStyle.Sine), { Offset = Vector2.new(1, 0) })
+        task.wait(3.4)
+    end
+end)
+
+VerifyBtn.MouseEnter:Connect(function()
+    tw(VerifyScale, EASE_QUICK, { Scale = 1.02 })
+    tw(ChevronWrap, EASE_QUICK, { Position = UDim2.new(0.5, 52, 0.5, 0) })
+end)
+VerifyBtn.MouseLeave:Connect(function()
+    tw(VerifyScale, EASE_QUICK, { Scale = 1 })
+    tw(ChevronWrap, EASE_QUICK, { Position = UDim2.new(0.5, 46, 0.5, 0) })
+end)
+VerifyBtn.MouseButton1Down:Connect(function() tw(VerifyScale, EASE_QUICK, { Scale = 0.96 }) end)
+VerifyBtn.MouseButton1Up:Connect(function() tw(VerifyScale, EASE_SPRING, { Scale = 1 }) end)
+
+-- -- status row --
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(1, 0, 0, 18)
+StatusLabel.LayoutOrder = 3
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.TextColor3 = Theme.TextTertiary
+StatusLabel.TextSize = 12
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.Text = "Ready"
+StatusLabel.ZIndex = 7
+StatusLabel.Parent = Content
+
+local function setStatus(text, color)
+    tw(StatusLabel, EASE_QUICK, { TextTransparency = 1 })
+    task.delay(0.12, function()
+        StatusLabel.Text = text
+        StatusLabel.TextColor3 = color or Theme.TextTertiary
+        tw(StatusLabel, EASE_QUICK, { TextTransparency = 0 })
+    end)
+end
+
+-- ===============================================================
+-- 3 FLOATING PROVIDER BUTTONS
+-- ===============================================================
+local FloatingRow = Instance.new("Frame")
+FloatingRow.Name = "FloatingRow"
+FloatingRow.Size = UDim2.new(1, 0, 0, 108)
+FloatingRow.LayoutOrder = 4
+FloatingRow.BackgroundTransparency = 1
+FloatingRow.ZIndex = 7
+FloatingRow.Parent = Content
+
+local FloatingLayout = Instance.new("UIListLayout")
+FloatingLayout.FillDirection = Enum.FillDirection.Horizontal
+FloatingLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+FloatingLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+FloatingLayout.Padding = UDim.new(0, 22)
+FloatingLayout.SortOrder = Enum.SortOrder.LayoutOrder
+FloatingLayout.Parent = FloatingRow
+
+local function CreateFloatingButton(order, iconBuilder, iconColor, label, copyText)
+    local wrap = Instance.new("Frame")
+    wrap.Name = label
+    wrap.Size = UDim2.fromOffset(92, 108)
+    wrap.LayoutOrder = order
+    wrap.BackgroundTransparency = 1
+    wrap.ZIndex = 7
+    wrap.Parent = FloatingRow
+
+    -- soft ambient glow bleeding out from behind the icon
+    local glow = Instance.new("Frame")
+    glow.Size = UDim2.fromOffset(90, 90)
+    glow.Position = UDim2.new(0.5, 0, 0, 30)
+    glow.AnchorPoint = Vector2.new(0.5, 0.5)
+    glow.BackgroundColor3 = iconColor
+    glow.BackgroundTransparency = 0.88
+    glow.BorderSizePixel = 0
+    glow.ZIndex = 6
+    glow.Parent = wrap
+    local glowCorner = Instance.new("UICorner")
+    glowCorner.CornerRadius = UDim.new(1, 0)
+    glowCorner.Parent = glow
+    task.spawn(function()
+        task.wait(math.random() * 2)
+        while glow.Parent do
+            tw(glow, TweenInfo.new(2.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.72 })
+            task.wait(2.4)
+            tw(glow, TweenInfo.new(2.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.88 })
+            task.wait(2.4)
+        end
+    end)
+
+    -- toast (copy feedback) floats above the button
+    local toast = Instance.new("TextLabel")
+    toast.Size = UDim2.new(1, 20, 0, 20)
+    toast.Position = UDim2.new(0.5, 0, 0, -6)
+    toast.AnchorPoint = Vector2.new(0.5, 1)
+    toast.BackgroundTransparency = 1
+    toast.Text = "Copied!"
+    toast.TextColor3 = Theme.Success
+    toast.Font = Enum.Font.GothamBold
+    toast.TextSize = 12
+    toast.TextTransparency = 1
+    toast.ZIndex = 9
+    toast.Parent = wrap
+
+    local circle = Instance.new("TextButton")
+    circle.Name = "Circle"
+    circle.Size = UDim2.fromOffset(60, 60)
+    circle.Position = UDim2.new(0.5, 0, 0, 0)
+    circle.AnchorPoint = Vector2.new(0.5, 0)
+    circle.BackgroundColor3 = Theme.GlassCardAlt
+    circle.BackgroundTransparency = 0.28
+    circle.AutoButtonColor = false
+    circle.Text = ""
+    circle.ZIndex = 7
+    circle.Parent = wrap
+
+    local circleCorner = Instance.new("UICorner")
+    circleCorner.CornerRadius = UDim.new(1, 0)
+    circleCorner.Parent = circle
+
+    local circleStroke = Instance.new("UIStroke")
+    circleStroke.Thickness = 1.3
+    circleStroke.Color = iconColor
+    circleStroke.Transparency = 0.55
+    circleStroke.Parent = circle
+
+    local circleGlow = Instance.new("Frame")
+    circleGlow.Size = UDim2.fromScale(1, 1)
+    circleGlow.BackgroundColor3 = iconColor
+    circleGlow.BackgroundTransparency = 0.82
+    circleGlow.ZIndex = 6
+    circleGlow.Parent = circle
+    local glowCorner = Instance.new("UICorner")
+    glowCorner.CornerRadius = UDim.new(1, 0)
+    glowCorner.Parent = circleGlow
+
+    local scale = Instance.new("UIScale")
+    scale.Parent = circle
+
+    iconBuilder(circle, iconColor)
+
+    local caption = Instance.new("TextLabel")
+    caption.Size = UDim2.new(1, 10, 0, 30)
+    caption.Position = UDim2.new(0.5, 0, 0, 68)
+    caption.AnchorPoint = Vector2.new(0.5, 0)
+    caption.BackgroundTransparency = 1
+    caption.Text = label
+    caption.TextColor3 = Theme.TextSecondary
+    caption.TextWrapped = true
+    caption.Font = Enum.Font.GothamMedium
+    caption.TextSize = 11
+    caption.ZIndex = 7
+    caption.Parent = wrap
+
+    -- independent idle float (phase offset so all 3 bob out of sync)
+    local phase = math.random() * 6.28
+    task.spawn(function()
+        local t0 = tick()
+        while circle.Parent do
+            local t = tick() - t0
+            local bob = math.sin(t * 1.3 + phase) * 5
+            circle.Position = UDim2.new(0.5, 0, 0, bob)
+            glow.Position = UDim2.new(0.5, 0, 0, 30 + bob)
+            RunService.Heartbeat:Wait()
+        end
+    end)
+
+    circle.MouseEnter:Connect(function()
+        tw(circle, EASE_QUICK, { BackgroundTransparency = 0.1 })
+        tw(circleStroke, EASE_QUICK, { Transparency = 0.15 })
+        tw(scale, EASE_QUICK, { Scale = 1.08 })
+    end)
+    circle.MouseLeave:Connect(function()
+        tw(circle, EASE_QUICK, { BackgroundTransparency = 0.28 })
+        tw(circleStroke, EASE_QUICK, { Transparency = 0.55 })
+        tw(scale, EASE_QUICK, { Scale = 1 })
+    end)
+    circle.MouseButton1Down:Connect(function() tw(scale, EASE_QUICK, { Scale = 0.92 }) end)
+    circle.MouseButton1Up:Connect(function() tw(scale, EASE_SPRING, { Scale = 1.08 }) end)
+
+    circle.MouseButton1Click:Connect(function()
+        local ok = pcall(function() setclipboard(copyText) end)
+        if ok then
+            toast.Text = "Copied!"
+            toast.TextColor3 = Theme.Success
+        else
+            toast.Text = "Link ready"
+            toast.TextColor3 = Theme.Blue
+        end
+        tw(toast, EASE_OUT_SOFT, { TextTransparency = 0, Position = UDim2.new(0.5, 0, 0, -14) })
+        task.delay(1.3, function()
+            tw(toast, EASE_OUT_SOFT, { TextTransparency = 1, Position = UDim2.new(0.5, 0, 0, -6) })
+        end)
+        if not ok then
+            setStatus("Link: " .. copyText, Theme.Blue)
+            task.delay(3, function() setStatus("Ready", Theme.TextTertiary) end)
+        end
+    end)
+
+    return wrap
+end
+
+CreateFloatingButton(1, IconChat, Theme.Discord, "Discord\n(dupe)", "https://discord.gg/mrQFkCJfEe")
+CreateFloatingButton(2, IconWorkMark, Theme.WorkInkTeal, "Work.ink\nKey", "https://work.ink/2STL/Ivory")
+CreateFloatingButton(3, function(parent, color) IconLootGem(parent, color, Theme.LootGold) end,
+    Theme.LootPurple, "LootLabs\nKey", "https://loot-link.com/s?L6z5Q0nE")
+
+-- -- footer tag --
+local Footer = Instance.new("TextLabel")
+Footer.Size = UDim2.new(1, 0, 0, 14)
+Footer.LayoutOrder = 5
+Footer.BackgroundTransparency = 1
+Footer.TextColor3 = Theme.TextTertiary
+Footer.TextSize = 10
+Footer.Font = Enum.Font.Gotham
+Footer.Text = "IVORY HUB  -  v1.4"
+Footer.ZIndex = 7
+Footer.Parent = Content
+
+-- ===============================================================
+-- CARD REVEAL / CLOSE / UNLOAD  (reverse animation + full teardown)
+-- ===============================================================
+local function revealCard()
+    CardHolder.Visible = true
+    tw(CardScale, TweenInfo.new(0.55, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
+end
+
+local function closeUI(delay)
+    task.delay(delay or 0, function()
+        tw(CardScale, EASE_OUT_SOFT, { Scale = 0.85 })
+        tw(Card, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
+        teardownBackdrop() -- curtains open + dissolve here; wait matches that full animation
+        fadeOutMusic()
+        task.wait(CURTAIN_EXIT_TOTAL)
+        pcall(function() ScreenGui:Destroy() end)
+    end)
+end
+
+unloadUI = function()
+    if _unloaded then return end
+    _unloaded = true
+    setStatus("Unloaded", Theme.Error)
+    tw(CardScale, EASE_OUT_SOFT, { Scale = 0.8 })
+    tw(Card, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
+    teardownBackdrop() -- curtains open + dissolve here; wait matches that full animation
+    fadeOutMusic()
+    task.wait(CURTAIN_EXIT_TOTAL)
+    pcall(function() ScreenGui:Destroy() end)
+end
+
+-- ===============================================================
+-- CINEMATIC INTRO - plays once before the key card is revealed
+-- ===============================================================
+local introSkip = false
+
+local Intro = Instance.new("TextButton")
+Intro.Name = "Intro"
+Intro.Size = UDim2.fromScale(1, 1)
+Intro.BackgroundTransparency = 1
+Intro.AutoButtonColor = false
+Intro.Text = ""
+Intro.ZIndex = 40
+Intro.Parent = ScreenGui
+Intro.MouseButton1Click:Connect(function() introSkip = true end)
+
+local IntroLogo = Instance.new("Frame")
+IntroLogo.AnchorPoint = Vector2.new(0.5, 0.5)
+IntroLogo.Position = UDim2.fromScale(0.5, 0.36)
+IntroLogo.Size = UDim2.fromOffset(84, 84)
+IntroLogo.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+IntroLogo.BackgroundTransparency = 1
+IntroLogo.ZIndex = 41
+IntroLogo.Parent = Intro
+local IntroLogoCorner = Instance.new("UICorner")
+IntroLogoCorner.CornerRadius = UDim.new(1, 0)
+IntroLogoCorner.Parent = IntroLogo
+local IntroLogoGradient = Instance.new("UIGradient")
+IntroLogoGradient.Rotation = 45
+IntroLogoGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Theme.AccentA),
+    ColorSequenceKeypoint.new(0.5, Theme.AccentC),
+    ColorSequenceKeypoint.new(1, Theme.AccentB),
+})
+IntroLogoGradient.Parent = IntroLogo
+local IntroLogoStroke = Instance.new("UIStroke")
+IntroLogoStroke.Thickness = 1.5
+IntroLogoStroke.Color = Color3.fromRGB(255, 255, 255)
+IntroLogoStroke.Transparency = 1
+IntroLogoStroke.Parent = IntroLogo
+local IntroLogoScale = Instance.new("UIScale")
+IntroLogoScale.Scale = 0.5
+IntroLogoScale.Parent = IntroLogo
+local introGem = IconDiamondMark(IntroLogo, Color3.fromRGB(255, 255, 255), 34)
+introGem.BackgroundTransparency = 1
+
+local IntroTitle = Instance.new("TextLabel")
+IntroTitle.Size = UDim2.new(0, 560, 0, 44)
+IntroTitle.Position = UDim2.fromScale(0.5, 0.48)
+IntroTitle.AnchorPoint = Vector2.new(0.5, 0.5)
+IntroTitle.BackgroundTransparency = 1
+IntroTitle.TextColor3 = Theme.TextPrimary
+IntroTitle.TextSize = 36
+IntroTitle.Font = Enum.Font.GothamBold
+IntroTitle.Text = ""
+IntroTitle.ZIndex = 41
+IntroTitle.Parent = Intro
+
+local IntroCredit = Instance.new("TextLabel")
+IntroCredit.Size = UDim2.new(0, 560, 0, 20)
+IntroCredit.Position = UDim2.fromScale(0.5, 0.565)
+IntroCredit.AnchorPoint = Vector2.new(0.5, 0.5)
+IntroCredit.BackgroundTransparency = 1
+IntroCredit.TextColor3 = Theme.TextTertiary
+IntroCredit.TextSize = 14
+IntroCredit.Font = Enum.Font.Gotham
+IntroCredit.Text = ""
+IntroCredit.ZIndex = 41
+IntroCredit.Parent = Intro
+
+local BarTrack = Instance.new("Frame")
+BarTrack.Size = UDim2.fromOffset(240, 3)
+BarTrack.Position = UDim2.fromScale(0.5, 0.66)
+BarTrack.AnchorPoint = Vector2.new(0.5, 0.5)
+BarTrack.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+BarTrack.BackgroundTransparency = 0.88
+BarTrack.BorderSizePixel = 0
+BarTrack.ZIndex = 41
+BarTrack.Parent = Intro
+local BarTrackCorner = Instance.new("UICorner")
+BarTrackCorner.CornerRadius = UDim.new(1, 0)
+BarTrackCorner.Parent = BarTrack
+
+local BarFill = Instance.new("Frame")
+BarFill.Size = UDim2.new(0, 0, 1, 0)
+BarFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+BarFill.BorderSizePixel = 0
+BarFill.ZIndex = 42
+BarFill.Parent = BarTrack
+local BarFillCorner = Instance.new("UICorner")
+BarFillCorner.CornerRadius = UDim.new(1, 0)
+BarFillCorner.Parent = BarFill
+local BarFillGradient = Instance.new("UIGradient")
+BarFillGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Theme.AccentA),
+    ColorSequenceKeypoint.new(0.5, Theme.AccentC),
+    ColorSequenceKeypoint.new(1, Theme.AccentB),
+})
+BarFillGradient.Parent = BarFill
+
+local BarLabel = Instance.new("TextLabel")
+BarLabel.Size = UDim2.fromOffset(240, 16)
+BarLabel.Position = UDim2.fromScale(0.5, 0.705)
+BarLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+BarLabel.BackgroundTransparency = 1
+BarLabel.TextColor3 = Theme.TextTertiary
+BarLabel.TextSize = 11
+BarLabel.Font = Enum.Font.Gotham
+BarLabel.Text = ""
+BarLabel.ZIndex = 41
+BarLabel.Parent = Intro
+
+local SkipHint = Instance.new("TextLabel")
+SkipHint.Size = UDim2.fromOffset(200, 16)
+SkipHint.Position = UDim2.new(0.5, 0, 1, -36)
+SkipHint.AnchorPoint = Vector2.new(0.5, 1)
+SkipHint.BackgroundTransparency = 1
+SkipHint.TextColor3 = Theme.TextTertiary
+SkipHint.TextSize = 11
+SkipHint.Font = Enum.Font.Gotham
+SkipHint.Text = "tap anywhere to skip"
+SkipHint.TextTransparency = 1
+SkipHint.ZIndex = 41
+SkipHint.Parent = Intro
+tw(SkipHint, TweenInfo.new(0.6), { TextTransparency = 0.55 })
+
+local function typeText(label, text, charDelay)
+    for i = 1, #text do
+        if introSkip then
+            label.Text = text
+            return
+        end
+        label.Text = string.sub(text, 1, i)
+        task.wait(charDelay)
+    end
+end
+
+local function skippableWait(duration)
+    local elapsed = 0
+    while elapsed < duration and not introSkip do
+        elapsed = elapsed + task.wait(0.05)
+    end
+end
+
+-- The intro fades out under cover of the curtains sweeping shut, and the
+-- card gets swapped in while fully hidden. Unlike the opening reveal, the
+-- curtains do NOT reopen here - they stay shut for the entire key view, so
+-- the game underneath stays completely hidden until the user is done
+-- (teardownBackdrop() is what finally reopens them, on success or unload).
+local function finishIntro()
+    tw(IntroLogo, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
+    tw(introGem, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
+    tw(IntroLogoStroke, EASE_OUT_SOFT, { Transparency = 1 })
+    tw(IntroTitle, EASE_OUT_SOFT, { TextTransparency = 1 })
+    tw(IntroCredit, EASE_OUT_SOFT, { TextTransparency = 1 })
+    tw(BarTrack, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
+    tw(BarFill, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
+    tw(BarLabel, EASE_OUT_SOFT, { TextTransparency = 1 })
+    tw(SkipHint, EASE_OUT_SOFT, { TextTransparency = 1 })
+    concealClouds(0.65)
+    task.wait(0.85)
+    pcall(function() Intro:Destroy() end)
+    revealCard()
+end
+
+task.spawn(function()
+    -- curtains open first, unveiling the intro underneath as they part
+    task.wait(0.2)
+    revealClouds(1.15)
+
+    tw(IntroLogo, EASE_OUT_SOFT, { BackgroundTransparency = 0 })
+    tw(introGem, EASE_OUT_SOFT, { BackgroundTransparency = 0 })
+    tw(IntroLogoStroke, EASE_OUT_SOFT, { Transparency = 0.4 })
+    tw(IntroLogoScale, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
+    skippableWait(0.55)
+    if introSkip then finishIntro() return end
+
+    typeText(IntroTitle, "I V O R Y   H U B", 0.035)
+    skippableWait(0.25)
+    if introSkip then finishIntro() return end
+
+    typeText(IntroCredit, "built by FakeCrow & Veqxo", 0.032)
+    skippableWait(0.45)
+    if introSkip then finishIntro() return end
+
+    BarLabel.Text = "Loading assets..."
+    tw(BarFill, TweenInfo.new(1.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(0.6, 0, 1, 0) })
+    skippableWait(1.1)
+    if introSkip then finishIntro() return end
+
+    BarLabel.Text = "Preparing interface..."
+    tw(BarFill, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(0.9, 0, 1, 0) })
+    skippableWait(0.7)
+    if introSkip then finishIntro() return end
+
+    BarLabel.Text = "Ready"
+    tw(BarFill, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 1, 0) })
+    skippableWait(0.55)
+
+    finishIntro()
+end)
+
+-- ===============================================================
+-- KEY VALIDATION
+-- ===============================================================
+local isVerifying = false
+
+function ValidateKey(key)
+    if isVerifying or _unloaded then return end
+    isVerifying = true
+    setVerifying(true)
+
+    setStatus("Checking key...", Theme.TextTertiary)
+
+    -- LootLabs exact match (checked first)
     if _lootKey ~= "" and key == _lootKey then
         _k.v = true
         _k.s = key
         _k.h = _hwid
         _k.t = os.time()
         _k.i = 0x4A + #key
+
         pcall(function()
-            _genv._ivoryKey = key
-            _genv._ivoryExpiry = os.time() * 1000 + 43200000
-            writefile("IvoryKey.txt", key .. "\n" .. tostring(os.time() * 1000 + 43200000) .. "\n" .. _hwid)
+            getgenv()._ivoryKey = key
+            getgenv()._ivoryExpiry = os.time() * 1000 + 43200000
+            writefile("IvoryKey.txt", key .. "\n" .. tostring(os.time() * 1000 + 43200000))
         end)
-        _st.Text = "Access granted: " .. key
-        _st.TextColor3 = Color3.fromRGB(80, 220, 120)
-        _btn.Text = "Close"
-        _btn.MouseButton1Click:Connect(function() _kg:Destroy() end)
-        _awaiting = false
+
+        setStatus("Access granted", Theme.Success)
+        setVerifying(false)
+        VerifyLabel.Text = "Loading..."
+        closeUI(1.1)
         return
     end
 
-    -- Work.ink public validation (no API key needed)
+    -- Work.ink API validation
     local ok, res = pcall(function()
-        return request({ Url = "https://work.ink/_api/v2/token/isValid/" .. key .. "?deleteToken=1", Method = "GET" })
+        return request({ Url = "https://work.ink/_api/v2/token/isValid/" .. key .. "?deleteToken=1", Method = "GET" }).Body
     end)
 
-    if ok and res and res.Body then
-        local s, data = pcall(function()
-            return json.decode(res.Body)
-        end)
-        if s and type(data) == "table" and data.valid then
-            -- Check expiry (24h)
-            if data.info and data.info.expiresAfter then
-                if os.time() * 1000 > data.info.expiresAfter then
-                    _st.Text = "Key expired - get a new one"
-                    _st.TextColor3 = Color3.fromRGB(255, 80, 80)
-                    _btn.Text = "Verify"
-                    _btn.AutoButtonColor = true
-                    return
-                end
+    local handled = false
+    if ok and res then
+        pcall(function()
+            local data = json.decode(res)
+            if data and data.valid then
+                handled = true
+                _k.v = true
+                _k.s = key
+                _k.h = _hwid
+                _k.t = os.time()
+                _k.i = 0x4A + #key
+
+                pcall(function()
+                    getgenv()._ivoryKey = key
+                    getgenv()._ivoryExpiry = data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)
+                    writefile("IvoryKey.txt", key .. "\n" .. tostring(data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)))
+                end)
+
+                setStatus("Access granted", Theme.Success)
+                setVerifying(false)
+                VerifyLabel.Text = "Loading..."
+                closeUI(1.1)
             end
+        end)
+    end
 
-            _k.v = true
-            _k.s = key
-            _k.h = _hwid
-            _k.t = os.time()
-            _k.i = 0x4A + #key
-            pcall(function()
-                _genv._ivoryKey = key
-                _genv._ivoryExpiry = data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)
-                writefile("IvoryKey.txt", key .. "\n" .. tostring(data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)) .. "\n" .. _hwid)
-            end)
+    if not handled then
+        setStatus("Invalid key - get one at work.ink/2STL/Ivory", Theme.Error)
+        setVerifying(false)
+        VerifyLabel.Text = "Verify Key"
+        tw(InputStroke, EASE_QUICK, { Color = Theme.Error, Transparency = 0.2 })
+        task.wait(0.4)
+        tw(InputStroke, EASE_OUT_SOFT, { Color = Color3.fromRGB(255,255,255), Transparency = 0.82 })
+    end
 
-            _st.Text = "Access granted: " .. key
-            _st.TextColor3 = Color3.fromRGB(80, 220, 120)
-            _btn.Text = "Close"
-            _btn.MouseButton1Click:Connect(function() _kg:Destroy() end)
-            _awaiting = false
-            return
+    isVerifying = false
+end
+
+VerifyBtn.MouseButton1Click:Connect(function()
+    local key = InputBox.Text:gsub("%s", "")
+    if key ~= "" then
+        ValidateKey(key)
+    else
+        setStatus("Please enter a key", Theme.Error)
+        tw(InputStroke, EASE_QUICK, { Color = Theme.Error, Transparency = 0.2 })
+        task.wait(0.4)
+        tw(InputStroke, EASE_OUT_SOFT, { Color = Color3.fromRGB(255,255,255), Transparency = 0.82 })
+    end
+end)
+
+-- ===============================================================
+-- KEY PERSISTENCE (checked right on load)
+-- ===============================================================
+local function CheckSavedKey()
+    if _unloaded then return end
+    local savedKey, savedExpiry = nil, nil
+
+    pcall(function()
+        if isfile("IvoryKey.txt") then
+            local data = readfile("IvoryKey.txt")
+            savedKey, savedExpiry = data:match("^(.-)\n(.-)$")
+            savedExpiry = tonumber(savedExpiry)
         end
+    end)
+
+    if not savedKey then
+        pcall(function() savedKey = getgenv()._ivoryKey end)
+        pcall(function() savedExpiry = getgenv()._ivoryExpiry end)
     end
 
-    _st.Text = "Invalid key - get one at work.ink/2STL/Ivory"
-    _st.TextColor3 = Color3.fromRGB(255, 80, 80)
-    _btn.Text = "Verify"
-    _btn.AutoButtonColor = true
-end
+    if savedKey and savedExpiry and os.time() * 1000 < savedExpiry then
+        _k.v = true
+        _k.s = savedKey
+        _k.h = _hwid
+        _k.t = os.time()
+        _k.i = 0x4A + #savedKey
 
-_btn.MouseButton1Click:Connect(function()
-    _doValidate(_inp.Text)
-end)
-_inp.FocusLost:Connect(function(enter)
-    if enter then _doValidate(_inp.Text) end
-end)
-
-while _awaiting do task.wait(0.1) end
-
--- ═══════════════════════════════════════════════════════════════
--- INTEGRITY CHECK - runs periodically, do not move or rename
--- ═══════════════════════════════════════════════════════════════
-local _integritySalt = 0x4A
-local function _verifyIntegrity()
-    if not _k or not _k.v then return false end
-    if _k.i ~= (_integritySalt + #(_k.s or "")) then
-        _k.v = false
-        return false
+        setStatus("Welcome back - key restored", Theme.Success)
+        setVerifying(false)
+        VerifyLabel.Text = "Loading..."
+        closeUI(0.9)
     end
-    return true
 end
 
+task.delay(0.25, CheckSavedKey)
+
+-- ===============================================================
+-- INTEGRITY CHECK (background, random 45-90s interval - self-terminates
+-- once the gui is gone, whether from success, close, or unload)
+-- ===============================================================
 task.spawn(function()
     while true do
         task.wait(math.random(45, 90))
+        if not ScreenGui.Parent then break end
         if _k and _k.v and not _verifyIntegrity() then
             pcall(function()
                 for _, gui in ipairs(game:GetService("CoreGui"):GetDescendants()) do
@@ -334,7 +1872,24 @@ task.spawn(function()
         end
     end
 end)
--- ═══ END KEY SYSTEM ════════════════════════════════════════════
+
+-- ===============================================================
+-- WAITING LOOP - block until validated, unloaded, or destroyed
+-- ===============================================================
+local _awaiting = true
+while _awaiting do
+    task.wait(0.1)
+    if _k and _k.v then _awaiting = false end
+    if _unloaded then _awaiting = false end
+    if not ScreenGui.Parent then _awaiting = false end
+end
+
+if _unloaded then
+    print("Ivory Hub - unloaded by user, nothing further will run")
+    return
+end
+
+print("Ivory Hub key system - liquid glass - sakura UI loaded")
 
 -- Clean up old instances
 for _, gui in ipairs(game:GetService("CoreGui"):GetDescendants()) do
@@ -766,8 +2321,6 @@ Toggles.InfJump:OnChanged(function(s) cfg.infJump = s end)
 Toggles.AutoRefreshLogs:OnChanged(function(s) cfg.autoRefreshLogs = s end)
 
 -- ═══ AUTO SERVE ═══
--- Fires "Serve ..." prompts on occupied table slots in DiningPlot1
--- Also checks Serve area for food pickup prompts
 task.spawn(function() while true do
     if cfg.autoServe and _k and _k.v and _k.i then
         local cashBefore = getCash()
@@ -775,7 +2328,6 @@ task.spawn(function() while true do
         local served = 0
         local plot = getPlot()
         if plot then
-            -- 1. Check DiningPlot1 for "Serve" prompts on occupied tables (max 3)
             local dp = plot:FindFirstChild("DiningPlot1")
             if dp then
                 for _, slot in ipairs(dp:GetChildren()) do
@@ -785,7 +2337,6 @@ task.spawn(function() while true do
                             if served >= 3 then break end
                             if desc:IsA("ProximityPrompt") and desc.Enabled then
                                 local action = desc.ActionText
-                                -- Only fire "Serve" prompts, skip Buy/Customize
                                 if string.sub(action, 1, 5) == "Serve" then
                                     local pp = desc.Parent
                                     if pp and pp:IsA("BasePart") then
@@ -803,7 +2354,6 @@ task.spawn(function() while true do
                     end
                 end
             end
-            -- 2. Check Serve area for food pickup prompts (max 3)
             local serve = plot:FindFirstChild("Serve")
             if serve then
                 for _, desc in ipairs(serve:GetDescendants()) do
@@ -840,13 +2390,11 @@ task.spawn(function() while true do
 end end)
 
 -- ═══ AUTO ORDER ═══
--- Rapid-fire: fills tables as fast as possible
 task.spawn(function() while true do
     if cfg.autoOrder and _k and _k.v and _k.i then
         local totalAssigned = 0
         for attempt = 1, 15 do
             setStatus("order", "Assigning... (" .. totalAssigned .. ")")
-            -- First, fire Take Order prompt at counter if available
             local plot = getPlot()
             if plot then
                 local counter = plot:FindFirstChild("Counter")
@@ -876,7 +2424,6 @@ task.spawn(function() while true do
             if ok and npc and tbls then
                 local id = npc.NpcId or npc.TemplateName or ""
                 local templateName = npc.TemplateName or ""
-                -- Auto-reject: if NPC is in reject list, reject and skip
                 if cfg.autoRejectNPC and cfg.rejectNPCList[templateName] then
                     pcall(function() RejectNPC:FireServer(id) end)
                     setStatus("order", "Rejected " .. templateName)
@@ -929,7 +2476,6 @@ task.spawn(function() local claimed = {} while true do
 end end)
 
 -- ═══ AUTO PAN ═══
--- Chase MY runaways only, teleport in front, hit once per attempt
 task.spawn(function() while true do
     if cfg.autoPan and _k and _k.v and _verifyIntegrity() then
         local char, hum = getChar()
@@ -942,7 +2488,6 @@ task.spawn(function() while true do
             else
                 local chased = false
                 for attempt = 1, 10 do
-                    -- Find MY runaway
                     local cn = Workspace:FindFirstChild("ClientNPCs")
                     local runawayNPC = nil
                     if cn then
@@ -959,7 +2504,6 @@ task.spawn(function() while true do
                         break
                     end
 
-                    -- Get fresh CFrame each attempt (NPC moves)
                     local nh = runawayNPC:FindFirstChild("HumanoidRootPart") or runawayNPC.PrimaryPart
                     if not nh then break end
                     local npcCF = nh.CFrame
@@ -967,18 +2511,15 @@ task.spawn(function() while true do
                     chased = true
                     setStatus("pan", "Chasing... (" .. attempt .. ")")
 
-                    -- Equip pan first
                     if pan.Parent ~= char then
                         hum:EquipTool(pan)
                         task.wait(0.2)
                     end
 
-                    -- Teleport IN FRONT of NPC (-Z is forward in Roblox)
                     local release = acquireTp()
                     tp(npcCF * CFrame.new(0, 0, -3))
                     task.wait(0.1)
 
-                    -- Hit
                     if pan.Parent == char then
                         pcall(function() pan:Activate() end)
                     end
@@ -986,7 +2527,6 @@ task.spawn(function() while true do
                     release()
                     task.wait(0.4)
 
-                    -- Unequip to reset
                     if pan.Parent == char then
                         hum:UnequipTools()
                         task.wait(0.15)
@@ -1001,15 +2541,12 @@ task.spawn(function() while true do
 end end)
 
 -- ═══ AUTO CLEAN ═══
--- Only fires prompts with "Clean"/"Pick"/"Dispose" ActionText
--- Skips "Buy", "Customize", and other non-clean prompts entirely
 task.spawn(function() while true do
     if cfg.autoClean and _k and _k.v and _k.i then
         setStatus("clean", "Scanning...")
         local cleaned = 0
         local plot = getPlot()
         if plot then
-            -- Check DiningPlot1 for clean prompts (dirty tables after NPC leaves)
             local dp = plot:FindFirstChild("DiningPlot1")
             if dp then
                 for _, tm in ipairs(dp:GetChildren()) do
@@ -1017,7 +2554,6 @@ task.spawn(function() while true do
                         for _, desc in ipairs(tm:GetDescendants()) do
                             if desc:IsA("ProximityPrompt") and desc.Enabled then
                                 local action = desc.ActionText:lower()
-                                -- Only trigger actual clean prompts, never Buy/Customize
                                 if string.find(action, "clean") or string.find(action, "pick") or string.find(action, "dispose") or string.find(action, "collect") or string.find(action, "trash") then
                                     local pp = desc.Parent
                                     if pp and pp:IsA("BasePart") then
@@ -1035,7 +2571,6 @@ task.spawn(function() while true do
                     end
                 end
             end
-            -- Also check the Serve area for leftover clean prompts
             local serve = plot:FindFirstChild("Serve")
             if serve then
                 for _, desc in ipairs(serve:GetDescendants()) do
@@ -1056,7 +2591,6 @@ task.spawn(function() while true do
                     end
                 end
             end
-            -- Check the Trash folder for collectible items
             local others = plot:FindFirstChild("Others")
             if others then
                 local trash = others:FindFirstChild("Trash")
@@ -1090,7 +2624,6 @@ task.spawn(function() while true do
 end end)
 
 -- ═══ AUTO WASH ═══
--- Picks up dirty dishes from tables, brings to sink, puts and washes
 task.spawn(function() while true do
     if cfg.autoWash and _k and _k.v and _k.s then
         setStatus("wash", "Scanning...")
@@ -1114,7 +2647,6 @@ task.spawn(function() while true do
                                         task.wait(0.15)
                                         fireproximityprompt(desc)
                                         release()
-                                        -- Wait for dish tool to appear in character
                                         for _ = 1, 20 do
                                             local c = LocalPlayer.Character
                                             if c and c:FindFirstChildOfClass("Tool") then break end
@@ -1122,7 +2654,6 @@ task.spawn(function() while true do
                                         end
                                         task.wait(0.3)
 
-                                        -- Re-find the Put prompt (it should be enabled now that we hold a dish)
                                         if sink then
                                             for _, pd in ipairs(sink:GetDescendants()) do
                                                 if pd:IsA("ProximityPrompt") and pd.Name == "Put" then
@@ -1144,7 +2675,6 @@ task.spawn(function() while true do
                 end
             end
 
-            -- Final Wash step
             if sink then
                 for _, pd in ipairs(sink:GetDescendants()) do
                     if pd:IsA("ProximityPrompt") and pd.Name == "Wash" then
@@ -1175,7 +2705,6 @@ task.spawn(function() while true do
 end end)
 
 -- ═══ AUTO BUY FURNITURE ═══
--- Buys the best (most expensive) affordable furniture first
 task.spawn(function() while true do
     if cfg.autoBuyFurniture and _k and _k.v then
         setStatus("buyFurn", "Checking shop...")
@@ -1183,7 +2712,6 @@ task.spawn(function() while true do
         local ok, shopData = pcall(function() return GetShopInfo:InvokeServer() end)
         if ok and shopData then
             local furnCfg = FurnitureConfig
-            -- Collect all buyable items with prices, sort by price descending
             local allItems = {}
             for _, category in ipairs({"Tables", "Chairs", "Stoves"}) do
                 local items = shopData[category]
@@ -1210,7 +2738,6 @@ task.spawn(function() while true do
             end
             table.sort(allItems, function(a, b) return a.price > b.price end)
 
-            -- Buy best affordable first
             local bought = 0
             for _, entry in ipairs(allItems) do
                 if entry.price <= cash and entry.price > 0 then
@@ -1243,9 +2770,7 @@ task.spawn(function() while true do
 end end)
 
 -- ═══ AUTO PLACE / UPGRADE FURNITURE ═══
--- Places on empty slots AND upgrades existing furniture to the best available tier
 task.spawn(function()
-    -- Build price lookup once
     local priceLookup = {}
     local furnCfg = FurnitureConfig
     if furnCfg.Dining then
@@ -1266,7 +2791,6 @@ task.spawn(function()
         end
     end
 
-    -- Get model name -> key mapping (placed model names may differ from config keys)
     local modelNameToKey = {}
     if furnCfg.Dining then
         if furnCfg.Dining.Tables then
@@ -1293,7 +2817,6 @@ task.spawn(function()
             if plot then
                 local ok, inv = pcall(function() return GetFurnitureInventory:InvokeServer() end)
                 if ok and inv then
-                    -- Build sorted inventory per category (best/highest price first)
                     local inventory = {Tables = {}, Chairs = {}, Stoves = {}}
                     for fullKey, count in pairs(inv) do
                         if type(count) == "number" and count > 0 then
@@ -1303,17 +2826,14 @@ task.spawn(function()
                             end
                         end
                     end
-                    -- Sort each category by price descending (best first)
                     for _, list in pairs(inventory) do
                         table.sort(list, function(a, b) return a.price > b.price end)
                     end
 
-                    -- Process dining tables/chairs
                     local dp = plot:FindFirstChild("DiningPlot1")
                     if dp then
                         for _, slot in ipairs(dp:GetChildren()) do
                             if slot:IsA("Model") then
-                                -- Check table slot
                                 local ct = slot:FindFirstChild("CurrentTable")
                                 if ct then
                                     local currentChildren = ct:GetChildren()
@@ -1323,7 +2843,6 @@ task.spawn(function()
                                         local currentKey = modelNameToKey[currentModel.Name] or currentModel.Name
                                         currentPrice = priceLookup["Tables_" .. currentKey] or 0
                                     end
-                                    -- Find best table in inventory that's better than current
                                     if #inventory.Tables > 0 then
                                         local best = inventory.Tables[1]
                                         if best.price > currentPrice then
@@ -1332,7 +2851,6 @@ task.spawn(function()
                                         end
                                     end
                                 end
-                                -- Check chair slot
                                 local cc = slot:FindFirstChild("CurrentChair")
                                 if cc then
                                     local currentChildren = cc:GetChildren()
@@ -1354,7 +2872,6 @@ task.spawn(function()
                         end
                     end
 
-                    -- Process kitchen stoves
                     local kp = plot:FindFirstChild("KitchenPlot1")
                     if kp then
                         for _, slot in ipairs(kp:GetChildren()) do
@@ -1390,7 +2907,6 @@ task.spawn(function()
 end)
 
 -- ═══ AUTO BUY INGREDIENTS ═══
--- Buys ingredients when stock drops below threshold, only if enough cash
 task.spawn(function() while true do
     if cfg.autoBuyIngredients and _k and _k.v and _k.i then
         setStatus("buyIng", "Checking stock...")
@@ -1471,7 +2987,6 @@ task.spawn(function() while true do
 end end)
 
 -- ═══ AUTO UNLOCK TABLES ═══
--- Unlocks Table7-12 only when affordable: cost = (unlockedCount + 1) * 20000
 task.spawn(function() while true do
     if cfg.autoUnlockTables and _k and _k.v and _verifyIntegrity() then
         setStatus("unlockTbl", "Checking tables...")
@@ -1510,7 +3025,6 @@ task.spawn(function() while true do
 end end)
 
 -- ═══ AUTO UNLOCK MENU ═══
--- Unlocks SILOG (100 served) and LUTONG BAHAY (670 served)
 task.spawn(function() while true do
     if cfg.autoUnlockMenu and _k and _k.v and _k.i then
         setStatus("unlockMenu", "Checking menu...")
@@ -1628,18 +3142,15 @@ UserInputService.JumpRequest:Connect(function() if cfg.infJump and _k and _k.v a
 -- ═══════════════════════════════════════
 task.spawn(function() while true do
     if Library.Toggled then
-        -- Update status labels
         for _, key in ipairs(statusOrder) do
             if StatusLabels[key] then
                 StatusLabels[key]:SetText(statusNames[key] .. ": " .. (status[key] or "Idle"))
             end
         end
-        -- Update money summary
         MoneyEarnedLabel:SetText("Earned: $" .. moneyLog.totalEarned)
         MoneySpentLabel:SetText("Spent: $" .. moneyLog.totalSpent)
         MoneyNetLabel:SetText("Net: $" .. (moneyLog.totalEarned - moneyLog.totalSpent))
         MoneyStartLabel:SetText("Start: $" .. moneyLog.startCash .. " | Now: $" .. getCash())
-        -- Update money log lines
         refreshMoneyDisplay()
     end
     local interval = Options.RefreshInterval and Options.RefreshInterval.Value or 2
