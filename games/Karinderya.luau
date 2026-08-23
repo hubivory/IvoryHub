@@ -17,6 +17,8 @@ local function _verifyIntegrity()
     return true
 end
 
+do -- wrap key system UI in a block to avoid hitting the 200 local register limit
+
 -- ===============================================================
 -- SERVICES
 -- ===============================================================
@@ -1899,6 +1901,8 @@ for k, v in pairs(getgenv and getgenv() or {}) do
     if type(v) == "table" and v.CreateWindow and v.Toggles then v.Toggled = false; break end
 end
 task.wait(0.3)
+
+end -- close key system UI block
 
 local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
 local Library = loadstring(request({ Url = repo .. "Library.lua", Method = "GET" }).Body)()
