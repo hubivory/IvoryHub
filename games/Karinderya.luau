@@ -1962,6 +1962,7 @@ for name, data in pairs(NPCConfig.Types) do
     npcRarityMap[name .. " [" .. rarity .. "]"] = name
 end
 table.sort(npcNamesWithRarity)
+table.insert(npcNamesWithRarity, 1, "None")
 
 local Toggles = Library.Toggles
 local Options = Library.Options
@@ -2189,6 +2190,7 @@ do
         end
     end
     table.sort(furnitureList)
+    table.insert(furnitureList, 1, "None")
 end
 
 FurnBox:AddDropdown("FurnitureWhitelist", {
@@ -2326,9 +2328,15 @@ Toggles.AutoServe:OnChanged(function(s) cfg.autoServe = s end)
 Toggles.AutoOrder:OnChanged(function(s) cfg.autoOrder = s end)
 Toggles.AutoRejectNPC:OnChanged(function(s) cfg.autoRejectNPC = s end)
 Options.RejectNPCList:OnChanged(function(v)
+    if v["None"] then
+        -- "None" selected, clear everything
+        Options.RejectNPCList:SetValue({})
+        cfg.rejectNPCList = {}
+        return
+    end
     cfg.rejectNPCList = {}
     for displayName, selected in pairs(v) do
-        if selected then
+        if selected and displayName ~= "None" then
             local npcName = npcRarityMap[displayName]
             if npcName then
                 cfg.rejectNPCList[npcName] = true
@@ -2343,9 +2351,15 @@ Toggles.AutoWash:OnChanged(function(s) cfg.autoWash = s end)
 Toggles.AutoBuyFurniture:OnChanged(function(s) cfg.autoBuyFurniture = s end)
 Toggles.AutoPlaceFurniture:OnChanged(function(s) cfg.autoPlaceFurniture = s end)
 Options.FurnitureWhitelist:OnChanged(function(v)
+    if v["None"] then
+        -- "None" selected, clear everything
+        Options.FurnitureWhitelist:SetValue({})
+        cfg.furnitureWhitelist = {}
+        return
+    end
     cfg.furnitureWhitelist = {}
     for name, enabled in pairs(v) do
-        if enabled then cfg.furnitureWhitelist[name] = true end
+        if enabled and name ~= "None" then cfg.furnitureWhitelist[name] = true end
     end
 end)
 Toggles.AutoBuyIngredients:OnChanged(function(s) cfg.autoBuyIngredients = s end)
