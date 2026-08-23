@@ -17,6 +17,8 @@ local function _verifyIntegrity()
     return true
 end
 
+do -- wrap key system UI in a block to avoid hitting the 200 local register limit
+
 -- ===============================================================
 -- SERVICES
 -- ===============================================================
@@ -1890,6 +1892,8 @@ if _unloaded then
 end
 
 print("Ivory Hub key system - liquid glass - sakura UI loaded")
+
+end -- close key system UI block
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
