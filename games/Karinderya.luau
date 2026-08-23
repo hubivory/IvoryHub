@@ -1955,15 +1955,6 @@ for name, data in pairs(NPCConfig.Types) do
 end
 table.sort(npcNamesWithRarity)
 
--- Populate the RejectNPCList dropdown
-task.spawn(function()
-    task.wait(2)
-    local dropdown = Options.RejectNPCList
-    if dropdown then
-        dropdown:SetValues(npcNamesWithRarity)
-    end
-end)
-
 local Toggles = Library.Toggles
 local Options = Library.Options
 
@@ -2142,6 +2133,7 @@ FoodBox:AddDropdown("RejectNPCList", {
 	Default = {},
 	Text = "Reject NPCs",
 })
+Options.RejectNPCList:SetValues(npcNamesWithRarity)
 FoodBox:AddToggle("AutoRejectNPC", { Text = "Auto Reject Selected NPCs", Default = false })
 
 local KitchenBox = AutoSub:AddLeftGroupbox("Kitchen", "chef-hat")
