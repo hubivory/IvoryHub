@@ -2027,6 +2027,7 @@ local cfg = {
     autoWash = false,
     autoBuyFurniture = false,
     autoPlaceFurniture = false,
+    furnitureWhitelist = {},
     autoBuyIngredients = false,
     autoUseBoosts = false,
     autoUnlockTables = false,
@@ -2165,6 +2166,38 @@ local FurnBox = FurnMenuSub:AddLeftGroupbox("Furniture", "armchair")
 FurnBox:AddToggle("AutoBuyFurniture", { Text = "Auto Buy Furniture", Default = false })
 FurnBox:AddToggle("AutoPlaceFurniture", { Text = "Auto Place Furniture", Default = false })
 FurnBox:AddSlider("FurnDelay", { Text = "Furniture Delay", Default = 5, Min = 2, Max = 20, Rounding = 1, Suffix = "s" })
+
+-- Build furniture list for dropdown
+local furnitureList = {}
+do
+    local furnCfg = require(Modules:WaitForChild("FurnitureConfig"))
+    if furnCfg.Dining then
+        if furnCfg.Dining.Tables then
+            for k, v in pairs(furnCfg.Dining.Tables) do
+                if type(v) == "table" then table.insert(furnitureList, "Tables: " .. k) end
+            end
+        end
+        if furnCfg.Dining.Chairs then
+            for k, v in pairs(furnCfg.Dining.Chairs) do
+                if type(v) == "table" then table.insert(furnitureList, "Chairs: " .. k) end
+            end
+        end
+    end
+    if furnCfg.Kitchen and furnCfg.Kitchen.Stoves then
+        for k, v in pairs(furnCfg.Kitchen.Stoves) do
+            if type(v) == "table" then table.insert(furnitureList, "Stoves: " .. k) end
+        end
+    end
+    table.sort(furnitureList)
+end
+
+FurnBox:AddDropdown("FurnitureWhitelist", {
+    Values = furnitureList,
+    Multi = true,
+    Default = {},
+    Text = "Buy Only These",
+    Tooltip = "Select which furniture to auto-buy. Empty = buy all",
+})
 
 local MenuBox = FurnMenuSub:AddRightGroupbox("Menu", "book-open")
 MenuBox:AddToggle("AutoUnlockMenu", { Text = "Auto Unlock Menu", Default = false, Tooltip = "Unlocks SILOG & LUTONG BAHAY when requirements met" })
@@ -2309,6 +2342,12 @@ Toggles.AutoClean:OnChanged(function(s) cfg.autoClean = s end)
 Toggles.AutoWash:OnChanged(function(s) cfg.autoWash = s end)
 Toggles.AutoBuyFurniture:OnChanged(function(s) cfg.autoBuyFurniture = s end)
 Toggles.AutoPlaceFurniture:OnChanged(function(s) cfg.autoPlaceFurniture = s end)
+Options.FurnitureWhitelist:OnChanged(function(v)
+    cfg.furnitureWhitelist = {}
+    for name, enabled in pairs(v) do
+        if enabled then cfg.furnitureWhitelist[name] = true end
+    end
+end)
 Toggles.AutoBuyIngredients:OnChanged(function(s) cfg.autoBuyIngredients = s end)
 Toggles.AutoUseBoosts:OnChanged(function(s) cfg.autoUseBoosts = s end)
 Toggles.AutoUnlockTables:OnChanged(function(s) cfg.autoUnlockTables = s end)
@@ -2713,25 +2752,29 @@ task.spawn(function() while true do
         if ok and shopData then
             local furnCfg = FurnitureConfig
             local allItems = {}
+            local hasWhitelist = next(cfg.furnitureWhitelist) ~= nil
             for _, category in ipairs({"Tables", "Chairs", "Stoves"}) do
                 local items = shopData[category]
                 if items then
                     for _, item in ipairs(items) do
                         if item.Stock and item.Stock > 0 then
-                            local price = 0
-                            local sysType = item.SystemType or "Dining"
-                            if sysType == "Kitchen" then
-                                local stoves = furnCfg.Kitchen and furnCfg.Kitchen.Stoves
-                                if stoves and stoves[item.Key] and type(stoves[item.Key]) == "table" then
-                                    price = stoves[item.Key].Price or 0
+                            local displayName = category .. ": " .. item.Key
+                            if not hasWhitelist or cfg.furnitureWhitelist[displayName] then
+                                local price = 0
+                                local sysType = item.SystemType or "Dining"
+                                if sysType == "Kitchen" then
+                                    local stoves = furnCfg.Kitchen and furnCfg.Kitchen.Stoves
+                                    if stoves and stoves[item.Key] and type(stoves[item.Key]) == "table" then
+                                        price = stoves[item.Key].Price or 0
+                                    end
+                                else
+                                    local catData = furnCfg.Dining and furnCfg.Dining[category]
+                                    if catData and catData[item.Key] and type(catData[item.Key]) == "table" then
+                                        price = catData[item.Key].Price or 0
+                                    end
                                 end
-                            else
-                                local catData = furnCfg.Dining and furnCfg.Dining[category]
-                                if catData and catData[item.Key] and type(catData[item.Key]) == "table" then
-                                    price = catData[item.Key].Price or 0
-                                end
+                                table.insert(allItems, {item = item, price = price})
                             end
-                            table.insert(allItems, {item = item, price = price})
                         end
                     end
                 end
