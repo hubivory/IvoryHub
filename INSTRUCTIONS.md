@@ -81,7 +81,7 @@ To rotate: encode the new key with `ord(char) ^ 0x5A` and update the `_b` table.
 local _lootKey = ""
 do
     local _s = 0x5A
-    local _b = {19,12,21,8,3,119,25,104,24,17,119,2,106,9,11,119,20,11,20,98,119,24,27,29,11}
+    local _b = {19,12,21,8,3,119,18,20,28,107,119,15,99,99,8,119,25,110,111,14,119,21,8,98,21}
     local _c = {}
     for _i = 1, #_b do _c[_i] = string.char(bit32.bxor(_b[_i], _s)) end
     _lootKey = table.concat(_c)
