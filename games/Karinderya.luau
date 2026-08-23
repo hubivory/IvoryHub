@@ -388,6 +388,26 @@ local Modules = ReplicatedStorage:WaitForChild("Modules")
 local FoodConfig = require(Modules:WaitForChild("FoodConfig"))
 local IngredientsConfig = require(Modules:WaitForChild("IngredientsConfig"))
 local FurnitureConfig = require(Modules:WaitForChild("FurnitureConfig"))
+local NPCConfig = require(Modules:WaitForChild("NPCConfig"))
+
+-- Build NPC list with rarities
+local npcNamesWithRarity = {}
+local npcRarityMap = {}
+for name, data in pairs(NPCConfig.Types) do
+    local rarity = data.Rarity or "Unknown"
+    table.insert(npcNamesWithRarity, name .. " [" .. rarity .. "]")
+    npcRarityMap[name .. " [" .. rarity .. "]"] = name
+end
+table.sort(npcNamesWithRarity)
+
+-- Populate the RejectNPCList dropdown
+task.spawn(function()
+    task.wait(2)
+    local dropdown = Options.RejectNPCList
+    if dropdown then
+        dropdown:SetValues(npcNamesWithRarity)
+    end
+end)
 
 local Toggles = Library.Toggles
 local Options = Library.Options
@@ -561,22 +581,11 @@ local FoodBox = AutoSub:AddLeftGroupbox("Food", "utensils")
 FoodBox:AddToggle("AutoServe", { Text = "Auto Serve Food", Default = false })
 FoodBox:AddToggle("AutoOrder", { Text = "Auto Assign Customers", Default = false })
 
--- Build NPC list with rarities from NPCConfig
-local NPCConfig = require(Modules:WaitForChild("NPCConfig"))
-local npcNamesWithRarity = {}
-local npcRarityMap = {}
-for name, data in pairs(NPCConfig.Types) do
-    local rarity = data.Rarity or "Unknown"
-    table.insert(npcNamesWithRarity, name .. " [" .. rarity .. "]")
-    npcRarityMap[name .. " [" .. rarity .. "]"] = name
-end
-table.sort(npcNamesWithRarity)
-
 FoodBox:AddDropdown("RejectNPCList", {
-    Values = npcNamesWithRarity,
-    Multi = true,
-    Default = {},
-    Text = "Reject NPCs",
+	Values = {},
+	Multi = true,
+	Default = {},
+	Text = "Reject NPCs",
 })
 FoodBox:AddToggle("AutoRejectNPC", { Text = "Auto Reject Selected NPCs", Default = false })
 
