@@ -115,7 +115,7 @@ def main():
 
     # Commit and push
     print(f"\nCommitting and pushing...")
-    msg = f"rotate key to {key}"
+    msg = "feat: rotate API key"
 
     run(["git", "add", "-A"], cwd=tmpdir)
     run(["git", "commit", "-m", msg], cwd=tmpdir)
