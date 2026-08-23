@@ -445,6 +445,8 @@ end
 local cfg = {
     autoServe = false,
     autoOrder = false,
+    autoRejectNPC = false,
+    rejectNPCList = {},
     autoClaimCodes = false,
     autoPan = false,
     autoClean = false,
@@ -558,6 +560,25 @@ local AutoSub = MainTab:AddSubTab({ Name = "Automation", Icon = "zap" })
 local FoodBox = AutoSub:AddLeftGroupbox("Food", "utensils")
 FoodBox:AddToggle("AutoServe", { Text = "Auto Serve Food", Default = false })
 FoodBox:AddToggle("AutoOrder", { Text = "Auto Assign Customers", Default = false })
+
+-- Build NPC list with rarities from NPCConfig
+local NPCConfig = require(Modules:WaitForChild("NPCConfig"))
+local npcNamesWithRarity = {}
+local npcRarityMap = {}
+for name, data in pairs(NPCConfig.Types) do
+    local rarity = data.Rarity or "Unknown"
+    table.insert(npcNamesWithRarity, name .. " [" .. rarity .. "]")
+    npcRarityMap[name .. " [" .. rarity .. "]"] = name
+end
+table.sort(npcNamesWithRarity)
+
+FoodBox:AddDropdown("RejectNPCList", {
+    Values = npcNamesWithRarity,
+    Multi = true,
+    Default = {},
+    Text = "Reject NPCs",
+})
+FoodBox:AddToggle("AutoRejectNPC", { Text = "Auto Reject Selected NPCs", Default = false })
 
 local KitchenBox = AutoSub:AddLeftGroupbox("Kitchen", "chef-hat")
 KitchenBox:AddToggle("AutoClean", { Text = "Auto Clean Tables", Default = false })
@@ -706,6 +727,18 @@ RefreshBox:AddSlider("RefreshInterval", { Text = "Refresh Interval", Default = 2
 -- CALLBACKS
 Toggles.AutoServe:OnChanged(function(s) cfg.autoServe = s end)
 Toggles.AutoOrder:OnChanged(function(s) cfg.autoOrder = s end)
+Toggles.AutoRejectNPC:OnChanged(function(s) cfg.autoRejectNPC = s end)
+Options.RejectNPCList:OnChanged(function(v)
+    cfg.rejectNPCList = {}
+    for displayName, selected in pairs(v) do
+        if selected then
+            local npcName = npcRarityMap[displayName]
+            if npcName then
+                cfg.rejectNPCList[npcName] = true
+            end
+        end
+    end
+end)
 Toggles.AutoClaimCodes:OnChanged(function(s) cfg.autoClaimCodes = s end)
 Toggles.AutoPan:OnChanged(function(s) cfg.autoPan = s end)
 Toggles.AutoClean:OnChanged(function(s) cfg.autoClean = s end)
@@ -833,6 +866,14 @@ task.spawn(function() while true do
             local ok, npc, tbls = pcall(function() return GetCounterInfo:InvokeServer() end)
             if ok and npc and tbls then
                 local id = npc.NpcId or npc.TemplateName or ""
+                local templateName = npc.TemplateName or ""
+                -- Auto-reject: if NPC is in reject list, reject and skip
+                if cfg.autoRejectNPC and cfg.rejectNPCList[templateName] then
+                    pcall(function() RejectNPC:FireServer(id) end)
+                    setStatus("order", "Rejected " .. templateName)
+                    task.wait(0.5)
+                    break
+                end
                 trackNPC(id)
                 local s = false
                 for _, t in ipairs(tbls) do
