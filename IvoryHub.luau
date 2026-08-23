@@ -31,7 +31,9 @@ local success, err = pcall(function()
     if content:byte(1) == 0xEF and content:byte(2) == 0xBB and content:byte(3) == 0xBF then
         content = content:sub(4)
     end
-    loadstring(content)()
+    local fn, loadErr = loadstring(content)
+    if not fn then error("Compile error: " .. tostring(loadErr)) end
+    fn()
 end)
 
 if success then
