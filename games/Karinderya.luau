@@ -2,14 +2,8 @@
 -- KEY SYSTEM - DO NOT MODIFY THIS BLOCK
 -- ═══════════════════════════════════════════════════════════════
 local _k = { v = false, s = nil, h = nil, i = nil, t = 0 }
-local _kv = getgenv and getgenv() or {}
-local _endpoint = "https://ivoryhub.hubivory.workers.dev/validate"
-local _ksalt = "7x9mK2pL"
+local _genv = getgenv()
 local _hwid = tostring(math.random(100000,999999)) .. tostring(tick()):sub(-6)
-
-local _codeBlock = [[
-local _k={v=false,s=nil,h=nil,i=nil,t=0}
-]]
 
 -- Key entry ScreenGui
 local _kg = Instance.new("ScreenGui")
@@ -119,8 +113,8 @@ pcall(function()
     end
 end)
 if not _savedKey then
-    pcall(function() _savedKey = getgenv()._ivoryKey end)
-    pcall(function() _savedExpiry = getgenv()._ivoryExpiry end)
+    pcall(function() _savedKey = _genv._ivoryKey end)
+    pcall(function() _savedExpiry = _genv._ivoryExpiry end)
 end
 
 if _savedKey and _savedExpiry and os.time() * 1000 < _savedExpiry then
@@ -236,8 +230,8 @@ local function _doValidate(key)
         _k.t = os.time()
         _k.i = 0x4A + #key
         pcall(function()
-            getgenv()._ivoryKey = key
-            getgenv()._ivoryExpiry = os.time() * 1000 + 43200000
+            _genv._ivoryKey = key
+            _genv._ivoryExpiry = os.time() * 1000 + 43200000
             writefile("IvoryKey.txt", key .. "\n" .. tostring(os.time() * 1000 + 43200000))
         end)
         _st.Text = "Access granted"
@@ -251,12 +245,12 @@ local function _doValidate(key)
 
     -- Work.ink public validation (no API key needed)
     local ok, res = pcall(function()
-        return game:HttpGet("https://work.ink/_api/v2/token/isValid/" .. key .. "?deleteToken=1", true)
+        return request({ Url = "https://work.ink/_api/v2/token/isValid/" .. key .. "?deleteToken=1", Method = "GET" })
     end)
 
-    if ok and res then
+    if ok and res and res.Body then
         local s, data = pcall(function()
-            return game:GetService("HttpService"):JSONDecode(res)
+            return json.decode(res.Body)
         end)
         if s and type(data) == "table" and data.valid then
             -- Check expiry (24h)
@@ -276,8 +270,8 @@ local function _doValidate(key)
             _k.t = os.time()
             _k.i = 0x4A + #key
             pcall(function()
-                getgenv()._ivoryKey = key
-                getgenv()._ivoryExpiry = data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)
+                _genv._ivoryKey = key
+                _genv._ivoryExpiry = data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)
                 writefile("IvoryKey.txt", key .. "\n" .. tostring(data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)))
             end)
 
@@ -343,9 +337,9 @@ end
 task.wait(0.3)
 
 local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+local Library = loadstring(request({ Url = repo .. "Library.lua", Method = "GET" }).Body)()
+local ThemeManager = loadstring(request({ Url = repo .. "addons/ThemeManager.lua", Method = "GET" }).Body)()
+local SaveManager = loadstring(request({ Url = repo .. "addons/SaveManager.lua", Method = "GET" }).Body)()
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")

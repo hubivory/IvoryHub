@@ -3,6 +3,7 @@
 -- ═══════════════════════════════════════════════════════════════
 local _k = { v = false, s = nil, h = nil, i = nil, t = 0 }
 local _hwid = tostring(math.random(100000,999999)) .. tostring(tick()):sub(-6)
+local _genv = getgenv()
 local _integritySalt = 0x4A
 local function _verifyIntegrity()
     if not _k or not _k.v then return false end
@@ -36,8 +37,8 @@ pcall(function()
     end
 end)
 if not _savedKey then
-    pcall(function() _savedKey = getgenv()._ivoryKey end)
-    pcall(function() _savedExpiry = getgenv()._ivoryExpiry end)
+    pcall(function() _savedKey = _genv._ivoryKey end)
+    pcall(function() _savedExpiry = _genv._ivoryExpiry end)
 end
 
 if _savedKey and _savedExpiry and os.time() * 1000 < _savedExpiry then
@@ -140,8 +141,8 @@ if _awaiting then
             _k.v = true; _k.s = key; _k.h = _hwid; _k.t = os.time()
             _k.i = 0x4A + #key
             pcall(function()
-                getgenv()._ivoryKey = key
-                getgenv()._ivoryExpiry = os.time() * 1000 + 43200000
+                _genv._ivoryKey = key
+                _genv._ivoryExpiry = os.time() * 1000 + 43200000
                 writefile("IvoryKey.txt", key .. "\n" .. tostring(os.time() * 1000 + 43200000))
             end)
             _st.Text = "Access granted"
@@ -153,17 +154,17 @@ if _awaiting then
             return
         end
         local ok, res = pcall(function()
-            return game:HttpGet("https://work.ink/_api/v2/token/isValid/" .. key .. "?deleteToken=1", true)
+            return request({ Url = "https://work.ink/_api/v2/token/isValid/" .. key .. "?deleteToken=1", Method = "GET" })
         end)
-        if ok and res then
-            local dOk, data = pcall(function() return game:GetService("HttpService"):JSONDecode(res) end)
+        if ok and res and res.Body then
+            local dOk, data = pcall(function() return json.decode(res.Body) end)
             if dOk and data and data.valid then
                 _k.v = true; _k.s = key; _k.h = _hwid; _k.t = os.time()
                 _k.i = 0x4A + #key
                 pcall(function()
-                    getgenv()._ivoryKey = key
+                    _genv._ivoryKey = key
                     local exp = data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)
-                    getgenv()._ivoryExpiry = exp
+                    _genv._ivoryExpiry = exp
                     writefile("IvoryKey.txt", key .. "\n" .. tostring(exp))
                 end)
                 _st.Text = "Access granted"
@@ -221,9 +222,9 @@ while _awaiting do task.wait(0.1) end
 -- ═══════════════════════════════════════════════════════════════
 
 local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+local Library = loadstring(request({ Url = repo .. "Library.lua", Method = "GET" }).Body)()
+local ThemeManager = loadstring(request({ Url = repo .. "addons/ThemeManager.lua", Method = "GET" }).Body)()
+local SaveManager = loadstring(request({ Url = repo .. "addons/SaveManager.lua", Method = "GET" }).Body)()
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")

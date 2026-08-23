@@ -3,6 +3,7 @@
 -- ═══════════════════════════════════════════════════════════════
 local _k = { v = false, s = nil, h = nil, i = nil, t = 0 }
 local _hwid = tostring(math.random(100000,999999)) .. tostring(tick()):sub(-6)
+local _genv = getgenv()
 local _integritySalt = 0x4A
 local function _verifyIntegrity()
     if not _k or not _k.v then return false end
@@ -117,8 +118,8 @@ pcall(function()
     end
 end)
 if not _savedKey then
-    pcall(function() _savedKey = getgenv()._ivoryKey end)
-    pcall(function() _savedExpiry = getgenv()._ivoryExpiry end)
+    pcall(function() _savedKey = _genv._ivoryKey end)
+    pcall(function() _savedExpiry = _genv._ivoryExpiry end)
 end
 
 if _savedKey and _savedExpiry and os.time() * 1000 < _savedExpiry then
@@ -233,8 +234,8 @@ local function _doValidate(key)
         _k.t = os.time()
         _k.i = 0x4A + #key
         pcall(function()
-            getgenv()._ivoryKey = key
-            getgenv()._ivoryExpiry = os.time() * 1000 + 43200000
+            _genv._ivoryKey = key
+            _genv._ivoryExpiry = os.time() * 1000 + 43200000
             writefile("IvoryKey.txt", key .. "\n" .. tostring(os.time() * 1000 + 43200000))
         end)
         _st.Text = "Access granted"
@@ -247,11 +248,11 @@ local function _doValidate(key)
     end
 
     local ok, res = pcall(function()
-        return game:HttpGet("https://work.ink/_api/v2/token/isValid/" .. key .. "?deleteToken=1", true)
+        return request({ Url = "https://work.ink/_api/v2/token/isValid/" .. key .. "?deleteToken=1", Method = "GET" })
     end)
-    if ok and res then
+    if ok and res and res.Body then
         local s, data = pcall(function()
-            return game:GetService("HttpService"):JSONDecode(res)
+            return json.decode(res.Body)
         end)
         if s and type(data) == "table" and data.valid then
             if data.info and data.info.expiresAfter then
@@ -269,8 +270,8 @@ local function _doValidate(key)
             _k.t = os.time()
             _k.i = 0x4A + #key
             pcall(function()
-                getgenv()._ivoryKey = key
-                getgenv()._ivoryExpiry = data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)
+                _genv._ivoryKey = key
+                _genv._ivoryExpiry = data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)
                 writefile("IvoryKey.txt", key .. "\n" .. tostring(data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)))
             end)
             _st.Text = "Access granted"
@@ -919,9 +920,9 @@ local ThemeManager = nil
 local SaveManager = nil
 
 pcall(function()
-	Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-	ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-	SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+	Library = loadstring(request({ Url = repo .. "Library.lua", Method = "GET" }).Body)()
+	ThemeManager = loadstring(request({ Url = repo .. "addons/ThemeManager.lua", Method = "GET" }).Body)()
+	SaveManager = loadstring(request({ Url = repo .. "addons/SaveManager.lua", Method = "GET" }).Body)()
 end)
 
 if not Library then
