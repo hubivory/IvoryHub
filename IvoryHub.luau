@@ -24,7 +24,8 @@ end
 print("[Ivory Hub] Loading for game: " .. PlaceId)
 
 local success, err = pcall(function()
-    local res = request({ Url = GITHUB_RAW .. ScriptFile, Method = "GET" })
+    local url = GITHUB_RAW .. ScriptFile .. "?t=" .. tostring(tick())
+    local res = request({ Url = url, Method = "GET" })
     local content = res and res.Body or nil
     if not content then error("HTTP fetch failed") end
     -- Strip UTF-8 BOM if present
