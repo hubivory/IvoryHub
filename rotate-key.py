@@ -113,7 +113,13 @@ def main():
         print(f"OK: {path}")
         updated += 1
 
-    print(f"\nUpdated {updated}/{len(FILES)} files")
+    # Update lootlabs-key.txt with plain text key
+    keyfile = os.path.join(tmpdir, "lootlabs-key.txt")
+    with open(keyfile, "w", encoding="utf-8") as f:
+        f.write(key)
+    print(f"OK: lootlabs-key.txt")
+
+    print(f"\nUpdated {updated}/{len(FILES)} files + lootlabs-key.txt")
 
     if updated == 0:
         print("Nothing to commit.")
