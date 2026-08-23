@@ -42,7 +42,9 @@ dbg("Script chunk entered")
 -- KEY SYSTEM
 -- ===============================================================
 local _k = { v = false, s = nil, h = nil, i = nil, t = 0 }
-local _hwid = tostring(math.random(100000, 999999)) .. tostring(tick()):sub(-6)
+local _hwid = ""
+pcall(function() _hwid = game:GetService("RbxAnalyticsService"):GetClientId() end)
+if _hwid == "" then _hwid = HttpService:JSONEncode({Players.LocalPlayer.UserId, math.random(1,999999)}) end
 dbg("HWID generated: %s", _hwid)
 
 -- ===============================================================
@@ -1758,7 +1760,7 @@ ValidateKey = function(key)
             genv._ivoryExpiry = os.time() * 1000 + 43200000
         end)
         dbgPcall("writefile-loot", function()
-            writefile("IvoryKey.txt", key .. "\n" .. tostring(os.time() * 1000 + 43200000))
+            writefile("IvoryKey.txt", key .. "\n" .. tostring(os.time() * 1000 + 43200000) .. "\n" .. _hwid)
         end)
 
         setStatus("Access granted", Theme.Success)
@@ -1814,7 +1816,7 @@ ValidateKey = function(key)
                 genv._ivoryExpiry = expiry
             end)
             dbgPcall("writefile-workink", function()
-                writefile("IvoryKey.txt", key .. "\n" .. tostring(expiry))
+                writefile("IvoryKey.txt", key .. "\n" .. tostring(expiry) .. "\n" .. _hwid)
             end)
 
             setStatus("Access granted", Theme.Success)
@@ -1859,16 +1861,18 @@ dbg("Key validation wired up")
 local function CheckSavedKey()
     if _unloaded then return end
     dbg("CheckSavedKey running")
-    local savedKey, savedExpiry = nil, nil
+    local savedKey, savedExpiry, savedHwid = nil, nil, nil
 
     local readOk, readErr = pcall(function()
         if isfile("IvoryKey.txt") then
             local data = readfile("IvoryKey.txt")
-            savedKey, savedExpiry = data:match("^(.-)\n(.-)$")
+            savedKey, savedExpiry, savedHwid = data:match("^(.-)\n(.-)\n?(.-)$")
             savedExpiry = tonumber(savedExpiry)
-            dbg("Read IvoryKey.txt: key=%s, expiry=%s",
+            if savedHwid == "" then savedHwid = nil end
+            dbg("Read IvoryKey.txt: key=%s, expiry=%s, hwid=%s",
                 savedKey and savedKey:sub(1,8) .. "..." or "nil",
-                tostring(savedExpiry))
+                tostring(savedExpiry),
+                savedHwid and savedHwid:sub(1,12) .. "..." or "nil")
         else
             dbg("No IvoryKey.txt found")
         end
@@ -1884,17 +1888,23 @@ local function CheckSavedKey()
     end
 
     if savedKey and savedExpiry and os.time() * 1000 < savedExpiry then
-        dbg("Saved key still valid, restoring")
-        _k.v = true
-        _k.s = savedKey
-        _k.h = _hwid
-        _k.t = os.time()
-        _k.i = 0x4A + #savedKey
+        if savedHwid and savedHwid ~= _hwid then
+            dbgWarn("HWID mismatch: saved=%s, current=%s", tostring(savedHwid), tostring(_hwid))
+            pcall(function() delfile("IvoryKey.txt") end)
+            setStatus("Key bound to another device", Theme.Error)
+        else
+            dbg("Saved key still valid, restoring")
+            _k.v = true
+            _k.s = savedKey
+            _k.h = _hwid
+            _k.t = os.time()
+            _k.i = 0x4A + #savedKey
 
-        setStatus("Welcome back - key restored", Theme.Success)
-        setVerifying(false)
-        VerifyLabel.Text = "Loading..."
-        closeUI(0.9)
+            setStatus("Welcome back - key restored", Theme.Success)
+            setVerifying(false)
+            VerifyLabel.Text = "Loading..."
+            closeUI(0.9)
+        end
     else
         dbg("No valid saved key (expiry check: saved=%s, now=%s)",
             tostring(savedExpiry), tostring(os.time() * 1000))

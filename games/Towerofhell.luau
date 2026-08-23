@@ -2,7 +2,9 @@
 -- KEY SYSTEM - DO NOT MODIFY THIS BLOCK
 -- ═══════════════════════════════════════════════════════════════
 local _k = { v = false, s = nil, h = nil, i = nil, t = 0 }
-local _hwid = tostring(math.random(100000,999999)) .. tostring(tick()):sub(-6)
+local _hwid = ""
+pcall(function() _hwid = game:GetService("RbxAnalyticsService"):GetClientId() end)
+if _hwid == "" then _hwid = game:GetService("HttpService"):JSONEncode({game.Players.LocalPlayer.UserId, math.random(1,999999)}) end
 local _genv = getgenv()
 local _integritySalt = 0x4A
 local function _verifyIntegrity()
@@ -32,11 +34,13 @@ local _st
 
 local _savedKey = nil
 local _savedExpiry = nil
+local _savedHwid = nil
 pcall(function()
     if isfile("IvoryKey.txt") then
         local data = readfile("IvoryKey.txt")
-        _savedKey, _savedExpiry = data:match("^(.-)\n(.-)$")
+        _savedKey, _savedExpiry, _savedHwid = data:match("^(.-)\n(.-)\n?(.-)$")
         _savedExpiry = tonumber(_savedExpiry)
+        if _savedHwid == "" then _savedHwid = nil end
     end
 end)
 if not _savedKey then
@@ -45,10 +49,14 @@ if not _savedKey then
 end
 
 if _savedKey and _savedExpiry and os.time() * 1000 < _savedExpiry then
-    _k.v = true; _k.s = _savedKey; _k.h = _hwid; _k.t = os.time()
-    _k.i = 0x4A + #_savedKey
-    _awaiting = false
-    pcall(function() _kg:Destroy() end)
+    if _savedHwid and _savedHwid ~= _hwid then
+        pcall(function() delfile("IvoryKey.txt") end)
+    else
+        _k.v = true; _k.s = _savedKey; _k.h = _hwid; _k.t = os.time()
+        _k.i = 0x4A + #_savedKey
+        _awaiting = false
+        pcall(function() _kg:Destroy() end)
+    end
 end
 if _awaiting then
     local _f = Instance.new("Frame")
@@ -146,7 +154,7 @@ if _awaiting then
             pcall(function()
                 _genv._ivoryKey = key
                 _genv._ivoryExpiry = os.time() * 1000 + 43200000
-                writefile("IvoryKey.txt", key .. "\n" .. tostring(os.time() * 1000 + 43200000))
+                writefile("IvoryKey.txt", key .. "\n" .. tostring(os.time() * 1000 + 43200000) .. "\n" .. _hwid)
             end)
             _st.Text = "Access granted"
             _st.TextColor3 = Color3.fromRGB(80, 220, 120)
@@ -168,7 +176,7 @@ if _awaiting then
                     _genv._ivoryKey = key
                     local exp = data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)
                     _genv._ivoryExpiry = exp
-                    writefile("IvoryKey.txt", key .. "\n" .. tostring(exp))
+                    writefile("IvoryKey.txt", key .. "\n" .. tostring(exp) .. "\n" .. _hwid)
                 end)
                 _st.Text = "Access granted"
                 _st.TextColor3 = Color3.fromRGB(80, 220, 120)
