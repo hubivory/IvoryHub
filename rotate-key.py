@@ -14,6 +14,7 @@ import string
 import sys
 import re
 import os
+import subprocess
 
 XOR_SALT = 0x5A
 
@@ -88,10 +89,30 @@ def main():
         updated += 1
 
     print(f"\nUpdated {updated}/{len(FILES)} files")
-    print(f"\nNext steps:")
-    print(f"  git add -A")
-    print(f'  git commit -m "rotate key to {key}"')
-    print(f"  git push")
+
+    if updated == 0:
+        print("Nothing to commit.")
+        return
+
+    print(f"\nCommitting and pushing...")
+    msg = f"rotate key to {key}"
+
+    r = subprocess.run(["git", "add", "-A"], capture_output=True, text=True)
+    if r.returncode != 0:
+        print(f"git add failed: {r.stderr}")
+        return
+
+    r = subprocess.run(["git", "commit", "-m", msg], capture_output=True, text=True)
+    if r.returncode != 0:
+        print(f"git commit failed: {r.stderr}")
+        return
+    print(f"Committed: {msg}")
+
+    r = subprocess.run(["git", "push"], capture_output=True, text=True)
+    if r.returncode != 0:
+        print(f"git push failed: {r.stderr}")
+        return
+    print("Pushed to GitHub!")
 
 
 if __name__ == "__main__":
