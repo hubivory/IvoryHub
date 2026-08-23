@@ -84,6 +84,10 @@ def main():
     pattern = re.compile(r"local _b = \{[\d,]+\}")
     replacement = f"local _b = {{{bytes_str}}}"
 
+    # Also fix any remaining ~ XOR syntax to bit32.bxor
+    xor_pattern = re.compile(r"string\.char\(_b\[_i\] ~ _s\)")
+    xor_replacement = "string.char(bit32.bxor(_b[_i], _s))"
+
     updated = 0
     for path in FILES:
         full = os.path.join(tmpdir, path)
@@ -99,6 +103,9 @@ def main():
         if count == 0:
             print(f"SKIP (pattern not found): {path}")
             continue
+
+        # Also fix any remaining ~ XOR syntax to bit32.bxor
+        new_content = xor_pattern.sub(xor_replacement, new_content)
 
         with open(full, "w", encoding="utf-8") as f:
             f.write(new_content)

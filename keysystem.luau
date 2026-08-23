@@ -37,7 +37,7 @@ do
     local _s = 0x5A
     local _b = {19,12,21,8,3,119,111,19,27,110,119,104,21,17,110,119,22,111,98,24,119,29,99,106,10}
     local _c = {}
-    for _i = 1, #_b do _c[_i] = string.char(_b[_i] ~ _s) end
+    for _i = 1, #_b do _c[_i] = string.char(bit32.bxor(_b[_i], _s)) end
     _lootKey = table.concat(_c)
 end
 
