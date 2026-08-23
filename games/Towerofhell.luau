@@ -156,12 +156,11 @@ if _awaiting then
                 _genv._ivoryExpiry = os.time() * 1000 + 43200000
                 writefile("IvoryKey.txt", key .. "\n" .. tostring(os.time() * 1000 + 43200000) .. "\n" .. _hwid)
             end)
-            _st.Text = "Access granted"
+            _st.Text = "Access granted: " .. key
             _st.TextColor3 = Color3.fromRGB(80, 220, 120)
-            _btn.Text = "Loading..."
-            task.wait(0.4)
+            _btn.Text = "Close"
+            _btn.MouseButton1Click:Connect(function() _kg:Destroy() end)
             _awaiting = false
-            _kg:Destroy()
             return
         end
         local ok, res = pcall(function()
@@ -178,12 +177,11 @@ if _awaiting then
                     _genv._ivoryExpiry = exp
                     writefile("IvoryKey.txt", key .. "\n" .. tostring(exp) .. "\n" .. _hwid)
                 end)
-                _st.Text = "Access granted"
+                _st.Text = "Access granted: " .. key
                 _st.TextColor3 = Color3.fromRGB(80, 220, 120)
-                _btn.Text = "Loading..."
-                task.wait(0.4)
+                _btn.Text = "Close"
+                _btn.MouseButton1Click:Connect(function() _kg:Destroy() end)
                 _awaiting = false
-                _kg:Destroy()
                 return
             end
         end

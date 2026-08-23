@@ -1763,10 +1763,10 @@ ValidateKey = function(key)
             writefile("IvoryKey.txt", key .. "\n" .. tostring(os.time() * 1000 + 43200000) .. "\n" .. _hwid)
         end)
 
-        setStatus("Access granted", Theme.Success)
+        setStatus("Access granted: " .. key, Theme.Success)
         setVerifying(false)
-        VerifyLabel.Text = "Loading..."
-        closeUI(1.1)
+        VerifyLabel.Text = "Close"
+        VerifyBtn.MouseButton1Click:Connect(function() closeUI(0) end)
         isVerifying = false
         return
     end
@@ -1819,10 +1819,10 @@ ValidateKey = function(key)
                 writefile("IvoryKey.txt", key .. "\n" .. tostring(expiry) .. "\n" .. _hwid)
             end)
 
-            setStatus("Access granted", Theme.Success)
+            setStatus("Access granted: " .. key, Theme.Success)
             setVerifying(false)
-            VerifyLabel.Text = "Loading..."
-            closeUI(1.1)
+            VerifyLabel.Text = "Close"
+            VerifyBtn.MouseButton1Click:Connect(function() closeUI(0) end)
         else
             dbg("Work.ink response: valid=%s", tostring(data and data.valid))
         end
@@ -1900,10 +1900,10 @@ local function CheckSavedKey()
             _k.t = os.time()
             _k.i = 0x4A + #savedKey
 
-            setStatus("Welcome back - key restored", Theme.Success)
+            setStatus("Welcome back: " .. savedKey, Theme.Success)
             setVerifying(false)
-            VerifyLabel.Text = "Loading..."
-            closeUI(0.9)
+            VerifyLabel.Text = "Close"
+            VerifyBtn.MouseButton1Click:Connect(function() closeUI(0) end)
         end
     else
         dbg("No valid saved key (expiry check: saved=%s, now=%s)",
