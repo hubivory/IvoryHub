@@ -2697,61 +2697,53 @@ task.spawn(function() while true do
             local sink = plot:FindFirstChild("Sink")
             local washed = 0
 
-            -- Step 1: Collect dirty dishes and put them in sink
-            local dp = plot:FindFirstChild("DiningPlot1")
-            if dp then
-                for _, tm in ipairs(dp:GetChildren()) do
-                    if tm:IsA("Model") or tm:IsA("Folder") then
-                        for _, desc in ipairs(tm:GetDescendants()) do
-                            if desc:IsA("ProximityPrompt") and desc.Enabled then
-                                local action = desc.ActionText:lower()
-                                local obj = desc.ObjectText:lower()
-                                if string.find(obj, "dirty") or string.find(obj, "dish") or string.find(action, "wash") or string.find(action, "pick") then
-                                    local pp = desc.Parent
-                                    if pp and pp:IsA("BasePart") then
-                                        -- Pick up the dish
-                                        local release = acquireTp()
-                                        tp(pp.CFrame * CFrame.new(0, 3, 0))
-                                        task.wait(0.2)
-                                        if desc.Enabled then
-                                            fireproximityprompt(desc)
-                                        end
-                                        release()
+            -- Step 1: Collect dirty dishes from entire plot and put them in sink
+            for _, desc in ipairs(plot:GetDescendants()) do
+                if desc:IsA("ProximityPrompt") and desc.Enabled then
+                    local action = desc.ActionText:lower()
+                    local obj = desc.ObjectText:lower()
+                    if string.find(obj, "dirty") or string.find(obj, "dish") or string.find(action, "wash") or string.find(action, "pick") then
+                        local pp = desc.Parent
+                        if pp and pp:IsA("BasePart") then
+                            -- Pick up the dish
+                            local release = acquireTp()
+                            tp(pp.CFrame * CFrame.new(0, 3, 0))
+                            task.wait(0.2)
+                            if desc.Enabled then
+                                fireproximityprompt(desc)
+                            end
+                            release()
 
-                                        -- Wait until holding a tool
-                                        local gotTool = false
-                                        for _ = 1, 30 do
-                                            local c = LocalPlayer.Character
-                                            if c and c:FindFirstChildOfClass("Tool") then
-                                                gotTool = true
-                                                break
-                                            end
-                                            task.wait(0.1)
-                                        end
+                            -- Wait until holding a tool
+                            local gotTool = false
+                            for _ = 1, 30 do
+                                local c = LocalPlayer.Character
+                                if c and c:FindFirstChildOfClass("Tool") then
+                                    gotTool = true
+                                    break
+                                end
+                                task.wait(0.1)
+                            end
 
-                                        if gotTool and sink then
-                                            task.wait(0.2)
-                                            -- Find the Put prompt in sink
-                                            local putPrompt = nil
-                                            for _, pd in ipairs(sink:GetDescendants()) do
-                                                if pd:IsA("ProximityPrompt") and (pd.Name == "Put" or string.find(pd.ActionText:lower(), "put") or string.find(pd.ActionText:lower(), "place")) then
-                                                    putPrompt = pd
-                                                    break
-                                                end
-                                            end
-                                            if putPrompt then
-                                                local release2 = acquireTp()
-                                                tp(putPrompt.Parent.CFrame * CFrame.new(0, 3, 0))
-                                                task.wait(0.25)
-                                                if putPrompt.Enabled then
-                                                    fireproximityprompt(putPrompt)
-                                                end
-                                                release2()
-                                                -- Wait for dish to be placed
-                                                task.wait(0.8)
-                                            end
-                                        end
+                            if gotTool and sink then
+                                task.wait(0.2)
+                                -- Find the Put prompt in sink
+                                local putPrompt = nil
+                                for _, pd in ipairs(sink:GetDescendants()) do
+                                    if pd:IsA("ProximityPrompt") and (pd.Name == "Put" or string.find(pd.ActionText:lower(), "put") or string.find(pd.ActionText:lower(), "place")) then
+                                        putPrompt = pd
+                                        break
                                     end
+                                end
+                                if putPrompt then
+                                    local release2 = acquireTp()
+                                    tp(putPrompt.Parent.CFrame * CFrame.new(0, 3, 0))
+                                    task.wait(0.25)
+                                    if putPrompt.Enabled then
+                                        fireproximityprompt(putPrompt)
+                                    end
+                                    release2()
+                                    task.wait(0.8)
                                 end
                             end
                         end
