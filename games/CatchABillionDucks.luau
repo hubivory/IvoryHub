@@ -2019,7 +2019,9 @@ local function getDucks()
         if v.Name:find("DuckController_Client") then
             local root = v:FindFirstChild("RootPart")
             local hitbox = v:FindFirstChild("Hitbox")
-            if root then
+            local lovpoly = v:FindFirstChild("LovPoly")
+            -- Skip dead/invisible ducks
+            if root and lovpoly and lovpoly.Transparency < 1 then
                 table.insert(ducks, { model = v, root = root, hitbox = hitbox })
             end
         end
