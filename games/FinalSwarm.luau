@@ -768,7 +768,7 @@ CardHolder.Position = UDim2.fromScale(0.5, 0.5)
 CardHolder.Size = UDim2.fromOffset(420, 580)
 CardHolder.BackgroundTransparency = 1
 CardHolder.ZIndex = 5
-CardHolder.Visible = true -- show immediately, no intro
+CardHolder.Visible = false -- revealed by revealCard() once the cinematic intro finishes
 CardHolder.Parent = ScreenGui
 
 local CardScale = Instance.new("UIScale")
@@ -889,28 +889,64 @@ TopRegion.Active = true
 TopRegion.ZIndex = 6
 TopRegion.Parent = Card
 
--- drag logic (drag anywhere on card)
+-- drag logic (drag overlay on top of everything)
 do
+    local DragOverlay = Instance.new("Frame")
+    DragOverlay.Name = "DragOverlay"
+    DragOverlay.Size = UDim2.fromScale(1, 1)
+    DragOverlay.BackgroundTransparency = 1
+    DragOverlay.ZIndex = 100
+    DragOverlay.Parent = Card
+
     local dragging, dragStart, startPos = false, nil, nil
 
+    -- cursor glow
+    local CursorGlow = Instance.new("Frame")
+    CursorGlow.Size = UDim2.fromOffset(160, 160)
+    CursorGlow.AnchorPoint = Vector2.new(0.5, 0.5)
+    CursorGlow.BackgroundColor3 = Theme.Sakura
+    CursorGlow.BackgroundTransparency = 1
+    CursorGlow.BorderSizePixel = 0
+    CursorGlow.ZIndex = 99
+    CursorGlow.Parent = ScreenGui
+    local cgCorner = Instance.new("UICorner")
+    cgCorner.CornerRadius = UDim.new(1, 0)
+    cgCorner.Parent = CursorGlow
+    local cgGrad = Instance.new("UIGradient")
+    cgGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Theme.AccentA),
+        ColorSequenceKeypoint.new(0.5, Theme.Sakura),
+        ColorSequenceKeypoint.new(1, Theme.AccentB),
+    })
+    cgGrad.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0.5),
+        NumberSequenceKeypoint.new(0.6, 0.8),
+        NumberSequenceKeypoint.new(1, 1),
+    })
+    cgGrad.Parent = CursorGlow
+
     local function updateDrag(input)
-        local delta = input.Position - dragStart
+        local pos = input.Position
+        local delta = pos - dragStart
         CardHolder.Position = UDim2.new(
             startPos.X.Scale, startPos.X.Offset + delta.X,
             startPos.Y.Scale, startPos.Y.Offset + delta.Y
         )
+        CursorGlow.Position = UDim2.fromOffset(pos.X, pos.Y)
     end
 
-    Card.InputBegan:Connect(function(input)
+    DragOverlay.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPos = CardHolder.Position
             tw(CardScale, EASE_QUICK, { Scale = 0.975 })
+            tw(CursorGlow, EASE_QUICK, { BackgroundTransparency = 0.4 })
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
                     tw(CardScale, EASE_SPRING, { Scale = 1 })
+                    tw(CursorGlow, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
                 end
             end)
         end
@@ -1664,10 +1700,39 @@ end
 
 -- skip intro, reveal card immediately
 task.spawn(function()
-    task.wait(0.1)
-    revealClouds(0.5)
-    CardHolder.Visible = true
-    tw(CardScale, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
+    task.wait(0.2)
+    revealClouds(1.15)
+
+    tw(IntroLogo, EASE_OUT_SOFT, { BackgroundTransparency = 0 })
+    tw(introGem, EASE_OUT_SOFT, { BackgroundTransparency = 0 })
+    tw(IntroLogoStroke, EASE_OUT_SOFT, { Transparency = 0.4 })
+    tw(IntroLogoScale, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
+    skippableWait(0.55)
+    if introSkip then finishIntro() return end
+
+    typeText(IntroTitle, "I V O R Y   H U B", 0.035)
+    skippableWait(0.25)
+    if introSkip then finishIntro() return end
+
+    typeText(IntroCredit, "built by FakeCrow & Veqxo", 0.032)
+    skippableWait(0.45)
+    if introSkip then finishIntro() return end
+
+    BarLabel.Text = "Loading assets..."
+    tw(BarFill, TweenInfo.new(1.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(0.6, 0, 1, 0) })
+    skippableWait(1.1)
+    if introSkip then finishIntro() return end
+
+    BarLabel.Text = "Preparing interface..."
+    tw(BarFill, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(0.9, 0, 1, 0) })
+    skippableWait(0.7)
+    if introSkip then finishIntro() return end
+
+    BarLabel.Text = "Ready"
+    tw(BarFill, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 1, 0) })
+    skippableWait(0.55)
+
+    finishIntro()
 end)
 
 -- ===============================================================
