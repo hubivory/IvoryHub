@@ -1332,24 +1332,24 @@ end
 -- ===============================================================
 local FloatingRow = Instance.new("Frame")
 FloatingRow.Name = "FloatingRow"
-FloatingRow.Size = UDim2.new(1, 0, 0, 56)
+FloatingRow.Size = UDim2.new(1, 0, 0, 170)
 FloatingRow.LayoutOrder = 4
 FloatingRow.BackgroundTransparency = 1
 FloatingRow.ZIndex = 7
 FloatingRow.Parent = Content
 
 local FloatingLayout = Instance.new("UIListLayout")
-FloatingLayout.FillDirection = Enum.FillDirection.Horizontal
+FloatingLayout.FillDirection = Enum.FillDirection.Vertical
 FloatingLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 FloatingLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-FloatingLayout.Padding = UDim.new(0, 22)
+FloatingLayout.Padding = UDim.new(0, 8)
 FloatingLayout.SortOrder = Enum.SortOrder.LayoutOrder
 FloatingLayout.Parent = FloatingRow
 
 local function CreateFloatingButton(order, iconBuilder, iconColor, label, copyText)
     local btn = Instance.new("TextButton")
     btn.Name = label
-    btn.Size = UDim2.fromOffset(116, 48)
+    btn.Size = UDim2.new(1, -10, 0, 44)
     btn.LayoutOrder = order
     btn.BackgroundColor3 = Theme.GlassCard
     btn.BackgroundTransparency = 0.18
@@ -1381,19 +1381,6 @@ local function CreateFloatingButton(order, iconBuilder, iconColor, label, copyTe
         NumberSequenceKeypoint.new(1, 0.3),
     })
     strokeGrad.Parent = stroke
-
-    local shimmer = Instance.new("Frame")
-    shimmer.Size = UDim2.fromOffset(30, 60)
-    shimmer.Position = UDim2.fromOffset(-40, -6)
-    shimmer.Rotation = 20
-    shimmer.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    shimmer.BackgroundTransparency = 0.88
-    shimmer.BorderSizePixel = 0
-    shimmer.ZIndex = 8
-    shimmer.Parent = btn
-    local shimmerCorner = Instance.new("UICorner")
-    shimmerCorner.CornerRadius = UDim.new(0, 20)
-    shimmerCorner.Parent = shimmer
 
     local iconFrame = Instance.new("Frame")
     iconFrame.Size = UDim2.fromOffset(18, 18)
@@ -1438,14 +1425,6 @@ local function CreateFloatingButton(order, iconBuilder, iconColor, label, copyTe
     sub.TextXAlignment = Enum.TextXAlignment.Left
     sub.ZIndex = 9
     sub.Parent = btn
-
-    task.spawn(function()
-        while btn.Parent do
-            shimmer.Position = UDim2.fromOffset(-40, -6)
-            tw(shimmer, TweenInfo.new(1.8, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), { Position = UDim2.fromOffset(130, -6) })
-            task.wait(3.5)
-        end
-    end)
 
     task.spawn(function()
         while btn.Parent do
