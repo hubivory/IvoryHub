@@ -1971,6 +1971,7 @@ local cfg = {
     autoSellDucks = false,
     autoCollectDrops = false,
     autoSkipDay = false,
+    noclip = false,
 }
 
 -- ===============================================================
@@ -2102,6 +2103,16 @@ CombatBox:AddToggle("RapidFire", { Text = "Rapid Fire", Default = false, Tooltip
 
 local PositionBox = CombatSub:AddRightGroupbox("Positioning", "map-pin")
 PositionBox:AddToggle("StayBehindSpawn", { Text = "Behind Duck Spawn", Default = false, Tooltip = "Stay behind duck spawn for safety" })
+PositionBox:AddToggle("NoClip", { Text = "Noclip", Default = false, Tooltip = "Walk through walls" })
+PositionBox:AddButton({ Text = "Back to Spawn", Func = function()
+    local _, hrp = getChar()
+    if hrp then
+        local spawn = workspace.Ume:FindFirstChild("BaseSpawn")
+        if spawn then
+            hrp.CFrame = spawn.CFrame + Vector3.new(0, 5, 0)
+        end
+    end
+end })
 
 local FarmBox = FarmSub:AddLeftGroupbox("Auto Farm", "zap")
 FarmBox:AddToggle("AutoSellDucks", { Text = "Auto Sell Ducks", Default = false, Tooltip = "Auto deposit ducks to freezer" })
@@ -2180,6 +2191,7 @@ Toggles.AutoReturnLobby:OnChanged(function(s) cfg.autoReturnLobby = s end)
 Toggles.AutoSellDucks:OnChanged(function(s) cfg.autoSellDucks = s end)
 Toggles.AutoCollectDrops:OnChanged(function(s) cfg.autoCollectDrops = s end)
 Toggles.AutoSkipDay:OnChanged(function(s) cfg.autoSkipDay = s end)
+Toggles.NoClip:OnChanged(function(s) cfg.noclip = s end)
 
 -- ===============================================================
 -- IN-GAME: AUTO SHOOT LOOP
@@ -2409,6 +2421,35 @@ task.spawn(function()
             end)
         end
         task.wait(30)
+    end
+end)
+
+-- ===============================================================
+-- NOCLIP LOOP
+-- ===============================================================
+task.spawn(function()
+    local noclipConn
+    while true do
+        if cfg.noclip then
+            if not noclipConn then
+                noclipConn = RunService.Stepped:Connect(function()
+                    local char = LocalPlayer.Character
+                    if char then
+                        for _, v in ipairs(char:GetDescendants()) do
+                            if v:IsA("BasePart") then
+                                v.CanCollide = false
+                            end
+                        end
+                    end
+                end)
+            end
+        else
+            if noclipConn then
+                noclipConn:Disconnect()
+                noclipConn = nil
+            end
+        end
+        task.wait(0.5)
     end
 end)
 
