@@ -1393,7 +1393,7 @@ end
 
 CreateFloatingButton(1, IconChat, Theme.Discord, "Discord\n(dupe)", "https://discord.gg/ivoryhub")
 CreateFloatingButton(2, IconWorkMark, Theme.WorkInkTeal, "Work.ink\nKey", "https://work.ink/ivorykey")
-CreateFloatingButton(3, IconLootGem, Theme.LootPurple, "LootLabs\nKey", "https://loot-link.com/s?L6z5Q0nE")
+CreateFloatingButton(3, function(parent, color) IconLootGem(parent, color, Theme.LootGold) end, Theme.LootPurple, "LootLabs\nKey", "https://loot-link.com/s?L6z5Q0nE")
 
 -- ===============================================================
 -- KEY VALIDATION
