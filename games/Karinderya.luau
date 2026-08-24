@@ -2781,10 +2781,13 @@ task.spawn(function() while true do
                     task.wait(0.3)
                     if washPrompt.Enabled then
                         fireproximityprompt(washPrompt)
+                        -- Hold duration: wait for the prompt to complete
+                        local holdTime = washPrompt.HoldDuration or 1
+                        task.wait(holdTime + 0.5)
                         washed = washed + 1
                     end
                     release3()
-                    task.wait(1.5)
+                    task.wait(1.0)
                 end
             end
 
