@@ -1887,116 +1887,129 @@ local Settings = {
 -- ===============================================================
 -- GET REMOTES
 -- ===============================================================
-local function GetRemote(path)
-    local obj = game:GetService("ReplicatedStorage")
-    for part in path:gmatch("[^:]+") do
-        obj = obj:WaitForChild(part, 10)
-        if not obj then
-            warn("[Ivory] Remote not found: " .. path .. " (stuck at: " .. part .. ")")
-            return nil
-        end
-    end
-    return obj
-end
+local RS = game:GetService("ReplicatedStorage")
+local Network = RS:WaitForChild("Network", 15)
+local Remotes = RS:WaitForChild("Remotes", 15)
 
-local BuildingSuccess = GetRemote("Shared:Network:Remotes:Building:Success")
-local PlayerSell = GetRemote("Shared:Network:Remotes:PlayerData:Sell")
-local PlotCollect = GetRemote("Shared:Network:Remotes:Plot:Collect")
-local RequestRebirth = GetRemote("Shared:Network:Remotes:PlayerData:RequestRebirth")
-local UpgradeFloors = GetRemote("Shared:Network:Remotes:PlayerData:UpgradeFloors")
-local UpgradeLives = GetRemote("Shared:Network:Remotes:PlayerData:UpgradeLives")
-local BuildingBegin = GetRemote("Shared:Network:Remotes:Building:Begin")
-local BuildingCancel = GetRemote("Shared:Network:Remotes:Building:Cancel")
+local LinkPlayerToOrder = Network and Network:FindFirstChild("LinkPlayerToOrder")
+local UnlinkPlayerFromOrder = Network and Network:FindFirstChild("UnlinkPlayerFromOrder")
+local RequestOrderBoard = Network and Network:FindFirstChild("RequestOrderBoard")
+local TryAddIngredientToPlate = Network and Network:FindFirstChild("TryAddIngredientToPlate")
+local RequestMeatSeasoning = Network and Network:FindFirstChild("RequestMeatSeasoning")
+local AddTimeToMeat = Network and Network:FindFirstChild("AddTimeToMeat")
+local RequestFriesSeasoning = Network and Network:FindFirstChild("RequestFriesSeasoning")
+local AddTimeToFries = Network and Network:FindFirstChild("AddTimeToFries")
+local AddMoney = Network and Network:FindFirstChild("AddMoney")
+local GetCashRegisterData = Network and Network:FindFirstChild("GetCashRegisterData")
+local BuyPcUpgradeRequest = Network and Network:FindFirstChild("BuyPcUpgradeRequest")
+local RebirthClass = Network and Network:FindFirstChild("RebirthClass")
+local ClaimReward = Network and Network:FindFirstChild("ClaimReward")
+local HealthInspector_ClaimRewards = Network and Network:FindFirstChild("HealthInspector_ClaimRewards")
+local TycoonPurchase = Remotes and Remotes:FindFirstChild("TycoonPurchase")
+local EmployeeUpgrade = Remotes and Remotes:FindFirstChild("EmployeeUpgrade")
 
 -- ===============================================================
 -- AUTO FUNCTIONS
 -- ===============================================================
 local function AutoBurger()
-    if not BuildingSuccess then warn("[Ivory] BuildingSuccess remote missing") return end
+    if not LinkPlayerToOrder or not TryAddIngredientToPlate then warn("[Ivory] Order remotes missing") return end
     while Settings.AutoBurgerEnabled do
         if not (_k and _k.v and _k.i) then break end
         pcall(function()
-            BuildingSuccess:FireServer(-0.658413290977478)
+            -- Request order board, link to order, add ingredients, season, complete
+            if RequestOrderBoard then RequestOrderBoard:InvokeServer() end
+            task.wait(0.1)
+            if LinkPlayerToOrder then LinkPlayerToOrder:FireServer() end
+            task.wait(0.1)
+            if TryAddIngredientToPlate then TryAddIngredientToPlate:FireServer() end
+            task.wait(0.05)
+            if RequestMeatSeasoning then RequestMeatSeasoning:FireServer() end
+            task.wait(0.05)
+            if AddTimeToMeat then AddTimeToMeat:FireServer() end
+            task.wait(0.05)
+            if RequestFriesSeasoning then RequestFriesSeasoning:FireServer() end
+            task.wait(0.05)
+            if AddTimeToFries then AddTimeToFries:FireServer() end
+            task.wait(0.05)
+            if UnlinkPlayerFromOrder then UnlinkPlayerFromOrder:FireServer() end
         end)
         task.wait(Settings.BurgerDelay)
     end
 end
 
 local function AutoSell()
-    if not PlayerSell then warn("[Ivory] PlayerSell remote missing") return end
+    if not AddMoney then warn("[Ivory] AddMoney remote missing") return end
     while Settings.AutoSellEnabled do
         if not (_k and _k.v and _k.i) then break end
         pcall(function()
-            PlayerSell:FireServer()
+            AddMoney:FireServer()
         end)
         task.wait(Settings.SellDelay)
     end
 end
 
 local function AutoCollect()
-    if not PlotCollect then warn("[Ivory] PlotCollect remote missing") return end
+    if not ClaimReward then warn("[Ivory] ClaimReward remote missing") return end
     while Settings.AutoCollectEnabled do
         if not (_k and _k.v and _k.i) then break end
         pcall(function()
-            for slot = 1, 8 do
-                PlotCollect:FireServer(slot)
-                task.wait(Settings.CollectDelay / 8)
-            end
+            ClaimReward:FireServer()
+            if HealthInspector_ClaimRewards then HealthInspector_ClaimRewards:FireServer() end
         end)
         task.wait(Settings.CollectDelay)
     end
 end
 
 local function AutoRebirth()
-    if not RequestRebirth then warn("[Ivory] RequestRebirth remote missing") return end
+    if not RebirthClass then warn("[Ivory] RebirthClass remote missing") return end
     while Settings.AutoRebirthEnabled do
         if not (_k and _k.v and _k.i) then break end
         pcall(function()
-            RequestRebirth:FireServer()
+            RebirthClass:FireServer()
         end)
         task.wait(Settings.RebirthDelay)
     end
 end
 
 local function AutoUpgradeFloors()
-    if not UpgradeFloors then warn("[Ivory] UpgradeFloors remote missing") return end
+    if not BuyPcUpgradeRequest then warn("[Ivory] BuyPcUpgradeRequest remote missing") return end
     while Settings.AutoUpgradeFloorsEnabled do
         if not (_k and _k.v and _k.i) then break end
         pcall(function()
-            UpgradeFloors:FireServer()
+            BuyPcUpgradeRequest:FireServer()
         end)
         task.wait(Settings.UpgradeFloorsDelay)
     end
 end
 
 local function AutoUpgradeLives()
-    if not UpgradeLives then warn("[Ivory] UpgradeLives remote missing") return end
+    if not EmployeeUpgrade then warn("[Ivory] EmployeeUpgrade remote missing") return end
     while Settings.AutoUpgradeLivesEnabled do
         if not (_k and _k.v and _k.i) then break end
         pcall(function()
-            UpgradeLives:FireServer()
+            EmployeeUpgrade:InvokeServer()
         end)
         task.wait(Settings.UpgradeLivesDelay)
     end
 end
 
 local function AutoBegin()
-    if not BuildingBegin then warn("[Ivory] BuildingBegin remote missing") return end
+    if not RequestOrderBoard then warn("[Ivory] RequestOrderBoard remote missing") return end
     while Settings.AutoBeginEnabled do
         if not (_k and _k.v and _k.i) then break end
         pcall(function()
-            BuildingBegin:FireServer()
+            RequestOrderBoard:InvokeServer()
         end)
         task.wait(Settings.BeginDelay)
     end
 end
 
 local function AutoContinue()
-    if not BuildingCancel then warn("[Ivory] BuildingCancel remote missing") return end
+    if not TycoonPurchase then warn("[Ivory] TycoonPurchase remote missing") return end
     while Settings.AutoContinueEnabled do
         if not (_k and _k.v and _k.i) then break end
         pcall(function()
-            BuildingCancel:FireServer()
+            TycoonPurchase:FireServer()
         end)
         task.wait(Settings.ContinueDelay)
     end
