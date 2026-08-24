@@ -73,7 +73,7 @@ dbg("Services loaded")
 local _lootKey = ""
 do
     local _s = 0x5A
-    local _b = {19,12,21,8,3,119,110,0,10,2,119,12,3,23,24,119,27,106,18,29,119,106,22,24,104}
+    local _b = {19,12,21,8,3,119,27,106,16,104,119,19,3,30,22,119,31,18,12,19,119,109,108,22,12}
     local _c = {}
     for _i = 1, #_b do _c[_i] = string.char(bit32.bxor(_b[_i], _s)) end
     _lootKey = table.concat(_c)
