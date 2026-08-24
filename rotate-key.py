@@ -26,7 +26,9 @@ FILES = [
     "games/Towerofhell.luau",
     "games/MeltTheIce.luau",
     "games/Karinderya.luau",
+    "games/CatchABillionDucks.luau",
     "IvoryKeySystem_Real.luau",
+    "keysystem.luau",
     "INSTRUCTIONS.md",
 ]
 
