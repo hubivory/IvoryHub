@@ -1842,8 +1842,9 @@ local function CheckSavedKey()
     pcall(function()
         if isfile("IvoryKey.txt") then
             local data = readfile("IvoryKey.txt")
-            savedKey, savedExpiry = data:match("^(.-)\n(.-)$")
-            savedExpiry = tonumber(savedExpiry)
+            local lines = data:split("\n")
+            savedKey = lines[1]
+            savedExpiry = tonumber(lines[2])
         end
     end)
 
