@@ -1915,7 +1915,7 @@ task.wait(0.3)
 
 end -- close key system UI block
 -- ===============================================================
--- GAME SCRIPT: Catch 1 Billion Ducks
+-- GAME SCRIPT: Catch 1 Billion Ducks (Lobby Features)
 -- ===============================================================
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1947,19 +1947,14 @@ local Network = Value.Network
 -- CONFIG
 -- ===============================================================
 local cfg = {
-    autoFarm = false,
-    autoShoot = false,
-    silentAim = false,
-    killAura = false,
-    killAuraRadius = 200,
-    autoSell = false,
-    autoBuyUpgrades = false,
     autoJoinGame = false,
-    autoReturnLobby = false,
-    rapidFire = false,
-    autoTargetMadBirds = false,
-    stayBehindSpawn = false,
-    removeGameplayPaused = false,
+    autoBuyWeapons = false,
+    autoEquipBestDog = false,
+    autoOpenCrates = false,
+    autoRollDailyQuests = false,
+    autoBuyUpgrades = false,
+    autoClaimGroup = false,
+    crateAmount = 1,
     priorityUpgrade = "Damage",
 }
 
@@ -1975,39 +1970,26 @@ local function getHum()
     return char and char:FindFirstChildOfClass("Humanoid")
 end
 
-local function getDucks()
-    local ducks = {}
-    for _, v in ipairs(workspace:GetDescendants()) do
-        if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") then
-            local hum = v:FindFirstChildOfClass("Humanoid")
-            if hum and hum.Health > 0 and v.Name:lower():find("duck") then
-                table.insert(ducks, v)
-            end
-        end
-    end
-    return ducks
+local function isLobby()
+    return Value and Value.Config and Value.Config.PlaceLoader and Value.Config.PlaceLoader.MapId == "Game_Lobby"
 end
 
-local function getClosestDuck(radius)
-    local _, hrp = getChar()
-    if not hrp then return nil end
-    local closest, dist = nil, radius or math.huge
-    for _, duck in ipairs(getDucks()) do
-        local root = duck:FindFirstChild("HumanoidRootPart")
-        if root then
-            local d = (root.Position - hrp.Position).Magnitude
-            if d < dist then
-                dist = d
-                closest = duck
-            end
-        end
+local function getCoins()
+    local ls = LocalPlayer:FindFirstChild("leaderstats")
+    if ls then
+        local coins = ls:FindFirstChild("Coins")
+        if coins then return coins.Value end
     end
-    return closest, dist
+    return 0
 end
 
-local function isMadBird(duck)
-    local name = duck.Name:lower()
-    return name:find("angry") or name:find("mad") or name:find("frenzy") or name:find("boss")
+local function getFeathers()
+    local ls = LocalPlayer:FindFirstChild("leaderstats")
+    if ls then
+        local feathers = ls:FindFirstChild("Feathers")
+        if feathers then return feathers.Value end
+    end
+    return 0
 end
 
 -- ===============================================================
@@ -2027,40 +2009,22 @@ local Window = Library:CreateWindow({
     Minimizable = true, FuzzySearch = true, SearchValues = true,
 })
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "crosshair", Description = "Auto Farm & Combat" })
-local UpgradeTab = Window:AddTab({ Name = "Upgrades", Icon = "arrow-up-circle", Description = "Auto Upgrades" })
+local MainTab = Window:AddTab({ Name = "Lobby", Icon = "building", Description = "Lobby Features" })
+local ShopTab = Window:AddTab({ Name = "Shop", Icon = "shopping-cart", Description = "Buy & Open" })
 local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings", Description = "Themes & UI" })
 
 -- ===============================================================
--- MAIN TAB
+-- LOBBY TAB
 -- ===============================================================
-local CombatSub = MainTab:AddSubTab({ Name = "Combat", Icon = "swords" })
+local QueueSub = MainTab:AddSubTab({ Name = "Queue", Icon = "play" })
+local UpgradeSub = MainTab:AddSubTab({ Name = "Upgrades", Icon = "trending-up" })
 local MiscSub = MainTab:AddSubTab({ Name = "Misc", Icon = "zap" })
 
-local CombatBox = CombatSub:AddLeftGroupbox("Combat", "crosshair")
-CombatBox:AddToggle("AutoFarm", { Text = "Auto Farm (Full)", Default = false, Tooltip = "Shoots ducks automatically" })
-CombatBox:AddToggle("KillAura", { Text = "Kill Aura", Default = false, Tooltip = "Auto-shoot ducks in radius" })
-CombatBox:AddSlider("KillAuraRadius", { Text = "Kill Aura Radius", Default = 200, Min = 50, Max = 1000, Rounding = 0, Suffix = " studs" })
-CombatBox:AddToggle("SilentAim", { Text = "Silent Aim", Default = false, Tooltip = "Bullets hit ducks directly" })
-CombatBox:AddToggle("AutoTargetMadBirds", { Text = "Target Mad/Boss Birds", Default = false, Tooltip = "Prioritize angry/boss ducks" })
-CombatBox:AddToggle("RapidFire", { Text = "Rapid Fire", Default = false, Tooltip = "Faster shooting (may not work)" })
+local QueueBox = QueueSub:AddLeftGroupbox("Auto Queue", "play")
+QueueBox:AddToggle("AutoJoinGame", { Text = "Auto Join Game", Default = false, Tooltip = "Teleport to queue when in lobby" })
 
-local PositionBox = CombatSub:AddRightGroupbox("Positioning", "map-pin")
-PositionBox:AddToggle("StayBehindSpawn", { Text = "Behind Duck Spawn", Default = false, Tooltip = "Stay behind duck spawn for safety" })
-
-local SellBox = MiscSub:AddLeftGroupbox("Economy", "dollar-sign")
-SellBox:AddToggle("AutoSell", { Text = "Auto Sell Ducks", Default = false })
-
-local QueueBox = MiscSub:AddRightGroupbox("Queue", "play")
-QueueBox:AddToggle("AutoJoinGame", { Text = "Auto Join Game", Default = false, Tooltip = "Auto queue when in lobby" })
-QueueBox:AddToggle("AutoReturnLobby", { Text = "Auto Return to Lobby", Default = false, Tooltip = "Return to lobby when game ends" })
-
--- ===============================================================
--- UPGRADES TAB
--- ===============================================================
-local UpgradesSub = UpgradeTab:AddSubTab({ Name = "Upgrades", Icon = "trending-up" })
-local UpgradeBox = UpgradesSub:AddLeftGroupbox("Auto Upgrades", "arrow-up-circle")
-UpgradeBox:AddToggle("AutoBuyUpgrades", { Text = "Auto Buy Upgrades", Default = false })
+local UpgradeBox = UpgradeSub:AddLeftGroupbox("Auto Upgrades", "arrow-up-circle")
+UpgradeBox:AddToggle("AutoBuyUpgrades", { Text = "Auto Buy Upgrades", Default = false, Tooltip = "Buy upgrades automatically" })
 UpgradeBox:AddDropdown("PriorityUpgrade", {
     Values = { "Damage", "Pellet Count", "Reload Speed", "Spawn Rate", "Luck", "Dog Speed", "Dog Capacity", "Dog Dexterity" },
     Default = "Damage",
@@ -2068,113 +2032,120 @@ UpgradeBox:AddDropdown("PriorityUpgrade", {
     Tooltip = "Which upgrade to buy first",
 })
 
+local DogBox = UpgradeSub:AddRightGroupbox("Dogs", "heart")
+DogBox:AddToggle("AutoEquipBestDog", { Text = "Auto Equip Best Dog", Default = false, Tooltip = "Equip the best dog automatically" })
+
+local MiscBox = MiscSub:AddLeftGroupbox("Misc", "zap")
+MiscBox:AddToggle("AutoRollDailyQuests", { Text = "Auto Roll Daily Quests", Default = false, Tooltip = "Roll daily quests automatically" })
+MiscBox:AddToggle("AutoClaimGroup", { Text = "Auto Claim Group Reward", Default = false, Tooltip = "Claim group reward automatically" })
+
+-- ===============================================================
+-- SHOP TAB
+-- ===============================================================
+local WeaponSub = ShopTab:AddSubTab({ Name = "Weapons", Icon = "swords" })
+local CrateSub = ShopTab:AddSubTab({ Name = "Crates", Icon = "package" })
+
+local WeaponBox = WeaponSub:AddLeftGroupbox("Weapons", "swords")
+WeaponBox:AddToggle("AutoBuyWeapons", { Text = "Auto Buy Weapons", Default = false, Tooltip = "Buy all affordable weapons" })
+
+local CrateBox = CrateSub:AddLeftGroupbox("Crates", "package")
+CrateBox:AddToggle("AutoOpenCrates", { Text = "Auto Open Crates", Default = false, Tooltip = "Open crates automatically" })
+CrateBox:AddDropdown("CrateAmount", {
+    Values = { 1, 3, 10 },
+    Default = 1,
+    Text = "Crate Amount",
+    Tooltip = "How many crates to open at once",
+})
+
 -- ===============================================================
 -- ONCHANGED HANDLERS
 -- ===============================================================
-Toggles.AutoFarm:OnChanged(function(s) cfg.autoFarm = s end)
-Toggles.KillAura:OnChanged(function(s) cfg.killAura = s end)
-Options.KillAuraRadius:OnChanged(function(v) cfg.killAuraRadius = v end)
-Toggles.SilentAim:OnChanged(function(s) cfg.silentAim = s end)
-Toggles.AutoTargetMadBirds:OnChanged(function(s) cfg.autoTargetMadBirds = s end)
-Toggles.RapidFire:OnChanged(function(s) cfg.rapidFire = s end)
-Toggles.StayBehindSpawn:OnChanged(function(s) cfg.stayBehindSpawn = s end)
-Toggles.AutoSell:OnChanged(function(s) cfg.autoSell = s end)
 Toggles.AutoJoinGame:OnChanged(function(s) cfg.autoJoinGame = s end)
-Toggles.AutoReturnLobby:OnChanged(function(s) cfg.autoReturnLobby = s end)
+Toggles.AutoBuyWeapons:OnChanged(function(s) cfg.autoBuyWeapons = s end)
+Toggles.AutoEquipBestDog:OnChanged(function(s) cfg.autoEquipBestDog = s end)
+Toggles.AutoOpenCrates:OnChanged(function(s) cfg.autoOpenCrates = s end)
+Toggles.AutoRollDailyQuests:OnChanged(function(s) cfg.autoRollDailyQuests = s end)
 Toggles.AutoBuyUpgrades:OnChanged(function(s) cfg.autoBuyUpgrades = s end)
+Toggles.AutoClaimGroup:OnChanged(function(s) cfg.autoClaimGroup = s end)
 Options.PriorityUpgrade:OnChanged(function(v) cfg.priorityUpgrade = v end)
+Options.CrateAmount:OnChanged(function(v) cfg.crateAmount = v end)
 
 -- ===============================================================
--- AUTO FARM LOOP
+-- AUTO JOIN GAME LOOP
 -- ===============================================================
 task.spawn(function()
     while true do
-        if cfg.autoFarm and _k and _k.v and _verifyIntegrity() then
-            local char, hrp = getChar()
-            if char and hrp then
-                local target = nil
-
-                if cfg.autoTargetMadBirds then
-                    for _, duck in ipairs(getDucks()) do
-                        if isMadBird(duck) then
-                            target = duck
-                            break
-                        end
-                    end
-                end
-
-                if not target then
-                    target = getClosestDuck(cfg.killAuraRadius)
-                end
-
-                if target then
-                    local root = target:FindFirstChild("HumanoidRootPart")
-                    if root then
-                        if cfg.stayBehindSpawn then
-                            local spawnPos = workspace.Ume and workspace.Ume:FindFirstChild("BaseSpawn")
-                            if spawnPos then
-                                local behindPos = spawnPos.CFrame * CFrame.new(0, 0, -20)
-                                hrp.CFrame = behindPos
+        if cfg.autoJoinGame and _k and _k.v and _verifyIntegrity() and isLobby() then
+            pcall(function()
+                local queue = workspace:FindFirstChild("Queue")
+                if queue then
+                    local _, hrp = getChar()
+                    if hrp then
+                        for _, v in ipairs(queue:GetDescendants()) do
+                            if v:IsA("BasePart") and v.Name == "RootPart" then
+                                hrp.CFrame = v.CFrame + Vector3.new(0, 3, 0)
+                                task.wait(1)
+                                break
                             end
                         end
-
-                        if cfg.silentAim then
-                            hrp.CFrame = CFrame.new(hrp.Position, root.Position)
-                        end
                     end
                 end
-            end
+            end)
         end
-        task.wait(0.1)
+        task.wait(10)
     end
 end)
 
 -- ===============================================================
--- KILL AURA LOOP
+-- AUTO BUY WEAPONS LOOP
 -- ===============================================================
 task.spawn(function()
     while true do
-        if cfg.killAura and _k and _k.v and _verifyIntegrity() then
-            local _, hrp = getChar()
-            if hrp then
-                for _, duck in ipairs(getDucks()) do
-                    local root = duck:FindFirstChild("HumanoidRootPart")
-                    if root then
-                        local dist = (root.Position - hrp.Position).Magnitude
-                        if dist <= cfg.killAuraRadius then
-                            pcall(function()
-                                local hum = duck:FindFirstChildOfClass("Humanoid")
-                                if hum then
-                                    hum.Health = 0
-                                end
-                            end)
-                        end
-                    end
-                end
-            end
-        end
-        task.wait(0.2)
-    end
-end)
-
--- ===============================================================
--- AUTO SELL LOOP
--- ===============================================================
-task.spawn(function()
-    while true do
-        if cfg.autoSell and _k and _k.v and _verifyIntegrity() then
+        if cfg.autoBuyWeapons and _k and _k.v and _verifyIntegrity() and isLobby() then
             pcall(function()
-                local freezer = workspace.Ume and workspace.Ume:FindFirstChild("Components") and workspace.Ume.Components:FindFirstChild("FreezerPart")
-                if freezer then
-                    local prompt = freezer:FindFirstChildOfClass("ProximityPrompt")
-                    if prompt then
-                        local _, hrp = getChar()
-                        if hrp then
-                            hrp.CFrame = freezer.CFrame + Vector3.new(0, 3, 0)
-                            task.wait(0.3)
-                            fireproximityprompt(prompt)
+                local state = Network.Invoke("Weapons_GetState")
+                if state and state.Owned then
+                    local weapons = ReplicatedStorage.Instance.Modules.Main.Weapons.Data.Weapons
+                    for _, weapon in ipairs(weapons:GetChildren()) do
+                        if not state.Owned[weapon.Name] then
+                            local result = Network.Invoke("Weapons_Buy", weapon.Name)
+                            if result then
+                                print("[Ivory] Bought weapon: " .. weapon.Name)
+                            end
+                            task.wait(0.5)
                         end
                     end
+                end
+            end)
+        end
+        task.wait(10)
+    end
+end)
+
+-- ===============================================================
+-- AUTO EQUIP BEST DOG LOOP
+-- ===============================================================
+task.spawn(function()
+    while true do
+        if cfg.autoEquipBestDog and _k and _k.v and _verifyIntegrity() and isLobby() then
+            pcall(function()
+                Network.Invoke("Dogs_EquipBest")
+            end)
+        end
+        task.wait(10)
+    end
+end)
+
+-- ===============================================================
+-- AUTO OPEN CRATES LOOP
+-- ===============================================================
+task.spawn(function()
+    while true do
+        if cfg.autoOpenCrates and _k and _k.v and _verifyIntegrity() and isLobby() then
+            pcall(function()
+                local result = Network.Invoke("Gacha_BuyCrate", "Dogs_Crate", cfg.crateAmount)
+                if result then
+                    print("[Ivory] Opened " .. cfg.crateAmount .. " crate(s)")
                 end
             end)
         end
@@ -2183,42 +2154,27 @@ task.spawn(function()
 end)
 
 -- ===============================================================
--- AUTO JOIN GAME LOOP
+-- AUTO ROLL DAILY QUESTS LOOP
 -- ===============================================================
 task.spawn(function()
     while true do
-        if cfg.autoJoinGame and _k and _k.v and _verifyIntegrity() then
-            local mapId = Value and Value.Config and Value.Config.PlaceLoader and Value.Config.PlaceLoader.MapId
-            if mapId == "Game_Lobby" then
-                pcall(function()
-                    local queue = workspace:FindFirstChild("Queue")
-                    if queue then
-                        local _, hrp = getChar()
-                        if hrp then
-                            for _, v in ipairs(queue:GetDescendants()) do
-                                if v:IsA("BasePart") and v.Name == "RootPart" then
-                                    hrp.CFrame = v.CFrame + Vector3.new(0, 3, 0)
-                                    task.wait(1)
-                                    break
-                                end
+        if cfg.autoRollDailyQuests and _k and _k.v and _verifyIntegrity() and isLobby() then
+            pcall(function()
+                local questMachine = workspace.Ume.Components:FindFirstChild("QuestMachine")
+                if questMachine then
+                    local promptPart = questMachine:FindFirstChild("PromptPart")
+                    if promptPart then
+                        local prompt = promptPart:FindFirstChildOfClass("ProximityPrompt")
+                        if prompt and prompt.Enabled then
+                            local _, hrp = getChar()
+                            if hrp then
+                                hrp.CFrame = promptPart.CFrame + Vector3.new(0, 3, 0)
+                                task.wait(0.5)
+                                fireproximityprompt(prompt)
                             end
                         end
                     end
-                end)
-            end
-        end
-        task.wait(10)
-    end
-end)
-
--- ===============================================================
--- AUTO RETURN TO LOBBY
--- ===============================================================
-task.spawn(function()
-    while true do
-        if cfg.autoReturnLobby and _k and _k.v and _verifyIntegrity() then
-            pcall(function()
-                Network.Fire("Respawn_Controller_ReturnToLobby")
+                end
             end)
         end
         task.wait(30)
@@ -2226,25 +2182,29 @@ task.spawn(function()
 end)
 
 -- ===============================================================
--- AUTO BUY UPGRADES
+-- AUTO BUY UPGRADES LOOP
 -- ===============================================================
 task.spawn(function()
     while true do
-        if cfg.autoBuyUpgrades and _k and _k.v and _verifyIntegrity() then
+        if cfg.autoBuyUpgrades and _k and _k.v and _verifyIntegrity() and isLobby() then
             pcall(function()
                 local upgradesGui = LocalPlayer.PlayerGui:FindFirstChild("Upgrades")
                 if upgradesGui then
+                    -- Find all BuyButton instances
                     for _, v in ipairs(upgradesGui:GetDescendants()) do
-                        if v:IsA("TextButton") and v.Text:find("$") then
-                            local price = tonumber(v.Text:match("%$(%d+)"))
-                            if price then
-                                local coins = LocalPlayer:FindFirstChild("leaderstats") and LocalPlayer.leaderstats:FindFirstChild("Coins")
-                                if coins and coins.Value >= price then
-                                    -- Click the upgrade button
-                                    for _, btn in ipairs(v.Parent:GetDescendants()) do
-                                        if btn:IsA("TextButton") and btn.Text:find("Upgrade") then
-                                            -- Trigger the button
-                                        end
+                        if v.Name == "BuyButton" then
+                            local button = v:FindFirstChild("S_Button")
+                            if button then
+                                -- Check if it's affordable
+                                local priceText = button:FindFirstChild("PriceText")
+                                if priceText then
+                                    local price = tonumber(priceText.Text:match("%$(%d+)"))
+                                    if price and getCoins() >= price then
+                                        -- Click the button
+                                        pcall(function()
+                                            button.MouseButton1Click:Fire()
+                                        end)
+                                        task.wait(0.5)
                                     end
                                 end
                             end
@@ -2258,19 +2218,27 @@ task.spawn(function()
 end)
 
 -- ===============================================================
--- REMOVE GAMEPLAY PAUSED
+-- AUTO CLAIM GROUP REWARD LOOP
 -- ===============================================================
 task.spawn(function()
     while true do
-        if cfg.removeGameplayPaused and _k and _k.v and _verifyIntegrity() then
+        if cfg.autoClaimGroup and _k and _k.v and _verifyIntegrity() and isLobby() then
             pcall(function()
-                local pauseGui = LocalPlayer.PlayerGui:FindFirstChild("GameplayPaused")
-                if pauseGui then
-                    pauseGui:Destroy()
+                local groupPart = workspace.Ume.Components:FindFirstChild("JoinGroupPart")
+                if groupPart then
+                    local prompt = groupPart:FindFirstChildOfClass("ProximityPrompt")
+                    if prompt and prompt.Enabled then
+                        local _, hrp = getChar()
+                        if hrp then
+                            hrp.CFrame = groupPart.CFrame + Vector3.new(0, 3, 0)
+                            task.wait(0.5)
+                            fireproximityprompt(prompt)
+                        end
+                    end
                 end
             end)
         end
-        task.wait(1)
+        task.wait(60)
     end
 end)
 
@@ -2284,4 +2252,4 @@ ThemeManager:ApplyToTab(SettingsTab)
 SaveManager:BuildConfigSection(SettingsTab) SaveManager:LoadAutoloadConfig()
 
 if not Library.Toggled then Library:Toggle() end
-print("[Ivory] Catch 1 Billion Ducks - Loaded!")
+print("[Ivory] Catch 1 Billion Ducks - Lobby Loaded!")
