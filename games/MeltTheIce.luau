@@ -893,38 +893,12 @@ TopRegion.Parent = Card
 do
     local dragging, dragStart, startPos = false, nil, nil
 
-    -- custom cursor glow
-    local CursorGlow = Instance.new("Frame")
-    CursorGlow.Size = UDim2.fromOffset(180, 180)
-    CursorGlow.AnchorPoint = Vector2.new(0.5, 0.5)
-    CursorGlow.BackgroundColor3 = Theme.AccentA
-    CursorGlow.BackgroundTransparency = 1
-    CursorGlow.BorderSizePixel = 0
-    CursorGlow.ZIndex = 1
-    CursorGlow.Parent = ScreenGui
-    local cgCorner = Instance.new("UICorner")
-    cgCorner.CornerRadius = UDim.new(1, 0)
-    cgCorner.Parent = CursorGlow
-    local cgGrad = Instance.new("UIGradient")
-    cgGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Theme.AccentA),
-        ColorSequenceKeypoint.new(0.5, Theme.Sakura),
-        ColorSequenceKeypoint.new(1, Theme.AccentB),
-    })
-    cgGrad.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 0.6),
-        NumberSequenceKeypoint.new(0.5, 0.85),
-        NumberSequenceKeypoint.new(1, 1),
-    })
-    cgGrad.Parent = CursorGlow
-
     local function updateDrag(input)
         local delta = input.Position - dragStart
         CardHolder.Position = UDim2.new(
             startPos.X.Scale, startPos.X.Offset + delta.X,
             startPos.Y.Scale, startPos.Y.Offset + delta.Y
         )
-        CursorGlow.Position = UDim2.fromOffset(input.Position.X, input.Position.Y)
     end
 
     TopRegion.InputBegan:Connect(function(input)
@@ -933,12 +907,10 @@ do
             dragStart = input.Position
             startPos = CardHolder.Position
             tw(CardScale, EASE_QUICK, { Scale = 0.975 })
-            tw(CursorGlow, EASE_QUICK, { BackgroundTransparency = 0.5 })
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
                     tw(CardScale, EASE_SPRING, { Scale = 1 })
-                    tw(CursorGlow, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
                 end
             end)
         end
