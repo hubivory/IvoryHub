@@ -1890,7 +1890,11 @@ local Settings = {
 local function GetRemote(path)
     local obj = game:GetService("ReplicatedStorage")
     for part in path:gmatch("[^:]+") do
-        obj = obj:WaitForChild(part)
+        obj = obj:WaitForChild(part, 10)
+        if not obj then
+            warn("[Ivory] Remote not found: " .. path .. " (stuck at: " .. part .. ")")
+            return nil
+        end
     end
     return obj
 end
@@ -1908,6 +1912,7 @@ local BuildingCancel = GetRemote("Shared:Network:Remotes:Building:Cancel")
 -- AUTO FUNCTIONS
 -- ===============================================================
 local function AutoBurger()
+    if not BuildingSuccess then warn("[Ivory] BuildingSuccess remote missing") return end
     while Settings.AutoBurgerEnabled do
         if not (_k and _k.v and _k.i) then break end
         pcall(function()
@@ -1918,6 +1923,7 @@ local function AutoBurger()
 end
 
 local function AutoSell()
+    if not PlayerSell then warn("[Ivory] PlayerSell remote missing") return end
     while Settings.AutoSellEnabled do
         if not (_k and _k.v and _k.i) then break end
         pcall(function()
@@ -1928,6 +1934,7 @@ local function AutoSell()
 end
 
 local function AutoCollect()
+    if not PlotCollect then warn("[Ivory] PlotCollect remote missing") return end
     while Settings.AutoCollectEnabled do
         if not (_k and _k.v and _k.i) then break end
         pcall(function()
@@ -1941,6 +1948,7 @@ local function AutoCollect()
 end
 
 local function AutoRebirth()
+    if not RequestRebirth then warn("[Ivory] RequestRebirth remote missing") return end
     while Settings.AutoRebirthEnabled do
         if not (_k and _k.v and _k.i) then break end
         pcall(function()
@@ -1951,6 +1959,7 @@ local function AutoRebirth()
 end
 
 local function AutoUpgradeFloors()
+    if not UpgradeFloors then warn("[Ivory] UpgradeFloors remote missing") return end
     while Settings.AutoUpgradeFloorsEnabled do
         if not (_k and _k.v and _k.i) then break end
         pcall(function()
@@ -1961,6 +1970,7 @@ local function AutoUpgradeFloors()
 end
 
 local function AutoUpgradeLives()
+    if not UpgradeLives then warn("[Ivory] UpgradeLives remote missing") return end
     while Settings.AutoUpgradeLivesEnabled do
         if not (_k and _k.v and _k.i) then break end
         pcall(function()
@@ -1971,6 +1981,7 @@ local function AutoUpgradeLives()
 end
 
 local function AutoBegin()
+    if not BuildingBegin then warn("[Ivory] BuildingBegin remote missing") return end
     while Settings.AutoBeginEnabled do
         if not (_k and _k.v and _k.i) then break end
         pcall(function()
@@ -1981,6 +1992,7 @@ local function AutoBegin()
 end
 
 local function AutoContinue()
+    if not BuildingCancel then warn("[Ivory] BuildingCancel remote missing") return end
     while Settings.AutoContinueEnabled do
         if not (_k and _k.v and _k.i) then break end
         pcall(function()
