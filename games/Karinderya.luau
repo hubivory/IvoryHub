@@ -2780,10 +2780,15 @@ task.spawn(function() while true do
                     tp(washPrompt.Parent.CFrame * CFrame.new(0, 3, 0))
                     task.wait(0.3)
                     if washPrompt.Enabled then
-                        fireproximityprompt(washPrompt)
-                        -- Hold duration: wait for the prompt to complete
+                        -- Fire repeatedly during hold duration to simulate holding
                         local holdTime = washPrompt.HoldDuration or 1
-                        task.wait(holdTime + 0.5)
+                        local elapsed = 0
+                        while elapsed < holdTime + 1.0 do
+                            if not washPrompt.Enabled or not washPrompt.Parent then break end
+                            pcall(fireproximityprompt, washPrompt)
+                            task.wait(0.2)
+                            elapsed = elapsed + 0.2
+                        end
                         washed = washed + 1
                     end
                     release3()
