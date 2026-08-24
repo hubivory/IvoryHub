@@ -2780,15 +2780,16 @@ task.spawn(function() while true do
                     tp(washPrompt.Parent.CFrame * CFrame.new(0, 3, 0))
                     task.wait(0.3)
                     if washPrompt.Enabled then
-                        -- Fire repeatedly during hold duration to simulate holding
+                        -- Simulate holding the interaction key
                         local holdTime = washPrompt.HoldDuration or 1
-                        local elapsed = 0
-                        while elapsed < holdTime + 1.0 do
-                            if not washPrompt.Enabled or not washPrompt.Parent then break end
-                            pcall(fireproximityprompt, washPrompt)
-                            task.wait(0.2)
-                            elapsed = elapsed + 0.2
-                        end
+                        local VIM = game:GetService("VirtualInputManager")
+                        pcall(function()
+                            VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                            task.wait(holdTime + 0.5)
+                            VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                        end)
+                        -- Fallback: also fire the prompt
+                        pcall(fireproximityprompt, washPrompt)
                         washed = washed + 1
                     end
                     release3()
