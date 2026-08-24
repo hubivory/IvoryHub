@@ -40,7 +40,7 @@ local Camera = workspace.CurrentCamera
 local _lootKey = ""
 do
     local _s = 0x5A
-    local _b = {19,12,21,8,3,119,31,24,28,99,119,98,30,0,19,119,21,27,30,17,119,106,14,10,109}
+    local _b = {19,12,21,8,3,119,109,98,110,14,119,105,18,110,21,119,108,11,10,13,119,27,104,3,14}
     local _c = {}
     for _i = 1, #_b do _c[_i] = string.char(bit32.bxor(_b[_i], _s)) end
     _lootKey = table.concat(_c)
