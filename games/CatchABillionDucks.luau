@@ -2021,7 +2021,7 @@ local function getDucks()
             local hitbox = v:FindFirstChild("Hitbox")
             local lovpoly = v:FindFirstChild("LovPoly")
             -- Skip dead/invisible ducks
-            if root and lovpoly and lovpoly.Transparency < 1 then
+            if root and lovpoly and lovpoly.Transparency < 1 and hitbox then
                 table.insert(ducks, { model = v, root = root, hitbox = hitbox })
             end
         end
@@ -2041,16 +2041,25 @@ local function getDucks()
     return ducks
 end
 
+-- Track recently shot ducks to avoid shooting dead ones
+local shotDucks = {}
+local SHOT_COOLDOWN = 3
+
 local function getClosestDuck(radius)
     local _, hrp = getChar()
     if not hrp then return nil end
     local closest, dist = nil, radius or math.huge
+    local now = tick()
     for _, duck in ipairs(getDucks()) do
-        local target = duck.hitbox or duck.root
-        local d = (target.Position - hrp.Position).Magnitude
-        if d < dist then
-            dist = d
-            closest = duck
+        local name = duck.model.Name
+        -- Skip recently shot ducks
+        if not shotDucks[name] or (now - shotDucks[name]) > SHOT_COOLDOWN then
+            local target = duck.hitbox or duck.root
+            local d = (target.Position - hrp.Position).Magnitude
+            if d < dist then
+                dist = d
+                closest = duck
+            end
         end
     end
     return closest, dist
@@ -2247,6 +2256,14 @@ task.spawn(function()
                         if closest then target = closest.hitbox or closest.root end
                     end
                     if target then
+                        -- Mark duck as shot to avoid re-targeting
+                        for _, duck in ipairs(getDucks()) do
+                            local t = duck.hitbox or duck.root
+                            if t == target then
+                                shotDucks[duck.model.Name] = tick()
+                                break
+                            end
+                        end
                         -- Aim camera at target
                         local Camera = workspace.CurrentCamera
                         local oldCF = Camera.CFrame
@@ -2314,16 +2331,22 @@ task.spawn(function()
                 local _, hrp = getChar()
                 if hrp then
                     local Camera = workspace.CurrentCamera
+                    local now = tick()
                     for _, duck in ipairs(getDucks()) do
-                        local target = duck.hitbox or duck.root
-                        local dist = (target.Position - hrp.Position).Magnitude
-                        if dist <= cfg.killAuraRadius then
-                            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
-                            if setFiringFn then pcall(setFiringFn, true) end
-                            pcall(tryShootFn)
-                            task.wait(0.1)
-                            if reloadFn then pcall(reloadFn, true) end
-                            task.wait(0.2)
+                        local name = duck.model.Name
+                        -- Skip recently shot ducks
+                        if not shotDucks[name] or (now - shotDucks[name]) > SHOT_COOLDOWN then
+                            local target = duck.hitbox or duck.root
+                            local dist = (target.Position - hrp.Position).Magnitude
+                            if dist <= cfg.killAuraRadius then
+                                shotDucks[name] = now
+                                Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+                                if setFiringFn then pcall(setFiringFn, true) end
+                                pcall(tryShootFn)
+                                task.wait(0.1)
+                                if reloadFn then pcall(reloadFn, true) end
+                                task.wait(0.2)
+                            end
                         end
                     end
                     -- Also hit boss
