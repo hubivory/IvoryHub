@@ -1349,36 +1349,40 @@ FloatingLayout.Parent = FloatingRow
 local function CreateFloatingButton(order, iconBuilder, iconColor, label, copyText)
     local btn = Instance.new("TextButton")
     btn.Name = label
-    btn.Size = UDim2.fromOffset(120, 40)
+    btn.Size = UDim2.fromOffset(110, 44)
     btn.LayoutOrder = order
-    btn.BackgroundColor3 = Color3.fromRGB(30, 28, 42)
-    btn.BackgroundTransparency = 0.15
+    btn.BackgroundColor3 = Theme.GlassCard
+    btn.BackgroundTransparency = 0.25
     btn.BorderSizePixel = 0
     btn.AutoButtonColor = false
     btn.Text = ""
     btn.ZIndex = 7
     btn.Parent = FloatingRow
     local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, 12)
+    c.CornerRadius = UDim.new(0, 14)
     c.Parent = btn
 
     local stroke = Instance.new("UIStroke")
     stroke.Thickness = 1.2
-    stroke.Color = iconColor
-    stroke.Transparency = 0.5
+    stroke.Color = Color3.fromRGB(255, 255, 255)
+    stroke.Transparency = 0.7
     stroke.Parent = btn
 
-    local grad = Instance.new("UIGradient")
-    grad.Rotation = 135
-    grad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 36, 58)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(22, 20, 32)),
+    local strokeGrad = Instance.new("UIGradient")
+    strokeGrad.Rotation = 135
+    strokeGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, iconColor),
+        ColorSequenceKeypoint.new(1, Theme.AccentA),
     })
-    grad.Parent = btn
+    strokeGrad.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0.4),
+        NumberSequenceKeypoint.new(1, 0.7),
+    })
+    strokeGrad.Parent = stroke
 
     local iconFrame = Instance.new("Frame")
-    iconFrame.Size = UDim2.fromOffset(18, 18)
-    iconFrame.Position = UDim2.new(0, 12, 0.5, 0)
+    iconFrame.Size = UDim2.fromOffset(16, 16)
+    iconFrame.Position = UDim2.new(0, 14, 0.5, 0)
     iconFrame.AnchorPoint = Vector2.new(0, 0.5)
     iconFrame.BackgroundTransparency = 1
     iconFrame.ZIndex = 8
@@ -1390,32 +1394,34 @@ local function CreateFloatingButton(order, iconBuilder, iconColor, label, copyTe
     txt.Position = UDim2.new(0, 34, 0, 0)
     txt.BackgroundTransparency = 1
     txt.Text = label:gsub("\n", " ")
-    txt.TextColor3 = Color3.fromRGB(220, 215, 240)
-    txt.Font = Enum.Font.GothamSemibold
+    txt.TextColor3 = Theme.TextSecondary
+    txt.Font = Enum.Font.GothamMedium
     txt.TextSize = 11
     txt.TextXAlignment = Enum.TextXAlignment.Left
     txt.ZIndex = 8
     txt.Parent = btn
 
     btn.MouseEnter:Connect(function()
-        tw(stroke, EASE_QUICK, { Transparency = 0.1 })
-        tw(btn, EASE_QUICK, { BackgroundTransparency = 0.05 })
+        tw(btn, EASE_QUICK, { BackgroundTransparency = 0.12 })
+        tw(stroke, EASE_QUICK, { Transparency = 0.4 })
+        tw(txt, EASE_QUICK, { TextColor3 = Theme.TextPrimary })
     end)
     btn.MouseLeave:Connect(function()
-        tw(stroke, EASE_QUICK, { Transparency = 0.5 })
-        tw(btn, EASE_QUICK, { BackgroundTransparency = 0.15 })
+        tw(btn, EASE_QUICK, { BackgroundTransparency = 0.25 })
+        tw(stroke, EASE_QUICK, { Transparency = 0.7 })
+        tw(txt, EASE_QUICK, { TextColor3 = Theme.TextSecondary })
     end)
 
     btn.MouseButton1Click:Connect(function()
         local ok = pcall(function() setclipboard(copyText) end)
         local orig = txt.Text
         txt.Text = ok and "Copied!" or copyText
-        txt.TextColor3 = ok and Color3.fromRGB(120, 255, 160) or Color3.fromRGB(120, 180, 255)
-        tw(stroke, EASE_QUICK, { Color = ok and Color3.fromRGB(120, 255, 160) or Color3.fromRGB(120, 180, 255), Transparency = 0.2 })
+        txt.TextColor3 = ok and Theme.Success or Theme.Blue
+        tw(strokeGrad, EASE_QUICK, { Rotation = 0 })
         task.delay(1.5, function()
             txt.Text = orig
-            txt.TextColor3 = Color3.fromRGB(220, 215, 240)
-            tw(stroke, EASE_QUICK, { Color = iconColor, Transparency = 0.5 })
+            txt.TextColor3 = Theme.TextSecondary
+            tw(strokeGrad, EASE_QUICK, { Rotation = 135 })
         end)
     end)
 
