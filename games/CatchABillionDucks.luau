@@ -2014,7 +2014,18 @@ end
 
 local function getDucks()
     local ducks = {}
-    local duckFolder = workspace.Ume and workspace.Ume:FindFirstChild("DuckController_LandedDucks")
+    -- Check DuckController_Client_X folders (flying ducks)
+    for _, v in ipairs(workspace.Ume:GetChildren()) do
+        if v.Name:find("DuckController_Client") then
+            local root = v:FindFirstChild("RootPart")
+            local hitbox = v:FindFirstChild("Hitbox")
+            if root then
+                table.insert(ducks, { model = v, root = root, hitbox = hitbox })
+            end
+        end
+    end
+    -- Also check DuckController_LandedDucks (landed ducks)
+    local duckFolder = workspace.Ume:FindFirstChild("DuckController_LandedDucks")
     if duckFolder then
         for _, v in ipairs(duckFolder:GetChildren()) do
             if v:IsA("Model") then
@@ -2033,7 +2044,8 @@ local function getClosestDuck(radius)
     if not hrp then return nil end
     local closest, dist = nil, radius or math.huge
     for _, duck in ipairs(getDucks()) do
-        local d = (duck.root.Position - hrp.Position).Magnitude
+        local target = duck.hitbox or duck.root
+        local d = (target.Position - hrp.Position).Magnitude
         if d < dist then
             dist = d
             closest = duck
@@ -2207,7 +2219,7 @@ task.spawn(function()
                     if cfg.autoTargetMadBirds then
                         for _, duck in ipairs(getDucks()) do
                             if isMadBird(duck) then
-                                target = duck.root
+                                target = duck.hitbox or duck.root
                                 break
                             end
                         end
@@ -2218,7 +2230,7 @@ task.spawn(function()
                     end
                     if not target then
                         local closest = getClosestDuck(cfg.killAuraRadius)
-                        if closest then target = closest.root end
+                        if closest then target = closest.hitbox or closest.root end
                     end
                     if target then
                         local origin = hrp.Position
@@ -2245,7 +2257,7 @@ task.spawn(function()
                     if cfg.autoTargetMadBirds then
                         for _, duck in ipairs(getDucks()) do
                             if isMadBird(duck) then
-                                target = duck.root
+                                target = duck.hitbox or duck.root
                                 break
                             end
                         end
@@ -2256,7 +2268,7 @@ task.spawn(function()
                     end
                     if not target then
                         local closest = getClosestDuck(cfg.killAuraRadius)
-                        if closest then target = closest.root end
+                        if closest then target = closest.hitbox or closest.root end
                     end
                     if target then
                         hrp.CFrame = CFrame.new(hrp.Position, target.Position)
@@ -2278,10 +2290,11 @@ task.spawn(function()
                 local _, hrp = getChar()
                 if hrp then
                     for _, duck in ipairs(getDucks()) do
-                        local dist = (duck.root.Position - hrp.Position).Magnitude
+                        local target = duck.hitbox or duck.root
+                        local dist = (target.Position - hrp.Position).Magnitude
                         if dist <= cfg.killAuraRadius then
                             local origin = hrp.Position
-                            local direction = (duck.root.Position - origin).Unit * 1000
+                            local direction = (target.Position - origin).Unit * 1000
                             Network.Fire("WeaponController_Shoot", origin, direction, math.random(1, 999999), workspace:GetServerTimeNow(), {})
                         end
                     end
@@ -2306,6 +2319,7 @@ end)
 -- IN-GAME: STAY BEHIND SPAWN
 -- ===============================================================
 task.spawn(function()
+    local targetPos = nil
     while true do
         if cfg.stayBehindSpawn and _k and _k.v and _verifyIntegrity() and isGame() then
             pcall(function()
@@ -2315,14 +2329,21 @@ task.spawn(function()
                     if spawner then
                         local spawnerPart = spawner:FindFirstChild("SpawnerPart")
                         if spawnerPart then
-                            local behindPos = spawnerPart.CFrame * CFrame.new(0, 0, -30)
-                            hrp.CFrame = behindPos
+                            -- Calculate position behind spawn, facing the spawn
+                            local spawnCF = spawnerPart.CFrame
+                            targetPos = spawnCF * CFrame.new(0, 0, 30)
+                            -- Only teleport if far from target
+                            if (hrp.Position - targetPos.Position).Magnitude > 5 then
+                                hrp.CFrame = targetPos
+                            end
                         end
                     end
                 end
             end)
+        else
+            targetPos = nil
         end
-        task.wait(1)
+        task.wait(0.5)
     end
 end)
 
