@@ -1332,7 +1332,7 @@ end
 -- ===============================================================
 local FloatingRow = Instance.new("Frame")
 FloatingRow.Name = "FloatingRow"
-FloatingRow.Size = UDim2.new(1, 0, 0, 40)
+FloatingRow.Size = UDim2.new(1, 0, 0, 48)
 FloatingRow.LayoutOrder = 4
 FloatingRow.BackgroundTransparency = 1
 FloatingRow.ZIndex = 7
@@ -1349,31 +1349,73 @@ FloatingLayout.Parent = FloatingRow
 local function CreateFloatingButton(order, iconBuilder, iconColor, label, copyText)
     local btn = Instance.new("TextButton")
     btn.Name = label
-    btn.Size = UDim2.fromOffset(92, 36)
+    btn.Size = UDim2.fromOffset(120, 40)
     btn.LayoutOrder = order
-    btn.BackgroundColor3 = iconColor
-    btn.BackgroundTransparency = 0.7
+    btn.BackgroundColor3 = Color3.fromRGB(30, 28, 42)
+    btn.BackgroundTransparency = 0.15
     btn.BorderSizePixel = 0
-    btn.AutoButtonColor = true
-    btn.Text = label:gsub("\n", " ")
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 11
+    btn.AutoButtonColor = false
+    btn.Text = ""
     btn.ZIndex = 7
     btn.Parent = FloatingRow
     local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, 8)
+    c.CornerRadius = UDim.new(0, 12)
     c.Parent = btn
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Thickness = 1.2
+    stroke.Color = iconColor
+    stroke.Transparency = 0.5
+    stroke.Parent = btn
+
+    local grad = Instance.new("UIGradient")
+    grad.Rotation = 135
+    grad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 36, 58)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(22, 20, 32)),
+    })
+    grad.Parent = btn
+
+    local iconFrame = Instance.new("Frame")
+    iconFrame.Size = UDim2.fromOffset(18, 18)
+    iconFrame.Position = UDim2.new(0, 12, 0.5, 0)
+    iconFrame.AnchorPoint = Vector2.new(0, 0.5)
+    iconFrame.BackgroundTransparency = 1
+    iconFrame.ZIndex = 8
+    iconFrame.Parent = btn
+    iconBuilder(iconFrame, iconColor)
+
+    local txt = Instance.new("TextLabel")
+    txt.Size = UDim2.new(1, -36, 1, 0)
+    txt.Position = UDim2.new(0, 34, 0, 0)
+    txt.BackgroundTransparency = 1
+    txt.Text = label:gsub("\n", " ")
+    txt.TextColor3 = Color3.fromRGB(220, 215, 240)
+    txt.Font = Enum.Font.GothamSemibold
+    txt.TextSize = 11
+    txt.TextXAlignment = Enum.TextXAlignment.Left
+    txt.ZIndex = 8
+    txt.Parent = btn
+
+    btn.MouseEnter:Connect(function()
+        tw(stroke, EASE_QUICK, { Transparency = 0.1 })
+        tw(btn, EASE_QUICK, { BackgroundTransparency = 0.05 })
+    end)
+    btn.MouseLeave:Connect(function()
+        tw(stroke, EASE_QUICK, { Transparency = 0.5 })
+        tw(btn, EASE_QUICK, { BackgroundTransparency = 0.15 })
+    end)
 
     btn.MouseButton1Click:Connect(function()
         local ok = pcall(function() setclipboard(copyText) end)
-        if ok then
-            btn.Text = "Copied!"
-        else
-            btn.Text = copyText
-        end
+        local orig = txt.Text
+        txt.Text = ok and "Copied!" or copyText
+        txt.TextColor3 = ok and Color3.fromRGB(120, 255, 160) or Color3.fromRGB(120, 180, 255)
+        tw(stroke, EASE_QUICK, { Color = ok and Color3.fromRGB(120, 255, 160) or Color3.fromRGB(120, 180, 255), Transparency = 0.2 })
         task.delay(1.5, function()
-            btn.Text = label:gsub("\n", " ")
+            txt.Text = orig
+            txt.TextColor3 = Color3.fromRGB(220, 215, 240)
+            tw(stroke, EASE_QUICK, { Color = iconColor, Transparency = 0.5 })
         end)
     end)
 
