@@ -2696,6 +2696,8 @@ task.spawn(function() while true do
         if plot then
             local sink = plot:FindFirstChild("Sink")
             local washed = 0
+
+            -- Step 1: Collect dirty dishes and put them in sink
             local dp = plot:FindFirstChild("DiningPlot1")
             if dp then
                 for _, tm in ipairs(dp:GetChildren()) do
@@ -2704,32 +2706,49 @@ task.spawn(function() while true do
                             if desc:IsA("ProximityPrompt") and desc.Enabled then
                                 local action = desc.ActionText:lower()
                                 local obj = desc.ObjectText:lower()
-                                if string.find(obj, "dirty") or string.find(obj, "dish") or string.find(action, "wash") then
+                                if string.find(obj, "dirty") or string.find(obj, "dish") or string.find(action, "wash") or string.find(action, "pick") then
                                     local pp = desc.Parent
                                     if pp and pp:IsA("BasePart") then
+                                        -- Pick up the dish
                                         local release = acquireTp()
                                         tp(pp.CFrame * CFrame.new(0, 3, 0))
-                                        task.wait(0.15)
-                                        fireproximityprompt(desc)
+                                        task.wait(0.2)
+                                        if desc.Enabled then
+                                            fireproximityprompt(desc)
+                                        end
                                         release()
-                                        for _ = 1, 20 do
+
+                                        -- Wait until holding a tool
+                                        local gotTool = false
+                                        for _ = 1, 30 do
                                             local c = LocalPlayer.Character
-                                            if c and c:FindFirstChildOfClass("Tool") then break end
+                                            if c and c:FindFirstChildOfClass("Tool") then
+                                                gotTool = true
+                                                break
+                                            end
                                             task.wait(0.1)
                                         end
-                                        task.wait(0.3)
 
-                                        if sink then
+                                        if gotTool and sink then
+                                            task.wait(0.2)
+                                            -- Find the Put prompt in sink
+                                            local putPrompt = nil
                                             for _, pd in ipairs(sink:GetDescendants()) do
-                                                if pd:IsA("ProximityPrompt") and pd.Name == "Put" then
-                                                    local release2 = acquireTp()
-                                                    tp(pd.Parent.CFrame * CFrame.new(0, 3, 0))
-                                                    task.wait(0.2)
-                                                    fireproximityprompt(pd)
-                                                    release2()
-                                                    task.wait(0.5)
+                                                if pd:IsA("ProximityPrompt") and (pd.Name == "Put" or string.find(pd.ActionText:lower(), "put") or string.find(pd.ActionText:lower(), "place")) then
+                                                    putPrompt = pd
                                                     break
                                                 end
+                                            end
+                                            if putPrompt then
+                                                local release2 = acquireTp()
+                                                tp(putPrompt.Parent.CFrame * CFrame.new(0, 3, 0))
+                                                task.wait(0.25)
+                                                if putPrompt.Enabled then
+                                                    fireproximityprompt(putPrompt)
+                                                end
+                                                release2()
+                                                -- Wait for dish to be placed
+                                                task.wait(0.8)
                                             end
                                         end
                                     end
@@ -2740,20 +2759,29 @@ task.spawn(function() while true do
                 end
             end
 
+            -- Step 2: Wash all dishes in sink (loop until no more wash prompts)
             if sink then
-                for _, pd in ipairs(sink:GetDescendants()) do
-                    if pd:IsA("ProximityPrompt") and pd.Name == "Wash" then
-                        local release3 = acquireTp()
-                        tp(pd.Parent.CFrame * CFrame.new(0, 3, 0))
-                        task.wait(0.15)
-                        if pd.Enabled then
-                            fireproximityprompt(pd)
-                            washed = washed + 1
+                for attempt = 1, 10 do
+                    local washPrompt = nil
+                    for _, pd in ipairs(sink:GetDescendants()) do
+                        if pd:IsA("ProximityPrompt") and (pd.Name == "Wash" or string.find(pd.ActionText:lower(), "wash")) then
+                            if pd.Enabled then
+                                washPrompt = pd
+                                break
+                            end
                         end
-                        release3()
-                        task.wait(0.5)
-                        break
                     end
+                    if not washPrompt then break end
+
+                    local release3 = acquireTp()
+                    tp(washPrompt.Parent.CFrame * CFrame.new(0, 3, 0))
+                    task.wait(0.2)
+                    if washPrompt.Enabled then
+                        fireproximityprompt(washPrompt)
+                        washed = washed + 1
+                    end
+                    release3()
+                    task.wait(1.0)
                 end
             end
 
