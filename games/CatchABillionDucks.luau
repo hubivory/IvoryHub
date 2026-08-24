@@ -1,13 +1,18 @@
--- ===============================================================
+﻿-- ===============================================================
 -- IVORY HUB - KEY SYSTEM UI
 -- "Liquid Glass - Sakura" edition
+-- Central glowing logo, 3 floating buttons, falling sakura petals,
+-- real backdrop blur, animated liquid gradient blobs, spring UI.
 -- ===============================================================
 
 -- ===============================================================
 -- KEY SYSTEM - DO NOT MODIFY THIS BLOCK
 -- ===============================================================
 local _k = { v = false, s = nil, h = nil, i = nil, t = 0 }
-local _hwid = tostring(math.random(100000,999999)) .. tostring(tick()):sub(-6)
+local _hwid = ""
+pcall(function() _hwid = game:GetService("RbxAnalyticsService"):GetClientId() end)
+if _hwid == "" then _hwid = game:GetService("HttpService"):JSONEncode({game.Players.LocalPlayer.UserId, math.random(1,999999)}) end
+local _genv = getgenv()
 local _integritySalt = 0x4A
 local function _verifyIntegrity()
     if not _k or not _k.v then return false end
@@ -35,32 +40,37 @@ local Camera = workspace.CurrentCamera
 local _lootKey = ""
 do
     local _s = 0x5A
-    local _b = {19,12,21,8,3,119,11,31,12,0,119,108,2,8,98,119,10,99,99,98,119,29,109,22,108}
+    local _b = {19,12,21,8,3,119,110,0,10,2,119,12,3,23,24,119,27,106,18,29,119,106,22,24,104}
     local _c = {}
     for _i = 1, #_b do _c[_i] = string.char(bit32.bxor(_b[_i], _s)) end
     _lootKey = table.concat(_c)
 end
 
 -- ===============================================================
--- DESIGN TOKENS
+-- DESIGN TOKENS  (liquid glass / iOS-26 inspired palette + sakura accents)
 -- ===============================================================
 local Theme = {
     GlassCard      = Color3.fromRGB(18, 16, 26),
     GlassCardAlt   = Color3.fromRGB(26, 22, 38),
     GlassInput     = Color3.fromRGB(255, 255, 255),
     Stroke         = Color3.fromRGB(255, 255, 255),
+
     TextPrimary    = Color3.fromRGB(248, 244, 255),
     TextSecondary  = Color3.fromRGB(184, 176, 205),
     TextTertiary   = Color3.fromRGB(134, 126, 156),
+
     AccentA        = Color3.fromRGB(168, 120, 255),
     AccentB        = Color3.fromRGB(255, 130, 205),
     AccentC        = Color3.fromRGB(110, 100, 255),
+
     Sakura         = Color3.fromRGB(255, 183, 206),
     SakuraLight    = Color3.fromRGB(255, 224, 235),
+
     Success        = Color3.fromRGB(96, 235, 150),
     Error          = Color3.fromRGB(255, 108, 108),
     Discord        = Color3.fromRGB(114, 137, 218),
     Blue           = Color3.fromRGB(120, 180, 255),
+
     WorkInkTeal    = Color3.fromRGB(0, 158, 130),
     LootPurple     = Color3.fromRGB(124, 58, 205),
     LootGold       = Color3.fromRGB(255, 196, 40),
@@ -82,10 +92,16 @@ end
 
 -- ===============================================================
 -- VECTOR ICON BUILDERS
+-- Every icon is drawn from plain Frames/UIStroke/UIGradient - no
+-- font glyphs, no Unicode, no missing-character "tofu boxes".
+-- Each builder draws into `parent` (any size) centered via scale
+-- anchors, so it drops cleanly into any container.
 -- ===============================================================
 
+-- small rounded-diamond brand mark (used for the central logo)
 local function IconDiamondMark(parent, color, size)
     size = size or 30
+    local dot = Color3.fromRGB(20, 18, 28)
     local gem = Instance.new("Frame")
     gem.Size = UDim2.fromOffset(size, size)
     gem.Position = UDim2.fromScale(0.5, 0.5)
@@ -114,8 +130,10 @@ local function IconDiamondMark(parent, color, size)
     return gem
 end
 
+-- chat-bubble glyph (Discord) - pill bubble + tail + three "typing" dots
 local function IconChat(parent, color)
     local dot = Color3.fromRGB(20, 18, 28)
+
     local bubble = Instance.new("Frame")
     bubble.Size = UDim2.fromOffset(24, 16)
     bubble.Position = UDim2.new(0.5, 0, 0.5, -3)
@@ -156,6 +174,10 @@ local function IconChat(parent, color)
     end
 end
 
+
+-- Work.ink-inspired mark: a bold rounded "W" built from 4 diagonal bars,
+-- meant to evoke their wordmark on their teal circle badge. Original
+-- geometry (computed zigzag, not a traced copy of their exact letterform).
 local function IconWorkMark(parent, color)
     local points = {
         { -11, -7 }, { -5.5, 7 }, { 0, -2 }, { 5.5, 7 }, { 11, -7 },
@@ -183,6 +205,9 @@ local function IconWorkMark(parent, color)
     end
 end
 
+-- LootLabs-inspired mark: a two-tone faceted gem (purple body, gold
+-- highlight facet) evoking their purple/gold palette without tracing
+-- their actual isometric cube glyph.
 local function IconLootGem(parent, colorA, colorB)
     local gem = Instance.new("Frame")
     gem.Size = UDim2.fromOffset(20, 20)
@@ -224,6 +249,8 @@ local function IconLootGem(parent, colorA, colorB)
     shine.Parent = gem
 end
 
+-- small right-pointing chevron (two angled bars forming a ">") - returns
+-- both bars so callers can slide/fade them for a hover micro-interaction
 local function IconChevron(parent, color, size)
     size = size or 6
     local top = Instance.new("Frame")
@@ -247,6 +274,7 @@ local function IconChevron(parent, color, size)
     return top, bottom
 end
 
+-- tiny left-aligned key icon (used inside the input field)
 local function IconKeyMini(parent, color)
     local ring = Instance.new("Frame")
     ring.Size = UDim2.fromOffset(9, 9)
@@ -282,6 +310,7 @@ local function IconKeyMini(parent, color)
     tooth.Parent = parent
 end
 
+-- crossed-bar "x" mark (used for the unload button) - returns both bars so callers can recolor them
 local function IconCross(parent, color, size)
     size = size or 14
     local bar1 = Instance.new("Frame")
@@ -302,6 +331,7 @@ local function IconCross(parent, color, size)
     return bar1, bar2
 end
 
+-- 4-point sparkle (two crossed bars) - returns both bars so callers can animate a twinkle
 local function IconSparkle(parent, color, size)
     size = size or 10
     local bar1 = Instance.new("Frame")
@@ -355,9 +385,12 @@ Dim.ZIndex = 1
 Dim.Parent = ScreenGui
 tw(Dim, EASE_SLOW, { BackgroundTransparency = 0.5 })
 
+-- forward declarations - assigned once the full UI exists, but referenced by
+-- handlers (unload button, music fade) that get wired up earlier in the file
 local _unloaded = false
 local unloadUI
 
+-- -- large soft ambient aura glow drifting behind the whole card --
 local Aura = Instance.new("Frame")
 Aura.Name = "Aura"
 Aura.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -394,9 +427,17 @@ task.spawn(function()
     end
 end)
 
--- ===============================================================
--- CLOUD CURTAIN SYSTEM
--- ===============================================================
+-- -- cloud curtain system --
+-- Coverage and decoration are split into two completely separate layers:
+--   - a solid opaque PANEL that is the only thing responsible for hiding
+--     the game - it sweeps between fully covering the screen and fully
+--     off-screen, so opacity is never in question.
+--   - small decorative PUFFS that never move to "cover" anything; they
+--     just sit at the screen edge, gently drifting, all the time. Their
+--     only job is texture on top of the panel, so they stay small and few
+--     enough to read as a soft accent instead of a wall of overlapping
+--     circles (that muddy look was 15 puffs per side, up to 460px each,
+--     spreading toward center - way too much translucent stacking).
 local CLOUD_PALETTE = { Theme.AccentA, Theme.AccentB, Theme.AccentC, Theme.SakuraLight }
 
 local function makeCloudCluster(side)
@@ -409,6 +450,9 @@ local function makeCloudCluster(side)
 
     local state = { puffs = {} }
 
+    -- solid opaque panel - the only thing that hides the game. Sized with
+    -- generous overlap so both sides' panels meet with margin to spare,
+    -- and slides fully off-screen once open.
     local panel = Instance.new("Frame")
     panel.Name = "CurtainPanel"
     panel.Size = UDim2.new(0.58, 0, 1.3, 0)
@@ -430,6 +474,7 @@ local function makeCloudCluster(side)
     panel.Position = UDim2.fromScale(panelCoverX, -0.15)
     state.panel = { inst = panel, restX = panelRestX, coverX = panelCoverX, y = -0.15 }
 
+    -- decorative edge puffs - small, few, permanently parked at the edge
     local puffCount = 8
     for i = 1, puffCount do
         local size = math.random(90, 190)
@@ -462,6 +507,7 @@ local function makeCloudCluster(side)
         })
     end
 
+    -- puffs drift continuously, independent of the panel's open/closed state
     task.spawn(function()
         local t0 = tick()
         while root.Parent do
@@ -481,6 +527,10 @@ end
 local CloudLeftRoot, CloudLeftState = makeCloudCluster("left")
 local CloudRightRoot, CloudRightState = makeCloudCluster("right")
 
+-- Sine is the gentlest easing curve Roblox offers - none of Quint's sharp
+-- snap, which reads mechanical rather than like drifting cloud mass.
+-- Only the solid panel moves here; the puffs have their own permanent
+-- drift loop and are left alone.
 local function sweepClouds(open, duration)
     for _, state in ipairs({ CloudLeftState, CloudRightState }) do
         local panelX = open and state.panel.restX or state.panel.coverX
@@ -493,11 +543,15 @@ end
 local function revealClouds(duration) sweepClouds(true, duration or 1.1) end
 local function concealClouds(duration) sweepClouds(false, duration or 0.65) end
 
+-- how long the curtains take to fully open + dissolve away on exit - used
+-- both here and by closeUI/unloadUI so the final ScreenGui:Destroy() never
+-- cuts the animation off mid-flight
 local CURTAIN_EXIT_OPEN = 0.9
 local CURTAIN_EXIT_SETTLE = 0.4
 local CURTAIN_EXIT_FADE = 0.35
 local CURTAIN_EXIT_TOTAL = CURTAIN_EXIT_OPEN + CURTAIN_EXIT_SETTLE + CURTAIN_EXIT_FADE + 0.15
 
+-- -- slow-rotating light-ray burst radiating from behind the card --
 local RayBurst = Instance.new("Frame")
 RayBurst.Name = "RayBurst"
 RayBurst.Size = UDim2.fromScale(1, 1)
@@ -540,6 +594,11 @@ task.spawn(function()
     end
 end)
 
+-- Exit sequence: the curtains stay shut for the entire key view, so leaving
+-- (success or unload) needs to explicitly part them again before anything
+-- disappears - otherwise the game would stay hidden forever. They sweep
+-- open, hold a beat, then the decorative puffs dissolve away entirely so
+-- nothing curtain-related is left on screen once the game is visible again.
 local function teardownBackdrop()
     tw(Dim, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
     tw(Aura, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
@@ -565,10 +624,12 @@ end
 
 -- ===============================================================
 -- AMBIENT MUSIC (optional)
+-- Plug in your own uploaded/licensed rbxassetid below - a real
+-- copyrighted track can't be embedded here, only wired up.
 -- ===============================================================
 local IntroMusic = Instance.new("Sound")
 IntroMusic.Name = "IvoryAmbientMusic"
-IntroMusic.SoundId = "rbxassetid://0"
+IntroMusic.SoundId = "rbxassetid://0" -- <- replace with your own track's asset id
 IntroMusic.Volume = 0
 IntroMusic.Looped = true
 pcall(function() IntroMusic.Parent = SoundService end)
@@ -661,11 +722,14 @@ local function makePetalField(zIndex, count, sizeMin, sizeMax, speedMin, speedMa
     return field
 end
 
-local PetalsBack = makePetalField(3, 26, 8, 16, 26, 55)
-local PetalsFront = makePetalField(30, 7, 12, 20, 55, 90)
+local PetalsBack = makePetalField(3, 26, 8, 16, 26, 55)   -- drifting behind the card
+local PetalsFront = makePetalField(30, 7, 12, 20, 55, 90) -- a few drifting in front of the glass
 
 -- ===============================================================
 -- SHADOW HELPER
+-- Pure vector (stacked rounded frames, no image asset) - an image-
+-- based 9-slice shadow can mismatch its real pixel layout and bleed
+-- hard-edged notches past a rounded corner; this can't.
 -- ===============================================================
 local function attachShadow(parent, cornerRadius, layers)
     layers = layers or 7
@@ -704,7 +768,7 @@ CardHolder.Position = UDim2.fromScale(0.5, 0.5)
 CardHolder.Size = UDim2.fromOffset(420, 580)
 CardHolder.BackgroundTransparency = 1
 CardHolder.ZIndex = 5
-CardHolder.Visible = false
+CardHolder.Visible = false -- revealed by revealCard() once the cinematic intro finishes
 CardHolder.Parent = ScreenGui
 
 local CardScale = Instance.new("UIScale")
@@ -748,6 +812,7 @@ CardStrokeGradient.Transparency = NumberSequence.new({
 })
 CardStrokeGradient.Parent = CardStroke
 
+-- living glass edge - the highlight slowly drifts around the border
 task.spawn(function()
     while CardStroke.Parent do
         CardStrokeGradient.Rotation = (CardStrokeGradient.Rotation + 0.15) % 360
@@ -755,6 +820,7 @@ task.spawn(function()
     end
 end)
 
+-- -- liquid animated blob accents --
 local BlobLayer = Instance.new("Frame")
 BlobLayer.Name = "BlobLayer"
 BlobLayer.Size = UDim2.fromScale(1, 1)
@@ -793,6 +859,7 @@ task.spawn(function()
     end
 end)
 
+-- frosted sheen sweep
 local Sheen = Instance.new("Frame")
 Sheen.BackgroundColor3 = Color3.fromRGB(255,255,255)
 Sheen.BackgroundTransparency = 1
@@ -822,27 +889,64 @@ TopRegion.Active = true
 TopRegion.ZIndex = 6
 TopRegion.Parent = Card
 
+-- drag logic (drag overlay on top of everything)
 do
+    local DragOverlay = Instance.new("Frame")
+    DragOverlay.Name = "DragOverlay"
+    DragOverlay.Size = UDim2.fromScale(1, 1)
+    DragOverlay.BackgroundTransparency = 1
+    DragOverlay.ZIndex = 100
+    DragOverlay.Parent = Card
+
     local dragging, dragStart, startPos = false, nil, nil
 
+    -- cursor glow
+    local CursorGlow = Instance.new("Frame")
+    CursorGlow.Size = UDim2.fromOffset(160, 160)
+    CursorGlow.AnchorPoint = Vector2.new(0.5, 0.5)
+    CursorGlow.BackgroundColor3 = Theme.Sakura
+    CursorGlow.BackgroundTransparency = 1
+    CursorGlow.BorderSizePixel = 0
+    CursorGlow.ZIndex = 99
+    CursorGlow.Parent = ScreenGui
+    local cgCorner = Instance.new("UICorner")
+    cgCorner.CornerRadius = UDim.new(1, 0)
+    cgCorner.Parent = CursorGlow
+    local cgGrad = Instance.new("UIGradient")
+    cgGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Theme.AccentA),
+        ColorSequenceKeypoint.new(0.5, Theme.Sakura),
+        ColorSequenceKeypoint.new(1, Theme.AccentB),
+    })
+    cgGrad.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0.5),
+        NumberSequenceKeypoint.new(0.6, 0.8),
+        NumberSequenceKeypoint.new(1, 1),
+    })
+    cgGrad.Parent = CursorGlow
+
     local function updateDrag(input)
-        local delta = input.Position - dragStart
+        local pos = input.Position
+        local delta = pos - dragStart
         CardHolder.Position = UDim2.new(
             startPos.X.Scale, startPos.X.Offset + delta.X,
             startPos.Y.Scale, startPos.Y.Offset + delta.Y
         )
+        CursorGlow.Position = UDim2.fromOffset(pos.X, pos.Y)
     end
 
-    TopRegion.InputBegan:Connect(function(input)
+    DragOverlay.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPos = CardHolder.Position
             tw(CardScale, EASE_QUICK, { Scale = 0.975 })
+            tw(CursorGlow, EASE_QUICK, { BackgroundTransparency = 0.4 })
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
                     tw(CardScale, EASE_SPRING, { Scale = 1 })
+                    tw(CursorGlow, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
                 end
             end)
         end
@@ -855,6 +959,7 @@ do
     end)
 end
 
+-- -- unload button - fully tears down the UI if someone changes their mind --
 local UnloadBtn = Instance.new("TextButton")
 UnloadBtn.Name = "UnloadBtn"
 UnloadBtn.Size = UDim2.fromOffset(34, 34)
@@ -914,6 +1019,7 @@ UnloadBtn.MouseButton1Click:Connect(function()
     if unloadUI then unloadUI() end
 end)
 
+-- pulsing glow ring behind the logo
 local GlowRing = Instance.new("Frame")
 GlowRing.AnchorPoint = Vector2.new(0.5, 0.5)
 GlowRing.Position = UDim2.new(0.5, 0, 0, 62)
@@ -943,6 +1049,7 @@ task.spawn(function()
     end
 end)
 
+-- central logo orb
 local Logo = Instance.new("Frame")
 Logo.AnchorPoint = Vector2.new(0.5, 0.5)
 Logo.Position = UDim2.new(0.5, 0, 0, 62)
@@ -969,6 +1076,7 @@ LogoStroke.Parent = Logo
 
 IconDiamondMark(Logo, Color3.fromRGB(255, 255, 255), 30)
 
+-- gentle idle float for the whole logo + ring
 task.spawn(function()
     local t0 = tick()
     local baseLogoY, baseRingY = 62, 62
@@ -981,6 +1089,7 @@ task.spawn(function()
     end
 end)
 
+-- slow shimmering rotation on the logo gradient
 task.spawn(function()
     while Logo.Parent do
         LogoGradient.Rotation = (LogoGradient.Rotation + 0.6) % 360
@@ -1012,6 +1121,7 @@ Subtitle.Text = "Enter your key to continue"
 Subtitle.ZIndex = 7
 Subtitle.Parent = TopRegion
 
+-- -- twinkling sparkle accents scattered around the logo --
 local function addSparkle(parent, x, y, size, startDelay)
     local bar1, bar2 = IconSparkle(parent, Color3.fromRGB(255, 255, 255), size)
     bar1.Position = UDim2.new(0, x, 0, y)
@@ -1051,6 +1161,7 @@ ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
 ContentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 ContentLayout.Parent = Content
 
+-- -- glass pill input --
 local InputWrap = Instance.new("Frame")
 InputWrap.Name = "InputWrap"
 InputWrap.Size = UDim2.new(1, 0, 0, 52)
@@ -1110,6 +1221,7 @@ InputBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
+-- -- verify button (liquid gradient pill) --
 local VerifyBtn = Instance.new("TextButton")
 VerifyBtn.Name = "VerifyBtn"
 VerifyBtn.Size = UDim2.new(1, 0, 0, 50)
@@ -1146,6 +1258,7 @@ VerifyLabel.TextSize = 15
 VerifyLabel.ZIndex = 8
 VerifyLabel.Parent = VerifyBtn
 
+-- trailing chevron - nudges right on hover for a small modern CTA feel
 local ChevronWrap = Instance.new("Frame")
 ChevronWrap.Size = UDim2.fromOffset(14, 14)
 ChevronWrap.Position = UDim2.new(0.5, 46, 0.5, 0)
@@ -1173,6 +1286,7 @@ VerifyShineGradient.Transparency = NumberSequence.new({
 })
 VerifyShineGradient.Parent = VerifyShine
 
+-- spinner ring (shown in place of the label while a key is being checked)
 local Spinner = Instance.new("Frame")
 Spinner.Size = UDim2.fromOffset(20, 20)
 Spinner.Position = UDim2.fromScale(0.5, 0.5)
@@ -1228,6 +1342,7 @@ end)
 VerifyBtn.MouseButton1Down:Connect(function() tw(VerifyScale, EASE_QUICK, { Scale = 0.96 }) end)
 VerifyBtn.MouseButton1Up:Connect(function() tw(VerifyScale, EASE_SPRING, { Scale = 1 }) end)
 
+-- -- status row --
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size = UDim2.new(1, 0, 0, 18)
 StatusLabel.LayoutOrder = 3
@@ -1248,293 +1363,557 @@ local function setStatus(text, color)
     end)
 end
 
-local ValidateKey
-
+-- ===============================================================
+-- 3 FLOATING PROVIDER BUTTONS
+-- ===============================================================
 local FloatingRow = Instance.new("Frame")
 FloatingRow.Name = "FloatingRow"
-FloatingRow.Size = UDim2.new(1, 0, 0, 108)
+FloatingRow.Size = UDim2.new(1, 0, 0, 240)
 FloatingRow.LayoutOrder = 4
 FloatingRow.BackgroundTransparency = 1
 FloatingRow.ZIndex = 7
 FloatingRow.Parent = Content
 
 local FloatingLayout = Instance.new("UIListLayout")
-FloatingLayout.FillDirection = Enum.FillDirection.Horizontal
+FloatingLayout.FillDirection = Enum.FillDirection.Vertical
 FloatingLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 FloatingLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-FloatingLayout.Padding = UDim.new(0, 22)
+FloatingLayout.Padding = UDim.new(0, 8)
 FloatingLayout.SortOrder = Enum.SortOrder.LayoutOrder
 FloatingLayout.Parent = FloatingRow
 
 local function CreateFloatingButton(order, iconBuilder, iconColor, label, copyText)
-    local wrap = Instance.new("Frame")
-    wrap.Name = label
-    wrap.Size = UDim2.fromOffset(92, 108)
-    wrap.LayoutOrder = order
-    wrap.BackgroundTransparency = 1
-    wrap.ZIndex = 7
-    wrap.Parent = FloatingRow
+    local btn = Instance.new("TextButton")
+    btn.Name = label
+    btn.Size = UDim2.new(1, -10, 0, 70)
+    btn.LayoutOrder = order
+    btn.BackgroundColor3 = Theme.GlassCard
+    btn.BackgroundTransparency = 0.18
+    btn.BorderSizePixel = 0
+    btn.AutoButtonColor = false
+    btn.Text = ""
+    btn.ZIndex = 7
+    btn.Parent = FloatingRow
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, 16)
+    c.Parent = btn
 
-    local glow = Instance.new("Frame")
-    glow.Size = UDim2.fromOffset(90, 90)
-    glow.Position = UDim2.new(0.5, 0, 0, 30)
-    glow.AnchorPoint = Vector2.new(0.5, 0.5)
-    glow.BackgroundColor3 = iconColor
-    glow.BackgroundTransparency = 0.88
-    glow.BorderSizePixel = 0
-    glow.ZIndex = 6
-    glow.Parent = wrap
-    local glowCorner = Instance.new("UICorner")
-    glowCorner.CornerRadius = UDim.new(1, 0)
-    glowCorner.Parent = glow
+    local stroke = Instance.new("UIStroke")
+    stroke.Thickness = 1.4
+    stroke.Color = Color3.fromRGB(255, 255, 255)
+    stroke.Transparency = 0.65
+    stroke.Parent = btn
+
+    local strokeGrad = Instance.new("UIGradient")
+    strokeGrad.Rotation = 0
+    strokeGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, iconColor),
+        ColorSequenceKeypoint.new(0.5, Theme.Sakura),
+        ColorSequenceKeypoint.new(1, iconColor),
+    })
+    strokeGrad.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0.3),
+        NumberSequenceKeypoint.new(0.5, 0.6),
+        NumberSequenceKeypoint.new(1, 0.3),
+    })
+    strokeGrad.Parent = stroke
+
+    local iconFrame = Instance.new("Frame")
+    iconFrame.Size = UDim2.fromOffset(18, 18)
+    iconFrame.Position = UDim2.new(0, 14, 0, 15)
+    iconFrame.BackgroundTransparency = 1
+    iconFrame.ZIndex = 9
+    iconFrame.Parent = btn
+    iconBuilder(iconFrame, iconColor)
+
+    local iconGlow = Instance.new("Frame")
+    iconGlow.Size = UDim2.fromOffset(28, 28)
+    iconGlow.Position = UDim2.new(0, 9, 0, 10)
+    iconGlow.BackgroundColor3 = iconColor
+    iconGlow.BackgroundTransparency = 0.85
+    iconGlow.BorderSizePixel = 0
+    iconGlow.ZIndex = 8
+    iconGlow.Parent = btn
+    local igCorner = Instance.new("UICorner")
+    igCorner.CornerRadius = UDim.new(1, 0)
+    igCorner.Parent = iconGlow
+
+    local txt = Instance.new("TextLabel")
+    txt.Size = UDim2.new(1, -38, 0, 14)
+    txt.Position = UDim2.new(0, 36, 0, 12)
+    txt.BackgroundTransparency = 1
+    txt.Text = label:gsub("\n", " ")
+    txt.TextColor3 = Theme.TextPrimary
+    txt.Font = Enum.Font.GothamMedium
+    txt.TextSize = 11
+    txt.TextXAlignment = Enum.TextXAlignment.Left
+    txt.ZIndex = 9
+    txt.Parent = btn
+
+    local sub = Instance.new("TextLabel")
+    sub.Size = UDim2.new(1, -38, 0, 12)
+    sub.Position = UDim2.new(0, 36, 0, 26)
+    sub.BackgroundTransparency = 1
+    sub.Text = "click to copy"
+    sub.TextColor3 = Theme.TextTertiary
+    sub.Font = Enum.Font.Gotham
+    sub.TextSize = 9
+    sub.TextXAlignment = Enum.TextXAlignment.Left
+    sub.ZIndex = 9
+    sub.Parent = btn
+
     task.spawn(function()
-        task.wait(math.random() * 2)
-        while glow.Parent do
-            tw(glow, TweenInfo.new(2.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.72 })
-            task.wait(2.4)
-            tw(glow, TweenInfo.new(2.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.88 })
-            task.wait(2.4)
-        end
-    end)
-
-    local toast = Instance.new("TextLabel")
-    toast.Size = UDim2.new(1, 20, 0, 20)
-    toast.Position = UDim2.new(0.5, 0, 0, -6)
-    toast.AnchorPoint = Vector2.new(0.5, 1)
-    toast.BackgroundTransparency = 1
-    toast.Text = "Copied!"
-    toast.TextColor3 = Theme.Success
-    toast.Font = Enum.Font.GothamBold
-    toast.TextSize = 12
-    toast.TextTransparency = 1
-    toast.ZIndex = 9
-    toast.Parent = wrap
-
-    local circle = Instance.new("TextButton")
-    circle.Name = "Circle"
-    circle.Size = UDim2.fromOffset(60, 60)
-    circle.Position = UDim2.new(0.5, 0, 0, 0)
-    circle.AnchorPoint = Vector2.new(0.5, 0)
-    circle.BackgroundColor3 = Theme.GlassCardAlt
-    circle.BackgroundTransparency = 0.28
-    circle.AutoButtonColor = false
-    circle.Text = ""
-    circle.ZIndex = 7
-    circle.Parent = wrap
-
-    local circleCorner = Instance.new("UICorner")
-    circleCorner.CornerRadius = UDim.new(1, 0)
-    circleCorner.Parent = circle
-
-    local circleStroke = Instance.new("UIStroke")
-    circleStroke.Thickness = 1.3
-    circleStroke.Color = iconColor
-    circleStroke.Transparency = 0.55
-    circleStroke.Parent = circle
-
-    local circleGlow = Instance.new("Frame")
-    circleGlow.Size = UDim2.fromScale(1, 1)
-    circleGlow.BackgroundColor3 = iconColor
-    circleGlow.BackgroundTransparency = 0.82
-    circleGlow.ZIndex = 6
-    circleGlow.Parent = circle
-    local glowCorner2 = Instance.new("UICorner")
-    glowCorner2.CornerRadius = UDim.new(1, 0)
-    glowCorner2.Parent = circleGlow
-
-    local scale = Instance.new("UIScale")
-    scale.Parent = circle
-
-    iconBuilder(circle, iconColor)
-
-    local caption = Instance.new("TextLabel")
-    caption.Size = UDim2.new(1, 10, 0, 30)
-    caption.Position = UDim2.new(0.5, 0, 0, 68)
-    caption.AnchorPoint = Vector2.new(0.5, 0)
-    caption.BackgroundTransparency = 1
-    caption.Text = label
-    caption.TextColor3 = Theme.TextSecondary
-    caption.TextWrapped = true
-    caption.Font = Enum.Font.GothamMedium
-    caption.TextSize = 11
-    caption.ZIndex = 7
-    caption.Parent = wrap
-
-    local phase = math.random() * 6.28
-    task.spawn(function()
-        local t0 = tick()
-        while wrap.Parent do
-            local t = tick() - t0
-            wrap.Position = UDim2.new(wrap.Position.X.Scale, wrap.Position.X.Offset, 0, math.sin(t * 0.9 + phase) * 3)
+        while btn.Parent do
+            strokeGrad.Rotation = (strokeGrad.Rotation + 0.5) % 360
             RunService.Heartbeat:Wait()
         end
     end)
 
-    circle.MouseEnter:Connect(function()
-        tw(scale, EASE_QUICK, { Scale = 1.12 })
-        tw(circleStroke, EASE_QUICK, { Transparency = 0.2 })
-        tw(glow, EASE_QUICK, { BackgroundTransparency = 0.72 })
+    btn.MouseEnter:Connect(function()
+        tw(btn, EASE_QUICK, { BackgroundTransparency = 0.08 })
+        tw(stroke, EASE_QUICK, { Transparency = 0.3 })
+        tw(iconGlow, EASE_QUICK, { BackgroundTransparency = 0.7 })
     end)
-    circle.MouseLeave:Connect(function()
-        tw(scale, EASE_QUICK, { Scale = 1 })
-        tw(circleStroke, EASE_QUICK, { Transparency = 0.55 })
-        tw(glow, EASE_QUICK, { BackgroundTransparency = 0.88 })
+    btn.MouseLeave:Connect(function()
+        tw(btn, EASE_QUICK, { BackgroundTransparency = 0.18 })
+        tw(stroke, EASE_QUICK, { Transparency = 0.65 })
+        tw(iconGlow, EASE_QUICK, { BackgroundTransparency = 0.85 })
     end)
-    circle.MouseButton1Down:Connect(function() tw(scale, EASE_QUICK, { Scale = 0.92 }) end)
-    circle.MouseButton1Up:Connect(function() tw(scale, EASE_SPRING, { Scale = 1.08 }) end)
-    circle.MouseButton1Click:Connect(function()
-        pcall(function() setclipboard(copyText) end)
-        tw(toast, EASE_QUICK, { TextTransparency = 0 })
+
+    btn.MouseButton1Click:Connect(function()
+        local ok = pcall(function() setclipboard(copyText) end)
+        local orig = txt.Text
+        txt.Text = ok and "Copied!" or copyText
+        txt.TextColor3 = ok and Theme.Success or Theme.Blue
+        sub.Text = ok and "saved to clipboard" or ""
+        tw(strokeGrad, EASE_QUICK, { Rotation = 180 })
         task.delay(1.5, function()
-            tw(toast, EASE_QUICK, { TextTransparency = 1 })
+            txt.Text = orig
+            txt.TextColor3 = Theme.TextPrimary
+            sub.Text = "click to copy"
+            tw(strokeGrad, EASE_QUICK, { Rotation = 360 })
         end)
+    end)
+
+    return btn
+end
+
+CreateFloatingButton(1, IconChat, Theme.Discord, "Discord\n(dupe)", "https://discord.gg/mrQFkCJfEe")
+CreateFloatingButton(2, IconWorkMark, Theme.WorkInkTeal, "Work.ink\nKey", "https://work.ink/2STL/Ivory")
+CreateFloatingButton(3, function(parent, color) IconLootGem(parent, color, Theme.LootGold) end,
+    Theme.LootPurple, "LootLabs\nKey", "https://loot-link.com/s?L6z5Q0nE")
+
+-- ===============================================================
+-- CARD REVEAL / CLOSE / UNLOAD  (reverse animation + full teardown)
+-- ===============================================================
+local function revealCard()
+    CardHolder.Visible = true
+    tw(CardScale, TweenInfo.new(0.55, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
+end
+
+local function closeUI(delay)
+    task.delay(delay or 0, function()
+        tw(CardScale, EASE_OUT_SOFT, { Scale = 0.85 })
+        tw(Card, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
+        teardownBackdrop() -- curtains open + dissolve here; wait matches that full animation
+        fadeOutMusic()
+        task.wait(CURTAIN_EXIT_TOTAL)
+        pcall(function() ScreenGui:Destroy() end)
     end)
 end
 
-CreateFloatingButton(1, IconChat, Theme.Discord, "Discord\n(dupe)", "https://discord.gg/ivoryhub")
-CreateFloatingButton(2, IconWorkMark, Theme.WorkInkTeal, "Work.ink\nKey", "https://work.ink/ivorykey")
-CreateFloatingButton(3, function(parent, color) IconLootGem(parent, color, Theme.LootGold) end, Theme.LootPurple, "LootLabs\nKey", "https://loot-link.com/s?L6z5Q0nE")
+unloadUI = function()
+    if _unloaded then return end
+    _unloaded = true
+    setStatus("Unloaded", Theme.Error)
+    tw(CardScale, EASE_OUT_SOFT, { Scale = 0.8 })
+    tw(Card, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
+    teardownBackdrop() -- curtains open + dissolve here; wait matches that full animation
+    fadeOutMusic()
+    task.wait(CURTAIN_EXIT_TOTAL)
+    pcall(function() ScreenGui:Destroy() end)
+end
+
+-- ===============================================================
+-- CINEMATIC INTRO - plays once before the key card is revealed
+-- ===============================================================
+local introSkip = false
+
+local Intro = Instance.new("TextButton")
+Intro.Name = "Intro"
+Intro.Size = UDim2.fromScale(1, 1)
+Intro.BackgroundTransparency = 1
+Intro.AutoButtonColor = false
+Intro.Text = ""
+Intro.ZIndex = 40
+Intro.Parent = ScreenGui
+Intro.MouseButton1Click:Connect(function() introSkip = true end)
+
+local IntroLogo = Instance.new("Frame")
+IntroLogo.AnchorPoint = Vector2.new(0.5, 0.5)
+IntroLogo.Position = UDim2.fromScale(0.5, 0.36)
+IntroLogo.Size = UDim2.fromOffset(84, 84)
+IntroLogo.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+IntroLogo.BackgroundTransparency = 1
+IntroLogo.ZIndex = 41
+IntroLogo.Parent = Intro
+local IntroLogoCorner = Instance.new("UICorner")
+IntroLogoCorner.CornerRadius = UDim.new(1, 0)
+IntroLogoCorner.Parent = IntroLogo
+local IntroLogoGradient = Instance.new("UIGradient")
+IntroLogoGradient.Rotation = 45
+IntroLogoGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Theme.AccentA),
+    ColorSequenceKeypoint.new(0.5, Theme.AccentC),
+    ColorSequenceKeypoint.new(1, Theme.AccentB),
+})
+IntroLogoGradient.Parent = IntroLogo
+local IntroLogoStroke = Instance.new("UIStroke")
+IntroLogoStroke.Thickness = 1.5
+IntroLogoStroke.Color = Color3.fromRGB(255, 255, 255)
+IntroLogoStroke.Transparency = 1
+IntroLogoStroke.Parent = IntroLogo
+local IntroLogoScale = Instance.new("UIScale")
+IntroLogoScale.Scale = 0.5
+IntroLogoScale.Parent = IntroLogo
+local introGem = IconDiamondMark(IntroLogo, Color3.fromRGB(255, 255, 255), 34)
+introGem.BackgroundTransparency = 1
+
+local IntroTitle = Instance.new("TextLabel")
+IntroTitle.Size = UDim2.new(0, 560, 0, 44)
+IntroTitle.Position = UDim2.fromScale(0.5, 0.48)
+IntroTitle.AnchorPoint = Vector2.new(0.5, 0.5)
+IntroTitle.BackgroundTransparency = 1
+IntroTitle.TextColor3 = Theme.TextPrimary
+IntroTitle.TextSize = 36
+IntroTitle.Font = Enum.Font.GothamBold
+IntroTitle.Text = ""
+IntroTitle.ZIndex = 41
+IntroTitle.Parent = Intro
+
+local IntroCredit = Instance.new("TextLabel")
+IntroCredit.Size = UDim2.new(0, 560, 0, 20)
+IntroCredit.Position = UDim2.fromScale(0.5, 0.565)
+IntroCredit.AnchorPoint = Vector2.new(0.5, 0.5)
+IntroCredit.BackgroundTransparency = 1
+IntroCredit.TextColor3 = Theme.TextTertiary
+IntroCredit.TextSize = 14
+IntroCredit.Font = Enum.Font.Gotham
+IntroCredit.Text = ""
+IntroCredit.ZIndex = 41
+IntroCredit.Parent = Intro
+
+local BarTrack = Instance.new("Frame")
+BarTrack.Size = UDim2.fromOffset(240, 3)
+BarTrack.Position = UDim2.fromScale(0.5, 0.66)
+BarTrack.AnchorPoint = Vector2.new(0.5, 0.5)
+BarTrack.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+BarTrack.BackgroundTransparency = 0.88
+BarTrack.BorderSizePixel = 0
+BarTrack.ZIndex = 41
+BarTrack.Parent = Intro
+local BarTrackCorner = Instance.new("UICorner")
+BarTrackCorner.CornerRadius = UDim.new(1, 0)
+BarTrackCorner.Parent = BarTrack
+
+local BarFill = Instance.new("Frame")
+BarFill.Size = UDim2.new(0, 0, 1, 0)
+BarFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+BarFill.BorderSizePixel = 0
+BarFill.ZIndex = 42
+BarFill.Parent = BarTrack
+local BarFillCorner = Instance.new("UICorner")
+BarFillCorner.CornerRadius = UDim.new(1, 0)
+BarFillCorner.Parent = BarFill
+local BarFillGradient = Instance.new("UIGradient")
+BarFillGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Theme.AccentA),
+    ColorSequenceKeypoint.new(0.5, Theme.AccentC),
+    ColorSequenceKeypoint.new(1, Theme.AccentB),
+})
+BarFillGradient.Parent = BarFill
+
+local BarLabel = Instance.new("TextLabel")
+BarLabel.Size = UDim2.fromOffset(240, 16)
+BarLabel.Position = UDim2.fromScale(0.5, 0.705)
+BarLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+BarLabel.BackgroundTransparency = 1
+BarLabel.TextColor3 = Theme.TextTertiary
+BarLabel.TextSize = 11
+BarLabel.Font = Enum.Font.Gotham
+BarLabel.Text = ""
+BarLabel.ZIndex = 41
+BarLabel.Parent = Intro
+
+local SkipHint = Instance.new("TextLabel")
+SkipHint.Size = UDim2.fromOffset(200, 16)
+SkipHint.Position = UDim2.new(0.5, 0, 1, -36)
+SkipHint.AnchorPoint = Vector2.new(0.5, 1)
+SkipHint.BackgroundTransparency = 1
+SkipHint.TextColor3 = Theme.TextTertiary
+SkipHint.TextSize = 11
+SkipHint.Font = Enum.Font.Gotham
+SkipHint.Text = "tap anywhere to skip"
+SkipHint.TextTransparency = 1
+SkipHint.ZIndex = 41
+SkipHint.Parent = Intro
+tw(SkipHint, TweenInfo.new(0.6), { TextTransparency = 0.55 })
+
+local function typeText(label, text, charDelay)
+    for i = 1, #text do
+        if introSkip then
+            label.Text = text
+            return
+        end
+        label.Text = string.sub(text, 1, i)
+        task.wait(charDelay)
+    end
+end
+
+local function skippableWait(duration)
+    local elapsed = 0
+    while elapsed < duration and not introSkip do
+        elapsed = elapsed + task.wait(0.05)
+    end
+end
+
+-- The intro fades out under cover of the curtains sweeping shut, and the
+-- card gets swapped in while fully hidden. Unlike the opening reveal, the
+-- curtains do NOT reopen here - they stay shut for the entire key view, so
+-- the game underneath stays completely hidden until the user is done
+-- (teardownBackdrop() is what finally reopens them, on success or unload).
+local function finishIntro()
+    tw(IntroLogo, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
+    tw(introGem, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
+    tw(IntroLogoStroke, EASE_OUT_SOFT, { Transparency = 1 })
+    tw(IntroTitle, EASE_OUT_SOFT, { TextTransparency = 1 })
+    tw(IntroCredit, EASE_OUT_SOFT, { TextTransparency = 1 })
+    tw(BarTrack, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
+    tw(BarFill, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
+    tw(BarLabel, EASE_OUT_SOFT, { TextTransparency = 1 })
+    tw(SkipHint, EASE_OUT_SOFT, { TextTransparency = 1 })
+    concealClouds(0.65)
+    task.wait(0.85)
+    pcall(function() Intro:Destroy() end)
+    revealCard()
+end
+
+-- skip intro, reveal card immediately
+task.spawn(function()
+    task.wait(0.2)
+    revealClouds(1.15)
+
+    tw(IntroLogo, EASE_OUT_SOFT, { BackgroundTransparency = 0 })
+    tw(introGem, EASE_OUT_SOFT, { BackgroundTransparency = 0 })
+    tw(IntroLogoStroke, EASE_OUT_SOFT, { Transparency = 0.4 })
+    tw(IntroLogoScale, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
+    skippableWait(0.55)
+    if introSkip then finishIntro() return end
+
+    typeText(IntroTitle, "I V O R Y   H U B", 0.035)
+    skippableWait(0.25)
+    if introSkip then finishIntro() return end
+
+    typeText(IntroCredit, "built by FakeCrow & Veqxo", 0.032)
+    skippableWait(0.45)
+    if introSkip then finishIntro() return end
+
+    BarLabel.Text = "Loading assets..."
+    tw(BarFill, TweenInfo.new(1.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(0.6, 0, 1, 0) })
+    skippableWait(1.1)
+    if introSkip then finishIntro() return end
+
+    BarLabel.Text = "Preparing interface..."
+    tw(BarFill, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(0.9, 0, 1, 0) })
+    skippableWait(0.7)
+    if introSkip then finishIntro() return end
+
+    BarLabel.Text = "Ready"
+    tw(BarFill, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 1, 0) })
+    skippableWait(0.55)
+
+    finishIntro()
+end)
 
 -- ===============================================================
 -- KEY VALIDATION
 -- ===============================================================
-local _awaiting = true
+local isVerifying = false
 
-local function _doValidate(key)
-    if _k and _k.v and _k.i and _verifyIntegrity() then
-        if _k.s == key then
-            setStatus("Key already verified", Theme.Success)
-            return true
-        end
-    end
-
+function ValidateKey(key)
+    if isVerifying or _unloaded then return end
+    isVerifying = true
     setVerifying(true)
-    setStatus("Verifying...", Theme.AccentA)
 
+    setStatus("Checking key...", Theme.TextTertiary)
+
+    -- LootLabs exact match (checked first)
     if _lootKey ~= "" and key == _lootKey then
         _k.v = true
         _k.s = key
         _k.h = _hwid
         _k.t = os.time()
         _k.i = 0x4A + #key
-        setVerifying(false)
-        setStatus("Verified (LootLabs)!", Theme.Success)
-        task.delay(1.5, function()
-            _awaiting = false
+
+        pcall(function()
+            _genv._ivoryKey = key
+            _genv._ivoryExpiry = os.time() * 1000 + 43200000
+            writefile("IvoryKey.txt", key .. "\n" .. tostring(os.time() * 1000 + 43200000) .. "\n" .. _hwid)
         end)
-        return true
+
+        setStatus("Access granted", Theme.Success)
+        setVerifying(false)
+        VerifyLabel.Text = "Loading..."
+        closeUI(1.1)
+        return
     end
 
-    local ok, result = pcall(function()
-        return request({
-            Url = "https://api.workink.net/v1/verify",
-            Method = "POST",
-            Headers = { ["Content-Type"] = "application/json" },
-            Body = HttpService:JSONEncode({ key = key, hwid = _hwid })
-        })
+    -- Work.ink API validation
+    local ok, res = pcall(function()
+        return request({ Url = "https://work.ink/_api/v2/token/isValid/" .. key .. "?deleteToken=1", Method = "GET" })
     end)
 
-    if ok and result and result.StatusCode == 200 then
-        local body = HttpService:JSONDecode(result.Body)
-        if body and body.valid then
+    local handled = false
+    if ok and res and res.Body then
+        local decodeOk, data = pcall(function()
+            return HttpService:JSONDecode(res.Body)
+        end)
+
+        if not decodeOk then
+            warn("[IvoryKey] JSON decode failed: " .. tostring(data))
+        elseif data and data.valid then
+            handled = true
             _k.v = true
             _k.s = key
             _k.h = _hwid
             _k.t = os.time()
             _k.i = 0x4A + #key
-            setVerifying(false)
-            setStatus("Verified!", Theme.Success)
-            task.delay(1.5, function()
-                _awaiting = false
+
+            pcall(function()
+                _genv._ivoryKey = key
+                _genv._ivoryExpiry = data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)
+                writefile("IvoryKey.txt", key .. "\n" .. tostring(data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)) .. "\n" .. _hwid)
             end)
-            return true
+
+            setStatus("Access granted: " .. key, Theme.Success)
+            setVerifying(false)
+            VerifyLabel.Text = "Close"
+            VerifyBtn.MouseButton1Click:Connect(function() closeUI(0) end)
+        elseif data then
+            warn("[IvoryKey] API response: valid=" .. tostring(data.valid) .. " body=" .. tostring(res.Body):sub(1, 200))
         end
+    elseif ok and res then
+        warn("[IvoryKey] Empty response body")
+    else
+        warn("[IvoryKey] HTTP request failed: " .. tostring(res))
     end
 
-    setVerifying(false)
-    setStatus("Invalid key", Theme.Error)
-    return false
-end
+    if not handled then
+        setStatus("Invalid key - get one at work.ink/2STL/Ivory", Theme.Error)
+        setVerifying(false)
+        VerifyLabel.Text = "Verify Key"
+        tw(InputStroke, EASE_QUICK, { Color = Theme.Error, Transparency = 0.2 })
+        task.wait(0.4)
+        tw(InputStroke, EASE_OUT_SOFT, { Color = Color3.fromRGB(255,255,255), Transparency = 0.82 })
+    end
 
-ValidateKey = function(key)
-    _doValidate(key)
+    isVerifying = false
 end
 
 VerifyBtn.MouseButton1Click:Connect(function()
     local key = InputBox.Text:gsub("%s", "")
     if key ~= "" then
         ValidateKey(key)
+    else
+        setStatus("Please enter a key", Theme.Error)
+        tw(InputStroke, EASE_QUICK, { Color = Theme.Error, Transparency = 0.2 })
+        task.wait(0.4)
+        tw(InputStroke, EASE_OUT_SOFT, { Color = Color3.fromRGB(255,255,255), Transparency = 0.82 })
     end
 end)
 
 -- ===============================================================
--- SAVE/LOAD KEY
+-- KEY PERSISTENCE (checked right on load)
 -- ===============================================================
-local SAVE_KEY = "IvoryHub_Key_v1"
-
-local function saveKey(key)
-    pcall(function()
-        if writefile then
-            writefile(SAVE_KEY, key)
-        end
-    end)
-end
-
-local function loadSavedKey()
-    pcall(function()
-        if readfile and isfile then
-            if isfile(SAVE_KEY) then
-                local key = readfile(SAVE_KEY)
-                if key and key ~= "" then
-                    InputBox.Text = key
-                    _doValidate(key)
-                end
-            end
-        end
-    end)
-end
-
-task.spawn(function()
-    task.wait(1)
-    loadSavedKey()
-end)
-
--- ===============================================================
--- CINEMATIC INTRO
--- ===============================================================
-local function revealCard()
-    CardHolder.Visible = true
-    CardScale.Scale = 0.86
-    tw(CardScale, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
-end
-
-task.spawn(function()
-    concealClouds(0)
-    task.wait(0.3)
-    revealCard()
-    task.wait(0.5)
-    revealClouds(1.1)
-end)
-
--- ===============================================================
--- UNLOAD
--- ===============================================================
-unloadUI = function()
+local function CheckSavedKey()
     if _unloaded then return end
-    _unloaded = true
-    _awaiting = false
+    local savedKey, savedExpiry = nil, nil
 
-    fadeOutMusic()
-    teardownBackdrop()
-
-    task.delay(CURTAIN_EXIT_TOTAL, function()
-        pcall(function() ScreenGui:Destroy() end)
-        pcall(function() BackdropBlur:Destroy() end)
+    pcall(function()
+        if isfile("IvoryKey.txt") then
+            local data = readfile("IvoryKey.txt")
+            savedKey, savedExpiry = data:match("^(.-)\n(.-)$")
+            savedExpiry = tonumber(savedExpiry)
+        end
     end)
+
+    if not savedKey then
+        pcall(function() savedKey = _genv._ivoryKey end)
+        pcall(function() savedExpiry = _genv._ivoryExpiry end)
+    end
+
+    if savedKey and savedExpiry and os.time() * 1000 < savedExpiry then
+        _k.v = true
+        _k.s = savedKey
+        _k.h = _hwid
+        _k.t = os.time()
+        _k.i = 0x4A + #savedKey
+
+        setStatus("Welcome back - key restored", Theme.Success)
+        setVerifying(false)
+        VerifyLabel.Text = "Loading..."
+        closeUI(0.9)
+    end
 end
+
+task.delay(0.25, CheckSavedKey)
+
+-- ===============================================================
+-- INTEGRITY CHECK (background, random 45-90s interval - self-terminates
+-- once the gui is gone, whether from success, close, or unload)
+-- ===============================================================
+task.spawn(function()
+    while true do
+        task.wait(math.random(45, 90))
+        if not ScreenGui.Parent then break end
+        if _k and _k.v and not _verifyIntegrity() then
+            pcall(function()
+                for _, gui in ipairs(game:GetService("CoreGui"):GetDescendants()) do
+                    if gui.Name == "IvoryKey" then gui:Destroy() end
+                end
+            end)
+        end
+    end
+end)
+
+-- ===============================================================
+-- WAITING LOOP - block until validated, unloaded, or destroyed
+-- ===============================================================
+local _awaiting = true
+while _awaiting do
+    task.wait(0.1)
+    if _k and _k.v then _awaiting = false end
+    if _unloaded then _awaiting = false end
+    if not ScreenGui.Parent then _awaiting = false end
+end
+
+if _unloaded then
+    print("Ivory Hub - unloaded by user, nothing further will run")
+    return
+end
+
+print("Ivory Hub key system - liquid glass - sakura UI loaded")
+
+-- Clean up old instances
+for _, gui in ipairs(game:GetService("CoreGui"):GetDescendants()) do
+    if gui:IsA("ScreenGui") and gui.Name == "Obsidian" then gui:Destroy() end
+end
+for k, v in pairs(getgenv and getgenv() or {}) do
+    if type(v) == "table" and v.CreateWindow and v.Toggles then v.Toggled = false; break end
+end
+task.wait(0.3)
 
 end -- close key system UI block
-
 -- ===============================================================
 -- GAME SCRIPT: Catch 1 Billion Ducks
 -- ===============================================================
