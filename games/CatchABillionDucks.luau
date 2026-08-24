@@ -2062,8 +2062,10 @@ end
 local function getBoss()
     local boss = workspace.Ume and workspace.Ume:FindFirstChild("BossController_Client_1")
     if boss then
+        local hitbox = boss:FindFirstChild("Hitbox")
         local root = boss:FindFirstChild("RootPart") or boss:FindFirstChild("HumanoidRootPart")
-        if root then return boss, root end
+        local target = hitbox or root
+        if target then return boss, target end
     end
     return nil
 end
