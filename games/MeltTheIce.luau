@@ -768,7 +768,7 @@ CardHolder.Position = UDim2.fromScale(0.5, 0.5)
 CardHolder.Size = UDim2.fromOffset(420, 580)
 CardHolder.BackgroundTransparency = 1
 CardHolder.ZIndex = 5
-CardHolder.Visible = false -- revealed by revealCard() once the cinematic intro finishes
+CardHolder.Visible = true -- show immediately, no intro
 CardHolder.Parent = ScreenGui
 
 local CardScale = Instance.new("UIScale")
@@ -889,7 +889,7 @@ TopRegion.Active = true
 TopRegion.ZIndex = 6
 TopRegion.Parent = Card
 
--- drag logic (drag anywhere in the top region)
+-- drag logic (drag anywhere on card)
 do
     local dragging, dragStart, startPos = false, nil, nil
 
@@ -901,7 +901,7 @@ do
         )
     end
 
-    TopRegion.InputBegan:Connect(function(input)
+    Card.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
@@ -1662,41 +1662,12 @@ local function finishIntro()
     revealCard()
 end
 
+-- skip intro, reveal card immediately
 task.spawn(function()
-    -- curtains open first, unveiling the intro underneath as they part
-    task.wait(0.2)
-    revealClouds(1.15)
-
-    tw(IntroLogo, EASE_OUT_SOFT, { BackgroundTransparency = 0 })
-    tw(introGem, EASE_OUT_SOFT, { BackgroundTransparency = 0 })
-    tw(IntroLogoStroke, EASE_OUT_SOFT, { Transparency = 0.4 })
-    tw(IntroLogoScale, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
-    skippableWait(0.55)
-    if introSkip then finishIntro() return end
-
-    typeText(IntroTitle, "I V O R Y   H U B", 0.035)
-    skippableWait(0.25)
-    if introSkip then finishIntro() return end
-
-    typeText(IntroCredit, "built by FakeCrow & Veqxo", 0.032)
-    skippableWait(0.45)
-    if introSkip then finishIntro() return end
-
-    BarLabel.Text = "Loading assets..."
-    tw(BarFill, TweenInfo.new(1.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(0.6, 0, 1, 0) })
-    skippableWait(1.1)
-    if introSkip then finishIntro() return end
-
-    BarLabel.Text = "Preparing interface..."
-    tw(BarFill, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(0.9, 0, 1, 0) })
-    skippableWait(0.7)
-    if introSkip then finishIntro() return end
-
-    BarLabel.Text = "Ready"
-    tw(BarFill, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 1, 0) })
-    skippableWait(0.55)
-
-    finishIntro()
+    task.wait(0.1)
+    revealClouds(0.5)
+    CardHolder.Visible = true
+    tw(CardScale, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
 end)
 
 -- ===============================================================
