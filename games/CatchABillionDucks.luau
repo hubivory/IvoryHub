@@ -2271,7 +2271,10 @@ task.spawn(function()
                         if closest then target = closest.hitbox or closest.root end
                     end
                     if target then
-                        hrp.CFrame = CFrame.new(hrp.Position, target.Position)
+                        -- Only rotate, don't change position
+                        local pos = hrp.Position
+                        local lookAt = target.Position
+                        hrp.CFrame = CFrame.new(pos, Vector3.new(lookAt.X, pos.Y, lookAt.Z))
                     end
                 end
             end)
