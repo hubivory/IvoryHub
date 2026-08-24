@@ -1332,7 +1332,7 @@ end
 -- ===============================================================
 local FloatingRow = Instance.new("Frame")
 FloatingRow.Name = "FloatingRow"
-FloatingRow.Size = UDim2.new(1, 0, 0, 48)
+FloatingRow.Size = UDim2.new(1, 0, 0, 56)
 FloatingRow.LayoutOrder = 4
 FloatingRow.BackgroundTransparency = 1
 FloatingRow.ZIndex = 7
@@ -1349,67 +1349,120 @@ FloatingLayout.Parent = FloatingRow
 local function CreateFloatingButton(order, iconBuilder, iconColor, label, copyText)
     local btn = Instance.new("TextButton")
     btn.Name = label
-    btn.Size = UDim2.fromOffset(110, 44)
+    btn.Size = UDim2.fromOffset(116, 48)
     btn.LayoutOrder = order
     btn.BackgroundColor3 = Theme.GlassCard
-    btn.BackgroundTransparency = 0.25
+    btn.BackgroundTransparency = 0.18
     btn.BorderSizePixel = 0
     btn.AutoButtonColor = false
     btn.Text = ""
     btn.ZIndex = 7
     btn.Parent = FloatingRow
     local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, 14)
+    c.CornerRadius = UDim.new(0, 16)
     c.Parent = btn
 
     local stroke = Instance.new("UIStroke")
-    stroke.Thickness = 1.2
+    stroke.Thickness = 1.4
     stroke.Color = Color3.fromRGB(255, 255, 255)
-    stroke.Transparency = 0.7
+    stroke.Transparency = 0.65
     stroke.Parent = btn
 
     local strokeGrad = Instance.new("UIGradient")
-    strokeGrad.Rotation = 135
+    strokeGrad.Rotation = 0
     strokeGrad.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, iconColor),
-        ColorSequenceKeypoint.new(1, Theme.AccentA),
+        ColorSequenceKeypoint.new(0.5, Theme.Sakura),
+        ColorSequenceKeypoint.new(1, iconColor),
     })
     strokeGrad.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 0.4),
-        NumberSequenceKeypoint.new(1, 0.7),
+        NumberSequenceKeypoint.new(0, 0.3),
+        NumberSequenceKeypoint.new(0.5, 0.6),
+        NumberSequenceKeypoint.new(1, 0.3),
     })
     strokeGrad.Parent = stroke
 
+    local shimmer = Instance.new("Frame")
+    shimmer.Size = UDim2.fromOffset(30, 60)
+    shimmer.Position = UDim2.fromOffset(-40, -6)
+    shimmer.Rotation = 20
+    shimmer.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    shimmer.BackgroundTransparency = 0.88
+    shimmer.BorderSizePixel = 0
+    shimmer.ZIndex = 8
+    shimmer.Parent = btn
+    local shimmerCorner = Instance.new("UICorner")
+    shimmerCorner.CornerRadius = UDim.new(0, 20)
+    shimmerCorner.Parent = shimmer
+
     local iconFrame = Instance.new("Frame")
-    iconFrame.Size = UDim2.fromOffset(16, 16)
-    iconFrame.Position = UDim2.new(0, 14, 0.5, 0)
-    iconFrame.AnchorPoint = Vector2.new(0, 0.5)
+    iconFrame.Size = UDim2.fromOffset(18, 18)
+    iconFrame.Position = UDim2.new(0, 14, 0, 15)
     iconFrame.BackgroundTransparency = 1
-    iconFrame.ZIndex = 8
+    iconFrame.ZIndex = 9
     iconFrame.Parent = btn
     iconBuilder(iconFrame, iconColor)
 
+    local iconGlow = Instance.new("Frame")
+    iconGlow.Size = UDim2.fromOffset(28, 28)
+    iconGlow.Position = UDim2.new(0, 9, 0, 10)
+    iconGlow.BackgroundColor3 = iconColor
+    iconGlow.BackgroundTransparency = 0.85
+    iconGlow.BorderSizePixel = 0
+    iconGlow.ZIndex = 8
+    iconGlow.Parent = btn
+    local igCorner = Instance.new("UICorner")
+    igCorner.CornerRadius = UDim.new(1, 0)
+    igCorner.Parent = iconGlow
+
     local txt = Instance.new("TextLabel")
-    txt.Size = UDim2.new(1, -36, 1, 0)
-    txt.Position = UDim2.new(0, 34, 0, 0)
+    txt.Size = UDim2.new(1, -38, 0, 14)
+    txt.Position = UDim2.new(0, 36, 0, 12)
     txt.BackgroundTransparency = 1
     txt.Text = label:gsub("\n", " ")
-    txt.TextColor3 = Theme.TextSecondary
+    txt.TextColor3 = Theme.TextPrimary
     txt.Font = Enum.Font.GothamMedium
     txt.TextSize = 11
     txt.TextXAlignment = Enum.TextXAlignment.Left
-    txt.ZIndex = 8
+    txt.ZIndex = 9
     txt.Parent = btn
 
+    local sub = Instance.new("TextLabel")
+    sub.Size = UDim2.new(1, -38, 0, 12)
+    sub.Position = UDim2.new(0, 36, 0, 26)
+    sub.BackgroundTransparency = 1
+    sub.Text = "click to copy"
+    sub.TextColor3 = Theme.TextTertiary
+    sub.Font = Enum.Font.Gotham
+    sub.TextSize = 9
+    sub.TextXAlignment = Enum.TextXAlignment.Left
+    sub.ZIndex = 9
+    sub.Parent = btn
+
+    task.spawn(function()
+        while btn.Parent do
+            shimmer.Position = UDim2.fromOffset(-40, -6)
+            tw(shimmer, TweenInfo.new(1.8, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), { Position = UDim2.fromOffset(130, -6) })
+            task.wait(3.5)
+        end
+    end)
+
+    task.spawn(function()
+        while btn.Parent do
+            strokeGrad.Rotation = (strokeGrad.Rotation + 0.5) % 360
+            RunService.Heartbeat:Wait()
+        end
+    end)
+
     btn.MouseEnter:Connect(function()
-        tw(btn, EASE_QUICK, { BackgroundTransparency = 0.12 })
-        tw(stroke, EASE_QUICK, { Transparency = 0.4 })
-        tw(txt, EASE_QUICK, { TextColor3 = Theme.TextPrimary })
+        tw(btn, EASE_QUICK, { BackgroundTransparency = 0.08 })
+        tw(stroke, EASE_QUICK, { Transparency = 0.3 })
+        tw(iconGlow, EASE_QUICK, { BackgroundTransparency = 0.7 })
     end)
     btn.MouseLeave:Connect(function()
-        tw(btn, EASE_QUICK, { BackgroundTransparency = 0.25 })
-        tw(stroke, EASE_QUICK, { Transparency = 0.7 })
-        tw(txt, EASE_QUICK, { TextColor3 = Theme.TextSecondary })
+        tw(btn, EASE_QUICK, { BackgroundTransparency = 0.18 })
+        tw(stroke, EASE_QUICK, { Transparency = 0.65 })
+        tw(iconGlow, EASE_QUICK, { BackgroundTransparency = 0.85 })
     end)
 
     btn.MouseButton1Click:Connect(function()
@@ -1417,11 +1470,13 @@ local function CreateFloatingButton(order, iconBuilder, iconColor, label, copyTe
         local orig = txt.Text
         txt.Text = ok and "Copied!" or copyText
         txt.TextColor3 = ok and Theme.Success or Theme.Blue
-        tw(strokeGrad, EASE_QUICK, { Rotation = 0 })
+        sub.Text = ok and "saved to clipboard" or ""
+        tw(strokeGrad, EASE_QUICK, { Rotation = 180 })
         task.delay(1.5, function()
             txt.Text = orig
-            txt.TextColor3 = Theme.TextSecondary
-            tw(strokeGrad, EASE_QUICK, { Rotation = 135 })
+            txt.TextColor3 = Theme.TextPrimary
+            sub.Text = "click to copy"
+            tw(strokeGrad, EASE_QUICK, { Rotation = 360 })
         end)
     end)
 
