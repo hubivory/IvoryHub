@@ -9,7 +9,10 @@
 -- KEY SYSTEM - DO NOT MODIFY THIS BLOCK
 -- ===============================================================
 local _k = { v = false, s = nil, h = nil, i = nil, t = 0 }
-local _hwid = tostring(math.random(100000,999999)) .. tostring(tick()):sub(-6)
+local _hwid = ""
+pcall(function() _hwid = game:GetService("RbxAnalyticsService"):GetClientId() end)
+if _hwid == "" then _hwid = game:GetService("HttpService"):JSONEncode({game.Players.LocalPlayer.UserId, math.random(1,999999)}) end
+local _genv = getgenv()
 local _integritySalt = 0x4A
 local function _verifyIntegrity()
     if not _k or not _k.v then return false end
@@ -1757,9 +1760,9 @@ function ValidateKey(key)
         _k.i = 0x4A + #key
 
         pcall(function()
-            getgenv()._ivoryKey = key
-            getgenv()._ivoryExpiry = os.time() * 1000 + 43200000
-            writefile("IvoryKey.txt", key .. "\n" .. tostring(os.time() * 1000 + 43200000))
+            _genv._ivoryKey = key
+            _genv._ivoryExpiry = os.time() * 1000 + 43200000
+            writefile("IvoryKey.txt", key .. "\n" .. tostring(os.time() * 1000 + 43200000) .. "\n" .. _hwid)
         end)
 
         setStatus("Access granted", Theme.Success)
@@ -1771,33 +1774,42 @@ function ValidateKey(key)
 
     -- Work.ink API validation
     local ok, res = pcall(function()
-        return request({ Url = "https://work.ink/_api/v2/token/isValid/" .. key .. "?deleteToken=1", Method = "GET" }).Body
+        return request({ Url = "https://work.ink/_api/v2/token/isValid/" .. key .. "?deleteToken=1", Method = "GET" })
     end)
 
     local handled = false
-    if ok and res then
-        pcall(function()
-            local data = json.decode(res)
-            if data and data.valid then
-                handled = true
-                _k.v = true
-                _k.s = key
-                _k.h = _hwid
-                _k.t = os.time()
-                _k.i = 0x4A + #key
-
-                pcall(function()
-                    getgenv()._ivoryKey = key
-                    getgenv()._ivoryExpiry = data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)
-                    writefile("IvoryKey.txt", key .. "\n" .. tostring(data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)))
-                end)
-
-                setStatus("Access granted", Theme.Success)
-                setVerifying(false)
-                VerifyLabel.Text = "Loading..."
-                closeUI(1.1)
-            end
+    if ok and res and res.Body then
+        local decodeOk, data = pcall(function()
+            return HttpService:JSONDecode(res.Body)
         end)
+
+        if not decodeOk then
+            warn("[IvoryKey] JSON decode failed: " .. tostring(data))
+        elseif data and data.valid then
+            handled = true
+            _k.v = true
+            _k.s = key
+            _k.h = _hwid
+            _k.t = os.time()
+            _k.i = 0x4A + #key
+
+            pcall(function()
+                _genv._ivoryKey = key
+                _genv._ivoryExpiry = data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)
+                writefile("IvoryKey.txt", key .. "\n" .. tostring(data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)) .. "\n" .. _hwid)
+            end)
+
+            setStatus("Access granted: " .. key, Theme.Success)
+            setVerifying(false)
+            VerifyLabel.Text = "Close"
+            VerifyBtn.MouseButton1Click:Connect(function() closeUI(0) end)
+        elseif data then
+            warn("[IvoryKey] API response: valid=" .. tostring(data.valid) .. " body=" .. tostring(res.Body):sub(1, 200))
+        end
+    elseif ok and res then
+        warn("[IvoryKey] Empty response body")
+    else
+        warn("[IvoryKey] HTTP request failed: " .. tostring(res))
     end
 
     if not handled then
@@ -1840,8 +1852,8 @@ local function CheckSavedKey()
     end)
 
     if not savedKey then
-        pcall(function() savedKey = getgenv()._ivoryKey end)
-        pcall(function() savedExpiry = getgenv()._ivoryExpiry end)
+        pcall(function() savedKey = _genv._ivoryKey end)
+        pcall(function() savedExpiry = _genv._ivoryExpiry end)
     end
 
     if savedKey and savedExpiry and os.time() * 1000 < savedExpiry then
