@@ -2210,9 +2210,19 @@ Toggles.NoClip:OnChanged(function(s) cfg.noclip = s end)
 -- ===============================================================
 -- IN-GAME: AUTO SHOOT LOOP
 -- ===============================================================
+local tryShootFn = nil
+local reloadFn = nil
+local setFiringFn = nil
+task.spawn(function()
+    task.wait(2)
+    pcall(function() tryShootFn = filtergc("function", {Name = "tryShoot"}, true) end)
+    pcall(function() reloadFn = filtergc("function", {Name = "reload"}, true) end)
+    pcall(function() setFiringFn = filtergc("function", {Name = "SetFiring"}, true) end)
+end)
+
 task.spawn(function()
     while true do
-        if cfg.autoShoot and _k and _k.v and _verifyIntegrity() and isGame() then
+        if cfg.autoShoot and _k and _k.v and _verifyIntegrity() and isGame() and tryShootFn then
             pcall(function()
                 local _, hrp = getChar()
                 if hrp then
@@ -2235,14 +2245,21 @@ task.spawn(function()
                         if closest then target = closest.hitbox or closest.root end
                     end
                     if target then
-                        local origin = hrp.Position
-                        local direction = (target.Position - origin).Unit * 1000
-                        Network.Fire("WeaponController_Shoot", origin, direction, math.random(1, 999999), workspace:GetServerTimeNow(), {})
+                        -- Aim camera at target
+                        local Camera = workspace.CurrentCamera
+                        local oldCF = Camera.CFrame
+                        Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+                        -- Fire
+                        if setFiringFn then pcall(setFiringFn, true) end
+                        pcall(tryShootFn)
+                        task.wait(0.1)
+                        if reloadFn then pcall(reloadFn, true) end
+                        if setFiringFn then pcall(setFiringFn, false) end
                     end
                 end
             end)
         end
-        task.wait(cfg.rapidFire and 0.05 or 0.15)
+        task.wait(cfg.rapidFire and 0.3 or 0.6)
     end
 end)
 
@@ -2273,15 +2290,15 @@ task.spawn(function()
                         if closest then target = closest.hitbox or closest.root end
                     end
                     if target then
-                        -- Only rotate, don't change position
-                        local pos = hrp.Position
-                        local lookAt = target.Position
-                        hrp.CFrame = CFrame.new(pos, Vector3.new(lookAt.X, pos.Y, lookAt.Z))
+                        -- Only rotate camera horizontally, keep player position
+                        local Camera = workspace.CurrentCamera
+                        local camPos = Camera.CFrame.Position
+                        Camera.CFrame = CFrame.new(camPos, Vector3.new(target.Position.X, camPos.Y, target.Position.Z))
                     end
                 end
             end)
         end
-        task.wait(0.1)
+        task.wait(0.05)
     end
 end)
 
@@ -2290,17 +2307,21 @@ end)
 -- ===============================================================
 task.spawn(function()
     while true do
-        if cfg.killAura and _k and _k.v and _verifyIntegrity() and isGame() then
+        if cfg.killAura and _k and _k.v and _verifyIntegrity() and isGame() and tryShootFn then
             pcall(function()
                 local _, hrp = getChar()
                 if hrp then
+                    local Camera = workspace.CurrentCamera
                     for _, duck in ipairs(getDucks()) do
                         local target = duck.hitbox or duck.root
                         local dist = (target.Position - hrp.Position).Magnitude
                         if dist <= cfg.killAuraRadius then
-                            local origin = hrp.Position
-                            local direction = (target.Position - origin).Unit * 1000
-                            Network.Fire("WeaponController_Shoot", origin, direction, math.random(1, 999999), workspace:GetServerTimeNow(), {})
+                            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+                            if setFiringFn then pcall(setFiringFn, true) end
+                            pcall(tryShootFn)
+                            task.wait(0.1)
+                            if reloadFn then pcall(reloadFn, true) end
+                            task.wait(0.2)
                         end
                     end
                     -- Also hit boss
@@ -2308,15 +2329,18 @@ task.spawn(function()
                     if boss then
                         local dist = (bossRoot.Position - hrp.Position).Magnitude
                         if dist <= cfg.killAuraRadius then
-                            local origin = hrp.Position
-                            local direction = (bossRoot.Position - origin).Unit * 1000
-                            Network.Fire("WeaponController_Shoot", origin, direction, math.random(1, 999999), workspace:GetServerTimeNow(), {})
+                            Camera.CFrame = CFrame.new(Camera.CFrame.Position, bossRoot.Position)
+                            if setFiringFn then pcall(setFiringFn, true) end
+                            pcall(tryShootFn)
+                            task.wait(0.1)
+                            if reloadFn then pcall(reloadFn, true) end
                         end
                     end
+                    if setFiringFn then pcall(setFiringFn, false) end
                 end
             end)
         end
-        task.wait(0.2)
+        task.wait(0.5)
     end
 end)
 
