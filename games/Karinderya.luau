@@ -2751,13 +2751,24 @@ task.spawn(function() while true do
                 end
             end
 
-            -- Step 2: Wash all dishes in sink (loop until no more wash prompts)
+            -- Step 2: Wash all dishes in sink (loop until no more prompts)
             if sink then
-                for attempt = 1, 10 do
+                -- Debug: list all prompts in sink
+                for _, pd in ipairs(sink:GetDescendants()) do
+                    if pd:IsA("ProximityPrompt") then
+                        warn("[IvoryWash] Sink prompt: Name=" .. pd.Name .. " Action=" .. pd.ActionText .. " Object=" .. pd.ObjectText .. " Enabled=" .. tostring(pd.Enabled))
+                    end
+                end
+
+                for attempt = 1, 15 do
+                    -- Find any enabled prompt in the sink (Wash, Clean, Scrub, etc.)
                     local washPrompt = nil
                     for _, pd in ipairs(sink:GetDescendants()) do
-                        if pd:IsA("ProximityPrompt") and (pd.Name == "Wash" or string.find(pd.ActionText:lower(), "wash")) then
-                            if pd.Enabled then
+                        if pd:IsA("ProximityPrompt") and pd.Enabled then
+                            local a = pd.ActionText:lower()
+                            local o = pd.ObjectText:lower()
+                            if string.find(a, "wash") or string.find(a, "clean") or string.find(a, "scrub")
+                                or string.find(o, "dish") or string.find(o, "dirty") or string.find(o, "plate") then
                                 washPrompt = pd
                                 break
                             end
@@ -2767,13 +2778,13 @@ task.spawn(function() while true do
 
                     local release3 = acquireTp()
                     tp(washPrompt.Parent.CFrame * CFrame.new(0, 3, 0))
-                    task.wait(0.2)
+                    task.wait(0.3)
                     if washPrompt.Enabled then
                         fireproximityprompt(washPrompt)
                         washed = washed + 1
                     end
                     release3()
-                    task.wait(1.0)
+                    task.wait(1.5)
                 end
             end
 
