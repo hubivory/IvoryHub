@@ -1332,7 +1332,7 @@ end
 -- ===============================================================
 local FloatingRow = Instance.new("Frame")
 FloatingRow.Name = "FloatingRow"
-FloatingRow.Size = UDim2.new(1, 0, 0, 170)
+FloatingRow.Size = UDim2.new(1, 0, 0, 200)
 FloatingRow.LayoutOrder = 4
 FloatingRow.BackgroundTransparency = 1
 FloatingRow.ZIndex = 7
@@ -1349,7 +1349,7 @@ FloatingLayout.Parent = FloatingRow
 local function CreateFloatingButton(order, iconBuilder, iconColor, label, copyText)
     local btn = Instance.new("TextButton")
     btn.Name = label
-    btn.Size = UDim2.new(1, -10, 0, 44)
+    btn.Size = UDim2.new(1, -10, 0, 56)
     btn.LayoutOrder = order
     btn.BackgroundColor3 = Theme.GlassCard
     btn.BackgroundTransparency = 0.18
@@ -1466,18 +1466,6 @@ CreateFloatingButton(1, IconChat, Theme.Discord, "Discord\n(dupe)", "https://dis
 CreateFloatingButton(2, IconWorkMark, Theme.WorkInkTeal, "Work.ink\nKey", "https://work.ink/2STL/Ivory")
 CreateFloatingButton(3, function(parent, color) IconLootGem(parent, color, Theme.LootGold) end,
     Theme.LootPurple, "LootLabs\nKey", "https://loot-link.com/s?L6z5Q0nE")
-
--- -- footer tag --
-local Footer = Instance.new("TextLabel")
-Footer.Size = UDim2.new(1, 0, 0, 14)
-Footer.LayoutOrder = 5
-Footer.BackgroundTransparency = 1
-Footer.TextColor3 = Theme.TextTertiary
-Footer.TextSize = 10
-Footer.Font = Enum.Font.Gotham
-Footer.Text = "IVORY HUB  -  v1.4"
-Footer.ZIndex = 7
-Footer.Parent = Content
 
 -- ===============================================================
 -- CARD REVEAL / CLOSE / UNLOAD  (reverse animation + full teardown)
