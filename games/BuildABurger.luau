@@ -1,10 +1,25 @@
-﻿local genv = getgenv()
-local Library = genv._IvoryLib
-local ThemeManager = genv._IvoryThemeManager
-local SaveManager = genv._IvorySaveManager
+﻿local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
+local Library = nil
+local ThemeManager = nil
+local SaveManager = nil
+
+local ok1, err1 = pcall(function()
+    Library = loadstring(request({ Url = repo .. "Library.lua", Method = "GET" }).Body)()
+end)
+if not ok1 then warn("[Ivory] Library load failed:", err1) end
+
+local ok2, err2 = pcall(function()
+    ThemeManager = loadstring(request({ Url = repo .. "addons/ThemeManager.lua", Method = "GET" }).Body)()
+end)
+if not ok2 then warn("[Ivory] ThemeManager load failed:", err2) end
+
+local ok3, err3 = pcall(function()
+    SaveManager = loadstring(request({ Url = repo .. "addons/SaveManager.lua", Method = "GET" }).Body)()
+end)
+if not ok3 then warn("[Ivory] SaveManager load failed:", err3) end
 
 if not Library then
-    warn("[Ivory] ObsidianUltra not loaded by IvoryHub loader")
+    warn("[Ivory] ObsidianUltra failed to load - aborting")
     return
 end
 

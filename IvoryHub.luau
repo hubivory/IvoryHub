@@ -38,41 +38,6 @@ local success, err = pcall(function()
             if hash then commitHash = hash end
         end
     end)
-
-    -- Pre-load ObsidianUltra library so game scripts don't need their own HTTP
-    local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-    local function httpGet(url)
-        return request({ Url = url, Method = "GET" }).Body
-    end
-    pcall(function()
-        local genv = getgenv()
-        if not genv._IvoryUILoaded then
-            local req = request
-            local env = setmetatable({}, { __index = getfenv(0) })
-            env.request = req
-            env.http_request = req
-
-            local libFn = loadstring(httpGet(repo .. "Library.lua"))
-            if libFn then setfenv(libFn, env) end
-            genv._IvoryLib = libFn and libFn() or nil
-
-            local tmFn = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))
-            if tmFn then setfenv(tmFn, env) end
-            genv._IvoryThemeManager = tmFn and tmFn() or nil
-
-            local smFn = loadstring(httpGet(repo .. "addons/SaveManager.lua"))
-            if smFn then setfenv(smFn, env) end
-            genv._IvorySaveManager = smFn and smFn() or nil
-
-            genv._IvoryUILoaded = genv._IvoryLib ~= nil
-            if genv._IvoryUILoaded then
-                print("[Ivory Hub] ObsidianUltra loaded")
-            else
-                warn("[Ivory Hub] ObsidianUltra failed to initialize")
-            end
-        end
-    end)
-
     local url = GITHUB_RAW .. commitHash .. "/" .. ScriptFile
     local res = request({ Url = url, Method = "GET" })
     local content = res and res.Body or nil
