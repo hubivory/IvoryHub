@@ -3,6 +3,9 @@ local Library = loadstring(request({ Url = repo .. "Library.lua", Method = "GET"
 local ThemeManager = loadstring(request({ Url = repo .. "addons/ThemeManager.lua", Method = "GET" }).Body)()
 local SaveManager = loadstring(request({ Url = repo .. "addons/SaveManager.lua", Method = "GET" }).Body)()
 
+local Toggles = Library.Toggles
+local Options = Library.Options
+
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -117,61 +120,6 @@ table.insert(drinkConns, NPCDrink.OnClientEvent:Connect(function(_npcName, drink
     drinkStats.state = string.format("Delivered %s!", resolveDrinkKey(drinkKey))
 end))
 
-local function buyIngredient(key)
-    local cfg = IngredientsConfig[key]
-    if not cfg or not cfg.Cost then return false end
-    if getCash() - cfg.Cost < 5000 then return false end
-    local ok, success = pcall(function()
-        return BuyIngredient:InvokeServer(key, 1, "Cash")
-    end)
-    return ok and success
-end
-
-local function stepFulfillSoftdrinkOrders()
-    if not cfg.autoSoftdrinks or #activeDrinkOrders == 0 then return false end
-
-    local drinkKey = resolveDrinkKey(activeDrinkOrders[1])
-    local now = os.clock()
-    if now < (lastDrinkAttempt[drinkKey] or 0) then return false end
-    lastDrinkAttempt[drinkKey] = now + 1.5
-
-    local ingredients = LocalPlayer:FindFirstChild("Ingredients")
-    local stock = ingredients and ingredients:FindFirstChild(drinkKey)
-    if not stock or stock.Value <= 0 then
-        if cfg.autoBuyIngredients then
-            buyIngredient(drinkKey)
-            task.wait(0.2)
-            ingredients = LocalPlayer:FindFirstChild("Ingredients")
-            stock = ingredients and ingredients:FindFirstChild(drinkKey)
-        end
-        if not stock or stock.Value <= 0 then
-            lastDrinkAttempt[drinkKey] = now + 5
-            drinkStats.state = drinkKey .. " out of stock"
-            return false
-        end
-    end
-
-    local ok, success, msg = pcall(function()
-        return GiveSoftdrink:InvokeServer(drinkKey)
-    end)
-
-    if ok and success then
-        table.remove(activeDrinkOrders, 1)
-        drinkStats.given = drinkStats.given + 1
-        drinkStats.state = string.format("Delivered %s!", drinkKey)
-        return true
-    else
-        if tostring(msg):match("Nobody") or tostring(msg):match("ordered") then
-            table.remove(activeDrinkOrders, 1)
-        end
-        drinkStats.state = string.format("%s: %s", drinkKey, tostring(msg or success))
-    end
-    return false
-end
-
-local Toggles = Library.Toggles
-local Options = Library.Options
-
 -- ═══════════════════════════════════════
 -- TELEPORT LOCK - only one feature teleports at a time
 -- ═══════════════════════════════════════
@@ -245,6 +193,61 @@ local cfg = {
     walkSpeed = 16,
     infJump = false,
 }
+
+-- ═══════════════════════════════════════
+-- SOFTDRINK FULFILLMENT (needs cfg)
+-- ═══════════════════════════════════════
+local function buyIngredient(key)
+    local ingCfg = IngredientsConfig[key]
+    if not ingCfg or not ingCfg.Cost then return false end
+    if getCash() - ingCfg.Cost < 5000 then return false end
+    local ok, success = pcall(function()
+        return BuyIngredient:InvokeServer(key, 1, "Cash")
+    end)
+    return ok and success
+end
+
+local function stepFulfillSoftdrinkOrders()
+    if not cfg.autoSoftdrinks or #activeDrinkOrders == 0 then return false end
+
+    local drinkKey = resolveDrinkKey(activeDrinkOrders[1])
+    local now = os.clock()
+    if now < (lastDrinkAttempt[drinkKey] or 0) then return false end
+    lastDrinkAttempt[drinkKey] = now + 1.5
+
+    local ingredients = LocalPlayer:FindFirstChild("Ingredients")
+    local stock = ingredients and ingredients:FindFirstChild(drinkKey)
+    if not stock or stock.Value <= 0 then
+        if cfg.autoBuyIngredients then
+            buyIngredient(drinkKey)
+            task.wait(0.2)
+            ingredients = LocalPlayer:FindFirstChild("Ingredients")
+            stock = ingredients and ingredients:FindFirstChild(drinkKey)
+        end
+        if not stock or stock.Value <= 0 then
+            lastDrinkAttempt[drinkKey] = now + 5
+            drinkStats.state = drinkKey .. " out of stock"
+            return false
+        end
+    end
+
+    local ok, success, msg = pcall(function()
+        return GiveSoftdrink:InvokeServer(drinkKey)
+    end)
+
+    if ok and success then
+        table.remove(activeDrinkOrders, 1)
+        drinkStats.given = drinkStats.given + 1
+        drinkStats.state = string.format("Delivered %s!", drinkKey)
+        return true
+    else
+        if tostring(msg):match("Nobody") or tostring(msg):match("ordered") then
+            table.remove(activeDrinkOrders, 1)
+        end
+        drinkStats.state = string.format("%s: %s", drinkKey, tostring(msg or success))
+    end
+    return false
+end
 
 -- ═══════════════════════════════════════
 -- MONEY LOGGING
