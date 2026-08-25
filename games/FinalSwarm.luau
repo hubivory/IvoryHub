@@ -1503,17 +1503,7 @@ CreateFloatingButton(3, function(parent, color) IconLootGem(parent, color, Theme
 
 dbg("Floating buttons built")
 
--- Footer
-local Footer = Instance.new("TextLabel")
-Footer.Size = UDim2.new(1, 0, 0, 14)
-Footer.LayoutOrder = 5
-Footer.BackgroundTransparency = 1
-Footer.TextColor3 = Theme.TextTertiary
-Footer.TextSize = 10
-Footer.Font = Enum.Font.Gotham
-Footer.Text = "IVORY HUB  -  v1.4"
-Footer.ZIndex = 7
-Footer.Parent = Content
+
 
 -- ===============================================================
 -- CARD REVEAL / CLOSE / UNLOAD

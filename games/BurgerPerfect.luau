@@ -1457,19 +1457,7 @@ CreateFloatingButton(2, IconWorkMark, Theme.WorkInkTeal, "Work.ink\nKey", "https
 CreateFloatingButton(3, function(parent, color) IconLootGem(parent, color, Theme.LootGold) end,
     Theme.LootPurple, "LootLabs\nKey", "https://loot-link.com/s?L6z5Q0nE")
 
--- ===============================================================
--- FOOTER TAG
--- ===============================================================
-local Footer = Instance.new("TextLabel")
-Footer.Size = UDim2.new(1, 0, 0, 14)
-Footer.LayoutOrder = 5
-Footer.BackgroundTransparency = 1
-Footer.TextColor3 = Theme.TextTertiary
-Footer.TextSize = 10
-Footer.Font = Enum.Font.Gotham
-Footer.Text = "IVORY HUB  -  v1.4"
-Footer.ZIndex = 7
-Footer.Parent = Content
+
 
 -- ===============================================================
 -- CARD REVEAL / CLOSE / UNLOAD

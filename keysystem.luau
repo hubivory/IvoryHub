@@ -1327,162 +1327,134 @@ end
 -- ===============================================================
 local FloatingRow = Instance.new("Frame")
 FloatingRow.Name = "FloatingRow"
-FloatingRow.Size = UDim2.new(1, 0, 0, 108)
+FloatingRow.Size = UDim2.new(1, 0, 0, 240)
 FloatingRow.LayoutOrder = 4
 FloatingRow.BackgroundTransparency = 1
 FloatingRow.ZIndex = 7
 FloatingRow.Parent = Content
 
 local FloatingLayout = Instance.new("UIListLayout")
-FloatingLayout.FillDirection = Enum.FillDirection.Horizontal
+FloatingLayout.FillDirection = Enum.FillDirection.Vertical
 FloatingLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 FloatingLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-FloatingLayout.Padding = UDim.new(0, 22)
+FloatingLayout.Padding = UDim.new(0, 8)
 FloatingLayout.SortOrder = Enum.SortOrder.LayoutOrder
 FloatingLayout.Parent = FloatingRow
 
 local function CreateFloatingButton(order, iconBuilder, iconColor, label, copyText)
-    local wrap = Instance.new("Frame")
-    wrap.Name = label
-    wrap.Size = UDim2.fromOffset(92, 108)
-    wrap.LayoutOrder = order
-    wrap.BackgroundTransparency = 1
-    wrap.ZIndex = 7
-    wrap.Parent = FloatingRow
+    local btn = Instance.new("TextButton")
+    btn.Name = label
+    btn.Size = UDim2.new(1, -10, 0, 70)
+    btn.LayoutOrder = order
+    btn.BackgroundColor3 = Theme.GlassCard
+    btn.BackgroundTransparency = 0.18
+    btn.BorderSizePixel = 0
+    btn.AutoButtonColor = false
+    btn.Text = ""
+    btn.ZIndex = 7
+    btn.Parent = FloatingRow
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, 16)
+    c.Parent = btn
 
-    -- soft ambient glow bleeding out from behind the icon
-    local glow = Instance.new("Frame")
-    glow.Size = UDim2.fromOffset(90, 90)
-    glow.Position = UDim2.new(0.5, 0, 0, 30)
-    glow.AnchorPoint = Vector2.new(0.5, 0.5)
-    glow.BackgroundColor3 = iconColor
-    glow.BackgroundTransparency = 0.88
-    glow.BorderSizePixel = 0
-    glow.ZIndex = 6
-    glow.Parent = wrap
-    local glowCorner = Instance.new("UICorner")
-    glowCorner.CornerRadius = UDim.new(1, 0)
-    glowCorner.Parent = glow
+    local stroke = Instance.new("UIStroke")
+    stroke.Thickness = 1.4
+    stroke.Color = Color3.fromRGB(255, 255, 255)
+    stroke.Transparency = 0.65
+    stroke.Parent = btn
+
+    local strokeGrad = Instance.new("UIGradient")
+    strokeGrad.Rotation = 0
+    strokeGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, iconColor),
+        ColorSequenceKeypoint.new(0.5, Theme.Sakura),
+        ColorSequenceKeypoint.new(1, iconColor),
+    })
+    strokeGrad.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0.3),
+        NumberSequenceKeypoint.new(0.5, 0.6),
+        NumberSequenceKeypoint.new(1, 0.3),
+    })
+    strokeGrad.Parent = stroke
+
+    local iconFrame = Instance.new("Frame")
+    iconFrame.Size = UDim2.fromOffset(18, 18)
+    iconFrame.Position = UDim2.new(0, 14, 0, 15)
+    iconFrame.BackgroundTransparency = 1
+    iconFrame.ZIndex = 9
+    iconFrame.Parent = btn
+    iconBuilder(iconFrame, iconColor)
+
+    local iconGlow = Instance.new("Frame")
+    iconGlow.Size = UDim2.fromOffset(28, 28)
+    iconGlow.Position = UDim2.new(0, 9, 0, 10)
+    iconGlow.BackgroundColor3 = iconColor
+    iconGlow.BackgroundTransparency = 0.85
+    iconGlow.BorderSizePixel = 0
+    iconGlow.ZIndex = 8
+    iconGlow.Parent = btn
+    local igCorner = Instance.new("UICorner")
+    igCorner.CornerRadius = UDim.new(1, 0)
+    igCorner.Parent = iconGlow
+
+    local txt = Instance.new("TextLabel")
+    txt.Size = UDim2.new(1, -38, 0, 14)
+    txt.Position = UDim2.new(0, 36, 0, 12)
+    txt.BackgroundTransparency = 1
+    txt.Text = label:gsub("\n", " ")
+    txt.TextColor3 = Theme.TextPrimary
+    txt.Font = Enum.Font.GothamMedium
+    txt.TextSize = 11
+    txt.TextXAlignment = Enum.TextXAlignment.Left
+    txt.ZIndex = 9
+    txt.Parent = btn
+
+    local sub = Instance.new("TextLabel")
+    sub.Size = UDim2.new(1, -38, 0, 12)
+    sub.Position = UDim2.new(0, 36, 0, 26)
+    sub.BackgroundTransparency = 1
+    sub.Text = "click to copy"
+    sub.TextColor3 = Theme.TextTertiary
+    sub.Font = Enum.Font.Gotham
+    sub.TextSize = 9
+    sub.TextXAlignment = Enum.TextXAlignment.Left
+    sub.ZIndex = 9
+    sub.Parent = btn
+
     task.spawn(function()
-        task.wait(math.random() * 2)
-        while glow.Parent do
-            tw(glow, TweenInfo.new(2.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.72 })
-            task.wait(2.4)
-            tw(glow, TweenInfo.new(2.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.88 })
-            task.wait(2.4)
-        end
-    end)
-
-    -- toast (copy feedback) floats above the button
-    local toast = Instance.new("TextLabel")
-    toast.Size = UDim2.new(1, 20, 0, 20)
-    toast.Position = UDim2.new(0.5, 0, 0, -6)
-    toast.AnchorPoint = Vector2.new(0.5, 1)
-    toast.BackgroundTransparency = 1
-    toast.Text = "Copied!"
-    toast.TextColor3 = Theme.Success
-    toast.Font = Enum.Font.GothamBold
-    toast.TextSize = 12
-    toast.TextTransparency = 1
-    toast.ZIndex = 9
-    toast.Parent = wrap
-
-    local circle = Instance.new("TextButton")
-    circle.Name = "Circle"
-    circle.Size = UDim2.fromOffset(60, 60)
-    circle.Position = UDim2.new(0.5, 0, 0, 0)
-    circle.AnchorPoint = Vector2.new(0.5, 0)
-    circle.BackgroundColor3 = Theme.GlassCardAlt
-    circle.BackgroundTransparency = 0.28
-    circle.AutoButtonColor = false
-    circle.Text = ""
-    circle.ZIndex = 7
-    circle.Parent = wrap
-
-    local circleCorner = Instance.new("UICorner")
-    circleCorner.CornerRadius = UDim.new(1, 0)
-    circleCorner.Parent = circle
-
-    local circleStroke = Instance.new("UIStroke")
-    circleStroke.Thickness = 1.3
-    circleStroke.Color = iconColor
-    circleStroke.Transparency = 0.55
-    circleStroke.Parent = circle
-
-    local circleGlow = Instance.new("Frame")
-    circleGlow.Size = UDim2.fromScale(1, 1)
-    circleGlow.BackgroundColor3 = iconColor
-    circleGlow.BackgroundTransparency = 0.82
-    circleGlow.ZIndex = 6
-    circleGlow.Parent = circle
-    local glowCorner = Instance.new("UICorner")
-    glowCorner.CornerRadius = UDim.new(1, 0)
-    glowCorner.Parent = circleGlow
-
-    local scale = Instance.new("UIScale")
-    scale.Parent = circle
-
-    iconBuilder(circle, iconColor)
-
-    local caption = Instance.new("TextLabel")
-    caption.Size = UDim2.new(1, 10, 0, 30)
-    caption.Position = UDim2.new(0.5, 0, 0, 68)
-    caption.AnchorPoint = Vector2.new(0.5, 0)
-    caption.BackgroundTransparency = 1
-    caption.Text = label
-    caption.TextColor3 = Theme.TextSecondary
-    caption.TextWrapped = true
-    caption.Font = Enum.Font.GothamMedium
-    caption.TextSize = 11
-    caption.ZIndex = 7
-    caption.Parent = wrap
-
-    -- independent idle float (phase offset so all 3 bob out of sync)
-    local phase = math.random() * 6.28
-    task.spawn(function()
-        local t0 = tick()
-        while circle.Parent do
-            local t = tick() - t0
-            local bob = math.sin(t * 1.3 + phase) * 5
-            circle.Position = UDim2.new(0.5, 0, 0, bob)
-            glow.Position = UDim2.new(0.5, 0, 0, 30 + bob)
+        while btn.Parent do
+            strokeGrad.Rotation = (strokeGrad.Rotation + 0.5) % 360
             RunService.Heartbeat:Wait()
         end
     end)
 
-    circle.MouseEnter:Connect(function()
-        tw(circle, EASE_QUICK, { BackgroundTransparency = 0.1 })
-        tw(circleStroke, EASE_QUICK, { Transparency = 0.15 })
-        tw(scale, EASE_QUICK, { Scale = 1.08 })
+    btn.MouseEnter:Connect(function()
+        tw(btn, EASE_QUICK, { BackgroundTransparency = 0.08 })
+        tw(stroke, EASE_QUICK, { Transparency = 0.3 })
+        tw(iconGlow, EASE_QUICK, { BackgroundTransparency = 0.7 })
     end)
-    circle.MouseLeave:Connect(function()
-        tw(circle, EASE_QUICK, { BackgroundTransparency = 0.28 })
-        tw(circleStroke, EASE_QUICK, { Transparency = 0.55 })
-        tw(scale, EASE_QUICK, { Scale = 1 })
+    btn.MouseLeave:Connect(function()
+        tw(btn, EASE_QUICK, { BackgroundTransparency = 0.18 })
+        tw(stroke, EASE_QUICK, { Transparency = 0.65 })
+        tw(iconGlow, EASE_QUICK, { BackgroundTransparency = 0.85 })
     end)
-    circle.MouseButton1Down:Connect(function() tw(scale, EASE_QUICK, { Scale = 0.92 }) end)
-    circle.MouseButton1Up:Connect(function() tw(scale, EASE_SPRING, { Scale = 1.08 }) end)
 
-    circle.MouseButton1Click:Connect(function()
+    btn.MouseButton1Click:Connect(function()
         local ok = pcall(function() setclipboard(copyText) end)
-        if ok then
-            toast.Text = "Copied!"
-            toast.TextColor3 = Theme.Success
-        else
-            toast.Text = "Link ready"
-            toast.TextColor3 = Theme.Blue
-        end
-        tw(toast, EASE_OUT_SOFT, { TextTransparency = 0, Position = UDim2.new(0.5, 0, 0, -14) })
-        task.delay(1.3, function()
-            tw(toast, EASE_OUT_SOFT, { TextTransparency = 1, Position = UDim2.new(0.5, 0, 0, -6) })
+        local orig = txt.Text
+        txt.Text = ok and "Copied!" or copyText
+        txt.TextColor3 = ok and Theme.Success or Theme.Blue
+        sub.Text = ok and "saved to clipboard" or ""
+        tw(strokeGrad, EASE_QUICK, { Rotation = 180 })
+        task.delay(1.5, function()
+            txt.Text = orig
+            txt.TextColor3 = Theme.TextPrimary
+            sub.Text = "click to copy"
+            tw(strokeGrad, EASE_QUICK, { Rotation = 360 })
         end)
-        if not ok then
-            setStatus("Link: " .. copyText, Theme.Blue)
-            task.delay(3, function() setStatus("Ready", Theme.TextTertiary) end)
-        end
     end)
 
-    return wrap
+    return btn
 end
 
 CreateFloatingButton(1, IconChat, Theme.Discord, "Discord\n(dupe)", "https://discord.gg/mrQFkCJfEe")
@@ -1490,17 +1462,7 @@ CreateFloatingButton(2, IconWorkMark, Theme.WorkInkTeal, "Work.ink\nKey", "https
 CreateFloatingButton(3, function(parent, color) IconLootGem(parent, color, Theme.LootGold) end,
     Theme.LootPurple, "LootLabs\nKey", "https://loot-link.com/s?L6z5Q0nE")
 
--- -- footer tag --
-local Footer = Instance.new("TextLabel")
-Footer.Size = UDim2.new(1, 0, 0, 14)
-Footer.LayoutOrder = 5
-Footer.BackgroundTransparency = 1
-Footer.TextColor3 = Theme.TextTertiary
-Footer.TextSize = 10
-Footer.Font = Enum.Font.Gotham
-Footer.Text = "IVORY HUB  -  v1.4"
-Footer.ZIndex = 7
-Footer.Parent = Content
+
 
 -- ===============================================================
 -- CARD REVEAL / CLOSE / UNLOAD  (reverse animation + full teardown)
