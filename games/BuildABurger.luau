@@ -167,26 +167,36 @@ local function AutoEquipBest()
             if not char then return end
             local hrp = char:FindFirstChild("HumanoidRootPart")
             if not hrp then return end
-            local tool = char:FindFirstChildOfClass("Tool")
-            if not tool then
-                local bp = LocalPlayer:FindFirstChild("Backpack")
-                if bp then tool = bp:FindFirstChildOfClass("Tool") end
-            end
+            local bp = LocalPlayer:FindFirstChild("Backpack")
+            local tool = char:FindFirstChildOfClass("Tool") or (bp and bp:FindFirstChildOfClass("Tool"))
             if not tool then return end
+
+            -- Method 1: fire Plot.Place remote
+            if PlotPlace then
+                pcall(function() PlotPlace:FireServer() end)
+            end
+
+            -- Method 2: fire proximity prompt
             for _, v in ipairs(workspace:GetDescendants()) do
                 if v:IsA("ProximityPrompt") and v.Enabled then
-                    local action = v.ActionText:lower()
-                    if string.find(action, "place") or string.find(action, "take") then
+                    local act = v.ActionText
+                    if act and (string.find(act:lower(), "place") or string.find(act:lower(), "take")) then
                         local pp = v.Parent
                         if pp and pp:IsA("BasePart") then
                             local dist = (pp.Position - hrp.Position).Magnitude
-                            if dist < 15 then
-                                fireproximityprompt(v)
-                            else
+                            if dist > 12 then
                                 hrp.CFrame = pp.CFrame * CFrame.new(0, 3, 0)
-                                task.wait(0.2)
-                                fireproximityprompt(v)
+                                task.wait(0.15)
                             end
+                            pcall(function()
+                                if v.HoldDuration > 0 then
+                                    v:InputHoldBegin()
+                                    task.wait(v.HoldDuration + 0.1)
+                                    v:InputHoldEnd()
+                                else
+                                    fireproximityprompt(v)
+                                end
+                            end)
                         end
                         break
                     end
