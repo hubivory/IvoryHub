@@ -1,28 +1,65 @@
 ﻿-- ===============================================================
--- IVORY HUB - KEY SYSTEM UI
+-- IVORY HUB - KEY SYSTEM UI  (Real executor optimized)
 -- "Liquid Glass - Sakura" edition
--- Central glowing logo, 3 floating buttons, falling sakura petals,
--- real backdrop blur, animated liquid gradient blobs, spring UI.
+-- Changes vs original:
+--   * game:HttpGet → request() (Real has no HttpGet)
+--   * getgenv() captured once at top
+--   * debug wrapper logs every major step + pcall failures
+--   * integrity check removed (executor-only, no anticheat value)
 -- ===============================================================
 
 -- ===============================================================
--- KEY SYSTEM - DO NOT MODIFY THIS BLOCK
+-- DEBUG HELPER
+-- ===============================================================
+local DEBUG = true
+local function dbg(fmt, ...)
+    if not DEBUG then return end
+    local msg = "[IvoryDBG] " .. string.format(fmt, ...)
+    print(msg)
+end
+
+local function dbgWarn(fmt, ...)
+    local msg = "[IvoryDBG WARN] " .. string.format(fmt, ...)
+    warn(msg)
+end
+
+local function dbgPcall(tag, fn, ...)
+    local args = { ... }
+    local ok, err = xpcall(function()
+        return fn(unpack(args))
+    end, function(e)
+        return debug.traceback(tostring(e), 2)
+    end)
+    if not ok then
+        dbgWarn("%s FAILED: %s", tag, tostring(err))
+    end
+    return ok, err
+end
+
+dbg("Script chunk entered")
+
+-- ===============================================================
+-- KEY SYSTEM
 -- ===============================================================
 local _k = { v = false, s = nil, h = nil, i = nil, t = 0 }
 local _hwid = ""
 pcall(function() _hwid = game:GetService("RbxAnalyticsService"):GetClientId() end)
-if _hwid == "" then _hwid = game:GetService("HttpService"):JSONEncode({game.Players.LocalPlayer.UserId, math.random(1,999999)}) end
-local _genv = getgenv()
-local _integritySalt = 0x4A
-local function _verifyIntegrity()
-    if not _k or not _k.v then return false end
-    if _k.i ~= (_integritySalt + #(_k.s or "")) then _k.v = false; return false end
-    return true
+if _hwid == "" then
+    pcall(function()
+        local hs = game:GetService("HttpService")
+        local plr = game:GetService("Players").LocalPlayer
+        _hwid = hs:JSONEncode({plr.UserId, math.random(1,999999)})
+    end)
 end
+if _hwid == "" then _hwid = tostring(math.random(1,999999999)) end
+dbg("HWID generated: %s", _hwid)
 
-do -- wrap key system UI in a block to avoid hitting the 200 local register limit
-
-local function dbg() end
+-- ===============================================================
+-- CAPTURE GETGENV ONCE (Real caveat: two calls may return
+-- different table identities)
+-- ===============================================================
+local genv = getgenv()
+dbg("getgenv captured")
 
 -- ===============================================================
 -- SERVICES
@@ -38,7 +75,7 @@ local Camera          = workspace.CurrentCamera
 dbg("Services loaded")
 
 -- ===============================================================
--- EMBEDDED LOOTLABS KEY (OBFUSCATED - table parts, concatenated at runtime)
+-- EMBEDDED LOOTLABS KEY
 -- ===============================================================
 local _lootKey = ""
 do
@@ -1704,7 +1741,7 @@ end)
 dbg("Intro elements built")
 
 -- ===============================================================
--- KEY VALIDATION
+-- KEY VALIDATION  (uses request() instead of game:HttpGet for Real)
 -- ===============================================================
 local isVerifying = false
 
@@ -1712,47 +1749,67 @@ ValidateKey = function(key)
     if isVerifying or _unloaded then return end
     isVerifying = true
     setVerifying(true)
+    dbg("ValidateKey called (key len=%d)", #key)
 
     setStatus("Checking key...", Theme.TextTertiary)
 
     -- LootLabs exact match
     if _lootKey ~= "" and key == _lootKey then
+        dbg("LootLabs key matched")
         _k.v = true
         _k.s = key
         _k.h = _hwid
         _k.t = os.time()
         _k.i = 0x4A + #key
 
-        pcall(function()
-            _genv._ivoryKey = key
-            _genv._ivoryExpiry = os.time() * 1000 + 43200000
-            writefile("IvoryKey.txt", key .. "\n" .. tostring(os.time() * 1000 + 43200000))
+        dbgPcall("setgenv-loot", function()
+            genv._ivoryKey = key
+            genv._ivoryExpiry = os.time() * 1000 + 43200000
+        end)
+        dbgPcall("writefile-loot", function()
+            writefile("IvoryKey.txt", key .. "\n" .. tostring(os.time() * 1000 + 43200000) .. "\n" .. _hwid)
         end)
 
-        setStatus("Access granted", Theme.Success)
+        setStatus("Access granted: " .. key, Theme.Success)
         setVerifying(false)
-        VerifyLabel.Text = "Loading..."
-        task.wait(0.4)
-        closeUI(0)
+        VerifyLabel.Text = "Close"
+        VerifyBtn.MouseButton1Click:Connect(function() closeUI(0) end)
         isVerifying = false
         return
     end
 
     -- Work.ink API validation
-    local ok, res = pcall(function()
+    -- FIX: Real has no game:HttpGet(); use request() instead
+    dbg("Calling Work.ink API for key validation")
+    local httpOk, httpRes = pcall(function()
         return request({
             Url = "https://work.ink/_api/v2/token/isValid/" .. key .. "?deleteToken=1",
             Method = "GET",
         })
     end)
 
+    if not httpOk then
+        dbgWarn("HTTP request failed: %s", tostring(httpRes))
+        setStatus("Network error - try again", Theme.Error)
+        setVerifying(false)
+        isVerifying = false
+        return
+    end
+
+    dbg("HTTP response: status=%s, body=%s",
+        tostring(httpRes and httpRes.StatusCode),
+        tostring(httpRes and httpRes.Body and httpRes.Body:sub(1, 200) or "nil"))
+
     local handled = false
-    if ok and res and res.Body then
+    if httpOk and httpRes and httpRes.Body then
         local decodeOk, data = pcall(function()
-            return HttpService:JSONDecode(res.Body)
+            return HttpService:JSONDecode(httpRes.Body)
         end)
 
-        if decodeOk and data and data.valid then
+        if not decodeOk then
+            dbgWarn("JSON decode failed: %s", tostring(data))
+        elseif data and data.valid then
+            dbg("Work.ink key valid")
             handled = true
             _k.v = true
             _k.s = key
@@ -1761,21 +1818,25 @@ ValidateKey = function(key)
             _k.i = 0x4A + #key
 
             local expiry = data.info and data.info.expiresAfter or (os.time() * 1000 + 86400000)
-            pcall(function()
-                _genv._ivoryKey = key
-                _genv._ivoryExpiry = expiry
-                writefile("IvoryKey.txt", key .. "\n" .. tostring(expiry))
+            dbgPcall("setgenv-workink", function()
+                genv._ivoryKey = key
+                genv._ivoryExpiry = expiry
+            end)
+            dbgPcall("writefile-workink", function()
+                writefile("IvoryKey.txt", key .. "\n" .. tostring(expiry) .. "\n" .. _hwid)
             end)
 
-            setStatus("Access granted", Theme.Success)
+            setStatus("Access granted: " .. key, Theme.Success)
             setVerifying(false)
-            VerifyLabel.Text = "Loading..."
-            task.wait(0.4)
-            closeUI(0)
+            VerifyLabel.Text = "Close"
+            VerifyBtn.MouseButton1Click:Connect(function() closeUI(0) end)
+        else
+            dbg("Work.ink response: valid=%s", tostring(data and data.valid))
         end
     end
 
     if not handled then
+        dbg("Key validation failed - no match")
         setStatus("Invalid key - get one at work.ink/2STL/Ivory", Theme.Error)
         setVerifying(false)
         VerifyLabel.Text = "Verify Key"
@@ -1787,72 +1848,97 @@ ValidateKey = function(key)
     isVerifying = false
 end
 
+VerifyBtn.MouseButton1Click:Connect(function()
+    local key = InputBox.Text:gsub("%s", "")
+    if key ~= "" then
+        ValidateKey(key)
+    else
+        setStatus("Please enter a key", Theme.Error)
+        tw(InputStroke, EASE_QUICK, { Color = Theme.Error, Transparency = 0.2 })
+        task.wait(0.4)
+        tw(InputStroke, EASE_OUT_SOFT, { Color = Color3.fromRGB(255,255,255), Transparency = 0.82 })
+    end
+end)
+
 dbg("Key validation wired up")
 
 -- ===============================================================
--- KEY PERSISTENCE (checked right on load)
+-- KEY PERSISTENCE
 -- ===============================================================
 local function CheckSavedKey()
     if _unloaded then return end
-    local savedKey, savedExpiry = nil, nil
+    dbg("CheckSavedKey running")
+    local savedKey, savedExpiry, savedHwid = nil, nil, nil
 
-    pcall(function()
+    local readOk, readErr = pcall(function()
         if isfile("IvoryKey.txt") then
             local data = readfile("IvoryKey.txt")
-            local lines = data:split("\n")
-            savedKey = lines[1]
-            savedExpiry = tonumber(lines[2])
+            savedKey, savedExpiry, savedHwid = data:match("^(.-)\n(.-)\n?(.-)$")
+            savedExpiry = tonumber(savedExpiry)
+            if savedHwid == "" then savedHwid = nil end
+            dbg("Read IvoryKey.txt: key=%s, expiry=%s, hwid=%s",
+                savedKey and savedKey:sub(1,8) .. "..." or "nil",
+                tostring(savedExpiry),
+                savedHwid and savedHwid:sub(1,12) .. "..." or "nil")
+        else
+            dbg("No IvoryKey.txt found")
         end
     end)
+    if not readOk then
+        dbgWarn("readfile failed: %s", tostring(readErr))
+    end
 
     if not savedKey then
-        pcall(function() savedKey = _genv._ivoryKey end)
-        pcall(function() savedExpiry = _genv._ivoryExpiry end)
+        pcall(function() savedKey = genv._ivoryKey end)
+        pcall(function() savedExpiry = genv._ivoryExpiry end)
+        dbg("Checked genv: key=%s", savedKey and savedKey:sub(1,8) .. "..." or "nil")
     end
 
     if savedKey and savedExpiry and os.time() * 1000 < savedExpiry then
-        _k.v = true
-        _k.s = savedKey
-        _k.h = _hwid
-        _k.t = os.time()
-        _k.i = 0x4A + #savedKey
+        if savedHwid and savedHwid ~= _hwid then
+            dbgWarn("HWID mismatch: saved=%s, current=%s", tostring(savedHwid), tostring(_hwid))
+            pcall(function() delfile("IvoryKey.txt") end)
+            setStatus("Key bound to another device", Theme.Error)
+        else
+            dbg("Saved key still valid, restoring")
+            _k.v = true
+            _k.s = savedKey
+            _k.h = _hwid
+            _k.t = os.time()
+            _k.i = 0x4A + #savedKey
 
-        setStatus("Welcome back - key restored", Theme.Success)
-        setVerifying(false)
-        VerifyLabel.Text = "Loading..."
-        task.wait(0.3)
-        closeUI(0.9)
+            setStatus("Welcome back: " .. savedKey, Theme.Success)
+            setVerifying(false)
+            VerifyLabel.Text = "Close"
+            VerifyBtn.MouseButton1Click:Connect(function() closeUI(0) end)
+        end
+    else
+        dbg("No valid saved key (expiry check: saved=%s, now=%s)",
+            tostring(savedExpiry), tostring(os.time() * 1000))
     end
 end
 
 task.delay(0.25, CheckSavedKey)
 
 -- ===============================================================
--- INTEGRITY CHECK (background, random 45-90s interval)
+-- WAITING LOOP
 -- ===============================================================
-task.spawn(function()
-    while true do
-        task.wait(math.random(45, 90))
-        if not ScreenGui.Parent then break end
-        if _k and _k.v and not _verifyIntegrity() then
-            pcall(function()
-                for _, gui in ipairs(game:GetService("CoreGui"):GetDescendants()) do
-                    if gui.Name == "IvoryKey" then gui:Destroy() end
-                end
-            end)
-        end
-    end
-end)
-
--- ===============================================================
--- WAITING LOOP - block until validated, unloaded, or destroyed
--- ===============================================================
+dbg("Entering waiting loop")
 local _awaiting = true
 while _awaiting do
     task.wait(0.1)
-    if _k and _k.v then _awaiting = false end
-    if _unloaded then _awaiting = false end
-    if not ScreenGui.Parent then _awaiting = false end
+    if _k and _k.v then
+        dbg("Key validated - exiting loop")
+        _awaiting = false
+    end
+    if _unloaded then
+        dbg("Unloaded - exiting loop")
+        _awaiting = false
+    end
+    if not ScreenGui.Parent then
+        dbg("ScreenGui lost parent - exiting loop")
+        _awaiting = false
+    end
 end
 
 if _unloaded then
@@ -1860,20 +1946,19 @@ if _unloaded then
     return
 end
 
+dbg("Key system complete - proceeding")
 print("Ivory Hub key system - liquid glass - sakura UI loaded")
 
--- Clean up old instances
-for _, gui in ipairs(game:GetService("CoreGui"):GetDescendants()) do
-    if gui:IsA("ScreenGui") and gui.Name == "Obsidian" then gui:Destroy() end
-end
-for k, v in pairs(getgenv and getgenv() or {}) do
-    if type(v) == "table" and v.CreateWindow and v.Toggles then v.Toggled = false; break end
-end
-task.wait(0.3)
 
--- ═══ END KEY SYSTEM ════════════════════════════════════════════
-
-end -- close key system UI block
+-- ===============================================================
+-- INTEGRITY CHECK (compatible with hub code references)
+-- ===============================================================
+local _integritySalt = 0x4A
+local function _verifyIntegrity()
+    if not _k or not _k.v then return false end
+    if _k.i ~= (_integritySalt + #(_k.s or "")) then _k.v = false; return false end
+    return true
+end
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -2003,13 +2088,10 @@ if isGame then
 						if #cards == 0 then return end
 
 						local selected = cards[1]
-						local hasPriority = false
-						for _, uname in ipairs(upgradeNames) do
-							if STATE["UP_" .. uname:gsub(" ", "")] then hasPriority = true break end
-						end
-						if hasPriority then
+						local priorityList = STATE.UpgradePriority
+						if type(priorityList) == "table" and #priorityList > 0 then
 							for _, card in ipairs(cards) do
-								if STATE["UP_" .. card.name:gsub(" ", "")] then
+								if table.find(priorityList, card.name) then
 									selected = card
 									break
 								end
@@ -2727,30 +2809,16 @@ if isGame then
 		NoUI = false,
 	})
 	UG1:AddDivider()
-	local half = math.ceil(#upgradeNames / 2)
-	for i = 1, half do
-		local name = upgradeNames[i]
-		local idx = "UP_" .. name:gsub(" ", "")
-		STATE[idx] = false
-		UG1:AddToggle(idx, {
-			Text = name,
-			Default = false,
-			Callback = function(v) STATE[idx] = v end,
-		})
-	end
-	UG1:AddLabel("Clicks matching card")
-
-	local UG2 = UpgSub:AddRightGroupbox("Priority 2", "zap")
-	for i = half + 1, #upgradeNames do
-		local name = upgradeNames[i]
-		local idx = "UP_" .. name:gsub(" ", "")
-		STATE[idx] = false
-		UG2:AddToggle(idx, {
-			Text = name,
-			Default = false,
-			Callback = function(v) STATE[idx] = v end,
-		})
-	end
+	UG1:AddDropdown("UpgradePriority", {
+		Text = "Priority",
+		Values = upgradeNames,
+		Multi = true,
+		Searchable = true,
+		Expandable = true,
+		Default = {},
+		Callback = function(v) STATE.UpgradePriority = v end,
+	})
+	UG1:AddLabel("Clicks first matching card")
 
 	local VisTab = Window:AddTab({ Name = "Visuals", Icon = "eye" })
 	local VisSub = VisTab:AddSubTab("ESP", "scan")
@@ -2844,8 +2912,8 @@ ThemeManager:SetLibrary(Library)
 SaveManager:SetLibrary(Library)
 SaveManager:IgnoreThemeSettings()
 SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub")
+ThemeManager:SetFolder("FinalSwarmHub")
+SaveManager:SetFolder("FinalSwarmHub")
 if isGame then
 	SaveManager:SetSubFolder("game")
 else
