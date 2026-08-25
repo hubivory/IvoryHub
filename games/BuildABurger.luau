@@ -187,35 +187,35 @@ local SettingsTab = Window:AddTab({ Name = "Settings", Description = "Themes & U
 local AutoSub = MainTab:AddSubTab("Automation")
 
 local BurgerBox = AutoSub:AddLeftGroupbox("Burger")
-BurgerBox:AddToggle("AutoBurger", { Text = "Auto Burger Perfect", Default = false })
-BurgerBox:AddToggle("AutoRebirth", { Text = "Auto Rebirth", Default = false })
+BurgerBox:AddToggle("AutoBurger", { Text = "Auto Burger Perfect", Default = false, Callback = function(v) Settings.AutoBurgerEnabled = v if v then task.spawn(AutoBurger) end end })
+BurgerBox:AddToggle("AutoRebirth", { Text = "Auto Rebirth", Default = false, Callback = function(v) Settings.AutoRebirthEnabled = v if v then task.spawn(AutoRebirth) end end })
 
 local UpgradeBox = AutoSub:AddRightGroupbox("Upgrades")
-UpgradeBox:AddToggle("AutoUpgradeFloors", { Text = "Auto Upgrade Floors", Default = false })
-UpgradeBox:AddToggle("AutoUpgradeLives", { Text = "Auto Upgrade Lives", Default = false })
+UpgradeBox:AddToggle("AutoUpgradeFloors", { Text = "Auto Upgrade Floors", Default = false, Callback = function(v) Settings.AutoUpgradeFloorsEnabled = v if v then task.spawn(AutoUpgradeFloors) end end })
+UpgradeBox:AddToggle("AutoUpgradeLives", { Text = "Auto Upgrade Lives", Default = false, Callback = function(v) Settings.AutoUpgradeLivesEnabled = v if v then task.spawn(AutoUpgradeLives) end end })
 
 local EconBox = AutoSub:AddLeftGroupbox("Economy")
-EconBox:AddToggle("AutoSell", { Text = "Auto Sell", Default = false })
-EconBox:AddToggle("AutoCollect", { Text = "Auto Collect Cash", Default = false })
+EconBox:AddToggle("AutoSell", { Text = "Auto Sell", Default = false, Callback = function(v) Settings.AutoSellEnabled = v if v then task.spawn(AutoSell) end end })
+EconBox:AddToggle("AutoCollect", { Text = "Auto Collect Cash", Default = false, Callback = function(v) Settings.AutoCollectEnabled = v if v then task.spawn(AutoCollect) end end })
 
 local BuildBox = AutoSub:AddRightGroupbox("Building")
-BuildBox:AddToggle("AutoBegin", { Text = "Auto Begin", Default = false })
-BuildBox:AddToggle("AutoContinue", { Text = "Auto Continue (Cancel)", Default = false })
+BuildBox:AddToggle("AutoBegin", { Text = "Auto Begin", Default = false, Callback = function(v) Settings.AutoBeginEnabled = v if v then task.spawn(AutoBegin) end end })
+BuildBox:AddToggle("AutoContinue", { Text = "Auto Continue (Cancel)", Default = false, Callback = function(v) Settings.AutoContinueEnabled = v if v then task.spawn(AutoContinue) end end })
 
 -- ═══ DELAYS TAB ═══
 local DelaySub = DelaysTab:AddSubTab("Delays")
 
 local DL1 = DelaySub:AddLeftGroupbox("Delays (seconds)")
-DL1:AddSlider("BurgerDelay", { Text = "Burger Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
-DL1:AddSlider("SellDelay", { Text = "Sell Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
-DL1:AddSlider("CollectDelay", { Text = "Collect Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
-DL1:AddSlider("RebirthDelay", { Text = "Rebirth Delay", Default = 1, Min = 0.01, Max = 10, Rounding = 2, Suffix = "s" })
+DL1:AddSlider("BurgerDelay", { Text = "Burger Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s", Callback = function(v) Settings.BurgerDelay = v end })
+DL1:AddSlider("SellDelay", { Text = "Sell Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s", Callback = function(v) Settings.SellDelay = v end })
+DL1:AddSlider("CollectDelay", { Text = "Collect Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s", Callback = function(v) Settings.CollectDelay = v end })
+DL1:AddSlider("RebirthDelay", { Text = "Rebirth Delay", Default = 1, Min = 0.01, Max = 10, Rounding = 2, Suffix = "s", Callback = function(v) Settings.RebirthDelay = v end })
 
 local DL2 = DelaySub:AddRightGroupbox("More Delays")
-DL2:AddSlider("UpgradeFloorsDelay", { Text = "Upgrade Floors Delay", Default = 0.5, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
-DL2:AddSlider("UpgradeLivesDelay", { Text = "Upgrade Lives Delay", Default = 0.5, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
-DL2:AddSlider("BeginDelay", { Text = "Begin Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
-DL2:AddSlider("ContinueDelay", { Text = "Continue Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
+DL2:AddSlider("UpgradeFloorsDelay", { Text = "Upgrade Floors Delay", Default = 0.5, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s", Callback = function(v) Settings.UpgradeFloorsDelay = v end })
+DL2:AddSlider("UpgradeLivesDelay", { Text = "Upgrade Lives Delay", Default = 0.5, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s", Callback = function(v) Settings.UpgradeLivesDelay = v end })
+DL2:AddSlider("BeginDelay", { Text = "Begin Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s", Callback = function(v) Settings.BeginDelay = v end })
+DL2:AddSlider("ContinueDelay", { Text = "Continue Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s", Callback = function(v) Settings.ContinueDelay = v end })
 
 -- ═══ SETTINGS TAB ═══
 local ThemesSub = SettingsTab:AddSubTab("Themes & UI")
@@ -260,27 +260,6 @@ end)
 Library.ToggleKeybind = Options.MenuKeybind
 
 SaveManager:LoadAutoloadConfig()
-
--- ═══════════════════════════════════════
--- CALLBACKS
--- ═══════════════════════════════════════
-Toggles.AutoBurger:OnChanged(function(s) Settings.AutoBurgerEnabled = s if s then task.spawn(AutoBurger) end end)
-Toggles.AutoSell:OnChanged(function(s) Settings.AutoSellEnabled = s if s then task.spawn(AutoSell) end end)
-Toggles.AutoCollect:OnChanged(function(s) Settings.AutoCollectEnabled = s if s then task.spawn(AutoCollect) end end)
-Toggles.AutoRebirth:OnChanged(function(s) Settings.AutoRebirthEnabled = s if s then task.spawn(AutoRebirth) end end)
-Toggles.AutoUpgradeFloors:OnChanged(function(s) Settings.AutoUpgradeFloorsEnabled = s if s then task.spawn(AutoUpgradeFloors) end end)
-Toggles.AutoUpgradeLives:OnChanged(function(s) Settings.AutoUpgradeLivesEnabled = s if s then task.spawn(AutoUpgradeLives) end end)
-Toggles.AutoBegin:OnChanged(function(s) Settings.AutoBeginEnabled = s if s then task.spawn(AutoBegin) end end)
-Toggles.AutoContinue:OnChanged(function(s) Settings.AutoContinueEnabled = s if s then task.spawn(AutoContinue) end end)
-
-Options.BurgerDelay:OnChanged(function(v) Settings.BurgerDelay = v end)
-Options.SellDelay:OnChanged(function(v) Settings.SellDelay = v end)
-Options.CollectDelay:OnChanged(function(v) Settings.CollectDelay = v end)
-Options.RebirthDelay:OnChanged(function(v) Settings.RebirthDelay = v end)
-Options.UpgradeFloorsDelay:OnChanged(function(v) Settings.UpgradeFloorsDelay = v end)
-Options.UpgradeLivesDelay:OnChanged(function(v) Settings.UpgradeLivesDelay = v end)
-Options.BeginDelay:OnChanged(function(v) Settings.BeginDelay = v end)
-Options.ContinueDelay:OnChanged(function(v) Settings.ContinueDelay = v end)
 
 Library:Notify({
     Title = "Ivory",
