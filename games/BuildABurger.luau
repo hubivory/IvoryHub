@@ -73,8 +73,13 @@ local PlotCollect = GetRemote("Shared:Network:Remotes:Plot:Collect")
 local RequestRebirth = GetRemote("Shared:Network:Remotes:PlayerData:RequestRebirth")
 local UpgradeFloors = GetRemote("Shared:Network:Remotes:PlayerData:UpgradeFloors")
 local UpgradeLives = GetRemote("Shared:Network:Remotes:PlayerData:UpgradeLives")
+local BuildingBegin = GetRemote("Shared:Network:Remotes:Building:Begin")
 
 local function AutoBurger()
+    pcall(function()
+        if BuildingBegin then BuildingBegin:FireServer() end
+    end)
+    task.wait(0.5)
     while Settings.AutoBurgerEnabled do
         pcall(function()
             if BuildingSuccess then BuildingSuccess:FireServer(-0.658413290977478) end
