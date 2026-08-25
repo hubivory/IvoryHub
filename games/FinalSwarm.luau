@@ -1828,6 +1828,23 @@ end
 task.delay(0.25, CheckSavedKey)
 
 -- ===============================================================
+-- INTEGRITY CHECK (background, random 45-90s interval)
+-- ===============================================================
+task.spawn(function()
+    while true do
+        task.wait(math.random(45, 90))
+        if not ScreenGui.Parent then break end
+        if _k and _k.v and not _verifyIntegrity() then
+            pcall(function()
+                for _, gui in ipairs(game:GetService("CoreGui"):GetDescendants()) do
+                    if gui.Name == "IvoryKey" then gui:Destroy() end
+                end
+            end)
+        end
+    end
+end)
+
+-- ===============================================================
 -- WAITING LOOP - block until validated, unloaded, or destroyed
 -- ===============================================================
 local _awaiting = true
@@ -1856,22 +1873,7 @@ task.wait(0.3)
 
 -- ═══ END KEY SYSTEM ════════════════════════════════════════════
 
--- ===============================================================
--- INTEGRITY CHECK (runs in background)
--- ===============================================================
-task.spawn(function()
-    while true do
-        task.wait(math.random(45, 90))
-        if not ScreenGui.Parent then break end
-        if _k and _k.v and not _verifyIntegrity() then
-            pcall(function()
-                for _, gui in ipairs(game:GetService("CoreGui"):GetDescendants()) do
-                    if gui.Name == "IvoryKey" then gui:Destroy() end
-                end
-            end)
-        end
-    end
-end)
+end -- close key system UI block
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
