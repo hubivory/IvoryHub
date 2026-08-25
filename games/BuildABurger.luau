@@ -175,7 +175,7 @@ local function SafeLoad(name, url)
     return fn()
 end
 
-local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+local repo = "https://cdn.jsdelivr.net/gh/deividcomsono/Obsidian@main/"
 local Library = SafeLoad("Library", repo .. "Library.lua")
 local ThemeManager = SafeLoad("ThemeManager", repo .. "addons/ThemeManager.lua")
 local SaveManager = SafeLoad("SaveManager", repo .. "addons/SaveManager.lua")
