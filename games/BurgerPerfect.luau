@@ -1,12 +1,12 @@
 ﻿-- ===============================================================
 -- IVORY HUB - BURGER PERFECT AUTO
--- ObsidianUltra UI
+-- Obsidian UI (deividcomsono/Obsidian)
 -- ===============================================================
 
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = loadstring(request({ Url = repo .. "Library.lua", Method = "GET" }).Body)()
-local ThemeManager = loadstring(request({ Url = repo .. "addons/ThemeManager.lua", Method = "GET" }).Body)()
-local SaveManager = loadstring(request({ Url = repo .. "addons/SaveManager.lua", Method = "GET" }).Body)()
+local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
+local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -52,7 +52,6 @@ local AddTimeToMeat = Network and Network:FindFirstChild("AddTimeToMeat")
 local RequestFriesSeasoning = Network and Network:FindFirstChild("RequestFriesSeasoning")
 local AddTimeToFries = Network and Network:FindFirstChild("AddTimeToFries")
 local AddMoney = Network and Network:FindFirstChild("AddMoney")
-local GetCashRegisterData = Network and Network:FindFirstChild("GetCashRegisterData")
 local BuyPcUpgradeRequest = Network and Network:FindFirstChild("BuyPcUpgradeRequest")
 local RebirthClass = Network and Network:FindFirstChild("RebirthClass")
 local ClaimReward = Network and Network:FindFirstChild("ClaimReward")
@@ -64,10 +63,12 @@ local EmployeeUpgrade = Remotes and Remotes:FindFirstChild("EmployeeUpgrade")
 -- AUTO FUNCTIONS
 -- ===============================================================
 local function AutoBurger()
-    if not LinkPlayerToOrder or not TryAddIngredientToPlate then warn("[Ivory] Order remotes missing") return end
+    if not LinkPlayerToOrder or not TryAddIngredientToPlate then
+        warn("[Ivory] Order remotes missing")
+        return
+    end
     while Settings.AutoBurgerEnabled do
         pcall(function()
-            -- Request order board, link to order, add ingredients, season, complete
             if RequestOrderBoard then RequestOrderBoard:InvokeServer() end
             task.wait(0.1)
             if LinkPlayerToOrder then LinkPlayerToOrder:FireServer() end
@@ -160,195 +161,116 @@ local function AutoContinue()
 end
 
 -- ===============================================================
--- THEME TOKENS
+-- UI SETUP
 -- ===============================================================
-local Tokens = {
-    primary = Color3.fromRGB(168, 120, 255),
-    background = Color3.fromRGB(18, 16, 26),
-    surface = Color3.fromRGB(26, 22, 38),
-    text = Color3.fromRGB(248, 244, 255),
-    cornerRadius = 8,
-}
-Library.Scheme.BackgroundColor = Tokens.background
-Library.Scheme.MainColor = Tokens.surface
-Library.Scheme.AccentColor = Tokens.primary
-Library.Scheme.FontColor = Tokens.text
+Library.Scheme.BackgroundColor = Color3.fromRGB(18, 16, 26)
+Library.Scheme.MainColor = Color3.fromRGB(26, 22, 38)
+Library.Scheme.AccentColor = Color3.fromRGB(168, 120, 255)
+Library.Scheme.FontColor = Color3.fromRGB(248, 244, 255)
 
--- ===============================================================
--- WINDOW
--- ===============================================================
 local Window = Library:CreateWindow({
-    Title = "Ivory",
-    Icon = "flame",
-    Footer = {
-        "v1.4 |",
-        { Text = "Game", Copyable = true },
-        "|",
-        { Text = tostring(LocalPlayer.UserId), Copyable = true },
-    },
-    CopyableFooter = true,
-    FuzzySearch = true,
-    SearchValues = true,
-    Minimizable = true,
-    MinimizeKeybind = Enum.KeyCode.RightBracket,
-    MinimizedWidth = 280,
+    Title = "Ivory | Burger Perfect",
+    Footer = "v1.0",
+    Center = true,
+    AutoShow = true,
     NotifySide = "Right",
     ShowCustomCursor = true,
-    SearchKeybind = Enum.KeyCode.F,
-    CornerRadius = 4,
-    Animations = {
-        ToggleWindow = false,
-        TabSwitch = false,
-        Groupbox = false,
-        Dropdown = false,
-        KeyPicker = false,
-        SubTabUnderline = true,
-    },
 })
-Window:SetCornerRadius(Tokens.cornerRadius)
 
 -- ===============================================================
 -- TABS
 -- ===============================================================
-local MainTab = Window:AddTab({ Name = "Main", Icon = "flame" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
+local Tabs = {
+    Main = Window:AddTab("Main", "flame"),
+    Delays = Window:AddTab("Delays", "clock"),
+    Settings = Window:AddTab("Settings", "settings"),
+}
 
 -- ===============================================================
 -- MAIN TAB - AUTOMATION
 -- ===============================================================
-local AutoSub = MainTab:AddSubTab({ Name = "Automation", Icon = "zap" })
+local AutoLeft = Tabs.Main:AddLeftGroupbox("Automation")
+local AutoRight = Tabs.Main:AddRightGroupbox("Economy & Building")
 
-local BurgerBox = AutoSub:AddLeftGroupbox("Burger", "flame")
-BurgerBox:AddToggle("AutoBurgerEnabled", {
+AutoLeft:AddToggle("AutoBurger", {
     Text = "Auto Burger Perfect",
     Default = false,
     Callback = function(v)
         Settings.AutoBurgerEnabled = v
         if v then task.spawn(AutoBurger) end
     end,
-}):AddKeyPicker("AutoBurgerKey", {
-    Default = "None",
-    Text = "Auto Burger Key",
-    Mode = "Toggle",
-    SyncToggleState = true,
-    NoUI = false,
 })
 
-local SellBox = AutoSub:AddRightGroupbox("Economy", "coins")
-SellBox:AddToggle("AutoSellEnabled", {
-    Text = "Auto Sell",
-    Default = false,
-    Callback = function(v)
-        Settings.AutoSellEnabled = v
-        if v then task.spawn(AutoSell) end
-    end,
-}):AddKeyPicker("AutoSellKey", {
-    Default = "None",
-    Text = "Auto Sell Key",
-    Mode = "Toggle",
-    SyncToggleState = true,
-    NoUI = false,
-})
-
-SellBox:AddToggle("AutoCollectEnabled", {
-    Text = "Auto Collect Cash (All Slots)",
-    Default = false,
-    Callback = function(v)
-        Settings.AutoCollectEnabled = v
-        if v then task.spawn(AutoCollect) end
-    end,
-}):AddKeyPicker("AutoCollectKey", {
-    Default = "None",
-    Text = "Auto Collect Key",
-    Mode = "Toggle",
-    SyncToggleState = true,
-    NoUI = false,
-})
-
-SellBox:AddToggle("AutoRebirthEnabled", {
+AutoLeft:AddToggle("AutoRebirth", {
     Text = "Auto Rebirth",
     Default = false,
     Callback = function(v)
         Settings.AutoRebirthEnabled = v
         if v then task.spawn(AutoRebirth) end
     end,
-}):AddKeyPicker("AutoRebirthKey", {
-    Default = "None",
-    Text = "Auto Rebirth Key",
-    Mode = "Toggle",
-    SyncToggleState = true,
-    NoUI = false,
 })
 
-local UpgradeBox = AutoSub:AddLeftGroupbox("Upgrades", "arrow-up-circle")
-UpgradeBox:AddToggle("AutoUpgradeFloorsEnabled", {
+AutoLeft:AddToggle("AutoUpgradeFloors", {
     Text = "Auto Upgrade Floors",
     Default = false,
     Callback = function(v)
         Settings.AutoUpgradeFloorsEnabled = v
         if v then task.spawn(AutoUpgradeFloors) end
     end,
-}):AddKeyPicker("AutoUpgradeFloorsKey", {
-    Default = "None",
-    Text = "Upgrade Floors Key",
-    Mode = "Toggle",
-    SyncToggleState = true,
-    NoUI = false,
 })
 
-UpgradeBox:AddToggle("AutoUpgradeLivesEnabled", {
+AutoLeft:AddToggle("AutoUpgradeLives", {
     Text = "Auto Upgrade Lives",
     Default = false,
     Callback = function(v)
         Settings.AutoUpgradeLivesEnabled = v
         if v then task.spawn(AutoUpgradeLives) end
     end,
-}):AddKeyPicker("AutoUpgradeLivesKey", {
-    Default = "None",
-    Text = "Upgrade Lives Key",
-    Mode = "Toggle",
-    SyncToggleState = true,
-    NoUI = false,
 })
 
-local BuildBox = AutoSub:AddRightGroupbox("Building", "hammer")
-BuildBox:AddToggle("AutoBeginEnabled", {
+AutoRight:AddToggle("AutoSell", {
+    Text = "Auto Sell",
+    Default = false,
+    Callback = function(v)
+        Settings.AutoSellEnabled = v
+        if v then task.spawn(AutoSell) end
+    end,
+})
+
+AutoRight:AddToggle("AutoCollect", {
+    Text = "Auto Collect Cash",
+    Default = false,
+    Callback = function(v)
+        Settings.AutoCollectEnabled = v
+        if v then task.spawn(AutoCollect) end
+    end,
+})
+
+AutoRight:AddToggle("AutoBegin", {
     Text = "Auto Begin",
     Default = false,
     Callback = function(v)
         Settings.AutoBeginEnabled = v
         if v then task.spawn(AutoBegin) end
     end,
-}):AddKeyPicker("AutoBeginKey", {
-    Default = "None",
-    Text = "Auto Begin Key",
-    Mode = "Toggle",
-    SyncToggleState = true,
-    NoUI = false,
 })
 
-BuildBox:AddToggle("AutoContinueEnabled", {
+AutoRight:AddToggle("AutoContinue", {
     Text = "Auto Continue (Cancel)",
     Default = false,
     Callback = function(v)
         Settings.AutoContinueEnabled = v
         if v then task.spawn(AutoContinue) end
     end,
-}):AddKeyPicker("AutoContinueKey", {
-    Default = "None",
-    Text = "Auto Continue Key",
-    Mode = "Toggle",
-    SyncToggleState = true,
-    NoUI = false,
 })
 
 -- ===============================================================
--- MAIN TAB - DELAYS
+-- DELAYS TAB
 -- ===============================================================
-local DelaySub = MainTab:AddSubTab({ Name = "Delays", Icon = "clock" })
+local DelayLeft = Tabs.Delays:AddLeftGroupbox("Delays (seconds)")
+local DelayRight = Tabs.Delays:AddRightGroupbox("More Delays")
 
-local DelayBox = DelaySub:AddLeftGroupbox("Adjust Delays (seconds)", "clock")
-DelayBox:AddSlider("BurgerDelay", {
+DelayLeft:AddSlider("BurgerDelay", {
     Text = "Burger Delay",
     Default = 0.1,
     Min = 0.01,
@@ -357,7 +279,8 @@ DelayBox:AddSlider("BurgerDelay", {
     Suffix = "s",
     Callback = function(v) Settings.BurgerDelay = v end,
 })
-DelayBox:AddSlider("SellDelay", {
+
+DelayLeft:AddSlider("SellDelay", {
     Text = "Sell Delay",
     Default = 0.1,
     Min = 0.01,
@@ -366,7 +289,8 @@ DelayBox:AddSlider("SellDelay", {
     Suffix = "s",
     Callback = function(v) Settings.SellDelay = v end,
 })
-DelayBox:AddSlider("CollectDelay", {
+
+DelayLeft:AddSlider("CollectDelay", {
     Text = "Collect Delay",
     Default = 0.1,
     Min = 0.01,
@@ -375,7 +299,8 @@ DelayBox:AddSlider("CollectDelay", {
     Suffix = "s",
     Callback = function(v) Settings.CollectDelay = v end,
 })
-DelayBox:AddSlider("RebirthDelay", {
+
+DelayLeft:AddSlider("RebirthDelay", {
     Text = "Rebirth Delay",
     Default = 1,
     Min = 0.01,
@@ -385,8 +310,7 @@ DelayBox:AddSlider("RebirthDelay", {
     Callback = function(v) Settings.RebirthDelay = v end,
 })
 
-local DelayBox2 = DelaySub:AddRightGroupbox("More Delays", "clock")
-DelayBox2:AddSlider("UpgradeFloorsDelay", {
+DelayRight:AddSlider("UpgradeFloorsDelay", {
     Text = "Upgrade Floors Delay",
     Default = 0.5,
     Min = 0.01,
@@ -395,7 +319,8 @@ DelayBox2:AddSlider("UpgradeFloorsDelay", {
     Suffix = "s",
     Callback = function(v) Settings.UpgradeFloorsDelay = v end,
 })
-DelayBox2:AddSlider("UpgradeLivesDelay", {
+
+DelayRight:AddSlider("UpgradeLivesDelay", {
     Text = "Upgrade Lives Delay",
     Default = 0.5,
     Min = 0.01,
@@ -404,7 +329,8 @@ DelayBox2:AddSlider("UpgradeLivesDelay", {
     Suffix = "s",
     Callback = function(v) Settings.UpgradeLivesDelay = v end,
 })
-DelayBox2:AddSlider("BeginDelay", {
+
+DelayRight:AddSlider("BeginDelay", {
     Text = "Begin Delay",
     Default = 0.1,
     Min = 0.01,
@@ -413,7 +339,8 @@ DelayBox2:AddSlider("BeginDelay", {
     Suffix = "s",
     Callback = function(v) Settings.BeginDelay = v end,
 })
-DelayBox2:AddSlider("ContinueDelay", {
+
+DelayRight:AddSlider("ContinueDelay", {
     Text = "Continue Delay",
     Default = 0.1,
     Min = 0.01,
@@ -433,10 +360,10 @@ SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
 ThemeManager:SetFolder("IvoryHub")
 SaveManager:SetFolder("IvoryHub")
 SaveManager:SetSubFolder("burgerperfect")
-ThemeManager:ApplyToTab(SettingsTab)
-SaveManager:BuildConfigSection(SettingsTab)
+ThemeManager:ApplyToTab(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
 
-local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "wrench")
+local MenuGroup = Tabs.Settings:AddLeftGroupbox("Menu")
 MenuGroup:AddToggle("KeybindMenuOpen", {
     Default = Library.KeybindFrame.Visible,
     Text = "Open Keybind Menu",
@@ -444,25 +371,14 @@ MenuGroup:AddToggle("KeybindMenuOpen", {
 })
 MenuGroup:AddToggle("ShowCustomCursor", {
     Text = "Custom Cursor",
-    Default = Library.ShowCustomCursor,
+    Default = true,
     Callback = function(v) Library.ShowCustomCursor = v end,
 })
-MenuGroup:AddButton("Test Notification", function()
-    Library:Notify({ Title = "Ivory", Description = "Works!", Time = 4 })
-end)
 MenuGroup:AddDropdown("NotificationSide", {
     Values = { "Left", "Right" },
     Default = "Right",
     Text = "Notification Side",
     Callback = function(v) Library:SetNotifySide(v) end,
-})
-MenuGroup:AddSlider("UICornerSlider", {
-    Text = "Corner Radius",
-    Default = Library.CornerRadius,
-    Min = 0,
-    Max = 20,
-    Rounding = 0,
-    Callback = function(v) Window:SetCornerRadius(v) end,
 })
 MenuGroup:AddDivider()
 MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", {
@@ -479,8 +395,6 @@ SaveManager:LoadAutoloadConfig()
 
 Library:Notify({
     Title = "Ivory",
-    Description = "Burger Perfect Auto loaded. RightShift to open menu.",
-    Type = "Success",
+    Description = "Burger Perfect Auto loaded. RightShift to toggle menu.",
     Time = 4,
 })
-Window:SetMinimizedSubtitle("Ivory | Burger Perfect Auto")
