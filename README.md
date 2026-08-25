@@ -14,6 +14,7 @@ Multi-game script loader for Roblox, powered by ObsidianUltra UI library.
 | Game | Place ID | Scripts |
 |------|----------|---------|
 | Final Swarm [Skills] | 85776757589518 | Auto Dodge + Float Kill |
+| Rocks RNG | 10292888022 | Crash Tracker, Auto-Collect, Rune Shop, Plot Optimizer |
 
 ## Setup
 
@@ -45,7 +46,8 @@ Add entries to `GameRegistry` in `IvoryHub.luau`:
 IvoryHub/
 ├── IvoryHub.luau          # Main loader script
 ├── games/
-│   └── FinalSwarm.luau    # Final Swarm auto-dodge
+│   ├── FinalSwarm.luau    # Final Swarm auto-dodge
+│   └── RocksRNG.luau      # Rocks RNG crash tracker & multi-feature hub
 ├── UI_STYLE.json          # UI configuration
 └── README.md
 ```
