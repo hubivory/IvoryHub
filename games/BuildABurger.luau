@@ -81,11 +81,9 @@ local BuildingBegin = GetRemote("Shared:Network:Remotes:Building:Begin")
 local BuildingCancel = GetRemote("Shared:Network:Remotes:Building:Cancel")
 
 local function AutoBurger()
+    if BuildingBegin then BuildingBegin:FireServer() end
+    task.wait(0.5)
     while Settings.AutoBurgerEnabled do
-        pcall(function()
-            if BuildingBegin then BuildingBegin:FireServer() end
-        end)
-        task.wait(0.3)
         pcall(function()
             if BuildingSuccess then BuildingSuccess:FireServer(-0.658413290977478) end
         end)
