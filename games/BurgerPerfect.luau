@@ -1,9 +1,9 @@
 ﻿-- ===============================================================
 -- IVORY HUB - BURGER PERFECT AUTO
--- Obsidian UI (deividcomsono/Obsidian)
+-- ObsidianUltra UI (joustingmatch/ObsidianUltra)
 -- ===============================================================
 
-local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
 local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
@@ -13,9 +13,6 @@ local LocalPlayer = Players.LocalPlayer
 local Options = Library.Options
 local Toggles = Library.Toggles
 
--- ===============================================================
--- SETTINGS / STATE
--- ===============================================================
 local Settings = {
     AutoBurgerEnabled = false,
     AutoSellEnabled = false,
@@ -36,32 +33,26 @@ local Settings = {
     ContinueDelay = 0.1,
 }
 
--- ===============================================================
--- GET REMOTES
--- ===============================================================
 local RS = game:GetService("ReplicatedStorage")
 local Network = RS:WaitForChild("Network", 15)
 local Remotes = RS:WaitForChild("Remotes", 15)
 
-local LinkPlayerToOrder = Network and Network:FindFirstChild("LinkPlayerToOrder")
-local UnlinkPlayerFromOrder = Network and Network:FindFirstChild("UnlinkPlayerFromOrder")
-local RequestOrderBoard = Network and Network:FindFirstChild("RequestOrderBoard")
-local TryAddIngredientToPlate = Network and Network:FindFirstChild("TryAddIngredientToPlate")
-local RequestMeatSeasoning = Network and Network:FindFirstChild("RequestMeatSeasoning")
-local AddTimeToMeat = Network and Network:FindFirstChild("AddTimeToMeat")
-local RequestFriesSeasoning = Network and Network:FindFirstChild("RequestFriesSeasoning")
-local AddTimeToFries = Network and Network:FindFirstChild("AddTimeToFries")
-local AddMoney = Network and Network:FindFirstChild("AddMoney")
-local BuyPcUpgradeRequest = Network and Network:FindFirstChild("BuyPcUpgradeRequest")
-local RebirthClass = Network and Network:FindFirstChild("RebirthClass")
-local ClaimReward = Network and Network:FindFirstChild("ClaimReward")
-local HealthInspector_ClaimRewards = Network and Network:FindFirstChild("HealthInspector_ClaimRewards")
-local TycoonPurchase = Remotes and Remotes:FindFirstChild("TycoonPurchase")
-local EmployeeUpgrade = Remotes and Remotes:FindFirstChild("EmployeeUpgrade")
+local LinkPlayerToOrder = Network:FindFirstChild("LinkPlayerToOrder")
+local UnlinkPlayerFromOrder = Network:FindFirstChild("UnlinkPlayerFromOrder")
+local RequestOrderBoard = Network:FindFirstChild("RequestOrderBoard")
+local TryAddIngredientToPlate = Network:FindFirstChild("TryAddIngredientToPlate")
+local RequestMeatSeasoning = Network:FindFirstChild("RequestMeatSeasoning")
+local AddTimeToMeat = Network:FindFirstChild("AddTimeToMeat")
+local RequestFriesSeasoning = Network:FindFirstChild("RequestFriesSeasoning")
+local AddTimeToFries = Network:FindFirstChild("AddTimeToFries")
+local AddMoney = Network:FindFirstChild("AddMoney")
+local BuyPcUpgradeRequest = Network:FindFirstChild("BuyPcUpgradeRequest")
+local RebirthClass = Network:FindFirstChild("RebirthClass")
+local ClaimReward = Network:FindFirstChild("ClaimReward")
+local HealthInspector_ClaimRewards = Network:FindFirstChild("HealthInspector_ClaimRewards")
+local TycoonPurchase = Remotes:FindFirstChild("TycoonPurchase")
+local EmployeeUpgrade = Remotes:FindFirstChild("EmployeeUpgrade")
 
--- ===============================================================
--- AUTO FUNCTIONS
--- ===============================================================
 local function AutoBurger()
     if not LinkPlayerToOrder or not TryAddIngredientToPlate then
         warn("[Ivory] Order remotes missing")
@@ -161,7 +152,7 @@ local function AutoContinue()
 end
 
 -- ===============================================================
--- UI SETUP
+-- UI
 -- ===============================================================
 Library.Scheme.BackgroundColor = Color3.fromRGB(18, 16, 26)
 Library.Scheme.MainColor = Color3.fromRGB(26, 22, 38)
@@ -170,29 +161,45 @@ Library.Scheme.FontColor = Color3.fromRGB(248, 244, 255)
 
 local Window = Library:CreateWindow({
     Title = "Ivory | Burger Perfect",
-    Footer = "v1.0",
+    Footer = {
+        "v1.5 |",
+        { Text = tostring(LocalPlayer.UserId), Copyable = true },
+    },
+    CopyableFooter = true,
     Center = true,
     AutoShow = true,
     NotifySide = "Right",
     ShowCustomCursor = true,
+    FuzzySearch = true,
+    SearchValues = true,
+    Minimizable = true,
+    MinimizeKeybind = Enum.KeyCode.RightBracket,
+    MinimizedWidth = 280,
+    CornerRadius = 4,
+    Animations = {
+        ToggleWindow = false,
+        TabSwitch = false,
+        Groupbox = false,
+        Dropdown = false,
+        KeyPicker = false,
+        SubTabUnderline = true,
+    },
 })
 
 -- ===============================================================
 -- TABS
 -- ===============================================================
-local Tabs = {
-    Main = Window:AddTab("Main", "flame"),
-    Delays = Window:AddTab("Delays", "clock"),
-    Settings = Window:AddTab("Settings", "settings"),
-}
+local MainTab = Window:AddTab({ Name = "Main", Icon = "flame", Description = "Automation" })
+local DelaysTab = Window:AddTab({ Name = "Delays", Icon = "clock", Description = "Configure delays" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings", Description = "UI & Config" })
 
 -- ===============================================================
 -- MAIN TAB - AUTOMATION
 -- ===============================================================
-local AutoLeft = Tabs.Main:AddLeftGroupbox("Automation")
-local AutoRight = Tabs.Main:AddRightGroupbox("Economy & Building")
+local AutoSub = MainTab:AddSubTab({ Name = "Automation", Icon = "zap" })
 
-AutoLeft:AddToggle("AutoBurger", {
+local BurgerBox = AutoSub:AddLeftGroupbox("Burger", "flame")
+BurgerBox:AddToggle("AutoBurger", {
     Text = "Auto Burger Perfect",
     Default = false,
     Callback = function(v)
@@ -201,7 +208,7 @@ AutoLeft:AddToggle("AutoBurger", {
     end,
 })
 
-AutoLeft:AddToggle("AutoRebirth", {
+BurgerBox:AddToggle("AutoRebirth", {
     Text = "Auto Rebirth",
     Default = false,
     Callback = function(v)
@@ -210,7 +217,8 @@ AutoLeft:AddToggle("AutoRebirth", {
     end,
 })
 
-AutoLeft:AddToggle("AutoUpgradeFloors", {
+local UpgradeBox = AutoSub:AddRightGroupbox("Upgrades", "arrow-up-circle")
+UpgradeBox:AddToggle("AutoUpgradeFloors", {
     Text = "Auto Upgrade Floors",
     Default = false,
     Callback = function(v)
@@ -219,7 +227,7 @@ AutoLeft:AddToggle("AutoUpgradeFloors", {
     end,
 })
 
-AutoLeft:AddToggle("AutoUpgradeLives", {
+UpgradeBox:AddToggle("AutoUpgradeLives", {
     Text = "Auto Upgrade Lives",
     Default = false,
     Callback = function(v)
@@ -228,7 +236,8 @@ AutoLeft:AddToggle("AutoUpgradeLives", {
     end,
 })
 
-AutoRight:AddToggle("AutoSell", {
+local EconBox = AutoSub:AddLeftGroupbox("Economy", "coins")
+EconBox:AddToggle("AutoSell", {
     Text = "Auto Sell",
     Default = false,
     Callback = function(v)
@@ -237,7 +246,7 @@ AutoRight:AddToggle("AutoSell", {
     end,
 })
 
-AutoRight:AddToggle("AutoCollect", {
+EconBox:AddToggle("AutoCollect", {
     Text = "Auto Collect Cash",
     Default = false,
     Callback = function(v)
@@ -246,7 +255,8 @@ AutoRight:AddToggle("AutoCollect", {
     end,
 })
 
-AutoRight:AddToggle("AutoBegin", {
+local BuildBox = AutoSub:AddRightGroupbox("Building", "hammer")
+BuildBox:AddToggle("AutoBegin", {
     Text = "Auto Begin",
     Default = false,
     Callback = function(v)
@@ -255,7 +265,7 @@ AutoRight:AddToggle("AutoBegin", {
     end,
 })
 
-AutoRight:AddToggle("AutoContinue", {
+BuildBox:AddToggle("AutoContinue", {
     Text = "Auto Continue (Cancel)",
     Default = false,
     Callback = function(v)
@@ -267,86 +277,49 @@ AutoRight:AddToggle("AutoContinue", {
 -- ===============================================================
 -- DELAYS TAB
 -- ===============================================================
-local DelayLeft = Tabs.Delays:AddLeftGroupbox("Delays (seconds)")
-local DelayRight = Tabs.Delays:AddRightGroupbox("More Delays")
+local DelayLeft = DelaysTab:AddLeftGroupbox("Delays (seconds)", "clock")
 
 DelayLeft:AddSlider("BurgerDelay", {
     Text = "Burger Delay",
-    Default = 0.1,
-    Min = 0.01,
-    Max = 5,
-    Rounding = 2,
-    Suffix = "s",
+    Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
     Callback = function(v) Settings.BurgerDelay = v end,
 })
-
 DelayLeft:AddSlider("SellDelay", {
     Text = "Sell Delay",
-    Default = 0.1,
-    Min = 0.01,
-    Max = 5,
-    Rounding = 2,
-    Suffix = "s",
+    Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
     Callback = function(v) Settings.SellDelay = v end,
 })
-
 DelayLeft:AddSlider("CollectDelay", {
     Text = "Collect Delay",
-    Default = 0.1,
-    Min = 0.01,
-    Max = 5,
-    Rounding = 2,
-    Suffix = "s",
+    Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
     Callback = function(v) Settings.CollectDelay = v end,
 })
-
 DelayLeft:AddSlider("RebirthDelay", {
     Text = "Rebirth Delay",
-    Default = 1,
-    Min = 0.01,
-    Max = 10,
-    Rounding = 2,
-    Suffix = "s",
+    Default = 1, Min = 0.01, Max = 10, Rounding = 2, Suffix = "s",
     Callback = function(v) Settings.RebirthDelay = v end,
 })
 
+local DelayRight = DelaysTab:AddRightGroupbox("More Delays", "clock")
+
 DelayRight:AddSlider("UpgradeFloorsDelay", {
     Text = "Upgrade Floors Delay",
-    Default = 0.5,
-    Min = 0.01,
-    Max = 5,
-    Rounding = 2,
-    Suffix = "s",
+    Default = 0.5, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
     Callback = function(v) Settings.UpgradeFloorsDelay = v end,
 })
-
 DelayRight:AddSlider("UpgradeLivesDelay", {
     Text = "Upgrade Lives Delay",
-    Default = 0.5,
-    Min = 0.01,
-    Max = 5,
-    Rounding = 2,
-    Suffix = "s",
+    Default = 0.5, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
     Callback = function(v) Settings.UpgradeLivesDelay = v end,
 })
-
 DelayRight:AddSlider("BeginDelay", {
     Text = "Begin Delay",
-    Default = 0.1,
-    Min = 0.01,
-    Max = 5,
-    Rounding = 2,
-    Suffix = "s",
+    Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
     Callback = function(v) Settings.BeginDelay = v end,
 })
-
 DelayRight:AddSlider("ContinueDelay", {
     Text = "Continue Delay",
-    Default = 0.1,
-    Min = 0.01,
-    Max = 5,
-    Rounding = 2,
-    Suffix = "s",
+    Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
     Callback = function(v) Settings.ContinueDelay = v end,
 })
 
@@ -360,10 +333,11 @@ SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
 ThemeManager:SetFolder("IvoryHub")
 SaveManager:SetFolder("IvoryHub")
 SaveManager:SetSubFolder("burgerperfect")
-ThemeManager:ApplyToTab(Tabs.Settings)
-SaveManager:BuildConfigSection(Tabs.Settings)
+ThemeManager:ApplyToTab(SettingsTab)
+SaveManager:BuildConfigSection(SettingsTab)
 
-local MenuGroup = Tabs.Settings:AddLeftGroupbox("Menu")
+local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "wrench")
+
 MenuGroup:AddToggle("KeybindMenuOpen", {
     Default = Library.KeybindFrame.Visible,
     Text = "Open Keybind Menu",
@@ -379,6 +353,14 @@ MenuGroup:AddDropdown("NotificationSide", {
     Default = "Right",
     Text = "Notification Side",
     Callback = function(v) Library:SetNotifySide(v) end,
+})
+MenuGroup:AddSlider("UICornerSlider", {
+    Text = "Corner Radius",
+    Default = Library.CornerRadius,
+    Min = 0,
+    Max = 20,
+    Rounding = 0,
+    Callback = function(v) Window:SetCornerRadius(v) end,
 })
 MenuGroup:AddDivider()
 MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", {
@@ -396,5 +378,7 @@ SaveManager:LoadAutoloadConfig()
 Library:Notify({
     Title = "Ivory",
     Description = "Burger Perfect Auto loaded. RightShift to toggle menu.",
+    Type = "Success",
     Time = 4,
 })
+Window:SetMinimizedSubtitle("Ivory | Burger Perfect Auto")
