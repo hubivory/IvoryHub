@@ -1,8 +1,8 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "mcpServers": {
+  "mcp": {
     "potassium": {
-      "type": "streamable-http",
+      "type": "remote",
       "url": "http://127.0.0.1:8225/mcp",
       "headers": {
         "Authorization": "Bearer 3Qrk2vhbHaRvf6JDsfvi-TvJGL60atqPYJAb66UW8Ho"
