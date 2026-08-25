@@ -2049,6 +2049,7 @@ local function UpdateESP()
 end
 
 local GameServiceClient = nil
+local UpgradeLabel = nil
 if isGame then
 	GameServiceClient = require(ReplicatedStorage.Shared.Services.GameService.GameServiceClient)
 	getgenv().FSH_GameServiceClient = GameServiceClient
@@ -2107,6 +2108,10 @@ if isGame then
 						local conns = getconnections(selected.button.MouseButton1Up)
 						if #conns > 0 and conns[1].Function then
 							conns[1].Function()
+							STATE.LastUpgrade = selected.name
+							if UpgradeLabel then
+								UpgradeLabel:SetText("Last: " .. selected.name)
+							end
 						end
 					end)
 					lastClickTime = os.clock()
@@ -2824,7 +2829,7 @@ if isGame then
 		Default = {},
 		Callback = function(v) STATE.UpgradePriority = v end,
 	})
-	UG1:AddLabel("Clicks first matching card")
+	UpgradeLabel = UG1:AddLabel("Last: none")
 
 	local VisTab = Window:AddTab({ Name = "Visuals", Icon = "eye" })
 	local VisSub = VisTab:AddSubTab("ESP", "scan")
