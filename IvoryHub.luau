@@ -38,6 +38,17 @@ local success, err = pcall(function()
             if hash then commitHash = hash end
         end
     end)
+
+    -- Pre-fetch ObsidianUltra source code for game scripts
+    local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
+    pcall(function()
+        local genv = getgenv()
+        genv._IvoryLibSrc = request({ Url = repo .. "Library.lua", Method = "GET" }).Body
+        genv._IvoryTMSrc = request({ Url = repo .. "addons/ThemeManager.lua", Method = "GET" }).Body
+        genv._IvorySMSrc = request({ Url = repo .. "addons/SaveManager.lua", Method = "GET" }).Body
+        print("[Ivory Hub] ObsidianUltra sources cached")
+    end)
+
     local url = GITHUB_RAW .. commitHash .. "/" .. ScriptFile
     local res = request({ Url = url, Method = "GET" })
     local content = res and res.Body or nil

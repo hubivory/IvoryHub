@@ -1,22 +1,34 @@
-﻿local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
+﻿local genv = getgenv()
 local Library = nil
 local ThemeManager = nil
 local SaveManager = nil
 
-local ok1, err1 = pcall(function()
-    Library = loadstring(request({ Url = repo .. "Library.lua", Method = "GET" }).Body)()
-end)
-if not ok1 then warn("[Ivory] Library load failed:", err1) end
+-- Try pre-fetched sources from loader first, fall back to request()
+local libSrc = genv._IvoryLibSrc
+local tmSrc = genv._IvoryTMSrc
+local smSrc = genv._IvorySMSrc
 
-local ok2, err2 = pcall(function()
-    ThemeManager = loadstring(request({ Url = repo .. "addons/ThemeManager.lua", Method = "GET" }).Body)()
-end)
-if not ok2 then warn("[Ivory] ThemeManager load failed:", err2) end
-
-local ok3, err3 = pcall(function()
-    SaveManager = loadstring(request({ Url = repo .. "addons/SaveManager.lua", Method = "GET" }).Body)()
-end)
-if not ok3 then warn("[Ivory] SaveManager load failed:", err3) end
+if libSrc then
+    Library = loadstring(libSrc)()
+    ThemeManager = loadstring(tmSrc)()
+    SaveManager = loadstring(smSrc)()
+    print("[Ivory] Loaded ObsidianUltra from loader cache")
+else
+    warn("[Ivory] No cached sources, falling back to request()")
+    local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
+    local ok1, err1 = pcall(function()
+        Library = loadstring(request({ Url = repo .. "Library.lua", Method = "GET" }).Body)()
+    end)
+    if not ok1 then warn("[Ivory] Library load failed:", err1) end
+    local ok2, err2 = pcall(function()
+        ThemeManager = loadstring(request({ Url = repo .. "addons/ThemeManager.lua", Method = "GET" }).Body)()
+    end)
+    if not ok2 then warn("[Ivory] ThemeManager load failed:", err2) end
+    local ok3, err3 = pcall(function()
+        SaveManager = loadstring(request({ Url = repo .. "addons/SaveManager.lua", Method = "GET" }).Body)()
+    end)
+    if not ok3 then warn("[Ivory] SaveManager load failed:", err3) end
+end
 
 if not Library then
     warn("[Ivory] ObsidianUltra failed to load - aborting")
