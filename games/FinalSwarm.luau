@@ -2088,6 +2088,10 @@ if isGame then
 
 						if #cards == 0 then return end
 
+						for _, card in ipairs(cards) do
+							warn("[FSH] Card: '" .. card.name .. "'")
+						end
+
 						local selected = cards[1]
 						local priorityList = STATE.UpgradePriority
 						if type(priorityList) == "table" then
@@ -2107,6 +2111,7 @@ if isGame then
 								end
 							end
 						end
+						warn("[FSH] Picked: '" .. selected.name .. "'")
 
 						local conns = getconnections(selected.button.MouseButton1Up)
 						if #conns > 0 and conns[1].Function then
