@@ -167,36 +167,25 @@ local function AutoEquipBest()
             if not char then return end
             local hrp = char:FindFirstChild("HumanoidRootPart")
             if not hrp then return end
-            local bp = LocalPlayer:FindFirstChild("Backpack")
-            local tool = char:FindFirstChildOfClass("Tool") or (bp and bp:FindFirstChildOfClass("Tool"))
-            if not tool then return end
 
-            -- Method 1: fire Plot.Place remote
+            -- Fire Plot.Place to equip best burger
             if PlotPlace then
                 pcall(function() PlotPlace:FireServer() end)
             end
 
-            -- Method 2: fire proximity prompt
+            -- Also fire Place/Take proximity prompt if nearby
             for _, v in ipairs(workspace:GetDescendants()) do
                 if v:IsA("ProximityPrompt") and v.Enabled then
-                    local act = v.ActionText
-                    if act and (string.find(act:lower(), "place") or string.find(act:lower(), "take")) then
+                    local act = v.ActionText or ""
+                    if string.find(act, "Place") or string.find(act, "place") or string.find(act, "Take") or string.find(act, "take") then
                         local pp = v.Parent
                         if pp and pp:IsA("BasePart") then
                             local dist = (pp.Position - hrp.Position).Magnitude
                             if dist > 12 then
                                 hrp.CFrame = pp.CFrame * CFrame.new(0, 3, 0)
-                                task.wait(0.15)
+                                task.wait(0.1)
                             end
-                            pcall(function()
-                                if v.HoldDuration > 0 then
-                                    v:InputHoldBegin()
-                                    task.wait(v.HoldDuration + 0.1)
-                                    v:InputHoldEnd()
-                                else
-                                    fireproximityprompt(v)
-                                end
-                            end)
+                            pcall(function() fireproximityprompt(v) end)
                         end
                         break
                     end
