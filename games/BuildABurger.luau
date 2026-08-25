@@ -48,8 +48,6 @@ local Settings = {
     AutoRebirthEnabled = false,
     AutoUpgradeFloorsEnabled = false,
     AutoUpgradeLivesEnabled = false,
-    AutoBeginEnabled = false,
-    AutoContinueEnabled = false,
 
     BurgerDelay = 0.1,
     SellDelay = 0.1,
@@ -57,8 +55,6 @@ local Settings = {
     RebirthDelay = 1,
     UpgradeFloorsDelay = 0.5,
     UpgradeLivesDelay = 0.5,
-    BeginDelay = 0.1,
-    ContinueDelay = 0.1,
 }
 
 local RS = game:GetService("ReplicatedStorage")
@@ -77,12 +73,8 @@ local PlotCollect = GetRemote("Shared:Network:Remotes:Plot:Collect")
 local RequestRebirth = GetRemote("Shared:Network:Remotes:PlayerData:RequestRebirth")
 local UpgradeFloors = GetRemote("Shared:Network:Remotes:PlayerData:UpgradeFloors")
 local UpgradeLives = GetRemote("Shared:Network:Remotes:PlayerData:UpgradeLives")
-local BuildingBegin = GetRemote("Shared:Network:Remotes:Building:Begin")
-local BuildingCancel = GetRemote("Shared:Network:Remotes:Building:Cancel")
 
 local function AutoBurger()
-    if BuildingBegin then BuildingBegin:FireServer() end
-    task.wait(0.5)
     while Settings.AutoBurgerEnabled do
         pcall(function()
             if BuildingSuccess then BuildingSuccess:FireServer(-0.658413290977478) end
@@ -141,24 +133,6 @@ local function AutoUpgradeLives()
     end
 end
 
-local function AutoBegin()
-    while Settings.AutoBeginEnabled do
-        pcall(function()
-            if BuildingBegin then BuildingBegin:FireServer() end
-        end)
-        task.wait(Settings.BeginDelay)
-    end
-end
-
-local function AutoContinue()
-    while Settings.AutoContinueEnabled do
-        pcall(function()
-            if BuildingCancel then BuildingCancel:FireServer() end
-        end)
-        task.wait(Settings.ContinueDelay)
-    end
-end
-
 -- ═══════════════════════════════════════
 -- WINDOW
 -- ═══════════════════════════════════════
@@ -200,10 +174,6 @@ local EconBox = AutoSub:AddLeftGroupbox("Economy")
 EconBox:AddToggle("AutoSell", { Text = "Auto Sell", Default = false, Callback = function(v) Settings.AutoSellEnabled = v if v then task.spawn(AutoSell) end end })
 EconBox:AddToggle("AutoCollect", { Text = "Auto Collect Cash", Default = false, Callback = function(v) Settings.AutoCollectEnabled = v if v then task.spawn(AutoCollect) end end })
 
-local BuildBox = AutoSub:AddRightGroupbox("Building")
-BuildBox:AddToggle("AutoBegin", { Text = "Auto Begin", Default = false, Callback = function(v) Settings.AutoBeginEnabled = v if v then task.spawn(AutoBegin) end end })
-BuildBox:AddToggle("AutoContinue", { Text = "Auto Continue (Cancel)", Default = false, Callback = function(v) Settings.AutoContinueEnabled = v if v then task.spawn(AutoContinue) end end })
-
 -- ═══ DELAYS TAB ═══
 local DelaySub = DelaysTab:AddSubTab("Delays")
 
@@ -216,8 +186,6 @@ DL1:AddSlider("RebirthDelay", { Text = "Rebirth Delay", Default = 1, Min = 0.01,
 local DL2 = DelaySub:AddRightGroupbox("More Delays")
 DL2:AddSlider("UpgradeFloorsDelay", { Text = "Upgrade Floors Delay", Default = 0.5, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s", Callback = function(v) Settings.UpgradeFloorsDelay = v end })
 DL2:AddSlider("UpgradeLivesDelay", { Text = "Upgrade Lives Delay", Default = 0.5, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s", Callback = function(v) Settings.UpgradeLivesDelay = v end })
-DL2:AddSlider("BeginDelay", { Text = "Begin Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s", Callback = function(v) Settings.BeginDelay = v end })
-DL2:AddSlider("ContinueDelay", { Text = "Continue Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s", Callback = function(v) Settings.ContinueDelay = v end })
 
 -- ═══ SETTINGS TAB ═══
 local ThemesSub = SettingsTab:AddSubTab("Themes & UI")
