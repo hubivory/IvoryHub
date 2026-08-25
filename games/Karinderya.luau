@@ -1951,6 +1951,10 @@ local ToggleStoreStatus = Remotes:WaitForChild("ToggleStoreStatus")
 local UseBoostEvent = Remotes:WaitForChild("UseBoostEvent")
 local UpgradeToGoldenPan = Remotes:WaitForChild("UpgradeToGoldenPan")
 local NPCRemotes = Remotes:WaitForChild("NPCRemotes")
+local SoftdrinkOrdersUpdated = NPCRemotes:WaitForChild("SoftdrinkOrdersUpdated")
+local AdditionalOrder = NPCRemotes:WaitForChild("AdditionalOrder")
+local NPCDrink = NPCRemotes:WaitForChild("NPCDrink")
+local GiveSoftdrink = ShopRemotes:WaitForChild("GiveSoftdrink")
 local MenuRemotes = Remotes:WaitForChild("MenuRemotes")
 local UnlockMenu = MenuRemotes:WaitForChild("UnlockMenu")
 local ToggleMenu = MenuRemotes:WaitForChild("ToggleMenu")
@@ -1959,6 +1963,7 @@ local GetMenuData = MenuRemotes:WaitForChild("GetMenuData")
 local Modules = ReplicatedStorage:WaitForChild("Modules")
 local FoodConfig = require(Modules:WaitForChild("FoodConfig"))
 local IngredientsConfig = require(Modules:WaitForChild("IngredientsConfig"))
+local SoftdrinkConfig = require(Modules:WaitForChild("SoftdrinkConfig"))
 local FurnitureConfig = require(Modules:WaitForChild("FurnitureConfig"))
 local NPCConfig = require(Modules:WaitForChild("NPCConfig"))
 
@@ -1972,6 +1977,115 @@ for name, data in pairs(NPCConfig.Types) do
 end
 table.sort(npcNamesWithRarity)
 table.insert(npcNamesWithRarity, 1, "None")
+
+-- ═══════════════════════════════════════
+-- SOFTDRINK ORDER TRACKING
+-- ═══════════════════════════════════════
+local activeDrinkOrders = {}
+local lastDrinkAttempt = {}
+local drinkConns = {}
+
+local function resolveDrinkKey(rawKey)
+    if not rawKey then return "Kola" end
+    local str = tostring(rawKey)
+    local lower = str:lower():gsub("%s+", "")
+    for ingName, _ in pairs(IngredientsConfig or {}) do
+        if tostring(ingName):lower():gsub("%s+", "") == lower then
+            return ingName
+        end
+    end
+    if lower == "cola" or lower == "kola" then
+        return IngredientsConfig["Kola"] and "Kola" or str
+    elseif lower == "suprise" or lower == "surprise" then
+        return IngredientsConfig["Suprise"] and "Suprise" or str
+    elseif lower == "loyal" then
+        return "Loyal"
+    end
+    return str
+end
+
+local function disconnectDrinkConns()
+    for _, conn in ipairs(drinkConns) do
+        pcall(function() conn:Disconnect() end)
+    end
+    drinkConns = {}
+end
+
+disconnectDrinkConns()
+
+table.insert(drinkConns, SoftdrinkOrdersUpdated.OnClientEvent:Connect(function(orders)
+    if type(orders) == "table" then
+        activeDrinkOrders = {}
+        for _, drink in pairs(orders) do
+            table.insert(activeDrinkOrders, resolveDrinkKey(drink))
+        end
+    end
+end))
+
+table.insert(drinkConns, AdditionalOrder.OnClientEvent:Connect(function(_npcName, drinkKey)
+    if drinkKey ~= nil then
+        table.insert(activeDrinkOrders, resolveDrinkKey(drinkKey))
+    end
+end))
+
+local drinkStats = { given = 0, state = "Watching for requests" }
+
+table.insert(drinkConns, NPCDrink.OnClientEvent:Connect(function(_npcName, drinkKey)
+    drinkStats.given = drinkStats.given + 1
+    drinkStats.state = string.format("Delivered %s!", resolveDrinkKey(drinkKey))
+end))
+
+local function buyIngredient(key)
+    local cfg = IngredientsConfig[key]
+    if not cfg or not cfg.Cost then return false end
+    if getCash() - cfg.Cost < 5000 then return false end
+    local ok, success = pcall(function()
+        return BuyIngredient:InvokeServer(key, 1, "Cash")
+    end)
+    return ok and success
+end
+
+local function stepFulfillSoftdrinkOrders()
+    if not cfg.autoSoftdrinks or #activeDrinkOrders == 0 then return false end
+
+    local drinkKey = resolveDrinkKey(activeDrinkOrders[1])
+    local now = os.clock()
+    if now < (lastDrinkAttempt[drinkKey] or 0) then return false end
+    lastDrinkAttempt[drinkKey] = now + 1.5
+
+    local ingredients = LocalPlayer:FindFirstChild("Ingredients")
+    local stock = ingredients and ingredients:FindFirstChild(drinkKey)
+    if not stock or stock.Value <= 0 then
+        if cfg.autoBuyIngredients then
+            buyIngredient(drinkKey)
+            task.wait(0.2)
+            ingredients = LocalPlayer:FindFirstChild("Ingredients")
+            stock = ingredients and ingredients:FindFirstChild(drinkKey)
+        end
+        if not stock or stock.Value <= 0 then
+            lastDrinkAttempt[drinkKey] = now + 5
+            drinkStats.state = drinkKey .. " out of stock"
+            return false
+        end
+    end
+
+    local ok, success, msg = pcall(function()
+        return GiveSoftdrink:InvokeServer(drinkKey)
+    end)
+
+    if ok and success then
+        table.remove(activeDrinkOrders, 1)
+        drinkStats.given = drinkStats.given + 1
+        drinkStats.state = string.format("Delivered %s!", drinkKey)
+        return true
+    else
+        if tostring(msg):match("Nobody") or tostring(msg):match("ordered") then
+            table.remove(activeDrinkOrders, 1)
+        end
+        drinkStats.state = string.format("%s: %s", drinkKey, tostring(msg or success))
+    end
+    return false
+end
 
 local Toggles = Library.Toggles
 local Options = Library.Options
@@ -2039,6 +2153,7 @@ local cfg = {
     autoPlaceFurniture = false,
     furnitureWhitelist = {},
     autoBuyIngredients = false,
+    autoSoftdrinks = false,
     autoUseBoosts = false,
     autoUnlockTables = false,
     autoUnlockMenu = false,
@@ -2080,6 +2195,7 @@ local status = {
     buyFurn = "Idle",
     placeFurn = "Idle",
     buyIng = "Idle",
+    drink = "Idle",
     boosts = "Idle",
     unlockTbl = "Idle",
     unlockMenu = "Idle",
@@ -2145,6 +2261,7 @@ local AutoSub = MainTab:AddSubTab({ Name = "Automation", Icon = "zap" })
 local FoodBox = AutoSub:AddLeftGroupbox("Food", "utensils")
 FoodBox:AddToggle("AutoServe", { Text = "Auto Serve Food", Default = false })
 FoodBox:AddToggle("AutoOrder", { Text = "Auto Assign Customers", Default = false })
+FoodBox:AddToggle("AutoSoftdrinks", { Text = "Auto Serve Drinks", Default = false, Tooltip = "Instantly fulfills customer drink orders from inventory via GiveSoftdrink remote" })
 
 FoodBox:AddDropdown("RejectNPCList", {
 	Values = {},
@@ -2273,8 +2390,8 @@ local ConfigSub = SettingsTab:AddSubTab({ Name = "Config", Icon = "save" })
 -- LOGS TAB
 local StatusBox = LogsTab:AddLeftGroupbox("Status", "activity")
 local StatusLabels = {}
-local statusOrder = {"serve", "order", "codes", "pan", "clean", "wash", "buyFurn", "placeFurn", "buyIng", "boosts", "unlockTbl", "unlockMenu"}
-local statusNames = {serve="Serve", order="Order", codes="Codes", pan="Pan", clean="Clean", wash="Wash", buyFurn="Buy Furn", placeFurn="Place Furn", buyIng="Buy Ing", boosts="Boosts", unlockTbl="Unlock Tbl", unlockMenu="Unlock Menu"}
+local statusOrder = {"serve", "order", "drink", "codes", "pan", "clean", "wash", "buyFurn", "placeFurn", "buyIng", "boosts", "unlockTbl", "unlockMenu"}
+local statusNames = {serve="Serve", order="Order", drink="Drinks", codes="Codes", pan="Pan", clean="Clean", wash="Wash", buyFurn="Buy Furn", placeFurn="Place Furn", buyIng="Buy Ing", boosts="Boosts", unlockTbl="Unlock Tbl", unlockMenu="Unlock Menu"}
 for _, key in ipairs(statusOrder) do
     StatusLabels[key] = StatusBox:AddLabel(statusNames[key] .. ": Idle", true)
 end
@@ -2372,6 +2489,7 @@ Options.FurnitureWhitelist:OnChanged(function(v)
     end
 end)
 Toggles.AutoBuyIngredients:OnChanged(function(s) cfg.autoBuyIngredients = s end)
+Toggles.AutoSoftdrinks:OnChanged(function(s) cfg.autoSoftdrinks = s end)
 Toggles.AutoUseBoosts:OnChanged(function(s) cfg.autoUseBoosts = s end)
 Toggles.AutoUnlockTables:OnChanged(function(s) cfg.autoUnlockTables = s end)
 Toggles.AutoUnlockMenu:OnChanged(function(s) cfg.autoUnlockMenu = s end)
@@ -2444,6 +2562,14 @@ task.spawn(function() while true do
         end
         if diff ~= 0 then
             logMoney("Serve Food", diff)
+        end
+
+        if cfg.autoSoftdrinks then
+            for _ = 1, 5 do
+                if not stepFulfillSoftdrinkOrders() then break end
+                task.wait(0.1)
+            end
+            setStatus("drink", drinkStats.state)
         end
     else
         setStatus("serve", "Disabled")
