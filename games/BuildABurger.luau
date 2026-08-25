@@ -165,16 +165,35 @@ local function AutoEquipBest()
         pcall(function()
             local char = LocalPlayer.Character
             if not char then return end
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if not hrp then return end
             local tool = char:FindFirstChildOfClass("Tool")
             if not tool then
                 local bp = LocalPlayer:FindFirstChild("Backpack")
                 if bp then tool = bp:FindFirstChildOfClass("Tool") end
             end
-            if tool and PlotPlace then
-                PlotPlace:FireServer()
+            if not tool then return end
+            for _, v in ipairs(workspace:GetDescendants()) do
+                if v:IsA("ProximityPrompt") and v.Enabled then
+                    local action = v.ActionText:lower()
+                    if string.find(action, "place") or string.find(action, "take") then
+                        local pp = v.Parent
+                        if pp and pp:IsA("BasePart") then
+                            local dist = (pp.Position - hrp.Position).Magnitude
+                            if dist < 15 then
+                                fireproximityprompt(v)
+                            else
+                                hrp.CFrame = pp.CFrame * CFrame.new(0, 3, 0)
+                                task.wait(0.2)
+                                fireproximityprompt(v)
+                            end
+                        end
+                        break
+                    end
+                end
             end
         end)
-        task.wait(0.3)
+        task.wait(0.5)
     end
 end
 
