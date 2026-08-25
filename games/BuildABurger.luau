@@ -147,16 +147,38 @@ end
 -- ===============================================================
 -- UI LOAD
 -- ===============================================================
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = nil
-local ThemeManager = nil
-local SaveManager = nil
+local function SafeLoad(name, url)
+    local body = nil
+    local ok, res = pcall(function()
+        return game:HttpGet(url, true)
+    end)
+    if ok and res and typeof(res) == "string" and #res > 100 and not res:find("404") then
+        body = res
+    end
+    if not body then
+        local ok2, res2 = pcall(function()
+            return request({ Url = url, Method = "GET" }).Body
+        end)
+        if ok2 and res2 and typeof(res2) == "string" and #res2 > 100 and not res2:find("404") then
+            body = res2
+        end
+    end
+    if not body then
+        warn("[Ivory] Failed to fetch " .. name)
+        return nil
+    end
+    local fn, err = loadstring(body)
+    if not fn then
+        warn("[Ivory] Failed to compile " .. name .. ": " .. tostring(err))
+        return nil
+    end
+    return fn()
+end
 
-pcall(function()
-    Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-    ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-    SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
-end)
+local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
+local Library = SafeLoad("Library", repo .. "Library.lua")
+local ThemeManager = SafeLoad("ThemeManager", repo .. "addons/ThemeManager.lua")
+local SaveManager = SafeLoad("SaveManager", repo .. "addons/SaveManager.lua")
 
 if not Library then
     warn("[Ivory] ObsidianUltra failed to load")
@@ -214,7 +236,7 @@ local DelaysTab = Window:AddTab({ Name = "Delays", Icon = "clock" })
 local SettingsTab = Window:AddTab({ Name = "UI Settings", Icon = "settings" })
 
 -- ===============================================================
--- MAIN - AUTOMATION SUB TAB
+-- MAIN - AUTOMATION
 -- ===============================================================
 local AutoSub = MainTab:AddSubTab("Automation", "zap")
 
