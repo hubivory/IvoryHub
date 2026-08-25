@@ -50,6 +50,7 @@ local Settings = {
     AutoUpgradeLivesEnabled = false,
     AutoBeginEnabled = false,
     AutoContinueEnabled = false,
+    AutoEquipBestEnabled = false,
 
     BurgerDelay = 0.1,
     SellDelay = 0.1,
@@ -74,6 +75,8 @@ end
 local BuildingSuccess = GetRemote("Shared:Network:Remotes:Building:Success")
 local PlayerSell = GetRemote("Shared:Network:Remotes:PlayerData:Sell")
 local PlotCollect = GetRemote("Shared:Network:Remotes:Plot:Collect")
+local PlotPlace = GetRemote("Shared:Network:Remotes:Plot:Place")
+local BuildingNext = GetRemote("Shared:Network:Remotes:Building:Next")
 local RequestRebirth = GetRemote("Shared:Network:Remotes:PlayerData:RequestRebirth")
 local UpgradeFloors = GetRemote("Shared:Network:Remotes:PlayerData:UpgradeFloors")
 local UpgradeLives = GetRemote("Shared:Network:Remotes:PlayerData:UpgradeLives")
@@ -157,6 +160,24 @@ local function AutoContinue()
     end
 end
 
+local function AutoEquipBest()
+    while Settings.AutoEquipBestEnabled do
+        pcall(function()
+            local char = LocalPlayer.Character
+            if not char then return end
+            local tool = char:FindFirstChildOfClass("Tool")
+            if not tool then
+                local bp = LocalPlayer:FindFirstChild("Backpack")
+                if bp then tool = bp:FindFirstChildOfClass("Tool") end
+            end
+            if tool and PlotPlace then
+                PlotPlace:FireServer()
+            end
+        end)
+        task.wait(0.3)
+    end
+end
+
 -- ═══════════════════════════════════════
 -- WINDOW
 -- ═══════════════════════════════════════
@@ -188,6 +209,7 @@ local AutoSub = MainTab:AddSubTab("Automation")
 
 local BurgerBox = AutoSub:AddLeftGroupbox("Burger")
 BurgerBox:AddToggle("AutoBurger", { Text = "Auto Burger Perfect", Default = false, Callback = function(v) Settings.AutoBurgerEnabled = v if v then task.spawn(AutoBurger) end end })
+BurgerBox:AddToggle("AutoEquipBest", { Text = "Auto Equip Best", Default = false, Callback = function(v) Settings.AutoEquipBestEnabled = v if v then task.spawn(AutoEquipBest) end end })
 BurgerBox:AddToggle("AutoRebirth", { Text = "Auto Rebirth", Default = false, Callback = function(v) Settings.AutoRebirthEnabled = v if v then task.spawn(AutoRebirth) end end })
 
 local UpgradeBox = AutoSub:AddRightGroupbox("Upgrades")
