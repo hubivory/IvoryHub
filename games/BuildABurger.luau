@@ -1,30 +1,10 @@
 ﻿-- ===============================================================
--- IVORY HUB - BURGER PERFECT AUTO
--- ObsidianUltra UI (joustingmatch/ObsidianUltra)
+-- IVORY HUB - BUILD A BURGER AUTO
+-- ObsidianUltra UI
 -- ===============================================================
-
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-
-local function Fetch(url)
-    local ok, res = pcall(function()
-        return game:HttpGet(url, true)
-    end)
-    if ok and res then return res end
-    local ok2, res2 = pcall(function()
-        return request({ Url = url, Method = "GET" }).Body
-    end)
-    if ok2 and res2 then return res2 end
-    error("[Ivory] Failed to fetch: " .. url)
-end
-
-local Library = loadstring(Fetch(repo .. "Library.lua"))()
-local ThemeManager = loadstring(Fetch(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(Fetch(repo .. "addons/SaveManager.lua"))()
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local Options = Library.Options
-local Toggles = Library.Toggles
 
 local Settings = {
     AutoBurgerEnabled = false,
@@ -165,29 +145,56 @@ local function AutoContinue()
 end
 
 -- ===============================================================
--- UI
+-- UI LOAD
+-- ===============================================================
+local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
+local Library = nil
+local ThemeManager = nil
+local SaveManager = nil
+
+pcall(function()
+    Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+    ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
+    SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+end)
+
+if not Library then
+    warn("[Ivory] ObsidianUltra failed to load")
+    return
+end
+
+local Options = Library.Options
+local Toggles = Library.Toggles
+
+-- ===============================================================
+-- THEME
 -- ===============================================================
 Library.Scheme.BackgroundColor = Color3.fromRGB(18, 16, 26)
 Library.Scheme.MainColor = Color3.fromRGB(26, 22, 38)
 Library.Scheme.AccentColor = Color3.fromRGB(168, 120, 255)
 Library.Scheme.FontColor = Color3.fromRGB(248, 244, 255)
 
+-- ===============================================================
+-- WINDOW
+-- ===============================================================
 local Window = Library:CreateWindow({
-    Title = "Ivory | Burger Perfect",
+    Title = "Ivory",
+    Icon = "burger",
     Footer = {
-        "v1.5 |",
+        "v1.0 |",
+        { Text = "Build A Burger", Copyable = true },
+        "|",
         { Text = tostring(LocalPlayer.UserId), Copyable = true },
     },
     CopyableFooter = true,
-    Center = true,
-    AutoShow = true,
-    NotifySide = "Right",
-    ShowCustomCursor = true,
     FuzzySearch = true,
     SearchValues = true,
     Minimizable = true,
     MinimizeKeybind = Enum.KeyCode.RightBracket,
     MinimizedWidth = 280,
+    NotifySide = "Right",
+    ShowCustomCursor = true,
+    SearchKeybind = Enum.KeyCode.F,
     CornerRadius = 4,
     Animations = {
         ToggleWindow = false,
@@ -202,17 +209,17 @@ local Window = Library:CreateWindow({
 -- ===============================================================
 -- TABS
 -- ===============================================================
-local MainTab = Window:AddTab({ Name = "Main", Icon = "flame", Description = "Automation" })
-local DelaysTab = Window:AddTab({ Name = "Delays", Icon = "clock", Description = "Configure delays" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings", Description = "UI & Config" })
+local MainTab = Window:AddTab({ Name = "Main", Icon = "flame" })
+local DelaysTab = Window:AddTab({ Name = "Delays", Icon = "clock" })
+local SettingsTab = Window:AddTab({ Name = "UI Settings", Icon = "settings" })
 
 -- ===============================================================
--- MAIN TAB - AUTOMATION
+-- MAIN - AUTOMATION SUB TAB
 -- ===============================================================
-local AutoSub = MainTab:AddSubTab({ Name = "Automation", Icon = "zap" })
+local AutoSub = MainTab:AddSubTab("Automation", "zap")
 
-local BurgerBox = AutoSub:AddLeftGroupbox("Burger", "flame")
-BurgerBox:AddToggle("AutoBurger", {
+local AB1 = AutoSub:AddLeftGroupbox("Burger", "flame")
+AB1:AddToggle("AutoBurger", {
     Text = "Auto Burger Perfect",
     Default = false,
     Callback = function(v)
@@ -220,8 +227,7 @@ BurgerBox:AddToggle("AutoBurger", {
         if v then task.spawn(AutoBurger) end
     end,
 })
-
-BurgerBox:AddToggle("AutoRebirth", {
+AB1:AddToggle("AutoRebirth", {
     Text = "Auto Rebirth",
     Default = false,
     Callback = function(v)
@@ -230,8 +236,8 @@ BurgerBox:AddToggle("AutoRebirth", {
     end,
 })
 
-local UpgradeBox = AutoSub:AddRightGroupbox("Upgrades", "arrow-up-circle")
-UpgradeBox:AddToggle("AutoUpgradeFloors", {
+local AB2 = AutoSub:AddRightGroupbox("Upgrades", "arrow-up-circle")
+AB2:AddToggle("AutoUpgradeFloors", {
     Text = "Auto Upgrade Floors",
     Default = false,
     Callback = function(v)
@@ -239,8 +245,7 @@ UpgradeBox:AddToggle("AutoUpgradeFloors", {
         if v then task.spawn(AutoUpgradeFloors) end
     end,
 })
-
-UpgradeBox:AddToggle("AutoUpgradeLives", {
+AB2:AddToggle("AutoUpgradeLives", {
     Text = "Auto Upgrade Lives",
     Default = false,
     Callback = function(v)
@@ -249,8 +254,8 @@ UpgradeBox:AddToggle("AutoUpgradeLives", {
     end,
 })
 
-local EconBox = AutoSub:AddLeftGroupbox("Economy", "coins")
-EconBox:AddToggle("AutoSell", {
+local AB3 = AutoSub:AddLeftGroupbox("Economy", "coins")
+AB3:AddToggle("AutoSell", {
     Text = "Auto Sell",
     Default = false,
     Callback = function(v)
@@ -258,8 +263,7 @@ EconBox:AddToggle("AutoSell", {
         if v then task.spawn(AutoSell) end
     end,
 })
-
-EconBox:AddToggle("AutoCollect", {
+AB3:AddToggle("AutoCollect", {
     Text = "Auto Collect Cash",
     Default = false,
     Callback = function(v)
@@ -268,8 +272,8 @@ EconBox:AddToggle("AutoCollect", {
     end,
 })
 
-local BuildBox = AutoSub:AddRightGroupbox("Building", "hammer")
-BuildBox:AddToggle("AutoBegin", {
+local AB4 = AutoSub:AddRightGroupbox("Building", "hammer")
+AB4:AddToggle("AutoBegin", {
     Text = "Auto Begin",
     Default = false,
     Callback = function(v)
@@ -277,8 +281,7 @@ BuildBox:AddToggle("AutoBegin", {
         if v then task.spawn(AutoBegin) end
     end,
 })
-
-BuildBox:AddToggle("AutoContinue", {
+AB4:AddToggle("AutoContinue", {
     Text = "Auto Continue (Cancel)",
     Default = false,
     Callback = function(v)
@@ -290,47 +293,45 @@ BuildBox:AddToggle("AutoContinue", {
 -- ===============================================================
 -- DELAYS TAB
 -- ===============================================================
-local DelayLeft = DelaysTab:AddLeftGroupbox("Delays (seconds)", "clock")
-
-DelayLeft:AddSlider("BurgerDelay", {
+local DL1 = DelaysTab:AddLeftGroupbox("Delays (seconds)", "clock")
+DL1:AddSlider("BurgerDelay", {
     Text = "Burger Delay",
     Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
     Callback = function(v) Settings.BurgerDelay = v end,
 })
-DelayLeft:AddSlider("SellDelay", {
+DL1:AddSlider("SellDelay", {
     Text = "Sell Delay",
     Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
     Callback = function(v) Settings.SellDelay = v end,
 })
-DelayLeft:AddSlider("CollectDelay", {
+DL1:AddSlider("CollectDelay", {
     Text = "Collect Delay",
     Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
     Callback = function(v) Settings.CollectDelay = v end,
 })
-DelayLeft:AddSlider("RebirthDelay", {
+DL1:AddSlider("RebirthDelay", {
     Text = "Rebirth Delay",
     Default = 1, Min = 0.01, Max = 10, Rounding = 2, Suffix = "s",
     Callback = function(v) Settings.RebirthDelay = v end,
 })
 
-local DelayRight = DelaysTab:AddRightGroupbox("More Delays", "clock")
-
-DelayRight:AddSlider("UpgradeFloorsDelay", {
+local DL2 = DelaysTab:AddRightGroupbox("More Delays", "clock")
+DL2:AddSlider("UpgradeFloorsDelay", {
     Text = "Upgrade Floors Delay",
     Default = 0.5, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
     Callback = function(v) Settings.UpgradeFloorsDelay = v end,
 })
-DelayRight:AddSlider("UpgradeLivesDelay", {
+DL2:AddSlider("UpgradeLivesDelay", {
     Text = "Upgrade Lives Delay",
     Default = 0.5, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
     Callback = function(v) Settings.UpgradeLivesDelay = v end,
 })
-DelayRight:AddSlider("BeginDelay", {
+DL2:AddSlider("BeginDelay", {
     Text = "Begin Delay",
     Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
     Callback = function(v) Settings.BeginDelay = v end,
 })
-DelayRight:AddSlider("ContinueDelay", {
+DL2:AddSlider("ContinueDelay", {
     Text = "Continue Delay",
     Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
     Callback = function(v) Settings.ContinueDelay = v end,
@@ -350,7 +351,6 @@ ThemeManager:ApplyToTab(SettingsTab)
 SaveManager:BuildConfigSection(SettingsTab)
 
 local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "wrench")
-
 MenuGroup:AddToggle("KeybindMenuOpen", {
     Default = Library.KeybindFrame.Visible,
     Text = "Open Keybind Menu",
@@ -358,7 +358,7 @@ MenuGroup:AddToggle("KeybindMenuOpen", {
 })
 MenuGroup:AddToggle("ShowCustomCursor", {
     Text = "Custom Cursor",
-    Default = true,
+    Default = Library.ShowCustomCursor,
     Callback = function(v) Library.ShowCustomCursor = v end,
 })
 MenuGroup:AddDropdown("NotificationSide", {
@@ -390,8 +390,8 @@ SaveManager:LoadAutoloadConfig()
 
 Library:Notify({
     Title = "Ivory",
-    Description = "Burger Perfect Auto loaded. RightShift to toggle menu.",
+    Description = "Build A Burger loaded. RightShift to toggle menu.",
     Type = "Success",
-    Time = 4,
+    Time = 3,
 })
-Window:SetMinimizedSubtitle("Ivory | Burger Perfect Auto")
+Window:SetMinimizedSubtitle("Ivory | Build A Burger")
