@@ -2109,9 +2109,12 @@ if isGame then
 						if #conns > 0 and conns[1].Function then
 							conns[1].Function()
 							STATE.LastUpgrade = selected.name
-							if UpgradeLabel then
-								UpgradeLabel:SetText("Last: " .. selected.name)
-							end
+							warn("[FSH] Upgrade picked: " .. selected.name)
+							pcall(function()
+								if UpgradeLabel then
+									UpgradeLabel:SetText("Last: " .. selected.name)
+								end
+							end)
 						end
 					end)
 					lastClickTime = os.clock()
@@ -2829,7 +2832,17 @@ if isGame then
 		Default = {},
 		Callback = function(v) STATE.UpgradePriority = v end,
 	})
-	UpgradeLabel = UG1:AddLabel("Last: none")
+	UpgradeLabel = UG1:AddLabel("Last: waiting...")
+	task.spawn(function()
+		local last = nil
+		while true do
+			task.wait(1)
+			if STATE.LastUpgrade and STATE.LastUpgrade ~= last then
+				last = STATE.LastUpgrade
+				pcall(function() UpgradeLabel:SetText("Last: " .. last) end)
+			end
+		end
+	end)
 
 	local VisTab = Window:AddTab({ Name = "Visuals", Icon = "eye" })
 	local VisSub = VisTab:AddSubTab("ESP", "scan")
