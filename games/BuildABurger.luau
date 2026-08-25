@@ -1,7 +1,10 @@
 ﻿local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = loadstring(request({ Url = repo .. "Library.lua", Method = "GET" }).Body)()
-local ThemeManager = loadstring(request({ Url = repo .. "addons/ThemeManager.lua", Method = "GET" }).Body)()
-local SaveManager = loadstring(request({ Url = repo .. "addons/SaveManager.lua", Method = "GET" }).Body)()
+local function httpGet(url)
+    return request({ Url = url, Method = "GET" }).Body
+end
+local Library = loadstring(httpGet(repo .. "Library.lua"))()
+local ThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
+local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
 
 local Toggles = Library.Toggles
 local Options = Library.Options
@@ -137,8 +140,31 @@ end
 -- ═══════════════════════════════════════
 local Window = Library:CreateWindow({
     Title = "Ivory",
-    Footer = { "Ivory | Build A Burger", { Text = "v1.0", Copyable = true } },
-    Minimizable = true, FuzzySearch = true, SearchValues = true,
+    Icon = "burger",
+    Footer = {
+        "v1.4 |",
+        { Text = "Build A Burger", Copyable = true },
+        "|",
+        { Text = tostring(LocalPlayer.UserId), Copyable = true },
+    },
+    CopyableFooter = true,
+    FuzzySearch = true,
+    SearchValues = true,
+    Minimizable = true,
+    MinimizeKeybind = Enum.KeyCode.RightBracket,
+    MinimizedWidth = 280,
+    NotifySide = "Right",
+    ShowCustomCursor = true,
+    SearchKeybind = Enum.KeyCode.F,
+    CornerRadius = 4,
+    Animations = {
+        ToggleWindow = false,
+        TabSwitch = false,
+        Groupbox = false,
+        Dropdown = false,
+        KeyPicker = false,
+        SubTabUnderline = true,
+    },
 })
 
 local MainTab = Window:AddTab({ Name = "Main", Icon = "burger", Description = "Automation" })
