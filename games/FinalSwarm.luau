@@ -2090,14 +2090,17 @@ if isGame then
 
 						local selected = cards[1]
 						local priorityList = STATE.UpgradePriority
-						if type(priorityList) == "table" and #priorityList > 0 then
+						if type(priorityList) == "table" then
 							local hasSpecific = false
-							for _, v in ipairs(priorityList) do
-								if v ~= "Any" and v ~= "None" then hasSpecific = true break end
+							for k, v in pairs(priorityList) do
+								local name = type(k) == "string" and k or v
+								if v == true or type(v) ~= "boolean" then
+									if name ~= "Any" and name ~= "None" then hasSpecific = true break end
+								end
 							end
 							if hasSpecific then
 								for _, card in ipairs(cards) do
-									if table.find(priorityList, card.name) then
+									if priorityList[card.name] == true or table.find(priorityList, card.name) then
 										selected = card
 										break
 									end
