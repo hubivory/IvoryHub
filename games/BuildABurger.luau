@@ -4,9 +4,22 @@
 -- ===============================================================
 
 local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+
+local function Fetch(url)
+    local ok, res = pcall(function()
+        return game:HttpGet(url, true)
+    end)
+    if ok and res then return res end
+    local ok2, res2 = pcall(function()
+        return request({ Url = url, Method = "GET" }).Body
+    end)
+    if ok2 and res2 then return res2 end
+    error("[Ivory] Failed to fetch: " .. url)
+end
+
+local Library = loadstring(Fetch(repo .. "Library.lua"))()
+local ThemeManager = loadstring(Fetch(repo .. "addons/ThemeManager.lua"))()
+local SaveManager = loadstring(Fetch(repo .. "addons/SaveManager.lua"))()
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -34,24 +47,24 @@ local Settings = {
 }
 
 local RS = game:GetService("ReplicatedStorage")
-local Network = RS:WaitForChild("Network", 15)
-local Remotes = RS:WaitForChild("Remotes", 15)
+local Network = RS:WaitForChild("Network", 10)
+local Remotes = RS:WaitForChild("Remotes", 10)
 
-local LinkPlayerToOrder = Network:FindFirstChild("LinkPlayerToOrder")
-local UnlinkPlayerFromOrder = Network:FindFirstChild("UnlinkPlayerFromOrder")
-local RequestOrderBoard = Network:FindFirstChild("RequestOrderBoard")
-local TryAddIngredientToPlate = Network:FindFirstChild("TryAddIngredientToPlate")
-local RequestMeatSeasoning = Network:FindFirstChild("RequestMeatSeasoning")
-local AddTimeToMeat = Network:FindFirstChild("AddTimeToMeat")
-local RequestFriesSeasoning = Network:FindFirstChild("RequestFriesSeasoning")
-local AddTimeToFries = Network:FindFirstChild("AddTimeToFries")
-local AddMoney = Network:FindFirstChild("AddMoney")
-local BuyPcUpgradeRequest = Network:FindFirstChild("BuyPcUpgradeRequest")
-local RebirthClass = Network:FindFirstChild("RebirthClass")
-local ClaimReward = Network:FindFirstChild("ClaimReward")
-local HealthInspector_ClaimRewards = Network:FindFirstChild("HealthInspector_ClaimRewards")
-local TycoonPurchase = Remotes:FindFirstChild("TycoonPurchase")
-local EmployeeUpgrade = Remotes:FindFirstChild("EmployeeUpgrade")
+local LinkPlayerToOrder = Network and Network:FindFirstChild("LinkPlayerToOrder")
+local UnlinkPlayerFromOrder = Network and Network:FindFirstChild("UnlinkPlayerFromOrder")
+local RequestOrderBoard = Network and Network:FindFirstChild("RequestOrderBoard")
+local TryAddIngredientToPlate = Network and Network:FindFirstChild("TryAddIngredientToPlate")
+local RequestMeatSeasoning = Network and Network:FindFirstChild("RequestMeatSeasoning")
+local AddTimeToMeat = Network and Network:FindFirstChild("AddTimeToMeat")
+local RequestFriesSeasoning = Network and Network:FindFirstChild("RequestFriesSeasoning")
+local AddTimeToFries = Network and Network:FindFirstChild("AddTimeToFries")
+local AddMoney = Network and Network:FindFirstChild("AddMoney")
+local BuyPcUpgradeRequest = Network and Network:FindFirstChild("BuyPcUpgradeRequest")
+local RebirthClass = Network and Network:FindFirstChild("RebirthClass")
+local ClaimReward = Network and Network:FindFirstChild("ClaimReward")
+local HealthInspector_ClaimRewards = Network and Network:FindFirstChild("HealthInspector_ClaimRewards")
+local TycoonPurchase = Remotes and Remotes:FindFirstChild("TycoonPurchase")
+local EmployeeUpgrade = Remotes and Remotes:FindFirstChild("EmployeeUpgrade")
 
 local function AutoBurger()
     if not LinkPlayerToOrder or not TryAddIngredientToPlate then
