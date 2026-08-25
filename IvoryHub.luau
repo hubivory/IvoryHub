@@ -47,11 +47,29 @@ local success, err = pcall(function()
     pcall(function()
         local genv = getgenv()
         if not genv._IvoryUILoaded then
-            genv._IvoryLib = loadstring(httpGet(repo .. "Library.lua"))()
-            genv._IvoryThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
-            genv._IvorySaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
-            genv._IvoryUILoaded = true
-            print("[Ivory Hub] ObsidianUltra loaded")
+            local req = request
+            local env = setmetatable({}, { __index = getfenv(0) })
+            env.request = req
+            env.http_request = req
+
+            local libFn = loadstring(httpGet(repo .. "Library.lua"))
+            if libFn then setfenv(libFn, env) end
+            genv._IvoryLib = libFn and libFn() or nil
+
+            local tmFn = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))
+            if tmFn then setfenv(tmFn, env) end
+            genv._IvoryThemeManager = tmFn and tmFn() or nil
+
+            local smFn = loadstring(httpGet(repo .. "addons/SaveManager.lua"))
+            if smFn then setfenv(smFn, env) end
+            genv._IvorySaveManager = smFn and smFn() or nil
+
+            genv._IvoryUILoaded = genv._IvoryLib ~= nil
+            if genv._IvoryUILoaded then
+                print("[Ivory Hub] ObsidianUltra loaded")
+            else
+                warn("[Ivory Hub] ObsidianUltra failed to initialize")
+            end
         end
     end)
 
