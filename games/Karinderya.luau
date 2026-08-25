@@ -2694,71 +2694,72 @@ task.spawn(function() while true do
             local sink = plot:FindFirstChild("Sink")
             local washed = 0
 
-            -- Step 1: Collect dirty dishes from entire plot and put them in sink
-            for _, desc in ipairs(plot:GetDescendants()) do
-                if desc:IsA("ProximityPrompt") and desc.Enabled then
-                    local action = desc.ActionText:lower()
-                    local obj = desc.ObjectText:lower()
-                    if string.find(obj, "dirty") or string.find(obj, "dish") or string.find(action, "wash") or string.find(action, "pick") then
-                        local pp = desc.Parent
-                        if pp and pp:IsA("BasePart") then
-                            -- Pick up the dish
-                            local release = acquireTp()
-                            tp(pp.CFrame * CFrame.new(0, 3, 0))
-                            task.wait(0.2)
-                            if desc.Enabled then
-                                fireproximityprompt(desc)
-                            end
-                            release()
+            -- Step 1: Collect dirty dishes from key areas only (not entire plot)
+            local collectAreas = {}
+            local dp = plot:FindFirstChild("DiningPlot1")
+            if dp then table.insert(collectAreas, dp) end
+            local serve = plot:FindFirstChild("Serve")
+            if serve then table.insert(collectAreas, serve) end
 
-                            -- Wait until holding a tool
-                            local gotTool = false
-                            for _ = 1, 30 do
-                                local c = LocalPlayer.Character
-                                if c and c:FindFirstChildOfClass("Tool") then
-                                    gotTool = true
-                                    break
+            for _, area in ipairs(collectAreas) do
+                for _, desc in ipairs(area:GetDescendants()) do
+                    if desc:IsA("ProximityPrompt") and desc.Enabled then
+                        local action = desc.ActionText:lower()
+                        local obj = desc.ObjectText:lower()
+                        if string.find(obj, "dirty") or string.find(obj, "dish") or string.find(action, "wash") or string.find(action, "pick") then
+                            local pp = desc.Parent
+                            if pp and pp:IsA("BasePart") then
+                                -- Pick up the dish (quick tp + fire + release)
+                                local release = acquireTp()
+                                tp(pp.CFrame * CFrame.new(0, 3, 0))
+                                task.wait(0.15)
+                                pcall(function() if desc.Enabled then fireproximityprompt(desc) end end)
+                                release()
+                                task.wait(0.3)
+
+                                -- Wait for tool (no lock held)
+                                local gotTool = false
+                                for _ = 1, 20 do
+                                    local c = LocalPlayer.Character
+                                    if c and c:FindFirstChildOfClass("Tool") then gotTool = true; break end
+                                    task.wait(0.1)
                                 end
-                                task.wait(0.1)
-                            end
 
-                            if gotTool and sink then
-                                task.wait(0.2)
-                                -- Find the Put prompt in sink
-                                local putPrompt = nil
-                                for _, pd in ipairs(sink:GetDescendants()) do
-                                    if pd:IsA("ProximityPrompt") and (pd.Name == "Put" or string.find(pd.ActionText:lower(), "put") or string.find(pd.ActionText:lower(), "place")) then
-                                        putPrompt = pd
-                                        break
+                                if gotTool and sink then
+                                    task.wait(0.15)
+                                    -- Find Put prompt in sink
+                                    for _, pd in ipairs(sink:GetDescendants()) do
+                                        if pd:IsA("ProximityPrompt") and pd.Enabled then
+                                            local a = pd.ActionText:lower()
+                                            if string.find(a, "put") or string.find(a, "place") or pd.Name == "Put" then
+                                                local r2 = acquireTp()
+                                                tp(pd.Parent.CFrame * CFrame.new(0, 3, 0))
+                                                task.wait(0.2)
+                                                pcall(function() fireproximityprompt(pd) end)
+                                                r2()
+                                                task.wait(0.5)
+                                                break
+                                            end
+                                        end
                                     end
                                 end
-                                if putPrompt then
-                                    local release2 = acquireTp()
-                                    tp(putPrompt.Parent.CFrame * CFrame.new(0, 3, 0))
-                                    task.wait(0.25)
-                                    if putPrompt.Enabled then
-                                        fireproximityprompt(putPrompt)
+                                -- Drop any held tool if still holding
+                                pcall(function()
+                                    local c = LocalPlayer.Character
+                                    if c then
+                                        local t = c:FindFirstChildOfClass("Tool")
+                                        if t then t.Parent = LocalPlayer.Backpack end
                                     end
-                                    release2()
-                                    task.wait(0.8)
-                                end
+                                end)
                             end
                         end
                     end
                 end
             end
 
-            -- Step 2: Wash all dishes in sink (loop until no more prompts)
+            -- Step 2: Wash all dishes in sink
             if sink then
-                -- Debug: list all prompts in sink
-                for _, pd in ipairs(sink:GetDescendants()) do
-                    if pd:IsA("ProximityPrompt") then
-                        warn("[IvoryWash] Sink prompt: Name=" .. pd.Name .. " Action=" .. pd.ActionText .. " Object=" .. pd.ObjectText .. " Enabled=" .. tostring(pd.Enabled))
-                    end
-                end
-
-                for attempt = 1, 15 do
-                    -- Find any enabled prompt in the sink (Wash, Clean, Scrub, etc.)
+                for attempt = 1, 10 do
                     local washPrompt = nil
                     for _, pd in ipairs(sink:GetDescendants()) do
                         if pd:IsA("ProximityPrompt") and pd.Enabled then
@@ -2775,22 +2776,20 @@ task.spawn(function() while true do
 
                     local release3 = acquireTp()
                     tp(washPrompt.Parent.CFrame * CFrame.new(0, 3, 0))
-                    task.wait(0.3)
-                    if washPrompt.Enabled then
-                        -- Simulate holding the interaction key
+                    task.wait(0.15)
+                    -- Quick fire + hold attempt, release lock immediately after
+                    pcall(function()
                         local holdTime = washPrompt.HoldDuration or 1
                         local VIM = game:GetService("VirtualInputManager")
-                        pcall(function()
-                            VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-                            task.wait(holdTime + 0.5)
-                            VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                        VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                        task.delay(holdTime + 0.3, function()
+                            pcall(function() VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game) end)
                         end)
-                        -- Fallback: also fire the prompt
-                        pcall(fireproximityprompt, washPrompt)
-                        washed = washed + 1
-                    end
-                    release3()
-                    task.wait(1.0)
+                    end)
+                    pcall(fireproximityprompt, washPrompt)
+                    release3() -- release lock right away, don't wait for hold
+                    washed = washed + 1
+                    task.wait(1.5)
                 end
             end
 
