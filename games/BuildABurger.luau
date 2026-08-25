@@ -1,7 +1,10 @@
-﻿-- ===============================================================
--- IVORY HUB - BUILD A BURGER AUTO
--- Obsidian UI (deividcomsono/Obsidian)
--- ===============================================================
+﻿local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
+local Library = loadstring(request({ Url = repo .. "Library.lua", Method = "GET" }).Body)()
+local ThemeManager = loadstring(request({ Url = repo .. "addons/ThemeManager.lua", Method = "GET" }).Body)()
+local SaveManager = loadstring(request({ Url = repo .. "addons/SaveManager.lua", Method = "GET" }).Body)()
+
+local Toggles = Library.Toggles
+local Options = Library.Options
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -47,10 +50,7 @@ local TycoonPurchase = Remotes and Remotes:FindFirstChild("TycoonPurchase")
 local EmployeeUpgrade = Remotes and Remotes:FindFirstChild("EmployeeUpgrade")
 
 local function AutoBurger()
-    if not LinkPlayerToOrder or not TryAddIngredientToPlate then
-        warn("[Ivory] Order remotes missing")
-        return
-    end
+    if not LinkPlayerToOrder or not TryAddIngredientToPlate then return end
     while Settings.AutoBurgerEnabled do
         pcall(function()
             if RequestOrderBoard then RequestOrderBoard:InvokeServer() end
@@ -74,17 +74,15 @@ local function AutoBurger()
 end
 
 local function AutoSell()
-    if not AddMoney then warn("[Ivory] AddMoney remote missing") return end
+    if not AddMoney then return end
     while Settings.AutoSellEnabled do
-        pcall(function()
-            AddMoney:FireServer()
-        end)
+        pcall(function() AddMoney:FireServer() end)
         task.wait(Settings.SellDelay)
     end
 end
 
 local function AutoCollect()
-    if not ClaimReward then warn("[Ivory] ClaimReward remote missing") return end
+    if not ClaimReward then return end
     while Settings.AutoCollectEnabled do
         pcall(function()
             ClaimReward:FireServer()
@@ -95,251 +93,96 @@ local function AutoCollect()
 end
 
 local function AutoRebirth()
-    if not RebirthClass then warn("[Ivory] RebirthClass remote missing") return end
+    if not RebirthClass then return end
     while Settings.AutoRebirthEnabled do
-        pcall(function()
-            RebirthClass:FireServer()
-        end)
+        pcall(function() RebirthClass:FireServer() end)
         task.wait(Settings.RebirthDelay)
     end
 end
 
 local function AutoUpgradeFloors()
-    if not BuyPcUpgradeRequest then warn("[Ivory] BuyPcUpgradeRequest remote missing") return end
+    if not BuyPcUpgradeRequest then return end
     while Settings.AutoUpgradeFloorsEnabled do
-        pcall(function()
-            BuyPcUpgradeRequest:FireServer()
-        end)
+        pcall(function() BuyPcUpgradeRequest:FireServer() end)
         task.wait(Settings.UpgradeFloorsDelay)
     end
 end
 
 local function AutoUpgradeLives()
-    if not EmployeeUpgrade then warn("[Ivory] EmployeeUpgrade remote missing") return end
+    if not EmployeeUpgrade then return end
     while Settings.AutoUpgradeLivesEnabled do
-        pcall(function()
-            EmployeeUpgrade:InvokeServer()
-        end)
+        pcall(function() EmployeeUpgrade:InvokeServer() end)
         task.wait(Settings.UpgradeLivesDelay)
     end
 end
 
 local function AutoBegin()
-    if not RequestOrderBoard then warn("[Ivory] RequestOrderBoard remote missing") return end
+    if not RequestOrderBoard then return end
     while Settings.AutoBeginEnabled do
-        pcall(function()
-            RequestOrderBoard:InvokeServer()
-        end)
+        pcall(function() RequestOrderBoard:InvokeServer() end)
         task.wait(Settings.BeginDelay)
     end
 end
 
 local function AutoContinue()
-    if not TycoonPurchase then warn("[Ivory] TycoonPurchase remote missing") return end
+    if not TycoonPurchase then return end
     while Settings.AutoContinueEnabled do
-        pcall(function()
-            TycoonPurchase:FireServer()
-        end)
+        pcall(function() TycoonPurchase:FireServer() end)
         task.wait(Settings.ContinueDelay)
     end
 end
 
--- ===============================================================
--- UI LOAD
--- ===============================================================
-local function SafeLoad(name, url)
-    local body = nil
-    local ok, res = pcall(function()
-        return game:HttpGet(url, true)
-    end)
-    if ok and res and typeof(res) == "string" and #res > 100 and not res:find("404") then
-        body = res
-    end
-    if not body then
-        local ok2, res2 = pcall(function()
-            return request({ Url = url, Method = "GET" }).Body
-        end)
-        if ok2 and res2 and typeof(res2) == "string" and #res2 > 100 and not res2:find("404") then
-            body = res2
-        end
-    end
-    if not body then
-        warn("[Ivory] Failed to fetch " .. name)
-        return nil
-    end
-    local fn, err = loadstring(body)
-    if not fn then
-        warn("[Ivory] Failed to compile " .. name .. ": " .. tostring(err))
-        return nil
-    end
-    return fn()
-end
-
-local repo = "https://cdn.jsdelivr.net/gh/deividcomsono/Obsidian@main/"
-local Library = SafeLoad("Library", repo .. "Library.lua")
-local ThemeManager = SafeLoad("ThemeManager", repo .. "addons/ThemeManager.lua")
-local SaveManager = SafeLoad("SaveManager", repo .. "addons/SaveManager.lua")
-
-if not Library then
-    warn("[Ivory] ObsidianUltra failed to load")
-    return
-end
-
-local Options = Library.Options
-local Toggles = Library.Toggles
-
--- ===============================================================
--- THEME
--- ===============================================================
-Library.Scheme.BackgroundColor = Color3.fromRGB(18, 16, 26)
-Library.Scheme.MainColor = Color3.fromRGB(26, 22, 38)
-Library.Scheme.AccentColor = Color3.fromRGB(168, 120, 255)
-Library.Scheme.FontColor = Color3.fromRGB(248, 244, 255)
-
--- ===============================================================
+-- ═══════════════════════════════════════
 -- WINDOW
--- ===============================================================
+-- ═══════════════════════════════════════
 local Window = Library:CreateWindow({
-    Title = "Ivory | Build A Burger",
-    Footer = "v1.0",
-    Center = true,
-    AutoShow = true,
-    NotifySide = "Right",
-    ShowCustomCursor = true,
+    Title = "Ivory",
+    Footer = { "Ivory | Build A Burger", { Text = "v1.0", Copyable = true } },
+    Minimizable = true, FuzzySearch = true, SearchValues = true,
 })
 
--- ===============================================================
--- TABS
--- ===============================================================
-local Tabs = {
-    Main = Window:AddTab("Main", "flame"),
-    Delays = Window:AddTab("Delays", "clock"),
-    Settings = Window:AddTab("Settings", "settings"),
-}
+local MainTab = Window:AddTab({ Name = "Main", Icon = "burger", Description = "Automation" })
+local DelaysTab = Window:AddTab({ Name = "Delays", Icon = "clock", Description = "Adjust Delays" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings", Description = "Themes & UI" })
 
--- ===============================================================
--- MAIN TAB
--- ===============================================================
-local AutoLeft = Tabs.Main:AddLeftGroupbox("Automation")
-local AutoRight = Tabs.Main:AddRightGroupbox("Economy & Building")
+-- ═══ MAIN TAB: Automation Sub-Tab ═══
+local AutoSub = MainTab:AddSubTab({ Name = "Automation", Icon = "zap" })
 
-AutoLeft:AddToggle("AutoBurger", {
-    Text = "Auto Burger Perfect",
-    Default = false,
-    Callback = function(v)
-        Settings.AutoBurgerEnabled = v
-        if v then task.spawn(AutoBurger) end
-    end,
-})
-AutoLeft:AddToggle("AutoRebirth", {
-    Text = "Auto Rebirth",
-    Default = false,
-    Callback = function(v)
-        Settings.AutoRebirthEnabled = v
-        if v then task.spawn(AutoRebirth) end
-    end,
-})
-AutoLeft:AddToggle("AutoUpgradeFloors", {
-    Text = "Auto Upgrade Floors",
-    Default = false,
-    Callback = function(v)
-        Settings.AutoUpgradeFloorsEnabled = v
-        if v then task.spawn(AutoUpgradeFloors) end
-    end,
-})
-AutoLeft:AddToggle("AutoUpgradeLives", {
-    Text = "Auto Upgrade Lives",
-    Default = false,
-    Callback = function(v)
-        Settings.AutoUpgradeLivesEnabled = v
-        if v then task.spawn(AutoUpgradeLives) end
-    end,
-})
+local BurgerBox = AutoSub:AddLeftGroupbox("Burger", "burger")
+BurgerBox:AddToggle("AutoBurger", { Text = "Auto Burger Perfect", Default = false })
+BurgerBox:AddToggle("AutoRebirth", { Text = "Auto Rebirth", Default = false })
 
-AutoRight:AddToggle("AutoSell", {
-    Text = "Auto Sell",
-    Default = false,
-    Callback = function(v)
-        Settings.AutoSellEnabled = v
-        if v then task.spawn(AutoSell) end
-    end,
-})
-AutoRight:AddToggle("AutoCollect", {
-    Text = "Auto Collect Cash",
-    Default = false,
-    Callback = function(v)
-        Settings.AutoCollectEnabled = v
-        if v then task.spawn(AutoCollect) end
-    end,
-})
-AutoRight:AddToggle("AutoBegin", {
-    Text = "Auto Begin",
-    Default = false,
-    Callback = function(v)
-        Settings.AutoBeginEnabled = v
-        if v then task.spawn(AutoBegin) end
-    end,
-})
-AutoRight:AddToggle("AutoContinue", {
-    Text = "Auto Continue (Cancel)",
-    Default = false,
-    Callback = function(v)
-        Settings.AutoContinueEnabled = v
-        if v then task.spawn(AutoContinue) end
-    end,
-})
+local UpgradeBox = AutoSub:AddRightGroupbox("Upgrades", "arrow-up-circle")
+UpgradeBox:AddToggle("AutoUpgradeFloors", { Text = "Auto Upgrade Floors", Default = false })
+UpgradeBox:AddToggle("AutoUpgradeLives", { Text = "Auto Upgrade Lives", Default = false })
 
--- ===============================================================
--- DELAYS TAB
--- ===============================================================
-local DelayLeft = Tabs.Delays:AddLeftGroupbox("Delays (seconds)")
-local DelayRight = Tabs.Delays:AddRightGroupbox("More Delays")
+local EconBox = AutoSub:AddLeftGroupbox("Economy", "coins")
+EconBox:AddToggle("AutoSell", { Text = "Auto Sell", Default = false })
+EconBox:AddToggle("AutoCollect", { Text = "Auto Collect Cash", Default = false })
 
-DelayLeft:AddSlider("BurgerDelay", {
-    Text = "Burger Delay",
-    Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
-    Callback = function(v) Settings.BurgerDelay = v end,
-})
-DelayLeft:AddSlider("SellDelay", {
-    Text = "Sell Delay",
-    Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
-    Callback = function(v) Settings.SellDelay = v end,
-})
-DelayLeft:AddSlider("CollectDelay", {
-    Text = "Collect Delay",
-    Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
-    Callback = function(v) Settings.CollectDelay = v end,
-})
-DelayLeft:AddSlider("RebirthDelay", {
-    Text = "Rebirth Delay",
-    Default = 1, Min = 0.01, Max = 10, Rounding = 2, Suffix = "s",
-    Callback = function(v) Settings.RebirthDelay = v end,
-})
+local BuildBox = AutoSub:AddRightGroupbox("Building", "hammer")
+BuildBox:AddToggle("AutoBegin", { Text = "Auto Begin", Default = false })
+BuildBox:AddToggle("AutoContinue", { Text = "Auto Continue (Cancel)", Default = false })
 
-DelayRight:AddSlider("UpgradeFloorsDelay", {
-    Text = "Upgrade Floors Delay",
-    Default = 0.5, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
-    Callback = function(v) Settings.UpgradeFloorsDelay = v end,
-})
-DelayRight:AddSlider("UpgradeLivesDelay", {
-    Text = "Upgrade Lives Delay",
-    Default = 0.5, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
-    Callback = function(v) Settings.UpgradeLivesDelay = v end,
-})
-DelayRight:AddSlider("BeginDelay", {
-    Text = "Begin Delay",
-    Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
-    Callback = function(v) Settings.BeginDelay = v end,
-})
-DelayRight:AddSlider("ContinueDelay", {
-    Text = "Continue Delay",
-    Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s",
-    Callback = function(v) Settings.ContinueDelay = v end,
-})
+-- ═══ DELAYS TAB ═══
+local DelaySub = DelaysTab:AddSubTab({ Name = "Delays", Icon = "clock" })
 
--- ===============================================================
--- SETTINGS TAB
--- ===============================================================
+local DL1 = DelaySub:AddLeftGroupbox("Delays (seconds)", "clock")
+DL1:AddSlider("BurgerDelay", { Text = "Burger Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
+DL1:AddSlider("SellDelay", { Text = "Sell Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
+DL1:AddSlider("CollectDelay", { Text = "Collect Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
+DL1:AddSlider("RebirthDelay", { Text = "Rebirth Delay", Default = 1, Min = 0.01, Max = 10, Rounding = 2, Suffix = "s" })
+
+local DL2 = DelaySub:AddRightGroupbox("More Delays", "clock")
+DL2:AddSlider("UpgradeFloorsDelay", { Text = "Upgrade Floors Delay", Default = 0.5, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
+DL2:AddSlider("UpgradeLivesDelay", { Text = "Upgrade Lives Delay", Default = 0.5, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
+DL2:AddSlider("BeginDelay", { Text = "Begin Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
+DL2:AddSlider("ContinueDelay", { Text = "Continue Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
+
+-- ═══ SETTINGS TAB ═══
+local ThemesSub = SettingsTab:AddSubTab({ Name = "Themes & UI", Icon = "palette" })
+local ConfigSub = SettingsTab:AddSubTab({ Name = "Config", Icon = "save" })
+
 ThemeManager:SetLibrary(Library)
 SaveManager:SetLibrary(Library)
 SaveManager:IgnoreThemeSettings()
@@ -347,10 +190,10 @@ SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
 ThemeManager:SetFolder("IvoryHub")
 SaveManager:SetFolder("IvoryHub")
 SaveManager:SetSubFolder("burgerperfect")
-ThemeManager:ApplyToTab(Tabs.Settings)
-SaveManager:BuildConfigSection(Tabs.Settings)
+ThemeManager:ApplyToTab(ThemesSub)
+SaveManager:BuildConfigSection(ConfigSub)
 
-local MenuGroup = Tabs.Settings:AddLeftGroupbox("Menu")
+local MenuGroup = ThemesSub:AddLeftGroupbox("Menu", "wrench")
 MenuGroup:AddToggle("KeybindMenuOpen", {
     Default = Library.KeybindFrame.Visible,
     Text = "Open Keybind Menu",
@@ -358,7 +201,7 @@ MenuGroup:AddToggle("KeybindMenuOpen", {
 })
 MenuGroup:AddToggle("ShowCustomCursor", {
     Text = "Custom Cursor",
-    Default = true,
+    Default = Library.ShowCustomCursor,
     Callback = function(v) Library.ShowCustomCursor = v end,
 })
 MenuGroup:AddDropdown("NotificationSide", {
@@ -380,8 +223,30 @@ Library.ToggleKeybind = Options.MenuKeybind
 
 SaveManager:LoadAutoloadConfig()
 
+-- ═══════════════════════════════════════
+-- CALLBACKS
+-- ═══════════════════════════════════════
+Toggles.AutoBurger:OnChanged(function(s) Settings.AutoBurgerEnabled = s if s then task.spawn(AutoBurger) end end)
+Toggles.AutoSell:OnChanged(function(s) Settings.AutoSellEnabled = s if s then task.spawn(AutoSell) end end)
+Toggles.AutoCollect:OnChanged(function(s) Settings.AutoCollectEnabled = s if s then task.spawn(AutoCollect) end end)
+Toggles.AutoRebirth:OnChanged(function(s) Settings.AutoRebirthEnabled = s if s then task.spawn(AutoRebirth) end end)
+Toggles.AutoUpgradeFloors:OnChanged(function(s) Settings.AutoUpgradeFloorsEnabled = s if s then task.spawn(AutoUpgradeFloors) end end)
+Toggles.AutoUpgradeLives:OnChanged(function(s) Settings.AutoUpgradeLivesEnabled = s if s then task.spawn(AutoUpgradeLives) end end)
+Toggles.AutoBegin:OnChanged(function(s) Settings.AutoBeginEnabled = s if s then task.spawn(AutoBegin) end end)
+Toggles.AutoContinue:OnChanged(function(s) Settings.AutoContinueEnabled = s if s then task.spawn(AutoContinue) end end)
+
+Options.BurgerDelay:OnChanged(function(v) Settings.BurgerDelay = v end)
+Options.SellDelay:OnChanged(function(v) Settings.SellDelay = v end)
+Options.CollectDelay:OnChanged(function(v) Settings.CollectDelay = v end)
+Options.RebirthDelay:OnChanged(function(v) Settings.RebirthDelay = v end)
+Options.UpgradeFloorsDelay:OnChanged(function(v) Settings.UpgradeFloorsDelay = v end)
+Options.UpgradeLivesDelay:OnChanged(function(v) Settings.UpgradeLivesDelay = v end)
+Options.BeginDelay:OnChanged(function(v) Settings.BeginDelay = v end)
+Options.ContinueDelay:OnChanged(function(v) Settings.ContinueDelay = v end)
+
 Library:Notify({
     Title = "Ivory",
     Description = "Build A Burger loaded. RightShift to toggle menu.",
+    Type = "Success",
     Time = 3,
 })
