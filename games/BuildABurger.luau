@@ -142,7 +142,6 @@ end
 -- ═══════════════════════════════════════
 local Window = Library:CreateWindow({
     Title = "Ivory",
-    Icon = "burger",
     Footer = {
         "v1.4 |",
         { Text = "Build A Burger", Copyable = true },
@@ -157,59 +156,50 @@ local Window = Library:CreateWindow({
     MinimizedWidth = 280,
     NotifySide = "Right",
     ShowCustomCursor = true,
-    SearchKeybind = Enum.KeyCode.F,
     CornerRadius = 4,
-    Animations = {
-        ToggleWindow = false,
-        TabSwitch = false,
-        Groupbox = false,
-        Dropdown = false,
-        KeyPicker = false,
-        SubTabUnderline = true,
-    },
 })
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "burger", Description = "Automation" })
-local DelaysTab = Window:AddTab({ Name = "Delays", Icon = "clock", Description = "Adjust Delays" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings", Description = "Themes & UI" })
+local MainTab = Window:AddTab({ Name = "Main", Description = "Automation" })
+local DelaysTab = Window:AddTab({ Name = "Delays", Description = "Adjust Delays" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Description = "Themes & UI" })
 
 -- ═══ MAIN TAB: Automation Sub-Tab ═══
-local AutoSub = MainTab:AddSubTab({ Name = "Automation", Icon = "zap" })
+local AutoSub = MainTab:AddSubTab("Automation")
 
-local BurgerBox = AutoSub:AddLeftGroupbox("Burger", "burger")
+local BurgerBox = AutoSub:AddLeftGroupbox("Burger")
 BurgerBox:AddToggle("AutoBurger", { Text = "Auto Burger Perfect", Default = false })
 BurgerBox:AddToggle("AutoRebirth", { Text = "Auto Rebirth", Default = false })
 
-local UpgradeBox = AutoSub:AddRightGroupbox("Upgrades", "arrow-up-circle")
+local UpgradeBox = AutoSub:AddRightGroupbox("Upgrades")
 UpgradeBox:AddToggle("AutoUpgradeFloors", { Text = "Auto Upgrade Floors", Default = false })
 UpgradeBox:AddToggle("AutoUpgradeLives", { Text = "Auto Upgrade Lives", Default = false })
 
-local EconBox = AutoSub:AddLeftGroupbox("Economy", "coins")
+local EconBox = AutoSub:AddLeftGroupbox("Economy")
 EconBox:AddToggle("AutoSell", { Text = "Auto Sell", Default = false })
 EconBox:AddToggle("AutoCollect", { Text = "Auto Collect Cash", Default = false })
 
-local BuildBox = AutoSub:AddRightGroupbox("Building", "hammer")
+local BuildBox = AutoSub:AddRightGroupbox("Building")
 BuildBox:AddToggle("AutoBegin", { Text = "Auto Begin", Default = false })
 BuildBox:AddToggle("AutoContinue", { Text = "Auto Continue (Cancel)", Default = false })
 
 -- ═══ DELAYS TAB ═══
-local DelaySub = DelaysTab:AddSubTab({ Name = "Delays", Icon = "clock" })
+local DelaySub = DelaysTab:AddSubTab("Delays")
 
-local DL1 = DelaySub:AddLeftGroupbox("Delays (seconds)", "clock")
+local DL1 = DelaySub:AddLeftGroupbox("Delays (seconds)")
 DL1:AddSlider("BurgerDelay", { Text = "Burger Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
 DL1:AddSlider("SellDelay", { Text = "Sell Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
 DL1:AddSlider("CollectDelay", { Text = "Collect Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
 DL1:AddSlider("RebirthDelay", { Text = "Rebirth Delay", Default = 1, Min = 0.01, Max = 10, Rounding = 2, Suffix = "s" })
 
-local DL2 = DelaySub:AddRightGroupbox("More Delays", "clock")
+local DL2 = DelaySub:AddRightGroupbox("More Delays")
 DL2:AddSlider("UpgradeFloorsDelay", { Text = "Upgrade Floors Delay", Default = 0.5, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
 DL2:AddSlider("UpgradeLivesDelay", { Text = "Upgrade Lives Delay", Default = 0.5, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
 DL2:AddSlider("BeginDelay", { Text = "Begin Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
 DL2:AddSlider("ContinueDelay", { Text = "Continue Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s" })
 
 -- ═══ SETTINGS TAB ═══
-local ThemesSub = SettingsTab:AddSubTab({ Name = "Themes & UI", Icon = "palette" })
-local ConfigSub = SettingsTab:AddSubTab({ Name = "Config", Icon = "save" })
+local ThemesSub = SettingsTab:AddSubTab("Themes & UI")
+local ConfigSub = SettingsTab:AddSubTab("Config")
 
 ThemeManager:SetLibrary(Library)
 SaveManager:SetLibrary(Library)
@@ -221,7 +211,7 @@ SaveManager:SetSubFolder("burgerperfect")
 ThemeManager:ApplyToTab(ThemesSub)
 SaveManager:BuildConfigSection(ConfigSub)
 
-local MenuGroup = ThemesSub:AddLeftGroupbox("Menu", "wrench")
+local MenuGroup = ThemesSub:AddLeftGroupbox("Menu")
 MenuGroup:AddToggle("KeybindMenuOpen", {
     Default = Library.KeybindFrame.Visible,
     Text = "Open Keybind Menu",
