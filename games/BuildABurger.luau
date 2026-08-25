@@ -62,104 +62,97 @@ local Settings = {
 }
 
 local RS = game:GetService("ReplicatedStorage")
-local Network = RS:WaitForChild("Network", 10)
-local Remotes = RS:WaitForChild("Remotes", 10)
+local function GetRemote(path)
+    local obj = RS
+    for part in path:gmatch("[^:]+") do
+        obj = obj:WaitForChild(part, 10)
+        if not obj then return nil end
+    end
+    return obj
+end
 
-local LinkPlayerToOrder = Network and Network:FindFirstChild("LinkPlayerToOrder")
-local UnlinkPlayerFromOrder = Network and Network:FindFirstChild("UnlinkPlayerFromOrder")
-local RequestOrderBoard = Network and Network:FindFirstChild("RequestOrderBoard")
-local TryAddIngredientToPlate = Network and Network:FindFirstChild("TryAddIngredientToPlate")
-local RequestMeatSeasoning = Network and Network:FindFirstChild("RequestMeatSeasoning")
-local AddTimeToMeat = Network and Network:FindFirstChild("AddTimeToMeat")
-local RequestFriesSeasoning = Network and Network:FindFirstChild("RequestFriesSeasoning")
-local AddTimeToFries = Network and Network:FindFirstChild("AddTimeToFries")
-local AddMoney = Network and Network:FindFirstChild("AddMoney")
-local BuyPcUpgradeRequest = Network and Network:FindFirstChild("BuyPcUpgradeRequest")
-local RebirthClass = Network and Network:FindFirstChild("RebirthClass")
-local ClaimReward = Network and Network:FindFirstChild("ClaimReward")
-local HealthInspector_ClaimRewards = Network and Network:FindFirstChild("HealthInspector_ClaimRewards")
-local TycoonPurchase = Remotes and Remotes:FindFirstChild("TycoonPurchase")
-local EmployeeUpgrade = Remotes and Remotes:FindFirstChild("EmployeeUpgrade")
+local BuildingSuccess = GetRemote("Shared:Network:Remotes:Building:Success")
+local PlayerSell = GetRemote("Shared:Network:Remotes:PlayerData:Sell")
+local PlotCollect = GetRemote("Shared:Network:Remotes:Plot:Collect")
+local RequestRebirth = GetRemote("Shared:Network:Remotes:PlayerData:RequestRebirth")
+local UpgradeFloors = GetRemote("Shared:Network:Remotes:PlayerData:UpgradeFloors")
+local UpgradeLives = GetRemote("Shared:Network:Remotes:PlayerData:UpgradeLives")
+local BuildingBegin = GetRemote("Shared:Network:Remotes:Building:Begin")
+local BuildingCancel = GetRemote("Shared:Network:Remotes:Building:Cancel")
 
 local function AutoBurger()
-    if not LinkPlayerToOrder or not TryAddIngredientToPlate then return end
     while Settings.AutoBurgerEnabled do
         pcall(function()
-            if RequestOrderBoard then RequestOrderBoard:InvokeServer() end
-            task.wait(0.1)
-            if LinkPlayerToOrder then LinkPlayerToOrder:FireServer() end
-            task.wait(0.1)
-            if TryAddIngredientToPlate then TryAddIngredientToPlate:FireServer() end
-            task.wait(0.05)
-            if RequestMeatSeasoning then RequestMeatSeasoning:FireServer() end
-            task.wait(0.05)
-            if AddTimeToMeat then AddTimeToMeat:FireServer() end
-            task.wait(0.05)
-            if RequestFriesSeasoning then RequestFriesSeasoning:FireServer() end
-            task.wait(0.05)
-            if AddTimeToFries then AddTimeToFries:FireServer() end
-            task.wait(0.05)
-            if UnlinkPlayerFromOrder then UnlinkPlayerFromOrder:FireServer() end
+            if BuildingSuccess then BuildingSuccess:FireServer(-0.658413290977478) end
         end)
         task.wait(Settings.BurgerDelay)
     end
 end
 
 local function AutoSell()
-    if not AddMoney then return end
     while Settings.AutoSellEnabled do
-        pcall(function() AddMoney:FireServer() end)
+        pcall(function()
+            if PlayerSell then PlayerSell:FireServer() end
+        end)
         task.wait(Settings.SellDelay)
     end
 end
 
 local function AutoCollect()
-    if not ClaimReward then return end
     while Settings.AutoCollectEnabled do
         pcall(function()
-            ClaimReward:FireServer()
-            if HealthInspector_ClaimRewards then HealthInspector_ClaimRewards:FireServer() end
+            if PlotCollect then
+                for slot = 1, 8 do
+                    PlotCollect:FireServer(slot)
+                    task.wait(Settings.CollectDelay / 8)
+                end
+            end
         end)
         task.wait(Settings.CollectDelay)
     end
 end
 
 local function AutoRebirth()
-    if not RebirthClass then return end
     while Settings.AutoRebirthEnabled do
-        pcall(function() RebirthClass:FireServer() end)
+        pcall(function()
+            if RequestRebirth then RequestRebirth:FireServer() end
+        end)
         task.wait(Settings.RebirthDelay)
     end
 end
 
 local function AutoUpgradeFloors()
-    if not BuyPcUpgradeRequest then return end
     while Settings.AutoUpgradeFloorsEnabled do
-        pcall(function() BuyPcUpgradeRequest:FireServer() end)
+        pcall(function()
+            if UpgradeFloors then UpgradeFloors:FireServer() end
+        end)
         task.wait(Settings.UpgradeFloorsDelay)
     end
 end
 
 local function AutoUpgradeLives()
-    if not EmployeeUpgrade then return end
     while Settings.AutoUpgradeLivesEnabled do
-        pcall(function() EmployeeUpgrade:InvokeServer() end)
+        pcall(function()
+            if UpgradeLives then UpgradeLives:FireServer() end
+        end)
         task.wait(Settings.UpgradeLivesDelay)
     end
 end
 
 local function AutoBegin()
-    if not RequestOrderBoard then return end
     while Settings.AutoBeginEnabled do
-        pcall(function() RequestOrderBoard:InvokeServer() end)
+        pcall(function()
+            if BuildingBegin then BuildingBegin:FireServer() end
+        end)
         task.wait(Settings.BeginDelay)
     end
 end
 
 local function AutoContinue()
-    if not TycoonPurchase then return end
     while Settings.AutoContinueEnabled do
-        pcall(function() TycoonPurchase:FireServer() end)
+        pcall(function()
+            if BuildingCancel then BuildingCancel:FireServer() end
+        end)
         task.wait(Settings.ContinueDelay)
     end
 end
