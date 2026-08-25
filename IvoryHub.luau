@@ -11,8 +11,8 @@ local GameScripts = {
     [79787558257549] = "games/FinalSwarm.luau",
     [95919006508862] = "games/MeltTheIce.luau",
     [1962086868] = "games/Towerofhell.luau",
-    [138501044883253] = "games/BurgerPerfect.luau",
-    [105963809208632] = "games/BurgerPerfect.luau",
+    [138501044883253] = "games/BuildABurger.luau",
+    [105963809208632] = "games/BuildABurger.luau",
     [100293509865504] = "games/CatchABillionDucks.luau",
     [120617974337690] = "games/CatchABillionDucks.luau",
     -- Add more: [PlaceId] = "games/ScriptName.luau"
@@ -38,6 +38,23 @@ local success, err = pcall(function()
             if hash then commitHash = hash end
         end
     end)
+
+    -- Pre-load ObsidianUltra library so game scripts don't need their own HTTP
+    local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
+    local function httpGet(url)
+        return request({ Url = url, Method = "GET" }).Body
+    end
+    pcall(function()
+        local genv = getgenv()
+        if not genv._IvoryUILoaded then
+            genv._IvoryLib = loadstring(httpGet(repo .. "Library.lua"))()
+            genv._IvoryThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
+            genv._IvorySaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
+            genv._IvoryUILoaded = true
+            print("[Ivory Hub] ObsidianUltra loaded")
+        end
+    end)
+
     local url = GITHUB_RAW .. commitHash .. "/" .. ScriptFile
     local res = request({ Url = url, Method = "GET" })
     local content = res and res.Body or nil

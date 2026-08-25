@@ -1,10 +1,12 @@
-﻿local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local function httpGet(url)
-    return request({ Url = url, Method = "GET" }).Body
+﻿local genv = getgenv()
+local Library = genv._IvoryLib
+local ThemeManager = genv._IvoryThemeManager
+local SaveManager = genv._IvorySaveManager
+
+if not Library then
+    warn("[Ivory] ObsidianUltra not loaded by IvoryHub loader")
+    return
 end
-local Library = loadstring(httpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
 
 local Toggles = Library.Toggles
 local Options = Library.Options
