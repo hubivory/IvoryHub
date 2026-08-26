@@ -149,40 +149,21 @@ local function findStealEggs()
 		if obj:IsA("ProximityPrompt") and obj.ActionText:lower():find("steal") then
 			local part = obj.Parent
 			if part and part:IsA("BasePart") then
-				-- SmartPromptPart is floating — find the actual egg on the ground near its XZ
-				local promptXZ = Vector2.new(part.Position.X, part.Position.Z)
-				local nearestGroundPart, nearestDist = nil, math.huge
-				for _, gp in ipairs(Workspace:GetDescendants()) do
-					if gp:IsA("BasePart") and gp ~= part and gp.Position.Y > 50 and gp.Position.Y < 150 then
-						local dxz = (Vector2.new(gp.Position.X, gp.Position.Z) - promptXZ).Magnitude
-						if dxz < nearestDist and dxz < 30 then
-							nearestDist = dxz
-							nearestGroundPart = gp
-						end
+				-- Only use prompts on ground-level parts (Y 50-150), skip floating SmartPromptParts
+				if part.Position.Y >= 50 and part.Position.Y <= 150 then
+					local targetPos = part.Position
+					local eggName = obj.ObjectText
+					if not eggName or eggName == "" or eggName == "Egg" or eggName:find("^%x+$") then
+						local r, b = getBiomeRarity(targetPos)
+						eggName = r .. " Egg"
 					end
-				end
-				-- Use ground part position if found, otherwise use prompt XZ at ground level
-				local targetPos
-				if nearestGroundPart then
-					targetPos = nearestGroundPart.Position
-				else
-					targetPos = Vector3.new(part.Position.X, hrp.Position.Y, part.Position.Z)
-				end
-				
-				-- Get egg name
-				local eggName = obj.ObjectText
-				if not eggName or eggName == "" or eggName == "Egg" or eggName:find("^%x+$") then
-					eggName = "Egg"
-					local r, b = getBiomeRarity(targetPos)
-					eggName = r .. " Egg"
-				end
-				
-				local rarity, biome = getBiomeRarity(targetPos)
-				local nameRarity = getRarity(eggName)
-				if nameRarity ~= "Common" then rarity = nameRarity end
-				local dist = (targetPos - hrp.Position).Magnitude
-				if dist < 500 and dist > 1 then
-					table.insert(eggs, {prompt=obj, targetPos=targetPos, name=eggName.." ["..biome.."]", dist=dist, rarity=rarity, rank=RARITY[rarity] or 1, hold=obj.HoldDuration})
+					local rarity, biome = getBiomeRarity(targetPos)
+					local nameRarity = getRarity(eggName)
+					if nameRarity ~= "Common" then rarity = nameRarity end
+					local dist = (targetPos - hrp.Position).Magnitude
+					if dist < 500 and dist > 1 then
+						table.insert(eggs, {prompt=obj, targetPos=targetPos, name=eggName.." ["..biome.."]", dist=dist, rarity=rarity, rank=RARITY[rarity] or 1, hold=obj.HoldDuration})
+					end
 				end
 			end
 		end
@@ -311,11 +292,11 @@ local function TpTween(targetCF, callback)
 	pcall(function()
 		local hrp = getHRP(); if not hrp then return end
 		setNoclip(true)
-		-- Move in small steps to avoid physics glitches
+		-- Move in small 15-stud steps to avoid clipping through walls
 		local startPos = hrp.Position
 		local endPos = targetCF.Position
 		local totalDist = (startPos - endPos).Magnitude
-		local stepSize = 15 -- studs per step
+		local stepSize = 15
 		local steps = math.max(1, math.ceil(totalDist / stepSize))
 		for i = 1, steps do
 			local t = i / steps
@@ -324,7 +305,7 @@ local function TpTween(targetCF, callback)
 			local tween = TweenService:Create(hrp, TweenInfo.new(stepDur, Enum.EasingStyle.Linear), {CFrame = stepCF})
 			tween:Play()
 			tween.Completed:Wait()
-			task.wait(0.02) -- small pause between steps
+			task.wait(0.02)
 		end
 		setNoclip(false)
 		if callback then callback() end
@@ -448,10 +429,40 @@ ThemeManager:SetLibrary(Library); SaveManager:SetLibrary(Library)
 SaveManager:IgnoreThemeSettings(); SaveManager:SetIgnoreIndexes({"MenuKeybind"})
 ThemeManager:SetFolder("IvoryHub"); SaveManager:SetFolder("IvoryHub"); SaveManager:SetSubFolder("stealeanegg")
 
--- Build biome position lookup for rarity detection (delayed to ensure workspace loaded)
+-- Build biome position lookup for rarity detection (robust delayed loading)
+local biomeBuildAttempts = 0
+local function buildBiomePositions()
+	biomePositions = {}
+	local oa = Workspace:FindFirstChild("__OBJECTS")
+	if not oa then return end
+	local ga = oa:FindFirstChild("Areas")
+	if not ga then return end
+	local gAreas = ga:FindFirstChild("GuardAreas")
+	if not gAreas then return end
+	for _, area in ipairs(gAreas:GetChildren()) do
+		local guard = area:FindFirstChild("Guard")
+		if guard then
+			local ep = guard:FindFirstChild("EggPoint")
+			if ep then
+				biomePositions[area.Name] = ep.Position
+			end
+		end
+	end
+	if next(biomePositions) then
+		print("[Ivory] Biome positions loaded: " .. tostring(#(function() local c=0; for _ in pairs(biomePositions) do c=c+1 end; return setmetatable({},{__len=function() return c end}) end)()))
+	end
+end
+
 buildBiomePositions()
-task.delay(5, buildBiomePositions)
-task.delay(15, buildBiomePositions)
+
+-- Retry until we get positions
+task.spawn(function()
+	while not next(biomePositions) and biomeBuildAttempts < 20 do
+		biomeBuildAttempts = biomeBuildAttempts + 1
+		task.wait(2)
+		buildBiomePositions()
+	end
+end)
 
 local SettingsTab = Window:AddTab({Name="UI Settings",Icon="settings"})
 ThemeManager:ApplyToTab(SettingsTab); SaveManager:BuildConfigSection(SettingsTab)
