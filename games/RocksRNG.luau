@@ -137,24 +137,62 @@ CG3:AddButton({
 })
 
 --// Hook MiningRoll
+local rollCount = 0
 local rollConn = MiningRoll.OnClientEvent:Connect(function(payload)
 	if type(payload) ~= "table" then return end
+	rollCount = rollCount + 1
 	local crash, fromExplicitField = get_crash_value(payload)
 
-	CrashLabel:SetText(string.format("Crash: %.4fx", crash))
-	DetailLabel:SetText(string.format("X1: %s | X2: %s | X3: %s",
-		tostring(payload.X1), tostring(payload.X2), tostring(payload.X3)))
-	SourceLabel:SetText("Source: " .. (fromExplicitField and "payload.crash" or "fallback -> X3/10"))
+	print(string.format("[RocksRNG] Roll #%d received: crash=%.6f explicit=%s X3=%s bucketMins=%s",
+		rollCount, crash, tostring(fromExplicitField),
+		tostring(payload.X3),
+		type(payload.bucketMins) == "table" and tostring(#payload.bucketMins) or "none"))
 
-	if type(payload.bucketMins) == "table" then
-		local last = payload.bucketMins[#payload.bucketMins]
-		if type(last) == "number" and crash > 0 then
-			local rarestProb = (crash - last) / crash
-			RarestLabel:SetText(string.format("Starts at: %.4f | Odds: %.4f%% (1 in %.0f)",
-				last, rarestProb * 100, rarestProb > 0 and 1 / rarestProb or math.huge))
+	local ok1, e1 = pcall(function()
+		CrashLabel:SetText(string.format("Crash: %.4fx", crash))
+	end)
+	if not ok1 then warn("[RocksRNG] CrashLabel:SetText failed: " .. tostring(e1)) end
+
+	local ok2, e2 = pcall(function()
+		DetailLabel:SetText(string.format("X1: %s | X2: %s | X3: %s",
+			tostring(payload.X1), tostring(payload.X2), tostring(payload.X3)))
+	end)
+	if not ok2 then warn("[RocksRNG] DetailLabel:SetText failed: " .. tostring(e2)) end
+
+	local ok3, e3 = pcall(function()
+		SourceLabel:SetText("Source: " .. (fromExplicitField and "payload.crash" or "fallback -> X3/10"))
+	end)
+	if not ok3 then warn("[RocksRNG] SourceLabel:SetText failed: " .. tostring(e3)) end
+
+	if type(payload.bucketMins) == "table" and #payload.bucketMins > 0 then
+		-- Find the rarest bucket whose min is actually below the crash value
+		local rarestMin = nil
+		for i = #payload.bucketMins, 1, -1 do
+			local val = payload.bucketMins[i]
+			if type(val) == "number" and val > 0 and val < crash then
+				rarestMin = val
+				break
+			end
+		end
+		if rarestMin and crash > 0 then
+			local rarestProb = (crash - rarestMin) / crash
+			rarestProb = math.clamp(rarestProb, 0, 1)
+			local ok4, e4 = pcall(function()
+				RarestLabel:SetText(string.format("Starts at: %.4f | Odds: %.4f%% (1 in %.0f)",
+					rarestMin, rarestProb * 100, rarestProb > 0 and 1 / rarestProb or math.huge))
+			end)
+			if not ok4 then warn("[RocksRNG] RarestLabel:SetText failed: " .. tostring(e4)) end
+		else
+			local ok4, e4 = pcall(function()
+				RarestLabel:SetText("Rarest bucket: no valid bucket below crash")
+			end)
+			if not ok4 then warn("[RocksRNG] RarestLabel:SetText failed: " .. tostring(e4)) end
 		end
 	else
-		RarestLabel:SetText("Rarest bucket: no data")
+		local ok4, e4 = pcall(function()
+			RarestLabel:SetText("Rarest bucket: no data")
+		end)
+		if not ok4 then warn("[RocksRNG] RarestLabel:SetText failed: " .. tostring(e4)) end
 	end
 
 	table.insert(rollHistory, {
