@@ -234,14 +234,39 @@ task.spawn(function() while true do task.wait(0.5)
 	end) end
 end end)
 
--- Auto Pet Floppa: fire the "Pet" ProximityPrompt
+-- Auto Pet Floppa: teleport close if happiness < 50%, then fire Pet prompt
 task.spawn(function() while true do task.wait(1)
 	if S.AutoClick and alive() then pcall(function()
-		local f=getFloppa(); if f then
-			for _, d in ipairs(f:GetDescendants()) do
-				if d:IsA("ProximityPrompt") and d.ActionText:lower():find("pet") then
-					fireproximityprompt(d)
+		local f=getFloppa(); if not f then return end
+		-- Check happiness from Display BillboardGui
+		local happy = 100
+		local disp = f:FindFirstChild("Display")
+		if disp then
+			for _, c in ipairs(disp:GetChildren()) do
+				if c:IsA("TextLabel") and c.Text:find("Hunger") then
+					local pct = c.Text:match("(%d+)%%")
+					if pct then happy = tonumber(pct) end
 				end
+			end
+		end
+		-- Also check Configuration for happiness
+		local cfg = f:FindFirstChild("Configuration")
+		if cfg then
+			local h = cfg:FindFirstChild("Happiness") or cfg:FindFirstChild("Hunger")
+			if h and h:IsA("NumberValue") then happy = h.Value end
+		end
+		-- Teleport close if happiness < 50%
+		if happy < 50 then
+			local root = f:FindFirstChild("HumanoidRootPart")
+			local hrp = gHRP()
+			if root and hrp then
+				hrp.CFrame = root.CFrame + Vector3.new(0, 3, 0)
+			end
+		end
+		-- Fire Pet ProximityPrompt
+		for _, d in ipairs(f:GetDescendants()) do
+			if d:IsA("ProximityPrompt") and d.ActionText:lower():find("pet") then
+				fireproximityprompt(d)
 			end
 		end
 	end) end
