@@ -136,27 +136,75 @@ local function exitTreadmill()
 	end)
 end
 
--- Find all stealable eggs via ProximityPrompt
+-- Find all stealable eggs via AreaEggSlotsClient models
 local function findStealEggs()
 	local hrp = getHRP(); if not hrp then return {} end
 	local eggs = {}
-	for _, obj in ipairs(Workspace:GetDescendants()) do
-		if obj:IsA("ProximityPrompt") and obj.ActionText:lower():find("steal") then
-			local part = obj.Parent
-			if part and part:IsA("BasePart") then
-				-- The prompt parent is "SmartPromptPart" floating in the sky
-				-- Use its XZ but clamp Y to ground level for safe teleport
-				local targetPos = Vector3.new(part.Position.X, hrp.Position.Y, part.Position.Z)
-				
-				local eggName = obj.ObjectText
-				if eggName == "Egg" or eggName == "" then eggName = "Egg" end
-				
-				local rarity, biome = getBiomeRarity(targetPos)
-				local nameRarity = getRarity(eggName)
-				if nameRarity ~= "Common" then rarity = nameRarity end
-				local dist = (Vector3.new(targetPos.X, 0, targetPos.Z) - Vector3.new(hrp.Position.X, 0, hrp.Position.Z)).Magnitude
-				if dist < 500 and dist > 1 then
-					table.insert(eggs, {prompt=obj, targetPos=targetPos, name=eggName.." ["..biome.."]", dist=dist, rarity=rarity, rank=RARITY[rarity] or 1, hold=obj.HoldDuration})
+	-- Target the actual egg models at ground level, NOT the floating SmartPromptParts
+	local aes = Workspace:FindFirstChild("AreaEggSlotsClient")
+	if aes then
+		for _, slot in ipairs(aes:GetChildren()) do
+			if slot:IsA("Model") then
+				local root = slot.PrimaryPart or slot:FindFirstChildWhichIsA("BasePart")
+				if root then
+					-- Find the steal prompt associated with this egg
+					local stealPrompt = nil
+					-- Check if prompt is inside this model
+					for _, desc in ipairs(slot:GetDescendants()) do
+						if desc:IsA("ProximityPrompt") and desc.ActionText:lower():find("steal") then
+							stealPrompt = desc
+							break
+						end
+					end
+					-- If no prompt in model, find nearest steal prompt by XZ distance
+					if not stealPrompt then
+						local bestDist = math.huge
+						for _, p in ipairs(Workspace:GetDescendants()) do
+							if p:IsA("ProximityPrompt") and p.ActionText:lower():find("steal") then
+								local pp = p.Parent
+								if pp and pp:IsA("BasePart") then
+									local dxz = (Vector3.new(pp.Position.X, 0, pp.Position.Z) - Vector3.new(root.Position.X, 0, root.Position.Z)).Magnitude
+									if dxz < bestDist then
+										bestDist = dxz
+										stealPrompt = p
+									end
+								end
+							end
+						end
+					end
+					if not stealPrompt then continue end
+					
+					local eggName = slot.Name
+					-- Check children for egg name
+					for _, child in ipairs(slot:GetChildren()) do
+						if child:IsA("Model") and child.Name:lower():find("egg") then
+							eggName = child.Name
+							break
+						end
+					end
+					local rarity, biome = getBiomeRarity(root.Position)
+					local nameRarity = getRarity(eggName)
+					if nameRarity ~= "Common" then rarity = nameRarity end
+					local dist = (root.Position - hrp.Position).Magnitude
+					if dist < 500 then
+						table.insert(eggs, {prompt=stealPrompt, targetPos=root.Position, name=eggName.." ["..biome.."]", dist=dist, rarity=rarity, rank=RARITY[rarity] or 1, hold=stealPrompt.HoldDuration})
+					end
+				end
+			end
+		end
+	end
+	-- Fallback: if no AreaEggSlotsClient, use steal prompts at ground level
+	if #eggs == 0 then
+		for _, obj in ipairs(Workspace:GetDescendants()) do
+			if obj:IsA("ProximityPrompt") and obj.ActionText:lower():find("steal") then
+				local part = obj.Parent
+				if part and part:IsA("BasePart") and part.Position.Y < 200 then
+					local eggName = obj.ObjectText ~= "" and obj.ObjectText or "Egg"
+					local rarity, biome = getBiomeRarity(part.Position)
+					local dist = (part.Position - hrp.Position).Magnitude
+					if dist < 500 and dist > 1 then
+						table.insert(eggs, {prompt=obj, targetPos=Vector3.new(part.Position.X, hrp.Position.Y, part.Position.Z), name=eggName.." ["..biome.."]", dist=dist, rarity=rarity, rank=RARITY[rarity] or 1, hold=obj.HoldDuration})
+					end
 				end
 			end
 		end
