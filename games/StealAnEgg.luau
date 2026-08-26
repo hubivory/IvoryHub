@@ -405,8 +405,10 @@ ThemeManager:SetLibrary(Library); SaveManager:SetLibrary(Library)
 SaveManager:IgnoreThemeSettings(); SaveManager:SetIgnoreIndexes({"MenuKeybind"})
 ThemeManager:SetFolder("IvoryHub"); SaveManager:SetFolder("IvoryHub"); SaveManager:SetSubFolder("stealeanegg")
 
--- Build biome position lookup for rarity detection
+-- Build biome position lookup for rarity detection (delayed to ensure workspace loaded)
 buildBiomePositions()
+task.delay(5, buildBiomePositions)
+task.delay(15, buildBiomePositions)
 
 local SettingsTab = Window:AddTab({Name="UI Settings",Icon="settings"})
 ThemeManager:ApplyToTab(SettingsTab); SaveManager:BuildConfigSection(SettingsTab)
@@ -481,8 +483,9 @@ task.spawn(function() while true do task.wait(0.3)
 			local hrp, hum = getHRP(), getHum()
 			if not hrp or not hum then return end
 
-			-- TpTween to egg
-			local targetCF = CFrame.new(t.part.Position + Vector3.new(0, 2, 0), Vector3.new(t.part.Position.X, hrp.Position.Y, t.part.Position.Z))
+			-- TpTween to egg (clamp Y to avoid underground)
+			local eggY = math.max(t.part.Position.Y + 3, hrp.Position.Y)
+			local targetCF = CFrame.new(Vector3.new(t.part.Position.X, eggY, t.part.Position.Z), Vector3.new(t.part.Position.X, hrp.Position.Y, t.part.Position.Z))
 			TpTween(targetCF, function()
 				if S.StealMode == "fireproximityprompt" and type(fireproximityprompt) == "function" then
 					pcall(fireproximityprompt, t.prompt)
