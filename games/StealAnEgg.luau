@@ -130,9 +130,15 @@ local function exitTreadmill()
 	if not hrp or not hum then return end
 	local onTM = isOnTreadmill()
 	if not onTM then return end
+	-- Disable treadmill physics first
+	hum.PlatformStand = true
+	task.wait(0.1)
+	-- Jump high and sideways to escape
 	local offDir = hrp.CFrame.RightVector
-	TpTween(hrp.CFrame + offDir * 15, function()
+	TpTween(hrp.CFrame + offDir * 25 + Vector3.new(0, 20, 0), function()
 		hum:ChangeState(Enum.HumanoidStateType.Jumping)
+		task.wait(0.5)
+		hum.PlatformStand = false
 	end)
 end
 
