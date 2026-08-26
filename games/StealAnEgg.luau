@@ -94,11 +94,14 @@ local function exitTreadmill()
 	if not hrp or not hum then return end
 	local onTM, tmPart = isOnTreadmill()
 	if not onTM then return end
-	-- Jump off the treadmill sideways
+	-- Tween off the treadmill sideways
 	local offDir = hrp.CFrame.RightVector
-	hrp.CFrame = hrp.CFrame + offDir * 15
+	local targetCF = hrp.CFrame + offDir * 15
+	local tween = TweenService:Create(hrp, TweenInfo.new(0.3, Enum.EasingStyle.Linear), {CFrame = targetCF})
+	tween:Play()
+	tween.Completed:Wait()
 	hum:ChangeState(Enum.HumanoidStateType.Jumping)
-	task.wait(0.3)
+	task.wait(0.2)
 end
 
 -- Find all stealable eggs via ProximityPrompt
