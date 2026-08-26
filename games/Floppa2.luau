@@ -324,7 +324,7 @@ task.spawn(function() while true do task.wait(0.5)
 			task.wait(0.2)
 		end
 		rod:Activate()
-		task.wait(5)
+		task.wait(math.random(5, 8))
 
 		-- Catch
 		rod:Activate()
