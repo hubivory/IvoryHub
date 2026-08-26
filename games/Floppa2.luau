@@ -270,12 +270,10 @@ task.spawn(function() while true do task.wait(1)
 				hrp.CFrame = root.CFrame + Vector3.new(0, 3, 0)
 			end
 		end
-		-- Fire Pet ProximityPrompt (hold it)
-		for _, d in ipairs(f:GetDescendants()) do
-			if d:IsA("ProximityPrompt") and d.ActionText:lower():find("pet") then
-				fireproximityprompt(d, math.max(d.HoldDuration, 1))
-			end
-		end
+		-- Pet Floppa: hold E for 1.5s
+		VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+		task.wait(1.5)
+		VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
 		-- Return to original position
 		if savedPos then
 			task.wait(0.5)
