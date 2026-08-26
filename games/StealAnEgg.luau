@@ -180,18 +180,13 @@ local function findStealEggs()
 					end
 					if not stealPrompt then continue end
 					
-					local eggName = slot.Name
-					-- Check children for egg name (look for Model with "egg" in name)
-					for _, child in ipairs(slot:GetDescendants()) do
-						if child:IsA("Model") and child.Name:lower():find("egg") then
-							eggName = child.Name
-							break
-						end
-					end
-					-- Also check children of hash-named parent
-					if eggName:find("^%x+$") then
-						for _, child in ipairs(slot:GetChildren()) do
-							if child:IsA("Model") then
+					-- Get egg name from ProximityPrompt ObjectText (contains actual name like "Uncommon Egg")
+					local eggName = stealPrompt.ObjectText
+					if not eggName or eggName == "" or eggName == "Egg" then
+						eggName = slot.Name
+						-- Try to find actual name in descendants
+						for _, child in ipairs(slot:GetDescendants()) do
+							if child:IsA("Model") and child.Name ~= "Workspace" and #child.Name > 2 then
 								eggName = child.Name
 								break
 							end
