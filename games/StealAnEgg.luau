@@ -181,11 +181,20 @@ local function findStealEggs()
 					if not stealPrompt then continue end
 					
 					local eggName = slot.Name
-					-- Check children for egg name
-					for _, child in ipairs(slot:GetChildren()) do
+					-- Check children for egg name (look for Model with "egg" in name)
+					for _, child in ipairs(slot:GetDescendants()) do
 						if child:IsA("Model") and child.Name:lower():find("egg") then
 							eggName = child.Name
 							break
+						end
+					end
+					-- Also check children of hash-named parent
+					if eggName:find("^%x+$") then
+						for _, child in ipairs(slot:GetChildren()) do
+							if child:IsA("Model") then
+								eggName = child.Name
+								break
+							end
 						end
 					end
 					local rarity, biome = getBiomeRarity(root.Position)
@@ -293,7 +302,16 @@ local function findHeldEgg()
 	return nil
 end
 
-local function findSpawn() return Workspace:FindFirstChildOfClass("SpawnLocation") end
+local function findSpawn()
+	-- Find spawn and ensure it's at ground level
+	for _, obj in ipairs(Workspace:GetDescendants()) do
+		if obj:IsA("SpawnLocation") then
+			return Vector3.new(obj.Position.X, math.max(obj.Position.Y, 70), obj.Position.Z)
+		end
+	end
+	-- Fallback: use a safe default position
+	return Vector3.new(0, 70, 0)
+end
 
 local function findTreadmill()
 	local tms = Workspace:FindFirstChild("__ClientTreadmillRenders")
@@ -560,11 +578,9 @@ task.spawn(function() while true do task.wait(0.3)
 			StealStatus:SetText("Status: stole "..t.name)
 			task.wait(0.5)
 			-- Return to spawn
-			local spawn = findSpawn()
-			if spawn then
-				StealStatus:SetText("Status: returning")
-				TpTween(CFrame.new(spawn.Position + Vector3.new(0, 3, 0)))
-			end
+			local spawnPos = findSpawn()
+			StealStatus:SetText("Status: returning")
+			TpTween(CFrame.new(spawnPos + Vector3.new(0, 3, 0)))
 		end)
 	end
 end end)
