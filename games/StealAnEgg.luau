@@ -76,6 +76,42 @@ local function getRarity(name)
 	return "Common"
 end
 
+-- Biome-based rarity lookup (built from guard area positions)
+local BIOME_RARITY = {
+	Forest = "Common", Lake = "Uncommon", Desert = "Rare", Jungle = "Epic",
+	Snow = "Legendary", Volcano = "Mythic", ["Abyss Ocean"] = "Cosmic",
+	Prehistoric = "Secret", Cosmic = "Divine",
+}
+local biomePositions = {} -- built at startup
+
+local function buildBiomePositions()
+	local oa = Workspace:FindFirstChild("__OBJECTS")
+	if not oa then return end
+	local ga = oa:FindFirstChild("Areas")
+	if not ga then return end
+	local gAreas = ga:FindFirstChild("GuardAreas")
+	if not gAreas then return end
+	for _, area in ipairs(gAreas:GetChildren()) do
+		local guard = area:FindFirstChild("Guard")
+		if guard then
+			local ep = guard:FindFirstChild("EggPoint")
+			if ep then
+				biomePositions[area.Name] = ep.Position
+			end
+		end
+	end
+end
+
+local function getBiomeRarity(pos)
+	local closestBiome, closestDist = nil, math.huge
+	for name, bpos in pairs(biomePositions) do
+		local d = (Vector3.new(pos.X, 0, pos.Z) - Vector3.new(bpos.X, 0, bpos.Z)).Magnitude
+		if d < closestDist then closestDist = d; closestBiome = name end
+	end
+	if closestBiome then return BIOME_RARITY[closestBiome] or "Common", closestBiome end
+	return "Common", "Unknown"
+end
+
 local function isOnTreadmill()
 	local hrp = getHRP(); if not hrp then return false end
 	local tms = Workspace:FindFirstChild("__ClientTreadmillRenders")
@@ -108,37 +144,29 @@ local function findStealEggs()
 		if obj:IsA("ProximityPrompt") and obj.ActionText:lower():find("steal") then
 			local part = obj.Parent
 			if part and part:IsA("BasePart") then
-				-- Collect ALL ancestor names and search for rarity keywords
-				local allNames = {}
-				local p = part
-				while p and p ~= Workspace do
-					table.insert(allNames, p.Name)
-					p = p.Parent
-				end
-				-- Also check ObjectText and part name
-				table.insert(allNames, obj.ObjectText)
-				table.insert(allNames, part.Name)
-				-- Join all names into one string and search for rarity
-				local combined = table.concat(allNames, " ")
-				local eggName = "Unknown Egg"
-				for _, r in ipairs(RARITY_NAMES) do
-					if combined:lower():find(r:lower()) then
-						-- Find the specific name that contains the rarity
-						for _, n in ipairs(allNames) do
-							if n:lower():find(r:lower()) then
-								eggName = n
-								break
-							end
+				-- Get egg name from ancestor hierarchy
+				local eggName = obj.ObjectText
+				if eggName == "Egg" or eggName == "" then
+					local p = part.Parent
+					while p and p ~= Workspace do
+						if p:IsA("Model") and p.Name ~= "Workspace" and p.Name:lower():find("egg") then
+							eggName = p.Name
+							break
 						end
-						break
+						p = p.Parent
 					end
+					if eggName == "Egg" or eggName == "" then eggName = part.Name end
 				end
-				if eggName == "Unknown Egg" then
-					eggName = obj.ObjectText ~= "" and obj.ObjectText or part.Name
-				end
+				-- Determine rarity from BIOME (not name)
+				local rarity, biome = getBiomeRarity(part.Position)
+				-- Also check name for rarity keywords (some eggs have it)
+				local nameRarity = getRarity(eggName)
+				if nameRarity ~= "Common" then rarity = nameRarity end
 				local dist = (part.Position - hrp.Position).Magnitude
-				local rarity = getRarity(eggName)
-				table.insert(eggs, {prompt=obj, part=part, name=eggName, dist=dist, rarity=rarity, rank=RARITY[rarity] or 1, hold=obj.HoldDuration})
+				-- Skip eggs that are too far (likely death zones or invalid)
+				if dist < 500 then
+					table.insert(eggs, {prompt=obj, part=part, name=eggName.." ["..biome.."]", dist=dist, rarity=rarity, rank=RARITY[rarity] or 1, hold=obj.HoldDuration})
+				end
 			end
 		end
 	end
@@ -376,6 +404,9 @@ end)
 ThemeManager:SetLibrary(Library); SaveManager:SetLibrary(Library)
 SaveManager:IgnoreThemeSettings(); SaveManager:SetIgnoreIndexes({"MenuKeybind"})
 ThemeManager:SetFolder("IvoryHub"); SaveManager:SetFolder("IvoryHub"); SaveManager:SetSubFolder("stealeanegg")
+
+-- Build biome position lookup for rarity detection
+buildBiomePositions()
 
 local SettingsTab = Window:AddTab({Name="UI Settings",Icon="settings"})
 ThemeManager:ApplyToTab(SettingsTab); SaveManager:BuildConfigSection(SettingsTab)
