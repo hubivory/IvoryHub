@@ -277,4 +277,45 @@ task.spawn(function() while true do task.wait(1)
 	end) end
 end end)
 
+-- Auto Fish: equip rod, click water to cast, wait, click to catch
+task.spawn(function() while true do task.wait(0.5)
+	if S.AutoFishing and alive() then pcall(function()
+		local water = WS:FindFirstChild("Water For Fishies")
+		if not water then return end
+		local waterPos = water.Position
+
+		-- Find fishing rod
+		local rod = nil
+		for _, obj in ipairs(WS:GetDescendants()) do
+			if obj:IsA("Tool") and obj.Name:find("Fish") then rod = obj; break end
+		end
+		if not rod then
+			local bp = LP:FindFirstChild("Backpack")
+			if bp then for _, obj in ipairs(bp:GetChildren()) do
+				if obj:IsA("Tool") and obj.Name:find("Fish") then rod = obj; break end
+			end end
+		end
+		if not rod then return end
+
+		-- Equip rod
+		local char = LP.Character
+		if char and not char:FindFirstChild("Fishing Rod") then
+			rod.Parent = LP.Backpack
+			task.wait(0.3)
+			rod.Parent = char
+			task.wait(0.5)
+		end
+
+		-- Cast: click toward water
+		local sp, onScr = workspace.CurrentCamera:WorldToScreenPoint(waterPos)
+		if onScr then
+			mouse1click(Vector2.new(sp.X, sp.Y))
+			task.wait(2)
+			-- Catch: click again
+			mouse1click(Vector2.new(sp.X, sp.Y))
+			task.wait(1)
+		end
+	end) end
+end end)
+
 Library:Notify({Title="Ivory",Description="Raise a Floppa 2 loaded!",Type="Success",Time=3})
