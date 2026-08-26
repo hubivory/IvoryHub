@@ -21,7 +21,7 @@ local Options, Toggles = Library.Options, Library.Toggles
 
 local Events = RS:WaitForChild("Events")
 local R = {
-	CollectRent=Events["Collect Rent"], RaiseRent=Events["Raise Rent"],
+	CollectRent=Events["Collect Rent 2"], RaiseRent=Events["Raise Rent 2"],
 	Cooking=Events.Cooking, Brew=Events.Brew, Rain=Events.Rain,
 	Rebirth=Events.Rebirth, Save=Events.Save, Unlock=Events.Unlock,
 	SmallVault=Events["Small Vault"], BigVault=Events["Big Vault"],
@@ -219,5 +219,26 @@ task.spawn(function() while true do task.wait(1) if S.AutoCollectDrops then pcal
 		end
 	end
 end) end end end)
+
+-- Auto Clean Poop: delete Poop models from Litter Box
+task.spawn(function() while true do task.wait(0.5)
+	if S.AutoCleanPoop then pcall(function()
+		local lb = WS:FindFirstChild("Litter Box") or WS:FindFirstChild("LitterBox")
+		if lb then
+			for _, obj in ipairs(lb:GetChildren()) do
+				if obj.Name == "Poop" and obj:IsA("Model") then
+					obj:Destroy()
+				end
+			end
+		end
+	end) end
+end end)
+
+-- Auto Pet Floppa (same as auto click but separate toggle)
+task.spawn(function() while true do task.wait(S.ClickSpeed)
+	if S.AutoClick and alive() then pcall(function()
+		local f=getFloppa(); if f then local cd=f:FindFirstChild("ClickDetector"); if cd then fireclickdetector(cd) end end
+	end) end
+end end)
 
 Library:Notify({Title="Ivory",Description="Raise a Floppa 2 loaded!",Type="Success",Time=3})
