@@ -80,7 +80,7 @@ end
 local BIOME_RARITY = {
 	Forest = "Common", Lake = "Uncommon", Desert = "Rare", Jungle = "Epic",
 	Snow = "Legendary", Volcano = "Mythic", ["Abyss Ocean"] = "Cosmic",
-	Prehistoric = "Secret", Cosmic = "Divine",
+	Prehistoric = "Secret", Cosmic = "Divine", ["Cherry Blossom"] = "Divine",
 }
 local biomePositions = {} -- built at startup
 
@@ -542,8 +542,11 @@ task.spawn(function() while true do task.wait(0.3)
 			local tPos = t.targetPos
 			local targetCF = CFrame.new(tPos + Vector3.new(0, 2, 0), Vector3.new(tPos.X, hrp.Position.Y, tPos.Z))
 			TpTween(targetCF, function()
-				-- Always use VIM to hold E — fireproximityprompt doesn't hold properly
-				holdKey(Enum.KeyCode.E, math.max(t.hold, 0.5) + 0.3)
+				if type(fireproximityprompt) == "function" then
+					pcall(fireproximityprompt, t.prompt, t.hold)
+				else
+					holdKey(Enum.KeyCode.E, t.hold + 0.3)
+				end
 			end)
 			eggsStolen = eggsStolen + 1
 			EggCount:SetText("Eggs stolen: "..eggsStolen)
