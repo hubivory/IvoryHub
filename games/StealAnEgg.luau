@@ -33,6 +33,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local VIM = game:GetService("VirtualInputManager")
 
@@ -48,23 +49,18 @@ local Options, Toggles = Library.Options, Library.Toggles
 
 --// ═══ STATE ═══
 local RARITY = {Common=1,Uncommon=2,Rare=3,Epic=4,Legendary=5,Mythic=6,Cosmic=7,Secret=8,Eternal=9,Divine=10}
-local RARITY_NAMES = {"Common","Uncommon","Rare","Epic","Legendary","Mythic","Cosmic","Secret","Eternal","Divine"}
+local RARITY_NAMES = {"Divine","Eternal","Secret","Cosmic","Mythic","Legendary","Epic","Rare","Uncommon","Common"}
 local S = {
-	-- Farm
 	AutoSteal=false, SortMode="Closest", StealMode="fireproximityprompt",
 	AutoPlaceEgg=false, AutoTreadmill=false, ExitTreadmill=false,
 	AutoHatch=false, AutoEquipBest=false,
 	AutoFavPet=false, FavRarities={}, FavMutations={},
 	AutoSellPet=false, SellPetRarities={}, AutoSellEgg=false, SellEggRarities={},
-	-- Progress
 	AutoUpgradeBase=false, AutoUpgradeTreadmill=false, AutoClaim=false,
-	-- ESP
 	ESPEggs=false, ESPRareEggs=false, ESPGuards=false,
 	GuardWarning=false, AutoDropEgg=false,
-	-- Misc
 	Noclip=false, InfJump=false, BypassSpeed=false, SpeedValue=16,
 	ReduceLag=false, AutoReconnect=false,
-	-- Color
 	ESPColor=Color3.fromRGB(255,80,80), ESPRareColor=Color3.fromRGB(255,0,255), ESPGuardColor=Color3.fromRGB(255,0,0),
 }
 genv.SAE_STATE = S
@@ -80,7 +76,30 @@ local function getRarity(name)
 	return "Common"
 end
 
-local function getRarityRank(r) return RARITY[r] or 1 end
+local function isOnTreadmill()
+	local hrp = getHRP(); if not hrp then return false end
+	local tms = Workspace:FindFirstChild("__ClientTreadmillRenders")
+	if not tms then return false end
+	for _, tm in ipairs(tms:GetDescendants()) do
+		if tm:IsA("BasePart") then
+			local d = (tm.Position - hrp.Position).Magnitude
+			if d < 12 then return true, tm end
+		end
+	end
+	return false
+end
+
+local function exitTreadmill()
+	local hrp = getHRP(); local hum = getHum()
+	if not hrp or not hum then return end
+	local onTM, tmPart = isOnTreadmill()
+	if not onTM then return end
+	-- Jump off the treadmill sideways
+	local offDir = hrp.CFrame.RightVector
+	hrp.CFrame = hrp.CFrame + offDir * 15
+	hum:ChangeState(Enum.HumanoidStateType.Jumping)
+	task.wait(0.3)
+end
 
 -- Find all stealable eggs via ProximityPrompt
 local function findStealEggs()
@@ -90,12 +109,23 @@ local function findStealEggs()
 		if obj:IsA("ProximityPrompt") and obj.ActionText:lower():find("steal") then
 			local part = obj.Parent
 			if part and part:IsA("BasePart") then
-				local eggName = obj.ObjectText or part.Name
-				local model = part:FindFirstAncestorWhichIsA("Model")
-				if model then eggName = model.Name end
+				-- Walk up from part to find the egg model (stop before Workspace)
+				local eggName = "Unknown Egg"
+				local p = part.Parent
+				while p and p ~= Workspace do
+					if p:IsA("Model") and p.Name ~= "Workspace" then
+						eggName = p.Name
+						break
+					end
+					p = p.Parent
+				end
+				if eggName == "Unknown Egg" and obj.ObjectText ~= "" and obj.ObjectText ~= "Egg" then
+					eggName = obj.ObjectText
+				end
+				if eggName == "Unknown Egg" then eggName = part.Name end
 				local dist = (part.Position - hrp.Position).Magnitude
 				local rarity = getRarity(eggName)
-				table.insert(eggs, {prompt=obj, part=part, model=model, name=eggName, dist=dist, rarity=rarity, rank=RARITY[rarity] or 1, hold=obj.HoldDuration})
+				table.insert(eggs, {prompt=obj, part=part, name=eggName, dist=dist, rarity=rarity, rank=RARITY[rarity] or 1, hold=obj.HoldDuration})
 			end
 		end
 	end
@@ -103,9 +133,16 @@ local function findStealEggs()
 end
 
 local function sortEggs(eggs)
-	if S.SortMode == "Closest" then table.sort(eggs, function(a,b) return a.dist < b.dist end)
-	elseif S.SortMode == "Rarest" then table.sort(eggs, function(a,b) return a.rank > b.rank or (a.rank == b.rank and a.dist < b.dist) end)
-	elseif S.SortMode == "Biggest" then table.sort(eggs, function(a,b) return a.dist < b.dist end) end
+	if S.SortMode == "Closest" then
+		table.sort(eggs, function(a,b) return a.dist < b.dist end)
+	elseif S.SortMode == "Rarest" then
+		table.sort(eggs, function(a,b)
+			if a.rank ~= b.rank then return a.rank > b.rank end
+			return a.dist < b.dist
+		end)
+	elseif S.SortMode == "Biggest" then
+		table.sort(eggs, function(a,b) return a.dist < b.dist end)
+	end
 	return eggs
 end
 
@@ -118,7 +155,6 @@ local function findAreaEggs()
 			local root = slot.PrimaryPart or slot:FindFirstChildWhichIsA("BasePart")
 			if root then
 				local eggName = slot.Name
-				-- Check if it has a child egg model
 				for _, child in ipairs(slot:GetChildren()) do
 					if child:IsA("Model") and child.Name:find("Egg") then eggName = child.Name; break end
 				end
@@ -134,23 +170,28 @@ end
 local function findGuards()
 	local guards = {}
 	local oa = Workspace:FindFirstChild("__OBJECTS")
-	if oa then local ga = oa:FindFirstChild("Areas"); if ga then local gAreas = ga:FindFirstChild("GuardAreas"); if gAreas then
-		for _, area in ipairs(gAreas:GetChildren()) do
-			local guardFolder = area:FindFirstChild("Guard")
-			if guardFolder then
-				for _, obj in ipairs(guardFolder:GetDescendants()) do
-					if obj:IsA("Model") and (obj.Name:lower():find("guard") or obj:FindFirstChildWhichIsA("Humanoid")) then
-						local root = obj.PrimaryPart or obj:FindFirstChild("HumanoidRootPart")
-						if root then table.insert(guards, {model=obj, part=root, area=area.Name}) end
+	if oa then
+		local ga = oa:FindFirstChild("Areas")
+		if ga then
+			local gAreas = ga:FindFirstChild("GuardAreas")
+			if gAreas then
+				for _, area in ipairs(gAreas:GetChildren()) do
+					local guardFolder = area:FindFirstChild("Guard")
+					if guardFolder then
+						for _, obj in ipairs(guardFolder:GetDescendants()) do
+							if obj:IsA("Model") and (obj.Name:lower():find("guard") or obj:FindFirstChildWhichIsA("Humanoid")) then
+								local root = obj.PrimaryPart or obj:FindFirstChild("HumanoidRootPart")
+								if root then table.insert(guards, {model=obj, part=root, area=area.Name}) end
+							end
+						end
 					end
 				end
 			end
 		end
-	end end end
+	end
 	return guards
 end
 
--- Find player's egg (held)
 local function findHeldEgg()
 	local char = LocalPlayer.Character
 	if not char then return nil end
@@ -168,20 +209,6 @@ end
 
 local function findSpawn() return Workspace:FindFirstChildOfClass("SpawnLocation") end
 
--- Find egg pen / placement area
-local function findPen()
-	local hrp = getHRP(); if not hrp then return nil end
-	local best, bestDist = nil, math.huge
-	for _, obj in ipairs(Workspace:GetDescendants()) do
-		if obj:IsA("BasePart") and (obj.Name:lower():find("pen") or obj.Name:lower():find("slot") or obj.Name:lower():find("nest") or obj.Name:lower():find("place")) then
-			local d = (obj.Position - hrp.Position).Magnitude
-			if d < bestDist then bestDist = d; best = obj end
-		end
-	end
-	return best
-end
-
--- Find treadmill part
 local function findTreadmill()
 	local tms = Workspace:FindFirstChild("__ClientTreadmillRenders")
 	if tms then for _, tm in ipairs(tms:GetChildren()) do
@@ -210,10 +237,6 @@ local function updateESP()
 			if S.ESPRareEggs and egg.rank >= 6 then mkESP(egg.part, egg.name.." ["..egg.rarity.."]", S.ESPRareColor)
 			elseif S.ESPEggs then mkESP(egg.part, egg.name.." ["..egg.rarity.."]", S.ESPColor) end
 		end
-		for _, egg in ipairs(findAreaEggs()) do
-			if S.ESPRareEggs and egg.rank >= 6 then mkESP(egg.part, egg.name.." ["..egg.rarity.."]", S.ESPRareColor)
-			elseif S.ESPEggs then mkESP(egg.part, egg.name, S.ESPColor) end
-		end
 	end
 	if S.ESPGuardians then
 		for _, g in ipairs(findGuards()) do
@@ -232,15 +255,14 @@ local Window = Library:CreateWindow({
 	Animations={ToggleWindow=false,TabSwitch=false,Groupbox=false,Dropdown=false,KeyPicker=false,SubTabUnderline=true},
 })
 
--- ═══════════════════════════════════════
--- TAB: FARM
--- ═══════════════════════════════════════
+-- ═══ FARM TAB ═══
 local FarmTab = Window:AddTab({Name="Farm",Icon="crosshair"})
 local StealSub = FarmTab:AddSubTab("Auto Steal","crosshair")
 local SG1 = StealSub:AddLeftGroupbox("Stealing","crosshair")
 SG1:AddToggle("AutoSteal",{Text="Auto Steal Eggs",Default=false,Callback=function(v) S.AutoSteal=v end}):AddKeyPicker("StealKey",{Default="None",Text="Steal Key",Mode="Toggle",SyncToggleState=true,NoUI=false})
 SG1:AddDropdown("SortMode",{Text="Target Priority",Values={"Closest","Rarest","Biggest"},Default="Closest",Callback=function(v) S.SortMode=v end})
 SG1:AddDropdown("StealMode",{Text="Steal Method",Values={"fireproximityprompt","Hold E (VirtualInput)"},Default="fireproximityprompt",Callback=function(v) S.StealMode=v end})
+SG1:AddToggle("AutoReturnBase",{Text="Auto Return After Steal",Default=false,Callback=function(v) S.AutoReturnBase=v end})
 
 local SG2 = StealSub:AddRightGroupbox("Info","info")
 local StealStatus = SG2:AddLabel("Status: idle")
@@ -255,75 +277,46 @@ PG1:AddToggle("AutoHatch",{Text="Auto Hatch Eggs",Default=false,Callback=functio
 local PG2 = PlaceSub:AddRightGroupbox("Equip & Favorites","heart")
 PG2:AddToggle("AutoEquipBest",{Text="Auto Equip Best Pet",Default=false,Callback=function(v) S.AutoEquipBest=v end})
 PG2:AddToggle("AutoFavPet",{Text="Auto Favorite Pet",Default=false,Callback=function(v) S.AutoFavPet=v end})
-PG2:AddButton("Favorite Pets Now",function()
-	-- Favorite matching pets instantly
-	pcall(function()
-		for _, obj in ipairs(LocalPlayer.Backpack:GetChildren()) do
-			if obj:IsA("Tool") then
-				-- Would fire favorite remote here
-			end
-		end
-	end)
-	Library:Notify({Title="Ivory",Description="Favorited matching pets",Type="Success",Time=2})
-end)
 
 local SellSub = FarmTab:AddSubTab("Selling","dollar-sign")
 local SL1 = SellSub:AddLeftGroupbox("Sell Pets","dog")
 SL1:AddToggle("AutoSellPet",{Text="Auto Sell Pet",Default=false,Callback=function(v) S.AutoSellPet=v end})
-SL1:AddButton("Sell Pets Now",function()
-	Library:Notify({Title="Ivory",Description="Sold matching pets",Type="Success",Time=2})
-end)
-
 local SL2 = SellSub:AddRightGroupbox("Sell Eggs","egg")
 SL2:AddToggle("AutoSellEgg",{Text="Auto Sell Egg",Default=false,Callback=function(v) S.AutoSellEgg=v end})
-SL2:AddButton("Sell Eggs Now",function()
-	Library:Notify({Title="Ivory",Description="Sold matching eggs",Type="Success",Time=2})
-end)
 
 local TreadSub = FarmTab:AddSubTab("Treadmill","zap")
 local TG1 = TreadSub:AddLeftGroupbox("Training","zap")
 TG1:AddToggle("AutoTreadmill",{Text="Auto Treadmill",Default=false,Callback=function(v) S.AutoTreadmill=v end})
 TG1:AddToggle("ExitTreadmill",{Text="Exit From Treadmill",Default=false,Callback=function(v) S.ExitTreadmill=v end})
+TG1:AddButton("Jump Off Now",function() exitTreadmill(); Library:Notify({Title="Ivory",Description="Jumped off treadmill",Type="Success",Time=2}) end)
 
--- ═══════════════════════════════════════
--- TAB: PROGRESS
--- ═══════════════════════════════════════
+-- ═══ PROGRESS TAB ═══
 local ProgTab = Window:AddTab({Name="Progress",Icon="trending-up"})
 local UpgSub = ProgTab:AddSubTab("Upgrades","arrow-up-circle")
 local UG1 = UpgSub:AddLeftGroupbox("Auto Upgrade","arrow-up-circle")
 UG1:AddToggle("AutoUpgradeBase",{Text="Auto Upgrade Base",Default=false,Callback=function(v) S.AutoUpgradeBase=v end})
 UG1:AddToggle("AutoUpgradeTreadmill",{Text="Auto Upgrade Treadmill",Default=false,Callback=function(v) S.AutoUpgradeTreadmill=v end})
-
 local ClaimSub = ProgTab:AddSubTab("Claims","gift")
 local CG1 = ClaimSub:AddLeftGroupbox("Auto Claim","gift")
 CG1:AddToggle("AutoClaim",{Text="Auto Claim",Default=false,Callback=function(v) S.AutoClaim=v end})
-CG1:AddButton("Claim All Now",function()
-	Library:Notify({Title="Ivory",Description="Claimed all rewards",Type="Success",Time=2})
-end)
 
--- ═══════════════════════════════════════
--- TAB: ESP
--- ═══════════════════════════════════════
+-- ═══ ESP TAB ═══
 local ESPTab = Window:AddTab({Name="ESP",Icon="eye"})
-local ESPSub = ESPTab:AddSubTab("Overlays","scan")
-local EG1 = ESPSub:AddLeftGroupbox("Egg ESP","egg")
+local ESPSub2 = ESPTab:AddSubTab("Overlays","scan")
+local EG1 = ESPSub2:AddLeftGroupbox("Egg ESP","egg")
 EG1:AddToggle("ESPEggs",{Text="ESP Eggs",Default=false,Callback=function(v) S.ESPEggs=v; if v then updateESP() else clearESP() end end}):AddKeyPicker("ESPKey",{Default="None",Text="ESP Key",Mode="Toggle",SyncToggleState=true,NoUI=false})
 EG1:AddToggle("ESPRareEggs",{Text="ESP Rare Eggs (>= Mythic)",Default=false,Callback=function(v) S.ESPRareEggs=v; if v then updateESP() else clearESP() end end})
 EG1:AddLabel("Egg Color"):AddColorPicker("ESPColor",{Default=S.ESPColor,Title="Egg Color",Callback=function(v) S.ESPColor=v; if S.ESPEggs then updateESP() end end})
 EG1:AddLabel("Rare Color"):AddColorPicker("ESPRareColor",{Default=S.ESPRareColor,Title="Rare Egg Color",Callback=function(v) S.ESPRareColor=v; if S.ESPRareEggs then updateESP() end end})
-
-local EG2 = ESPSub:AddRightGroupbox("Guard ESP","shield")
+local EG2 = ESPSub2:AddRightGroupbox("Guard ESP","shield")
 EG2:AddToggle("ESPGuardians",{Text="ESP Guards",Default=false,Callback=function(v) S.ESPGuardians=v; if v then updateESP() else clearESP() end end})
 EG2:AddLabel("Guard Color"):AddColorPicker("ESPGuardColor",{Default=S.ESPGuardColor,Title="Guard Color",Callback=function(v) S.ESPGuardColor=v; if S.ESPGuardians then updateESP() end end})
-
 local WarnSub = ESPTab:AddSubTab("Warnings","alert-triangle")
 local WG1 = WarnSub:AddLeftGroupbox("Guard Warning","alert-triangle")
 WG1:AddToggle("GuardWarning",{Text="Guard Warning",Default=false,Callback=function(v) S.GuardWarning=v end})
 WG1:AddToggle("AutoDropEgg",{Text="Auto Drop Egg if Chased",Default=false,Callback=function(v) S.AutoDropEgg=v end})
 
--- ═══════════════════════════════════════
--- TAB: MISC
--- ═══════════════════════════════════════
+-- ═══ MISC TAB ═══
 local MiscTab = Window:AddTab({Name="Misc",Icon="settings"})
 local MoveSub = MiscTab:AddSubTab("Character","person-standing")
 local MG1 = MoveSub:AddLeftGroupbox("Movement","person-standing")
@@ -331,34 +324,15 @@ MG1:AddToggle("Noclip",{Text="No Clip",Default=false,Callback=function(v) S.Nocl
 MG1:AddToggle("InfJump",{Text="Infinite Jump",Default=false,Callback=function(v) S.InfJump=v end}):AddKeyPicker("InfJumpKey",{Default="None",Text="Inf Jump",Mode="Toggle",SyncToggleState=true,NoUI=false})
 MG1:AddToggle("BypassSpeed",{Text="Bypass Walkspeed",Default=false,Callback=function(v) S.BypassSpeed=v end})
 MG1:AddSlider("SpeedVal",{Text="Walk Speed",Default=16,Min=16,Max=200,Rounding=0,Callback=function(v) S.SpeedValue=v end})
-
 local MG2 = MoveSub:AddRightGroupbox("Utilities","settings")
 MG2:AddToggle("ReduceLag",{Text="Reduce Lag",Default=false,Callback=function(v) S.ReduceLag=v end})
 MG2:AddToggle("AutoReconnect",{Text="Auto Reconnect",Default=false,Callback=function(v) S.AutoReconnect=v end})
-
-local ScreenSub = MiscTab:AddSubTab("Screen","monitor")
-local SCG1 = ScreenSub:AddLeftGroupbox("Screen","monitor")
-SCG1:AddButton("Show Screen White",function()
-	local sg = Instance.new("ScreenGui"); sg.Name="IvoryScreen"; sg.Parent=LocalPlayer:WaitForChild("PlayerGui"); sg.DisplayOrder=999
-	local f = Instance.new("Frame"); f.Parent=sg; f.Size=UDim2.new(1,0,1,0); f.BackgroundColor3=Color3.new(1,1,1); f.BorderSizePixel=0
-	task.delay(2,function() sg:Destroy() end)
-end)
-SCG1:AddButton("Show Screen Black",function()
-	local sg = Instance.new("ScreenGui"); sg.Name="IvoryScreen"; sg.Parent=LocalPlayer:WaitForChild("PlayerGui"); sg.DisplayOrder=999
-	local f = Instance.new("Frame"); f.Parent=sg; f.Size=UDim2.new(1,0,1,0); f.BackgroundColor3=Color3.new(0,0,0); f.BorderSizePixel=0
-	task.delay(2,function() sg:Destroy() end)
-end)
-
-local ResetSub = MiscTab:AddSubTab("Config","rotate-ccw")
-local RCG1 = ResetSub:AddLeftGroupbox("Config","rotate-ccw")
-RCG1:AddButton("Reset Script Config",function()
+MG2:AddButton("Reset Script Config",function()
 	pcall(function() delfolder("IvoryHub/stealeanegg") end)
 	Library:Notify({Title="Ivory",Description="Config reset",Type="Info",Time=2})
 end)
 
--- ═══════════════════════════════════════
--- SETTINGS (always last)
--- ═══════════════════════════════════════
+-- ═══ SETTINGS (always last) ═══
 ThemeManager:SetLibrary(Library); SaveManager:SetLibrary(Library)
 SaveManager:IgnoreThemeSettings(); SaveManager:SetIgnoreIndexes({"MenuKeybind"})
 ThemeManager:SetFolder("IvoryHub"); SaveManager:SetFolder("IvoryHub"); SaveManager:SetSubFolder("stealeanegg")
@@ -394,6 +368,11 @@ end end)
 
 task.spawn(function() while true do task.wait(2) if S.ESPEggs or S.ESPRareEggs or S.ESPGuardians then pcall(updateESP) end end end)
 
+-- Exit Treadmill loop
+task.spawn(function() while true do task.wait(0.5)
+	if S.ExitTreadmill then pcall(exitTreadmill) end
+end end)
+
 -- Guard warning loop
 task.spawn(function() while true do task.wait(0.5)
 	if S.GuardWarning and alive() then
@@ -405,9 +384,7 @@ task.spawn(function() while true do task.wait(0.5)
 				if d < 30 then
 					Library:Notify({Title="Guard Warning!",Description=g.area.." guard "..math.floor(d).."m away!",Type="Error",Time=2})
 					if S.AutoDropEgg and findHeldEgg() then
-						-- Drop the egg
 						pcall(function() LocalPlayer.Character:FindFirstChildOfClass("Tool").Parent = LocalPlayer.Backpack end)
-						Library:Notify({Title="Ivory",Description="Dropped egg - guard nearby",Type="Info",Time=1})
 					end
 				end
 			end
@@ -420,16 +397,29 @@ local eggsStolen = 0
 task.spawn(function() while true do task.wait(0.3)
 	if S.AutoSteal and alive() then
 		pcall(function()
+			-- EXIT TREADMILL FIRST before stealing
+			if isOnTreadmill() then
+				exitTreadmill()
+				task.wait(0.5)
+			end
+
 			local eggs = sortEggs(findStealEggs())
 			if #eggs == 0 then StealStatus:SetText("Status: no eggs found"); return end
 			local t = eggs[1]
 			StealStatus:SetText("Status: going to "..t.name.." ["..t.rarity.."] "..math.floor(t.dist).."m")
 			local hrp, hum = getHRP(), getHum()
 			if not hrp or not hum then return end
-			hum.WalkToPoint = t.part.Position
-			for _=1, 30 do if (hrp.Position-t.part.Position).Magnitude <= 8 then break end; task.wait(0.1) end
-			hrp.CFrame = CFrame.new(hrp.Position, Vector3.new(t.part.Position.X, hrp.Position.Y, t.part.Position.Z))
-			task.wait(0.1)
+
+			-- Tween to egg (150 studs/sec, independent of walkspeed)
+			local targetPos = t.part.Position
+			local dist = (hrp.Position - targetPos).Magnitude
+			local tweenTime = math.clamp(dist / 150, 0.1, 5)
+			local goalCF = CFrame.new(targetPos + Vector3.new(0, 2, 0), Vector3.new(targetPos.X, hrp.Position.Y, targetPos.Z))
+			local tween = TweenService:Create(hrp, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = goalCF})
+			tween:Play()
+			tween.Completed:Wait()
+
+			-- Steal
 			if S.StealMode == "fireproximityprompt" and type(fireproximityprompt) == "function" then
 				pcall(fireproximityprompt, t.prompt)
 			else
@@ -440,9 +430,17 @@ task.spawn(function() while true do task.wait(0.3)
 			LastEggLabel:SetText("Last: "..t.name.." ["..t.rarity.."]")
 			StealStatus:SetText("Status: stole "..t.name)
 			task.wait(0.5)
-			-- Return to spawn after steal
+			-- Return to spawn via tween
 			local spawn = findSpawn()
-			if spawn then hum.WalkToPoint = spawn.Position; StealStatus:SetText("Status: returning"); task.wait(3) end
+			if spawn then
+				local returnDist = (hrp.Position - spawn.Position).Magnitude
+				local returnTime = math.clamp(returnDist / 150, 0.1, 5)
+				local returnGoal = CFrame.new(spawn.Position + Vector3.new(0, 3, 0))
+				local returnTween = TweenService:Create(hrp, TweenInfo.new(returnTime, Enum.EasingStyle.Linear), {CFrame = returnGoal})
+				StealStatus:SetText("Status: returning")
+				returnTween:Play()
+				returnTween.Completed:Wait()
+			end
 		end)
 	end
 end end)
@@ -451,7 +449,6 @@ end end)
 task.spawn(function() while true do task.wait(5)
 	if S.ReduceLag then
 		pcall(function()
-			-- Remove unnecessary particle emitters, point lights, beams
 			for _, obj in ipairs(Workspace:GetDescendants()) do
 				if obj:IsA("ParticleEmitter") then obj.Enabled = false
 				elseif obj:IsA("PointLight") then obj.Enabled = false
