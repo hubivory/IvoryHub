@@ -90,14 +90,9 @@ local function isOnTreadmill()
 end
 
 local function exitTreadmill()
-	local hrp = getHRP(); local hum = getHum()
-	if not hrp or not hum then return end
-	local onTM = isOnTreadmill()
-	if not onTM then return end
-	local offDir = hrp.CFrame.RightVector
-	TpTween(hrp.CFrame + offDir * 15, function()
-		hum:ChangeState(Enum.HumanoidStateType.Jumping)
-	end)
+	local hum = getHum()
+	if not hum then return end
+	hum:ChangeState(Enum.HumanoidStateType.Jumping)
 end
 
 -- Find all stealable eggs via ProximityPrompt
@@ -450,16 +445,32 @@ task.spawn(function() while true do task.wait(0.3)
 			local hrp, hum = getHRP(), getHum()
 			if not hrp or not hum then return end
 
-			-- TpTween to egg
-			local targetCF = CFrame.new(t.part.Position + Vector3.new(0, 2, 0), Vector3.new(t.part.Position.X, hrp.Position.Y, t.part.Position.Z))
-			TpTween(targetCF, function()
-				-- Steal after arriving
-				if S.StealMode == "fireproximityprompt" and type(fireproximityprompt) == "function" then
-					pcall(fireproximityprompt, t.prompt)
+			-- Walk to egg (WalkToPoint only, no CFrame)
+			hum.WalkToPoint = t.part.Position
+			local lastPos = hrp.Position
+			local stuckFrames = 0
+			for _=1, 80 do
+				if (hrp.Position-t.part.Position).Magnitude <= 8 then break end
+				-- Stuck detection: if position hasn't changed, jump
+				if (hrp.Position - lastPos).Magnitude < 0.3 then
+					stuckFrames = stuckFrames + 1
+					if stuckFrames >= 4 then
+						hum:ChangeState(Enum.HumanoidStateType.Jumping)
+						task.wait(0.4)
+						stuckFrames = 0
+					end
 				else
-					holdKey(Enum.KeyCode.E, t.hold + 0.3)
+					stuckFrames = 0
 				end
-			end)
+				lastPos = hrp.Position
+				task.wait(0.1)
+			end
+			-- Steal
+			if S.StealMode == "fireproximityprompt" and type(fireproximityprompt) == "function" then
+				pcall(fireproximityprompt, t.prompt)
+			else
+				holdKey(Enum.KeyCode.E, t.hold + 0.3)
+			end
 			eggsStolen = eggsStolen + 1
 			EggCount:SetText("Eggs stolen: "..eggsStolen)
 			LastEggLabel:SetText("Last: "..t.name.." ["..t.rarity.."]")
@@ -468,8 +479,9 @@ task.spawn(function() while true do task.wait(0.3)
 			-- Return to spawn
 			local spawn = findSpawn()
 			if spawn then
+				hum.WalkToPoint = spawn.Position
 				StealStatus:SetText("Status: returning")
-				TpTween(CFrame.new(spawn.Position + Vector3.new(0, 3, 0)))
+				task.wait(5)
 			end
 		end)
 	end
