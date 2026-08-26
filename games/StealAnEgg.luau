@@ -308,14 +308,20 @@ local function holdKey(code, dur) VIM:SendKeyEvent(true, code, false, game); tas
 
 -- Noclip helper for TpTween
 local noclipConn = nil
+local noclipConn2 = nil
 local function setNoclip(on)
 	if on then
 		noclipConn = RunService.Stepped:Connect(function()
 			local c = LocalPlayer.Character
 			if c then for _, p in ipairs(c:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide = false end end end
 		end)
+		noclipConn2 = RunService.RenderStepped:Connect(function()
+			local c = LocalPlayer.Character
+			if c then for _, p in ipairs(c:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide = false end end end
+		end)
 	else
 		if noclipConn then noclipConn:Disconnect(); noclipConn = nil end
+		if noclipConn2 then noclipConn2:Disconnect(); noclipConn2 = nil end
 	end
 end
 
@@ -323,11 +329,21 @@ local function TpTween(targetCF, callback)
 	pcall(function()
 		local hrp = getHRP(); if not hrp then return end
 		setNoclip(true)
-		local distance = (hrp.Position - targetCF.Position).Magnitude
-		local duration = math.clamp(distance / 35, 0.1, 8)
-		local tween = TweenService:Create(hrp, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCF})
-		tween:Play()
-		tween.Completed:Wait()
+		-- Move in small steps to avoid physics glitches
+		local startPos = hrp.Position
+		local endPos = targetCF.Position
+		local totalDist = (startPos - endPos).Magnitude
+		local stepSize = 15 -- studs per step
+		local steps = math.max(1, math.ceil(totalDist / stepSize))
+		for i = 1, steps do
+			local t = i / steps
+			local stepCF = CFrame.new(startPos:Lerp(endPos, t), endPos)
+			local stepDur = math.clamp(stepSize / 35, 0.05, 0.5)
+			local tween = TweenService:Create(hrp, TweenInfo.new(stepDur, Enum.EasingStyle.Linear), {CFrame = stepCF})
+			tween:Play()
+			tween.Completed:Wait()
+			task.wait(0.02) -- small pause between steps
+		end
 		setNoclip(false)
 		if callback then callback() end
 	end)
