@@ -144,46 +144,19 @@ local function findStealEggs()
 		if obj:IsA("ProximityPrompt") and obj.ActionText:lower():find("steal") then
 			local part = obj.Parent
 			if part and part:IsA("BasePart") then
-				-- The prompt's parent might be a floating helper part ("SmartPromptPart")
-				-- Find the ACTUAL egg model on the ground near the prompt
-				local groundY = 80 -- typical ground level
-				local eggPos = Vector3.new(part.Position.X, groundY, part.Position.Z)
+				-- The prompt parent is "SmartPromptPart" floating in the sky
+				-- Use its XZ but clamp Y to ground level for safe teleport
+				local targetPos = Vector3.new(part.Position.X, hrp.Position.Y, part.Position.Z)
 				
-				-- Search for the actual egg model near this XZ position
-				local nearestEgg, nearestDist = nil, math.huge
-				for _, model in ipairs(Workspace:GetDescendants()) do
-					if model:IsA("Model") and model.Name:lower():find("egg") then
-						local root = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
-						if root and root.Position.Y > 50 and root.Position.Y < 200 then
-							local dxz = (Vector3.new(root.Position.X, 0, root.Position.Z) - Vector3.new(eggPos.X, 0, eggPos.Z)).Magnitude
-							if dxz < nearestDist then
-								nearestDist = dxz
-								nearestEgg = root
-							end
-						end
-					end
-				end
-				
-				-- Use the ground egg position if found, otherwise use prompt pos at ground level
-				local targetPart = nearestEgg or part
-				local targetPos = nearestEgg and nearestEgg.Position or eggPos
-				
-				-- Get egg name
 				local eggName = obj.ObjectText
-				if eggName == "Egg" or eggName == "" then
-					if nearestEgg and nearestEgg.Parent and nearestEgg.Parent:IsA("Model") then
-						eggName = nearestEgg.Parent.Name
-					else
-						eggName = "Egg"
-					end
-				end
+				if eggName == "Egg" or eggName == "" then eggName = "Egg" end
 				
 				local rarity, biome = getBiomeRarity(targetPos)
 				local nameRarity = getRarity(eggName)
 				if nameRarity ~= "Common" then rarity = nameRarity end
-				local dist = (targetPos - hrp.Position).Magnitude
-				if dist < 500 then
-					table.insert(eggs, {prompt=obj, part=targetPart, targetPos=targetPos, name=eggName.." ["..biome.."]", dist=dist, rarity=rarity, rank=RARITY[rarity] or 1, hold=obj.HoldDuration})
+				local dist = (Vector3.new(targetPos.X, 0, targetPos.Z) - Vector3.new(hrp.Position.X, 0, hrp.Position.Z)).Magnitude
+				if dist < 500 and dist > 1 then
+					table.insert(eggs, {prompt=obj, targetPos=targetPos, name=eggName.." ["..biome.."]", dist=dist, rarity=rarity, rank=RARITY[rarity] or 1, hold=obj.HoldDuration})
 				end
 			end
 		end
@@ -501,10 +474,9 @@ task.spawn(function() while true do task.wait(0.3)
 			local hrp, hum = getHRP(), getHum()
 			if not hrp or not hum then return end
 
-			-- TpTween to egg (clamp Y to avoid underground)
-			local tPos = t.targetPos or t.part.Position
-			local eggY = math.max(tPos.Y + 3, hrp.Position.Y)
-			local targetCF = CFrame.new(Vector3.new(tPos.X, eggY, tPos.Z), Vector3.new(tPos.X, hrp.Position.Y, tPos.Z))
+			-- TpTween to egg position at ground level
+			local tPos = t.targetPos
+			local targetCF = CFrame.new(tPos + Vector3.new(0, 2, 0), Vector3.new(tPos.X, hrp.Position.Y, tPos.Z))
 			TpTween(targetCF, function()
 				if S.StealMode == "fireproximityprompt" and type(fireproximityprompt) == "function" then
 					pcall(fireproximityprompt, t.prompt, t.hold)
