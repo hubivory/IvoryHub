@@ -324,7 +324,9 @@ task.spawn(function() while true do task.wait(0.5)
 			task.wait(0.2)
 		end
 		rod:Activate()
-		task.wait(math.random(5, 8))
+		local waitTime = math.random(5000, 8000) / 1000
+		print("[Ivory] Fishing: waiting " .. waitTime .. "s after cast")
+		task.wait(waitTime)
 
 		-- Catch
 		rod:Activate()
