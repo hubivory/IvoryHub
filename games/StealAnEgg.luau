@@ -146,7 +146,7 @@ local function findGuards()
 				end
 			end
 		end
-	end end end end
+	end end end
 	return guards
 end
 
