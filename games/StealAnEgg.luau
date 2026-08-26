@@ -541,6 +541,7 @@ task.spawn(function() while true do task.wait(0.3)
 			local tPos = t.targetPos
 			local targetCF = CFrame.new(tPos + Vector3.new(0, 2, 0), Vector3.new(tPos.X, hrp.Position.Y, tPos.Z))
 			TpTween(targetCF, function()
+				task.wait(0.3)
 				if S.StealMode == "fireproximityprompt" and type(fireproximityprompt) == "function" then
 					pcall(fireproximityprompt, t.prompt, t.hold)
 				else
@@ -551,11 +552,12 @@ task.spawn(function() while true do task.wait(0.3)
 			EggCount:SetText("Eggs stolen: "..eggsStolen)
 			LastEggLabel:SetText("Last: "..t.name.." ["..t.rarity.."]")
 			StealStatus:SetText("Status: stole "..t.name)
-			task.wait(0.5)
-			-- Return to spawn
-			local spawnPos = findSpawn()
-			StealStatus:SetText("Status: returning")
-			TpTween(CFrame.new(spawnPos + Vector3.new(0, 3, 0)))
+			task.wait(2)
+			if S.AutoReturnBase then
+				local spawnPos = findSpawn()
+				StealStatus:SetText("Status: returning")
+				TpTween(CFrame.new(spawnPos + Vector3.new(0, 3, 0)))
+			end
 		end)
 	end
 end end)
