@@ -6,68 +6,77 @@ local GITHUB_RAW = "https://raw.githubusercontent.com/hubivory/IvoryHub/"
 local GITHUB_API = "https://api.github.com/repos/hubivory/IvoryHub/commits?per_page=1"
 
 local GameScripts = {
-    [116497287371701] = "games/Karinderya.luau",
-    [99521272836282] = "games/FinalSwarm.luau",
-    [79787558257549] = "games/FinalSwarm.luau",
-    [95919006508862] = "games/MeltTheIce.luau",
-    [1962086868] = "games/Towerofhell.luau",
-    [138501044883253] = "games/BuildABurger.luau",
-    [105963809208632] = "games/BuildABurger.luau",
-    [100293509865504] = "games/CatchABillionDucks.luau",
-    [120617974337690] = "games/CatchABillionDucks.luau",
-    [137363360166684] = "games/RocksRNG.luau",
-    [9772878203] = "games/Floppa2.luau",
-    [13772394625] = "games/Bladeball.luau",
-    [142823291] = "games/MM2.luau",
-    -- Add more: [PlaceId] = "games/ScriptName.luau"
+	[116497287371701] = "games/Karinderya.luau",
+	[99521272836282] = "games/FinalSwarm.luau",
+	[79787558257549] = "games/FinalSwarm.luau",
+	[95919006508862] = "games/MeltTheIce.luau",
+	[1962086868] = "games/Towerofhell.luau",
+	[138501044883253] = "games/BuildABurger.luau",
+	[105963809208632] = "games/BuildABurger.luau",
+	[100293509865504] = "games/CatchABillionDucks.luau",
+	[120617974337690] = "games/CatchABillionDucks.luau",
+	[137363360166684] = "games/RocksRNG.luau",
+	[9772878203] = "games/Floppa2.luau",
+	[13772394625] = "games/Bladeball.luau",
+	[142823291] = "games/MM2.luau",
+	-- Add more: [PlaceId] = "games/ScriptName.luau"
 }
 
 local PlaceId = game.PlaceId
 local ScriptFile = GameScripts[PlaceId]
 
 if not ScriptFile then
-    warn("[Ivory Hub] Unsupported game: " .. PlaceId)
-    return
+	local universal = loadstring(GITHUB_RAW .. "main/universal_script.luau")
+	if universal then
+		universal()
+	end
+	return
 end
 
 print("[Ivory Hub] Loading for game: " .. PlaceId)
 
 local success, err = pcall(function()
-    -- Get latest commit hash to bypass CDN cache
-    local commitHash = "main"
-    pcall(function()
-        local apiRes = request({ Url = GITHUB_API, Method = "GET" })
-        if apiRes and apiRes.Body then
-            local hash = apiRes.Body:match('"sha":"(%w+)"')
-            if hash then commitHash = hash end
-        end
-    end)
+	-- Get latest commit hash to bypass CDN cache
+	local commitHash = "main"
+	pcall(function()
+		local apiRes = request({ Url = GITHUB_API, Method = "GET" })
+		if apiRes and apiRes.Body then
+			local hash = apiRes.Body:match('"sha":"(%w+)"')
+			if hash then
+				commitHash = hash
+			end
+		end
+	end)
 
-    -- Pre-fetch ObsidianUltra source code for game scripts
-    local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-    pcall(function()
-        local genv = getgenv()
-        genv._IvoryLibSrc = request({ Url = repo .. "Library.lua", Method = "GET" }).Body
-        genv._IvoryTMSrc = request({ Url = repo .. "addons/ThemeManager.lua", Method = "GET" }).Body
-        genv._IvorySMSrc = request({ Url = repo .. "addons/SaveManager.lua", Method = "GET" }).Body
-        print("[Ivory Hub] ObsidianUltra sources cached")
-    end)
+	-- Pre-fetch ObsidianUltra source code for game scripts
+	local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
+	pcall(function()
+		local genv = getgenv()
+		genv._IvoryLibSrc = request({ Url = repo .. "Library.lua", Method = "GET" }).Body
+		genv._IvoryTMSrc = request({ Url = repo .. "addons/ThemeManager.lua", Method = "GET" }).Body
+		genv._IvorySMSrc = request({ Url = repo .. "addons/SaveManager.lua", Method = "GET" }).Body
+		print("[Ivory Hub] ObsidianUltra sources cached")
+	end)
 
-    local url = GITHUB_RAW .. commitHash .. "/" .. ScriptFile
-    local res = request({ Url = url, Method = "GET" })
-    local content = res and res.Body or nil
-    if not content then error("HTTP fetch failed") end
-    -- Strip UTF-8 BOM if present
-    if content:byte(1) == 0xEF and content:byte(2) == 0xBB and content:byte(3) == 0xBF then
-        content = content:sub(4)
-    end
-    local fn, loadErr = loadstring(content)
-    if not fn then error("Compile error: " .. tostring(loadErr)) end
-    fn()
+	local url = GITHUB_RAW .. commitHash .. "/" .. ScriptFile
+	local res = request({ Url = url, Method = "GET" })
+	local content = res and res.Body or nil
+	if not content then
+		error("HTTP fetch failed")
+	end
+	-- Strip UTF-8 BOM if present
+	if content:byte(1) == 0xEF and content:byte(2) == 0xBB and content:byte(3) == 0xBF then
+		content = content:sub(4)
+	end
+	local fn, loadErr = loadstring(content)
+	if not fn then
+		error("Compile error: " .. tostring(loadErr))
+	end
+	fn()
 end)
 
 if success then
-    print("[Ivory Hub] Loaded successfully!")
+	print("[Ivory Hub] Loaded successfully!")
 else
-    warn("[Ivory Hub] Failed to load:", err)
+	warn("[Ivory Hub] Failed to load:", err)
 end
