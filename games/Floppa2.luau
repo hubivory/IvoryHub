@@ -309,10 +309,14 @@ task.spawn(function() while true do task.wait(0.5)
 		-- Cast: click toward water
 		local sp, onScr = workspace.CurrentCamera:WorldToScreenPoint(waterPos)
 		if onScr then
-			mouse1click(Vector2.new(sp.X, sp.Y))
-			task.wait(2)
+			VIM:SendMouseButtonEvent(sp.X, sp.Y, 0, game, 1, false, false, false)
+			task.wait(0.1)
+			VIM:SendMouseButtonEvent(sp.X, sp.Y, 0, game, 1, false, false, true)
+			task.wait(2.5)
 			-- Catch: click again
-			mouse1click(Vector2.new(sp.X, sp.Y))
+			VIM:SendMouseButtonEvent(sp.X, sp.Y, 0, game, 1, false, false, false)
+			task.wait(0.1)
+			VIM:SendMouseButtonEvent(sp.X, sp.Y, 0, game, 1, false, false, true)
 			task.wait(1)
 		end
 	end) end
