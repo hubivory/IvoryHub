@@ -109,20 +109,34 @@ local function findStealEggs()
 		if obj:IsA("ProximityPrompt") and obj.ActionText:lower():find("steal") then
 			local part = obj.Parent
 			if part and part:IsA("BasePart") then
-				-- Walk up from part to find the egg model (stop before Workspace)
-				local eggName = "Unknown Egg"
-				local p = part.Parent
+				-- Collect ALL ancestor names and search for rarity keywords
+				local allNames = {}
+				local p = part
 				while p and p ~= Workspace do
-					if p:IsA("Model") and p.Name ~= "Workspace" then
-						eggName = p.Name
-						break
-					end
+					table.insert(allNames, p.Name)
 					p = p.Parent
 				end
-				if eggName == "Unknown Egg" and obj.ObjectText ~= "" and obj.ObjectText ~= "Egg" then
-					eggName = obj.ObjectText
+				-- Also check ObjectText and part name
+				table.insert(allNames, obj.ObjectText)
+				table.insert(allNames, part.Name)
+				-- Join all names into one string and search for rarity
+				local combined = table.concat(allNames, " ")
+				local eggName = "Unknown Egg"
+				for _, r in ipairs(RARITY_NAMES) do
+					if combined:lower():find(r:lower()) then
+						-- Find the specific name that contains the rarity
+						for _, n in ipairs(allNames) do
+							if n:lower():find(r:lower()) then
+								eggName = n
+								break
+							end
+						end
+						break
+					end
 				end
-				if eggName == "Unknown Egg" then eggName = part.Name end
+				if eggName == "Unknown Egg" then
+					eggName = obj.ObjectText ~= "" and obj.ObjectText or part.Name
+				end
 				local dist = (part.Position - hrp.Position).Magnitude
 				local rarity = getRarity(eggName)
 				table.insert(eggs, {prompt=obj, part=part, name=eggName, dist=dist, rarity=rarity, rank=RARITY[rarity] or 1, hold=obj.HoldDuration})
