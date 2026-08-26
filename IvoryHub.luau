@@ -26,7 +26,7 @@ local PlaceId = game.PlaceId
 local ScriptFile = GameScripts[PlaceId]
 
 if not ScriptFile then
-	local universal = loadstring(GITHUB_RAW .. "main/universal_script.luau")
+	local universal = loadstring(game:httpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/refs/heads/main/universal_script.luau"))()
 	if universal then
 		universal()
 	end
