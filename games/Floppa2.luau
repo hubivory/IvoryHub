@@ -271,15 +271,12 @@ task.spawn(function() while true do task.wait(1)
 				hrp.CFrame = root.CFrame + Vector3.new(0, 3, 0)
 			end
 		end
-		-- Pet Floppa: click on Floppa to trigger proximity prompt
-		local root = f:FindFirstChild("HumanoidRootPart")
-		if root then
-			local sp, onScr = workspace.CurrentCamera:WorldToScreenPoint(root.Position)
-			if onScr then
-				mouse1click(Vector2.new(sp.X, sp.Y))
-				task.wait(1)
-				mouse1click(Vector2.new(sp.X, sp.Y))
-			end
+		-- Pet Floppa: spam E key presses
+		for i = 1, 5 do
+			VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+			task.wait(0.3)
+			VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+			task.wait(0.3)
 		end
 		-- Return to original position
 		if savedPos then
