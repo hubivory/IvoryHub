@@ -234,10 +234,16 @@ task.spawn(function() while true do task.wait(0.5)
 	end) end
 end end)
 
--- Auto Pet Floppa (same as auto click but separate toggle)
-task.spawn(function() while true do task.wait(S.ClickSpeed)
+-- Auto Pet Floppa: fire the "Pet" ProximityPrompt
+task.spawn(function() while true do task.wait(1)
 	if S.AutoClick and alive() then pcall(function()
-		local f=getFloppa(); if f then local cd=f:FindFirstChild("ClickDetector"); if cd then fireclickdetector(cd) end end
+		local f=getFloppa(); if f then
+			for _, d in ipairs(f:GetDescendants()) do
+				if d:IsA("ProximityPrompt") and d.ActionText:lower():find("pet") then
+					fireproximityprompt(d)
+				end
+			end
+		end
 	end) end
 end end)
 
