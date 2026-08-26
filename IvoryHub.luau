@@ -16,6 +16,7 @@ local GameScripts = {
     [100293509865504] = "games/CatchABillionDucks.luau",
     [120617974337690] = "games/CatchABillionDucks.luau",
     [137363360166684] = "games/RocksRNG.luau",
+    [13772394625] = "games/Bladeball.luau",
     -- Add more: [PlaceId] = "games/ScriptName.luau"
 }
 
