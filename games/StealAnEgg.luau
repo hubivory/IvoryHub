@@ -149,21 +149,22 @@ local function findStealEggs()
 		if obj:IsA("ProximityPrompt") and obj.ActionText:lower():find("steal") then
 			local part = obj.Parent
 			if part and part:IsA("BasePart") then
-				-- Only use prompts on ground-level parts (Y 50-150), skip floating SmartPromptParts
-				if part.Position.Y >= 50 and part.Position.Y <= 150 then
-					local targetPos = part.Position
-					local eggName = obj.ObjectText
-					if not eggName or eggName == "" or eggName == "Egg" or eggName:find("^%x+$") then
-						local r, b = getBiomeRarity(targetPos)
-						eggName = r .. " Egg"
-					end
-					local rarity, biome = getBiomeRarity(targetPos)
-					local nameRarity = getRarity(eggName)
-					if nameRarity ~= "Common" then rarity = nameRarity end
-					local dist = (targetPos - hrp.Position).Magnitude
-					if dist < 500 and dist > 1 then
-						table.insert(eggs, {prompt=obj, targetPos=targetPos, name=eggName.." ["..biome.."]", dist=dist, rarity=rarity, rank=RARITY[rarity] or 1, hold=obj.HoldDuration})
-					end
+				-- Use prompt's XZ at ground level for teleport target
+				local targetPos = Vector3.new(part.Position.X, hrp.Position.Y, part.Position.Z)
+				
+				-- Get egg name from ObjectText
+				local eggName = obj.ObjectText
+				if not eggName or eggName == "" or eggName == "Egg" or eggName:find("^%x+$") then
+					local r, b = getBiomeRarity(targetPos)
+					eggName = r .. " Egg"
+				end
+				
+				local rarity, biome = getBiomeRarity(targetPos)
+				local nameRarity = getRarity(eggName)
+				if nameRarity ~= "Common" then rarity = nameRarity end
+				local dist = (targetPos - hrp.Position).Magnitude
+				if dist < 500 and dist > 1 then
+					table.insert(eggs, {prompt=obj, targetPos=targetPos, name=eggName.." ["..biome.."]", dist=dist, rarity=rarity, rank=RARITY[rarity] or 1, hold=obj.HoldDuration})
 				end
 			end
 		end
@@ -541,12 +542,8 @@ task.spawn(function() while true do task.wait(0.3)
 			local tPos = t.targetPos
 			local targetCF = CFrame.new(tPos + Vector3.new(0, 2, 0), Vector3.new(tPos.X, hrp.Position.Y, tPos.Z))
 			TpTween(targetCF, function()
-				task.wait(0.3)
-				if S.StealMode == "fireproximityprompt" and type(fireproximityprompt) == "function" then
-					pcall(fireproximityprompt, t.prompt, t.hold)
-				else
-					holdKey(Enum.KeyCode.E, t.hold + 0.3)
-				end
+				-- Always use VIM to hold E — fireproximityprompt doesn't hold properly
+				holdKey(Enum.KeyCode.E, math.max(t.hold, 0.5) + 0.3)
 			end)
 			eggsStolen = eggsStolen + 1
 			EggCount:SetText("Eggs stolen: "..eggsStolen)
