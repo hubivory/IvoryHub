@@ -180,16 +180,21 @@ local function findStealEggs()
 					end
 					if not stealPrompt then continue end
 					
-					-- Get egg name from ProximityPrompt ObjectText (contains actual name like "Uncommon Egg")
+					-- Get egg name from ProximityPrompt ObjectText or slot hierarchy
 					local eggName = stealPrompt.ObjectText
-					if not eggName or eggName == "" or eggName == "Egg" then
-						eggName = slot.Name
-						-- Try to find actual name in descendants
+					if not eggName or eggName == "" or eggName == "Egg" or eggName:find("^%x+$") then
+						-- ObjectText is empty/generic/hash, search for actual name
+						eggName = "Egg"
 						for _, child in ipairs(slot:GetDescendants()) do
-							if child:IsA("Model") and child.Name ~= "Workspace" and #child.Name > 2 then
+							if child:IsA("Model") and #child.Name > 2 and not child.Name:find("^%x+$") then
 								eggName = child.Name
 								break
 							end
+						end
+						-- Still hash? Use rarity from position
+						if eggName:find("^%x+$") or eggName == "Egg" then
+							local r, b = getBiomeRarity(root.Position)
+							eggName = r .. " Egg"
 						end
 					end
 					local rarity, biome = getBiomeRarity(root.Position)
@@ -298,14 +303,15 @@ local function findHeldEgg()
 end
 
 local function findSpawn()
-	-- Find spawn and ensure it's at ground level
+	-- Use the first SpawnLocation, clamped to safe Y
 	for _, obj in ipairs(Workspace:GetDescendants()) do
 		if obj:IsA("SpawnLocation") then
-			return Vector3.new(obj.Position.X, math.max(obj.Position.Y, 70), obj.Position.Z)
+			local safeY = math.max(obj.Position.Y, 70)
+			return Vector3.new(obj.Position.X, safeY, obj.Position.Z)
 		end
 	end
-	-- Fallback: use a safe default position
-	return Vector3.new(0, 70, 0)
+	-- Hardcoded safe fallback (Forest area ground level)
+	return Vector3.new(600, 70, -325)
 end
 
 local function findTreadmill()
