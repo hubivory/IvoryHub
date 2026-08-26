@@ -260,11 +260,13 @@ task.spawn(function() while true do task.wait(1)
 				end
 			end
 		end
-		-- Teleport close if happiness < 50%
+		-- Teleport close if happiness < 50%, then return after petting
+		local savedPos = nil
 		if happy < 50 then
 			local root = f:FindFirstChild("HumanoidRootPart")
 			local hrp = gHRP()
 			if root and hrp then
+				savedPos = hrp.CFrame
 				hrp.CFrame = root.CFrame + Vector3.new(0, 3, 0)
 			end
 		end
@@ -274,10 +276,16 @@ task.spawn(function() while true do task.wait(1)
 				fireproximityprompt(d)
 			end
 		end
+		-- Return to original position
+		if savedPos then
+			task.wait(0.5)
+			local hrp = gHRP()
+			if hrp then hrp.CFrame = savedPos end
+		end
 	end) end
 end end)
 
--- Auto Fish: equip rod, cast, spam click to catch
+-- Auto Fish: equip rod, Activate to cast, wait, Activate to catch
 task.spawn(function() while true do task.wait(0.5)
 	if S.AutoFishing and alive() then pcall(function()
 		local water = WS:FindFirstChild("Water For Fishies")
@@ -285,42 +293,42 @@ task.spawn(function() while true do task.wait(0.5)
 
 		-- Find fishing rod
 		local rod = nil
-		for _, obj in ipairs(WS:GetDescendants()) do
+		local char = LP.Character
+		if char then for _, obj in ipairs(char:GetChildren()) do
 			if obj:IsA("Tool") and obj.Name:find("Fish") then rod = obj; break end
-		end
+		end end
 		if not rod then
 			local bp = LP:FindFirstChild("Backpack")
 			if bp then for _, obj in ipairs(bp:GetChildren()) do
 				if obj:IsA("Tool") and obj.Name:find("Fish") then rod = obj; break end
 			end end
 		end
+		if not rod then
+			for _, obj in ipairs(WS:GetDescendants()) do
+				if obj:IsA("Tool") and obj.Name:find("Fish") then rod = obj; break end
+			end
+		end
 		if not rod then return end
 
 		-- Equip rod
-		local char = LP.Character
 		if char and not char:FindFirstChild("Fishing Rod") then
-			rod.Parent = LP.Backpack
-			task.wait(0.3)
 			rod.Parent = char
 			task.wait(0.5)
 		end
 
-		-- Cast toward water
-		local sp, onScr = workspace.CurrentCamera:WorldToScreenPoint(water.Position)
-		if onScr then
-			VIM:SendMouseButtonEvent(sp.X, sp.Y, 0, game, 1, false, false, false)
-			task.wait(0.1)
-			VIM:SendMouseButtonEvent(sp.X, sp.Y, 0, game, 1, false, false, true)
+		-- Face water and cast
+		local hrp = gHRP()
+		if hrp then
+			local dir = (water.Position - hrp.Position).Unit
+			hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + Vector3.new(dir.X, 0, dir.Z))
+			task.wait(0.2)
 		end
+		rod:Activate()
+		task.wait(5)
 
-		-- Wait 5-8s for fish to bite, then spam click
-		task.wait(math.random(5, 8))
-		for i = 1, 15 do
-			task.wait(0.5)
-			VIM:SendMouseButtonEvent(0, 0, 0, game, 1, false, false, false)
-			task.wait(0.05)
-			VIM:SendMouseButtonEvent(0, 0, 0, game, 1, false, false, true)
-		end
+		-- Catch
+		rod:Activate()
+		task.wait(2)
 	end) end
 end end)
 
