@@ -223,7 +223,7 @@ end) end end end)
 -- Auto Clean Poop: delete Poop models from Litter Box
 task.spawn(function() while true do task.wait(0.5)
 	if S.AutoCleanPoop then pcall(function()
-		local lb = WS:FindFirstChild("Litter Box") or WS:FindFirstChild("LitterBox")
+		local lb = WS:FindFirstChild("Key Parts") and WS["Key Parts"]:FindFirstChild("Litter Box")
 		if lb then
 			for _, obj in ipairs(lb:GetChildren()) do
 				if obj.Name == "Poop" and obj:IsA("Model") then
