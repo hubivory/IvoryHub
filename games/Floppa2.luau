@@ -157,7 +157,7 @@ task.spawn(function() while true do task.wait(0.5) if STATE.Noclip then pcall(fu
 task.spawn(function() while true do task.wait(0.1) if STATE.SpeedBoost then pcall(function() local h=getHum(); if h and h.WalkSpeed~=STATE.SpeedValue then h.WalkSpeed=STATE.SpeedValue end end) end end end)
 task.spawn(function() while true do task.wait(60) if STATE.AntiAfk then pcall(function() VIM:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame); task.wait(0.1); VIM:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame) end) end end end)
 task.spawn(function() while true do task.wait(2) if STATE.ESPEnabled then pcall(updateESP) end end end)
-task.spawn(function() while true do task.wait(STATE.ClickSpeed) if STATE.AutoClick and alive() then pcall(function() local f=Workspace:FindFirstChild("Floppa"); if f then local cd=f:FindFirstChild("ClickDetector"); if cd then cd:FireClick() end end end) end end end)
+task.spawn(function() while true do task.wait(STATE.ClickSpeed) if STATE.AutoClick and alive() then pcall(function() local f=Workspace:FindFirstChild("Floppa"); if f then local cd=f:FindFirstChild("ClickDetector"); if cd then fireclickdetector(cd) end end end) end end end)
 task.spawn(function() while true do task.wait(2) if STATE.AutoCollectRent then pcall(function() Remotes.CollectRent:FireServer() end) end end end)
 task.spawn(function() while true do task.wait(5) if STATE.AutoRaiseRent then pcall(function() Remotes.RaiseRent:FireServer() end) end end end)
 task.spawn(function() while true do task.wait(3) if STATE.AutoCook then pcall(function() Remotes.Cooking:FireServer() end) end end end)
