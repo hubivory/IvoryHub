@@ -32,7 +32,7 @@ local R = {
 }
 
 local S = {
-	AutoClick=false, ClickSpeed=0.1,
+	AutoClick=false, AutoPet=false, ClickSpeed=0.1,
 	AutoCollectDrops=false, AutoPayRent=false, AutoCleanPoop=false,
 	AutoRefillBowls=false, AutoCollectRoommateRent=false,
 	AutoInterwebs=false, AutoFishing=false,
@@ -94,6 +94,7 @@ local MainTab = Window:AddTab({Name="Main",Icon="home"})
 local FarmSub = MainTab:AddSubTab("Farm","crosshair")
 local FG1=FarmSub:AddLeftGroupbox("Floppa","cat")
 FG1:AddToggle("AutoClick",{Text="Auto Click Floppa",Default=false,Callback=function(v) S.AutoClick=v end}):AddKeyPicker("ClickKey",{Default="None",Text="Click Key",Mode="Toggle",SyncToggleState=true,NoUI=false})
+FG1:AddToggle("AutoPet",{Text="Auto Pet Floppa",Default=false,Callback=function(v) S.AutoPet=v end}):AddKeyPicker("PetKey",{Default="None",Text="Pet Key",Mode="Toggle",SyncToggleState=true,NoUI=false})
 FG1:AddSlider("ClickSpeed",{Text="Click Speed",Default=0.1,Min=0.02,Max=1,Rounding=2,Suffix="s",Callback=function(v) S.ClickSpeed=v end})
 FG1:AddToggle("AutoCollectDrops",{Text="Auto Collect Drops",Default=false,Callback=function(v) S.AutoCollectDrops=v end})
 FG1:AddToggle("AutoCleanPoop",{Text="Auto Clean Poop",Default=false,Callback=function(v) S.AutoCleanPoop=v end})
@@ -236,7 +237,7 @@ end end)
 
 -- Auto Pet Floppa: teleport close if happiness < 50%, then fire Pet prompt
 task.spawn(function() while true do task.wait(1)
-	if S.AutoClick and alive() then pcall(function()
+	if S.AutoPet and alive() then pcall(function()
 		local f=getFloppa(); if not f then return end
 		-- Check happiness from FloppaUI HUD
 		local happy = 100
