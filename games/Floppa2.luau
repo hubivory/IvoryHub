@@ -313,8 +313,9 @@ task.spawn(function() while true do task.wait(0.5)
 			VIM:SendMouseButtonEvent(sp.X, sp.Y, 0, game, 1, false, false, true)
 		end
 
-		-- Spam click to catch (keep clicking until fish is caught)
-		for i = 1, 20 do
+		-- Wait 5-8s for fish to bite, then spam click
+		task.wait(math.random(5, 8))
+		for i = 1, 15 do
 			task.wait(0.5)
 			VIM:SendMouseButtonEvent(0, 0, 0, game, 1, false, false, false)
 			task.wait(0.05)
