@@ -238,22 +238,27 @@ end end)
 task.spawn(function() while true do task.wait(1)
 	if S.AutoClick and alive() then pcall(function()
 		local f=getFloppa(); if not f then return end
-		-- Check happiness from Display BillboardGui
+		-- Check happiness from FloppaUI HUD
 		local happy = 100
-		local disp = f:FindFirstChild("Display")
-		if disp then
-			for _, c in ipairs(disp:GetChildren()) do
-				if c:IsA("TextLabel") and c.Text:find("Hunger") then
-					local pct = c.Text:match("(%d+)%%")
-					if pct then happy = tonumber(pct) end
+		local gui = LP:FindFirstChild("PlayerGui")
+		if gui then
+			local floppaUI = gui:FindFirstChild("FloppaUI")
+			if floppaUI then
+				local frame = floppaUI:FindFirstChild("Frame")
+				if frame then
+					local floppaFrame = frame:FindFirstChild("Floppa")
+					if floppaFrame then
+						local happ = floppaFrame:FindFirstChild("Happiness")
+						if happ then
+							local pct = happ:FindFirstChild("Percentage")
+							if pct and pct:IsA("TextLabel") then
+								local val = pct.Text:match("(%d+)")
+								if val then happy = tonumber(val) end
+							end
+						end
+					end
 				end
 			end
-		end
-		-- Also check Configuration for happiness
-		local cfg = f:FindFirstChild("Configuration")
-		if cfg then
-			local h = cfg:FindFirstChild("Happiness") or cfg:FindFirstChild("Hunger")
-			if h and h:IsA("NumberValue") then happy = h.Value end
 		end
 		-- Teleport close if happiness < 50%
 		if happy < 50 then
