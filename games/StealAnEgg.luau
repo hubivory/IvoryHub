@@ -95,12 +95,9 @@ local function exitTreadmill()
 	local onTM = isOnTreadmill()
 	if not onTM then return end
 	local offDir = hrp.CFrame.RightVector
-	local targetCF = hrp.CFrame + offDir * 15
-	local tween = TweenService:Create(hrp, TweenInfo.new(0.3, Enum.EasingStyle.Linear), {CFrame = targetCF})
-	tween:Play()
-	tween.Completed:Wait()
-	hum:ChangeState(Enum.HumanoidStateType.Jumping)
-	task.wait(0.2)
+	TpTween(hrp.CFrame + offDir * 15, function()
+		hum:ChangeState(Enum.HumanoidStateType.Jumping)
+	end)
 end
 
 -- Find all stealable eggs via ProximityPrompt
@@ -236,6 +233,33 @@ end
 
 local function holdKey(code, dur) VIM:SendKeyEvent(true, code, false, game); task.wait(dur); VIM:SendKeyEvent(false, code, false, game) end
 
+-- Noclip helper for TpTween
+local noclipConn = nil
+local function setNoclip(on)
+	if on then
+		noclipConn = RunService.Stepped:Connect(function()
+			local c = LocalPlayer.Character
+			if c then for _, p in ipairs(c:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide = false end end end
+		end)
+	else
+		if noclipConn then noclipConn:Disconnect(); noclipConn = nil end
+	end
+end
+
+local function TpTween(targetCF, callback)
+	pcall(function()
+		local hrp = getHRP(); if not hrp then return end
+		setNoclip(true)
+		local distance = (hrp.Position - targetCF.Position).Magnitude
+		local duration = math.clamp(distance / 35, 0.1, 8)
+		local tween = TweenService:Create(hrp, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCF})
+		tween:Play()
+		tween.Completed:Wait()
+		setNoclip(false)
+		if callback then callback() end
+	end)
+end
+
 --// ═══ ESP ═══
 local espCache = {}
 local function clearESP() for _,o in pairs(espCache) do pcall(function() if o and o.Parent then o:Destroy() end end) end; espCache = {} end
@@ -364,7 +388,7 @@ MenuG:AddDropdown("DPIDropdown",{Values={"50%","75%","100%","125%","150%","175%"
 MenuG:AddSlider("UICornerSlider",{Text="Corner Radius",Default=Library.CornerRadius,Min=0,Max=20,Rounding=0,Callback=function(v) Window:SetCornerRadius(v) end})
 MenuG:AddDivider()
 MenuG:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind",{Default="RightShift",NoUI=true,Text="Menu keybind"})
-MenuG:AddButton("Unload",function() clearESP(); Library:Unload() end)
+MenuG:AddButton("Unload",function() clearESP(); setNoclip(false); Library:Unload() end)
 Library.ToggleKeybind = Options.MenuKeybind
 SaveManager:LoadAutoloadConfig()
 
@@ -426,36 +450,26 @@ task.spawn(function() while true do task.wait(0.3)
 			local hrp, hum = getHRP(), getHum()
 			if not hrp or not hum then return end
 
-			-- Tween to egg
-			local targetPos = t.part.Position
-			local dist = (hrp.Position - targetPos).Magnitude
-			local tweenTime = math.clamp(dist / 150, 0.1, 5)
-			local goalCF = CFrame.new(targetPos + Vector3.new(0, 2, 0), Vector3.new(targetPos.X, hrp.Position.Y, targetPos.Z))
-			local tween = TweenService:Create(hrp, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = goalCF})
-			tween:Play()
-			tween.Completed:Wait()
-
-			-- Steal
-			if S.StealMode == "fireproximityprompt" and type(fireproximityprompt) == "function" then
-				pcall(fireproximityprompt, t.prompt)
-			else
-				holdKey(Enum.KeyCode.E, t.hold + 0.3)
-			end
+			-- TpTween to egg
+			local targetCF = CFrame.new(t.part.Position + Vector3.new(0, 2, 0), Vector3.new(t.part.Position.X, hrp.Position.Y, t.part.Position.Z))
+			TpTween(targetCF, function()
+				-- Steal after arriving
+				if S.StealMode == "fireproximityprompt" and type(fireproximityprompt) == "function" then
+					pcall(fireproximityprompt, t.prompt)
+				else
+					holdKey(Enum.KeyCode.E, t.hold + 0.3)
+				end
+			end)
 			eggsStolen = eggsStolen + 1
 			EggCount:SetText("Eggs stolen: "..eggsStolen)
 			LastEggLabel:SetText("Last: "..t.name.." ["..t.rarity.."]")
 			StealStatus:SetText("Status: stole "..t.name)
 			task.wait(0.5)
-			-- Return to spawn via tween
+			-- Return to spawn
 			local spawn = findSpawn()
 			if spawn then
-				local returnDist = (hrp.Position - spawn.Position).Magnitude
-				local returnTime = math.clamp(returnDist / 150, 0.1, 5)
-				local returnGoal = CFrame.new(spawn.Position + Vector3.new(0, 3, 0))
-				local returnTween = TweenService:Create(hrp, TweenInfo.new(returnTime, Enum.EasingStyle.Linear), {CFrame = returnGoal})
 				StealStatus:SetText("Status: returning")
-				returnTween:Play()
-				returnTween.Completed:Wait()
+				TpTween(CFrame.new(spawn.Position + Vector3.new(0, 3, 0)))
 			end
 		end)
 	end
