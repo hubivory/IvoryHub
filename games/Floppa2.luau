@@ -277,7 +277,7 @@ task.spawn(function() while true do task.wait(1)
 	end) end
 end end)
 
--- Auto Fish: equip rod, click water to cast, wait, click to catch
+-- Auto Fish: equip rod, click water to cast, wait for bite, click bobber to catch
 task.spawn(function() while true do task.wait(0.5)
 	if S.AutoFishing and alive() then pcall(function()
 		local water = WS:FindFirstChild("Water For Fishies")
@@ -312,12 +312,20 @@ task.spawn(function() while true do task.wait(0.5)
 			VIM:SendMouseButtonEvent(sp.X, sp.Y, 0, game, 1, false, false, false)
 			task.wait(0.1)
 			VIM:SendMouseButtonEvent(sp.X, sp.Y, 0, game, 1, false, false, true)
-			task.wait(2.5)
-			-- Catch: click again
-			VIM:SendMouseButtonEvent(sp.X, sp.Y, 0, game, 1, false, false, false)
-			task.wait(0.1)
-			VIM:SendMouseButtonEvent(sp.X, sp.Y, 0, game, 1, false, false, true)
-			task.wait(1)
+			task.wait(3) -- Wait longer for fish to bite
+
+			-- Find the bobber (Hook part of the rod)
+			local hook = rod:FindFirstChild("Hook") or rod:FindFirstChild("Hook2")
+			if hook then
+				local hookPos, hookOnScr = workspace.CurrentCamera:WorldToScreenPoint(hook.Position)
+				if hookOnScr then
+					-- Click on the bobber/hook to catch
+					VIM:SendMouseButtonEvent(hookPos.X, hookPos.Y, 0, game, 1, false, false, false)
+					task.wait(0.1)
+					VIM:SendMouseButtonEvent(hookPos.X, hookPos.Y, 0, game, 1, false, false, true)
+				end
+			end
+			task.wait(1.5)
 		end
 	end) end
 end end)
