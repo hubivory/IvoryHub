@@ -92,9 +92,8 @@ end
 local function exitTreadmill()
 	local hrp = getHRP(); local hum = getHum()
 	if not hrp or not hum then return end
-	local onTM, tmPart = isOnTreadmill()
+	local onTM = isOnTreadmill()
 	if not onTM then return end
-	-- Tween off the treadmill sideways
 	local offDir = hrp.CFrame.RightVector
 	local targetCF = hrp.CFrame + offDir * 15
 	local tween = TweenService:Create(hrp, TweenInfo.new(0.3, Enum.EasingStyle.Linear), {CFrame = targetCF})
@@ -427,7 +426,7 @@ task.spawn(function() while true do task.wait(0.3)
 			local hrp, hum = getHRP(), getHum()
 			if not hrp or not hum then return end
 
-			-- Tween to egg (150 studs/sec, independent of walkspeed)
+			-- Tween to egg
 			local targetPos = t.part.Position
 			local dist = (hrp.Position - targetPos).Magnitude
 			local tweenTime = math.clamp(dist / 150, 0.1, 5)
