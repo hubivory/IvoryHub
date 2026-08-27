@@ -106,33 +106,26 @@ pcall(function()
 end)
 
 local function DoAutoPick()
-	if not ConfirmLoadout or not RequestSpawn then return end
-	local chosen = State.AutoPickElement
-	local folder = ElementFolders[chosen]
-	if not folder then return end
-	local elemFolder = ReplicatedStorage:FindFirstChild(folder)
-	if not elemFolder then return end
-	local loadout = {}
-	for _, tool in ipairs(elemFolder:GetChildren()) do
-		if tool:IsA("Tool") and #loadout < 3 then
-			loadout[#loadout + 1] = { folder = folder, toolName = tool.Name }
-		end
-	end
-	if #loadout ~= 3 then
+	local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+
+	--// Find teleporter pad
+	local teleporter = Workspace:FindFirstChild("teleporter", true)
+	if not teleporter then
 		Library:Notify({
 			Title = "Ivory",
-			Description = "Could not build loadout for " .. tostring(chosen),
+			Description = "Could not find teleporter pad",
 			Type = "Error",
 			Time = 3,
 		})
 		return
 	end
-	ConfirmLoadout:FireServer(loadout)
-	task.wait(0.15)
-	RequestSpawn:FireServer()
+
+	--// Teleport onto the pad
+	hrp.CFrame = teleporter.CFrame + Vector3.new(0, 3, 0)
 	Library:Notify({
 		Title = "Ivory",
-		Description = "Picked " .. tostring(chosen) .. " and requested spawn",
+		Description = "Teleported to class selector",
 		Type = "Success",
 		Time = 3,
 	})
@@ -280,7 +273,7 @@ local PickGroup = AutoSub:AddLeftGroupbox("Auto Pick Class", "person-standing")
 PickGroup:AddToggle("AutoPickOnSpawn", {
 	Text = "Auto Pick On Spawn",
 	Default = false,
-	Tooltip = "Picks your class and spawns whenever you're in the picker",
+	Tooltip = "Teleports to the class selector when not spawned",
 })
 PickGroup:AddDropdown("AutoPickElement", {
 	Text = "Class",
