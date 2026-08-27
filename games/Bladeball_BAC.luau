@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════
--- Ivory Hub — Blade Ball | BAC-hardened edition (v1.8-BAC)
+-- Ivory Hub — Blade Ball | BAC-hardened edition (v1.9-BAC)
 --
 -- BAC = Blade Anticheat (custom, server-side behavioral).
 -- Hardening added:
@@ -71,7 +71,7 @@ local Window = Library:CreateWindow({
 	NotifySide = "Right",
 	ShowCustomCursor = false,
 	Footer = {
-		"v1.8-BAC |",
+		"v1.9-BAC |",
 		{ Text = "Blade Ball", Copyable = true },
 		"|",
 		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
@@ -727,20 +727,19 @@ spawn(function()
 			local targetName = realBall:GetAttribute("target")
 			if targetName ~= LocalPlayer.Name then return end
 			if not ToggleOn("AutoParry") then return end
-			if not IsFocused() then return end
 
 			local humanize = ToggleOn("HumanizeParry")
 			local baseDist = Options.ParryDist and Options.ParryDist.Value or 30
 			local baseCD = Options.ParryCooldown and Options.ParryCooldown.Value or 350
 
-			-- Faster ball = parry from much further away
-			local speed = realBall.AssemblyLinearVelocity.Magnitude
-			local adaptiveDist = math.clamp(baseDist + (speed / 3), baseDist, 150)
-
-			-- Spatial noise: never trigger from the same distance twice
-			local distNoise = humanize and ((math.random() * 2 - 1) * 5) or 0
-
+			-- Time-to-impact trigger: parry when the ball is ~150ms away.
+			-- Distance-only triggers fire early at high speeds, waste the
+			-- attempt out of range, and the cooldown eats the real parry.
 			local dist = (realBall.Position - myRoot.Position).Magnitude
+			local toBall = (myRoot.Position - realBall.Position).Unit
+			local closing = math.max(realBall.AssemblyLinearVelocity:Dot(toBall), 60)
+			local tti = dist / closing
+
 			local now = tick()
 			local msSince = (now - lastParryTime) * 1000
 
@@ -753,7 +752,11 @@ spawn(function()
 				cd = math.max(jitter(baseCD, jitterPct), minReact, pingFloor)
 			end
 
-			if dist < (adaptiveDist + distNoise) and msSince > cd then
+			-- panic mode: ball right on top of you, fire up to ~8x/sec
+			local danger = dist < 25
+			local canFire = msSince > cd or (danger and msSince > 120)
+
+			if (tti < 0.16 or dist < (baseDist * 0.8)) and canFire then
 				if humanize then
 					local whiffRate = Options.WhiffRate and Options.WhiffRate.Value or 5
 					-- Only whiff while there's still room - never at point-blank

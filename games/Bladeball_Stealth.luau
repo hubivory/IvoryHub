@@ -46,16 +46,6 @@ local function jitter(base, pct)
 	return base * (1 + (math.random() * 2 - 1) * pct)
 end
 
--- Some executor sessions don't provide isrbxactive - never let the
--- focus check silently block the parry logic.
-local function IsFocused()
-	if isrbxactive ~= nil then
-		local ok, res = pcall(isrbxactive)
-		if ok then return res end
-	end
-	return true
-end
-
 local function GetRealBall()
 	for _, obj in ipairs(Workspace.Balls:GetChildren()) do
 		if obj:IsA("BasePart") and obj:GetAttribute("realBall") == true then
@@ -101,7 +91,6 @@ spawn(function()
 			end
 
 			if targetName ~= LocalPlayer.Name then return end
-			if not IsFocused() then return end
 
 			-- Time-to-impact trigger: parry when the ball is ~150ms away.
 			-- Distance-based triggers fire early at high speeds, waste the
