@@ -341,6 +341,13 @@ spawn(function()
 	end
 end)
 
+--// Enforce lock every frame so the game can't override it
+RunService.RenderStepped:Connect(function()
+	if not Library.Toggled and not MouseUnlocked then
+		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+	end
+end)
+
 --// ═══════════════════════════════════════════════════════════
 --// ESP LOGIC
 --// ═══════════════════════════════════════════════════════════
