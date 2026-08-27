@@ -205,6 +205,7 @@ local State = {
 	AutoPickOnSpawn = false,
 	AutoPickElement = "Light",
 	AutoPickPad = 1,
+	LockedPad = 0,
 
 	AutoM1 = false,
 	M1Delay = 0.5,
@@ -349,6 +350,32 @@ PickGroup:AddButton("Previous Pad", function()
 		Type = "Success",
 		Time = 3,
 	})
+end)
+
+PickGroup:AddButton("Lock This Pad", function()
+	if CurrentPadIndex == 0 then
+		Library:Notify({ Title = "Ivory", Description = "Browse to a pad first", Type = "Error", Time = 3 })
+		return
+	end
+	State.LockedPad = CurrentPadIndex
+	Library:Notify({
+		Title = "Ivory",
+		Description = "Locked pad " .. CurrentPadIndex .. "! Auto pick will use this pad",
+		Type = "Success",
+		Time = 3,
+	})
+end)
+
+local LockedPadLabel = PickGroup:AddLabel("Locked pad: None")
+task.spawn(function()
+	while true do
+		task.wait(0.5)
+		if State.LockedPad > 0 then
+			LockedPadLabel:SetValue("Locked pad: #" .. State.LockedPad)
+		else
+			LockedPadLabel:SetValue("Locked pad: None")
+		end
+	end
 end)
 
 --// Automation: Collectibles
@@ -815,7 +842,44 @@ task.spawn(function()
 		if State.AutoPickOnSpawn then
 			if not LocalPlayer.Character and os.clock() - lastAutoPick > 5 then
 				lastAutoPick = os.clock()
-				DoAutoPick()
+				--// Teleport to locked pad
+				local tpsFolder = Workspace:FindFirstChild("TPS")
+				if tpsFolder and State.LockedPad > 0 then
+					local teleporters = tpsFolder:GetChildren()
+					local pad = teleporters[State.LockedPad]
+					if pad then
+						pcall(function()
+							local char = LocalPlayer.Character
+							if not char then
+								--// Wait for character
+								local waited = 0
+								repeat
+									task.wait(0.5)
+									waited = waited + 0.5
+									char = LocalPlayer.Character
+								until char or waited > 10
+							end
+							if char then
+								local hrp = char:FindFirstChild("HumanoidRootPart")
+								if hrp then
+									local part = pad
+									if pad:IsA("Model") then
+										part = pad:FindFirstChild("Part") or pad:FindFirstChildOfClass("BasePart") or pad.PrimaryPart
+									end
+									if part and part:IsA("BasePart") then
+										hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0)
+										Library:Notify({
+											Title = "Ivory",
+											Description = "Auto teleported to locked pad " .. State.LockedPad,
+											Type = "Success",
+											Time = 3,
+										})
+									end
+								end
+							end
+						end)
+					end
+				end
 			end
 		end
 	end
