@@ -17,6 +17,16 @@ getgenv().IvoryParryToken = myToken
 
 local lastParryTime = 0
 local lastLog = 0
+local currentPing = 0
+
+spawn(function()
+	while true do
+		wait(2)
+		pcall(function()
+			currentPing = math.floor(LocalPlayer:GetNetworkPing() * 1000)
+		end)
+	end
+end)
 
 local ParryBtn = nil
 pcall(function()
@@ -58,14 +68,20 @@ spawn(function()
 			if not realBall or not myRoot then return end
 
 			local dist = (realBall.Position - myRoot.Position).Magnitude
-			local toBall = (myRoot.Position - realBall.Position).Unit
-			local closing = math.max(realBall.AssemblyLinearVelocity:Dot(toBall), 60)
-			local tti = dist / closing
+			local speed = realBall.AssemblyLinearVelocity.Magnitude
+			local pingSec = currentPing / 1000
+
+			-- Ping-compensated lead: the server sees the attempt pingSec
+			-- later. Fast balls travel 50+ studs in that window, so fire
+			-- EARLY. Blade Ball parry range is generous (game even runs
+			-- IncreasedParryRange on players).
+			local leadDist = 30 + speed * (pingSec + 0.1)
+			leadDist = math.clamp(leadDist, 40, 200)
 
 			local now = tick()
 			local msSince = (now - lastParryTime) * 1000
 
-			local inWindow = dist < 38 or tti < 0.16
+			local inWindow = dist < leadDist
 			local panic = dist < 25
 			local canFire = msSince > 350 or (panic and msSince > 150)
 
@@ -74,7 +90,7 @@ spawn(function()
 				lastParryTime = tick()
 				if now - lastLog > 3 then
 					lastLog = now
-					print(string.format("[Ivory Parry] fired | dist=%d", dist))
+					print(string.format("[Ivory Parry] fired | dist=%d speed=%d lead=%d ping=%d", dist, speed, leadDist, currentPing))
 				end
 			end
 		end)
