@@ -11,6 +11,10 @@ local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 local VIM = game:GetService("VirtualInputManager")
 
+-- Set getgenv().StealthParryEnabled = false to run with logic only,
+-- never firing a single parry. Separates GUI triggers from behavior.
+local ParryEnabled = getgenv().StealthParryEnabled ~= false
+
 local lastParryTime = 0
 local currentPing = 0
 
@@ -71,6 +75,7 @@ spawn(function()
 	while true do
 		wait(0.01)
 		pcall(function()
+			if not ParryEnabled then return end
 			local realBall = GetRealBall()
 			local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
 			if not realBall or not myRoot then return end
@@ -107,4 +112,5 @@ spawn(function()
 	end
 end)
 
-print("[Ivory Stealth] headless auto-parry running - zero GUIs, zero highlights")
+print("[Ivory Stealth] headless running - zero GUIs, zero highlights")
+print("[Ivory Stealth] auto-parry enabled: " .. tostring(ParryEnabled))
