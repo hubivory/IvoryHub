@@ -105,6 +105,8 @@ pcall(function()
 	end
 end)
 
+local CurrentPadIndex = 0
+
 local function DoAutoPick()
 	local char = LocalPlayer.Character
 	if not char then
@@ -134,25 +136,33 @@ local function DoAutoPick()
 	end
 
 	local teleporters = tpsFolder:GetChildren()
-	Library:Notify({ Title = "Ivory", Description = "Teleporting to all " .. #teleporters .. " pads...", Type = "Info", Time = 3 })
 
-	for i, pad in ipairs(teleporters) do
-		local ok, err = pcall(function()
-			local part = pad
-			if pad:IsA("Model") then
-				part = pad:FindFirstChild("Part") or pad:FindFirstChildOfClass("BasePart") or pad.PrimaryPart
-			end
-			if part and part:IsA("BasePart") then
-				hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0)
-			end
-		end)
-		if not ok then
-			warn("[Ivory] Pad " .. i .. " failed: " .. tostring(err))
-		end
-		task.wait(0.3)
+	--// Move to next pad
+	CurrentPadIndex = CurrentPadIndex + 1
+	if CurrentPadIndex > #teleporters then
+		CurrentPadIndex = 1
 	end
 
-	Library:Notify({ Title = "Ivory", Description = "Done! Teleported to all pads", Type = "Success", Time = 3 })
+	local pad = teleporters[CurrentPadIndex]
+	local ok, err = pcall(function()
+		local part = pad
+		if pad:IsA("Model") then
+			part = pad:FindFirstChild("Part") or pad:FindFirstChildOfClass("BasePart") or pad.PrimaryPart
+		end
+		if part and part:IsA("BasePart") then
+			hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0)
+		end
+	end)
+	if not ok then
+		warn("[Ivory] Pad " .. CurrentPadIndex .. " failed: " .. tostring(err))
+	end
+
+	Library:Notify({
+		Title = "Ivory",
+		Description = "Teleported to pad " .. CurrentPadIndex .. "/" .. #teleporters,
+		Type = "Success",
+		Time = 3,
+	})
 end
 local function GetWarthofGodModule()
 	return ReplicatedStorage:FindFirstChild("MoveSets"):FindFirstChild("Light"):FindFirstChild("WarthofGodClient")
@@ -307,8 +317,38 @@ PickGroup:AddDropdown("AutoPickElement", {
 	Tooltip = "Pick only classes you own",
 })
 
-PickGroup:AddButton("Pick Now", function()
+PickGroup:AddButton("Next Pad", function()
 	DoAutoPick()
+end)
+
+PickGroup:AddButton("Previous Pad", function()
+	local char = LocalPlayer.Character
+	if not char then return end
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+	local tpsFolder = Workspace:FindFirstChild("TPS")
+	if not tpsFolder then return end
+	local teleporters = tpsFolder:GetChildren()
+	CurrentPadIndex = CurrentPadIndex - 1
+	if CurrentPadIndex < 1 then
+		CurrentPadIndex = #teleporters
+	end
+	local pad = teleporters[CurrentPadIndex]
+	pcall(function()
+		local part = pad
+		if pad:IsA("Model") then
+			part = pad:FindFirstChild("Part") or pad:FindFirstChildOfClass("BasePart") or pad.PrimaryPart
+		end
+		if part and part:IsA("BasePart") then
+			hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0)
+		end
+	end)
+	Library:Notify({
+		Title = "Ivory",
+		Description = "Teleported to pad " .. CurrentPadIndex .. "/" .. #teleporters,
+		Type = "Success",
+		Time = 3,
+	})
 end)
 
 --// Automation: Collectibles
