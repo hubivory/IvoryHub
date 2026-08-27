@@ -318,65 +318,38 @@ PickGroup:AddDropdown("AutoPickElement", {
 	Tooltip = "Pick only classes you own",
 })
 
-PickGroup:AddButton("Next Pad", function()
-	DoAutoPick()
-end)
-
-PickGroup:AddButton("Previous Pad", function()
-	local char = LocalPlayer.Character
-	if not char then return end
-	local hrp = char:FindFirstChild("HumanoidRootPart")
-	if not hrp then return end
-	local tpsFolder = Workspace:FindFirstChild("TPS")
-	if not tpsFolder then return end
-	local teleporters = tpsFolder:GetChildren()
-	CurrentPadIndex = CurrentPadIndex - 1
-	if CurrentPadIndex < 1 then
-		CurrentPadIndex = #teleporters
-	end
-	local pad = teleporters[CurrentPadIndex]
-	pcall(function()
-		local part = pad
-		if pad:IsA("Model") then
-			part = pad:FindFirstChild("Part") or pad:FindFirstChildOfClass("BasePart") or pad.PrimaryPart
+PickGroup:AddDropdown("AutoPickPad", {
+	Text = "Teleporter Pad",
+	Values = {"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39"},
+	Default = "1",
+	Tooltip = "Which teleporter pad to use",
+	Callback = function(v)
+		local idx = tonumber(v)
+		local char = LocalPlayer.Character
+		if not char then return end
+		local hrp = char:FindFirstChild("HumanoidRootPart")
+		if not hrp then return end
+		local tpsFolder = Workspace:FindFirstChild("TPS")
+		if not tpsFolder then return end
+		local teleporters = tpsFolder:GetChildren()
+		local pad = teleporters[idx]
+		if not pad then
+			Library:Notify({ Title = "Ivory", Description = "Pad " .. idx .. " not found", Type = "Error", Time = 3 })
+			return
 		end
-		if part and part:IsA("BasePart") then
-			hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0)
-		end
-	end)
-	Library:Notify({
-		Title = "Ivory",
-		Description = "Teleported to pad " .. CurrentPadIndex .. "/" .. #teleporters,
-		Type = "Success",
-		Time = 3,
-	})
-end)
-
-PickGroup:AddButton("Lock This Pad", function()
-	if CurrentPadIndex == 0 then
-		Library:Notify({ Title = "Ivory", Description = "Browse to a pad first", Type = "Error", Time = 3 })
-		return
-	end
-	State.LockedPad = CurrentPadIndex
-	Library:Notify({
-		Title = "Ivory",
-		Description = "Locked pad " .. CurrentPadIndex .. "! Auto pick will use this pad",
-		Type = "Success",
-		Time = 3,
-	})
-end)
-
-local LockedPadLabel = PickGroup:AddLabel("Locked pad: None")
-task.spawn(function()
-	while true do
-		task.wait(0.5)
-		if State.LockedPad > 0 then
-			LockedPadLabel:SetValue("Locked pad: #" .. State.LockedPad)
-		else
-			LockedPadLabel:SetValue("Locked pad: None")
-		end
-	end
-end)
+		pcall(function()
+			local part = pad
+			if pad:IsA("Model") then
+				part = pad:FindFirstChild("Part") or pad:FindFirstChildOfClass("BasePart") or pad.PrimaryPart
+			end
+			if part and part:IsA("BasePart") then
+				hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0)
+			end
+		end)
+		State.LockedPad = idx
+		Library:Notify({ Title = "Ivory", Description = "Teleported to pad " .. idx, Type = "Success", Time = 3 })
+	end,
+})
 
 --// Automation: Collectibles
 local CollectGroup = AutoSub:AddLeftGroupbox("Collectibles", "gem")
@@ -842,11 +815,12 @@ task.spawn(function()
 		if State.AutoPickOnSpawn then
 			if not LocalPlayer.Character and os.clock() - lastAutoPick > 5 then
 				lastAutoPick = os.clock()
-				--// Teleport to locked pad
+				--// Get pad from dropdown
+				local padIndex = tonumber(Options.AutoPickPad and Options.AutoPickPad.Value or State.LockedPad or 1)
 				local tpsFolder = Workspace:FindFirstChild("TPS")
-				if tpsFolder and State.LockedPad > 0 then
+				if tpsFolder and padIndex then
 					local teleporters = tpsFolder:GetChildren()
-					local pad = teleporters[State.LockedPad]
+					local pad = teleporters[padIndex]
 					if pad then
 						pcall(function()
 							local char = LocalPlayer.Character
@@ -870,7 +844,7 @@ task.spawn(function()
 										hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0)
 										Library:Notify({
 											Title = "Ivory",
-											Description = "Auto teleported to locked pad " .. State.LockedPad,
+											Description = "Auto teleported to pad " .. padIndex,
 											Type = "Success",
 											Time = 3,
 										})
