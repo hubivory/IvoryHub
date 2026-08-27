@@ -58,6 +58,7 @@ end
 
 spawn(function()
 	wait(1)
+	local wasOnMe = false
 	while true do
 		wait(0.01)
 		pcall(function()
@@ -65,34 +66,35 @@ spawn(function()
 
 			local realBall = GetMyBall()
 			local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-			if not realBall or not myRoot then return end
+			if not realBall or not myRoot then
+				wasOnMe = false
+				return
+			end
 
 			local dist = (realBall.Position - myRoot.Position).Magnitude
 			local speed = realBall.AssemblyLinearVelocity.Magnitude
 			local pingSec = currentPing / 1000
 
-			-- Ping-compensated lead: the server sees the attempt pingSec
-			-- later. Fast balls travel 50+ studs in that window, so fire
-			-- EARLY. Blade Ball parry range is generous (game even runs
-			-- IncreasedParryRange on players).
-			local leadDist = 30 + speed * (pingSec + 0.1)
-			leadDist = math.clamp(leadDist, 40, 200)
+			-- The ball accelerates hard the instant it flips target, so its
+			-- current velocity lies. Fire on the flip itself, plus a lead.
+			local leadDist = 40 + speed * (pingSec + 0.15)
+			leadDist = math.clamp(leadDist, 50, 250)
 
 			local now = tick()
 			local msSince = (now - lastParryTime) * 1000
 
-			local inWindow = dist < leadDist
 			local panic = dist < 25
-			local canFire = msSince > 350 or (panic and msSince > 150)
+			local canFire = msSince > 300 or (panic and msSince > 140)
 
-			if inWindow and canFire then
+			if (not wasOnMe or dist < leadDist) and canFire then
 				doParry()
 				lastParryTime = tick()
 				if now - lastLog > 3 then
 					lastLog = now
-					print(string.format("[Ivory Parry] fired | dist=%d speed=%d lead=%d ping=%d", dist, speed, leadDist, currentPing))
+					print(string.format("[Ivory Parry] fired | dist=%d speed=%d lead=%d ping=%d flip=%s", dist, speed, leadDist, currentPing, tostring(not wasOnMe)))
 				end
 			end
+			wasOnMe = true
 		end)
 	end
 end)
