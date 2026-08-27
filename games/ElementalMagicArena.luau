@@ -122,11 +122,32 @@ local function DoAutoPick()
 		return
 	end
 
-	local teleporter = tpsFolder:FindFirstChild(chosen)
+	--// Find index of chosen class in ElementConfig (same order as TPS children)
+	local classIndex = nil
+	if ElementConfig then
+		for i, cfg in ipairs(ElementConfig) do
+			if cfg.name == chosen then
+				classIndex = i
+				break
+			end
+		end
+	end
+
+	if not classIndex then
+		Library:Notify({
+			Title = "Ivory",
+			Description = "Could not find class index for " .. tostring(chosen),
+			Type = "Error",
+			Time = 3,
+		})
+		return
+	end
+
+	local teleporter = tpsFolder:GetChildren()[classIndex]
 	if not teleporter then
 		Library:Notify({
 			Title = "Ivory",
-			Description = "No teleporter found for " .. tostring(chosen),
+			Description = "No teleporter at index " .. classIndex,
 			Type = "Error",
 			Time = 3,
 		})
