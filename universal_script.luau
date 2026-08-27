@@ -471,7 +471,7 @@ local function tw()
 end
 
 --// Exit animation + load
-local GITHUB_RAW = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/"
+local GITHUB_RAW = "https://raw.githubusercontent.com/hubivory/IvoryHub/"
 
 local function loadScript(url)
 	local info = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
