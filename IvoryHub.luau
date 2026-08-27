@@ -26,9 +26,23 @@ local PlaceId = game.PlaceId
 local ScriptFile = GameScripts[PlaceId]
 
 if not ScriptFile then
-	local universal = loadstring(game:httpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/refs/heads/main/universal_script.luau"))()
-	if universal then
-		universal()
+	--// No game script found, load universal splash screen
+	local commitHash = "main"
+	pcall(function()
+		local apiRes = request({ Url = GITHUB_API, Method = "GET" })
+		if apiRes and apiRes.Body then
+			local hash = apiRes.Body:match('"sha":"(%w+)"')
+			if hash then commitHash = hash end
+		end
+	end)
+	local url = GITHUB_RAW .. commitHash .. "/universal_script.luau"
+	local res = request({ Url = url, Method = "GET" })
+	local content = res and res.Body or nil
+	if content then
+		if content:byte(1) == 0xEF and content:byte(2) == 0xBB and content:byte(3) == 0xBF then
+			content = content:sub(4)
+		end
+		loadstring(content)()
 	end
 	return
 end
