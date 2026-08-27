@@ -121,21 +121,22 @@ local function DoAutoPick()
 	end
 
 	local teleporters = tpsFolder:GetChildren()
-	if #teleporters == 0 then
+	local padIndex = State.AutoPickPad or 1
+
+	if padIndex < 1 or padIndex > #teleporters then
 		Library:Notify({
 			Title = "Ivory",
-			Description = "No teleporters found in TPS",
+			Description = "Pad " .. padIndex .. " out of range (1-" .. #teleporters .. ")",
 			Type = "Error",
 			Time = 3,
 		})
 		return
 	end
 
-	--// Teleport to the first available teleporter
-	hrp.CFrame = teleporters[1].CFrame + Vector3.new(0, 3, 0)
+	hrp.CFrame = teleporters[padIndex].CFrame + Vector3.new(0, 3, 0)
 	Library:Notify({
 		Title = "Ivory",
-		Description = "Teleported to class selector",
+		Description = "Teleported to pad " .. padIndex,
 		Type = "Success",
 		Time = 3,
 	})
@@ -180,6 +181,7 @@ local State = {
 
 	AutoPickOnSpawn = false,
 	AutoPickElement = "Light",
+	AutoPickPad = 1,
 
 	AutoM1 = false,
 	M1Delay = 0.5,
@@ -290,6 +292,13 @@ PickGroup:AddDropdown("AutoPickElement", {
 	Values = ElementLabels,
 	Default = "Light",
 	Tooltip = "Pick only classes you own",
+})
+PickGroup:AddDropdown("AutoPickPad", {
+	Text = "Teleporter Pad",
+	Values = {"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54"},
+	Default = "1",
+	Tooltip = "Which teleporter pad to use",
+	Callback = function(v) State.AutoPickPad = tonumber(v) end,
 })
 PickGroup:AddButton("Pick Now", function()
 	DoAutoPick()
