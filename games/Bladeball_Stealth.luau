@@ -26,6 +26,8 @@ pcall(function()
 	end
 end)
 
+print("[Ivory Stealth] input channel: " .. (ParryBtn and "ParryButtonPress bindable" or ("mouse1click=" .. tostring(mouse1click ~= nil))))
+
 local function doParry()
 	if ParryBtn and ParryBtn:IsA("BindableEvent") then
 		local ok = pcall(function() ParryBtn:Fire() end)
@@ -73,6 +75,7 @@ end)
 spawn(function()
 	wait(1)
 	local lastLog = 0
+	local lastHoldLog = 0
 	while true do
 		wait(0.01)
 		pcall(function()
@@ -108,8 +111,19 @@ spawn(function()
 			local canFire = msSince > cd or (danger and msSince > 120)
 
 			if (tti < 0.16 or dist < 22) and canFire then
+				print(string.format("[Ivory Stealth] FIRE tti=%.2f dist=%d", tti, dist))
 				doParry()
 				lastParryTime = tick()
+				wait(0.15)
+				local newTarget = realBall:GetAttribute("target")
+				if newTarget == LocalPlayer.Name then
+					print("[Ivory Stealth] post-fire: ball STILL on me")
+				else
+					print("[Ivory Stealth] post-fire: DEFLECTED to " .. tostring(newTarget))
+				end
+			elseif dist < 60 and msSince < cd and now - lastHoldLog > 0.5 then
+				lastHoldLog = now
+				print(string.format("[Ivory Stealth] HOLD tti=%.2f dist=%d msSince=%.0f cd=%.0f", tti, dist, msSince, cd))
 			end
 		end)
 	end
