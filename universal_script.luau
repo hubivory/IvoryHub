@@ -203,6 +203,20 @@ local rngMemes = {
 	"bombastic side eye", "oh shiddings nott gud D:",
 }
 
+--// Icon pool (swords, shields, daggers, etc.)
+local rngIcons = {
+	"rbxassetid://96858797315175",
+	"rbxassetid://7734056878",
+	"rbxassetid://6031071053",
+	"rbxassetid://7072706796",
+	"rbxassetid://7072725342",
+	"rbxassetid://6031068421",
+	"rbxassetid://6031071053",
+	"rbxassetid://7072706796",
+	"rbxassetid://6034818372",
+	"rbxassetid://6031068420",
+}
+
 --// Floating icon
 task.spawn(function()
 	while ScreenGui and ScreenGui.Parent do
@@ -214,6 +228,27 @@ task.spawn(function()
 		end
 		Icon.Position = UDim2.new(0.5, -24, 0.04 + (FloatOffset / 1200), 0)
 		task.wait(0.02)
+	end
+end)
+
+--// Cycle icons
+task.spawn(function()
+	local lastIconChange = 0
+	while ScreenGui and ScreenGui.Parent do
+		if tick() - lastIconChange > math.random(3, 7) then
+			local newIcon = rngIcons[math.random(1, #rngIcons)]
+			local tween = TweenService:Create(Icon, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
+				ImageTransparency = 1,
+			})
+			tween:Play()
+			tween.Completed:Wait()
+			Icon.Image = newIcon
+			TweenService:Create(Icon, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
+				ImageTransparency = 0,
+			}):Play()
+			lastIconChange = tick()
+		end
+		task.wait(0.5)
 	end
 end)
 
