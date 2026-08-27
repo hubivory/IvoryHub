@@ -120,23 +120,32 @@ local function DoAutoPick()
 		return
 	end
 
-	local teleporters = tpsFolder:GetChildren()
-	local padIndex = State.AutoPickPad or 1
-
-	if padIndex < 1 or padIndex > #teleporters then
+	local chosen = State.AutoPickPad
+	if not chosen or chosen == "" then
 		Library:Notify({
 			Title = "Ivory",
-			Description = "Pad " .. padIndex .. " out of range (1-" .. #teleporters .. ")",
+			Description = "Select a teleporter pad first",
 			Type = "Error",
 			Time = 3,
 		})
 		return
 	end
 
-	hrp.CFrame = teleporters[padIndex].CFrame + Vector3.new(0, 3, 0)
+	local teleporter = tpsFolder:FindFirstChild(chosen)
+	if not teleporter then
+		Library:Notify({
+			Title = "Ivory",
+			Description = "Pad '" .. chosen .. "' not found",
+			Type = "Error",
+			Time = 3,
+		})
+		return
+	end
+
+	hrp.CFrame = teleporter.CFrame + Vector3.new(0, 3, 0)
 	Library:Notify({
 		Title = "Ivory",
-		Description = "Teleported to pad " .. padIndex,
+		Description = "Teleported to " .. chosen,
 		Type = "Success",
 		Time = 3,
 	})
@@ -181,7 +190,7 @@ local State = {
 
 	AutoPickOnSpawn = false,
 	AutoPickElement = "Light",
-	AutoPickPad = 1,
+	AutoPickPad = "",
 
 	AutoM1 = false,
 	M1Delay = 0.5,
@@ -295,10 +304,20 @@ PickGroup:AddDropdown("AutoPickElement", {
 })
 PickGroup:AddDropdown("AutoPickPad", {
 	Text = "Teleporter Pad",
-	Values = {"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54"},
-	Default = "1",
+	Values = (function()
+		local names = {}
+		local tps = Workspace:FindFirstChild("TPS")
+		if tps then
+			for _, child in ipairs(tps:GetChildren()) do
+				names[#names + 1] = child.Name
+			end
+		end
+		if #names == 0 then names = {"None found"} end
+		return names
+	end)(),
+	Default = "",
 	Tooltip = "Which teleporter pad to use",
-	Callback = function(v) State.AutoPickPad = tonumber(v) end,
+	Callback = function(v) State.AutoPickPad = v end,
 })
 PickGroup:AddButton("Pick Now", function()
 	DoAutoPick()
