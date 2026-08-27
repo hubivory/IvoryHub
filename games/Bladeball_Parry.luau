@@ -1,9 +1,12 @@
 -- ═══════════════════════════════════════════════════════════
--- Ivory Parry — Blade Ball | minimal auto-parry (no GUI)
+-- Ivory Parry v2 — Blade Ball | minimal auto-parry (no GUI)
 --
--- Singleton: re-deploying instantly retires any older instance.
--- Wide trigger: any ball targeting you inside ~38 studs = fire.
--- Curved balls lie about velocity, distance never does.
+-- v2 fixes:
+--   + Blade Ball's block has its own ~1s cooldown. Clicking during it
+--     is a wasted click that can eat the parry that would save you.
+--     All clicks now respect a global 1100ms spacing.
+--   + Only fires in parry range (<45 studs) or on a close flip (<60).
+--   + Singleton token retires older Ivory Parry instances.
 -- ═══════════════════════════════════════════════════════════
 
 local Players = game:GetService("Players")
@@ -14,19 +17,9 @@ local LocalPlayer = Players.LocalPlayer
 
 local myToken = tostring({})
 getgenv().IvoryParryToken = myToken
+getgenv().IvoryParryLastClick = getgenv().IvoryParryLastClick or 0
 
-local lastParryTime = 0
 local lastLog = 0
-local currentPing = 0
-
-spawn(function()
-	while true do
-		wait(2)
-		pcall(function()
-			currentPing = math.floor(LocalPlayer:GetNetworkPing() * 1000)
-		end)
-	end
-end)
 
 local ParryBtn = nil
 pcall(function()
@@ -47,7 +40,6 @@ local function doParry()
 end
 
 local function GetMyBall()
-	-- With multiple balls in play, always track the one targeting YOU.
 	for _, obj in ipairs(Workspace.Balls:GetChildren()) do
 		if obj:IsA("BasePart") and obj:GetAttribute("realBall") == true and obj:GetAttribute("target") == LocalPlayer.Name then
 			return obj
@@ -72,26 +64,24 @@ spawn(function()
 			end
 
 			local dist = (realBall.Position - myRoot.Position).Magnitude
-			local speed = realBall.AssemblyLinearVelocity.Magnitude
-			local pingSec = currentPing / 1000
-
-			-- The ball accelerates hard the instant it flips target, so its
-			-- current velocity lies. Fire on the flip itself, plus a lead.
-			local leadDist = 40 + speed * (pingSec + 0.15)
-			leadDist = math.clamp(leadDist, 50, 250)
-
 			local now = tick()
-			local msSince = (now - lastParryTime) * 1000
+			local msSinceClick = (now - getgenv().IvoryParryLastClick) * 1000
 
+			-- The game's block cooldown eats rapid clicks - respect it.
 			local panic = dist < 25
-			local canFire = msSince > 300 or (panic and msSince > 140)
+			local minGap = panic and 450 or 1100
+			local canClick = msSinceClick > minGap
 
-			if (not wasOnMe or dist < leadDist) and canFire then
+			-- Parry range discipline: only click when it can connect.
+			local inRange = dist < 45
+			local closeFlip = (not wasOnMe) and dist < 60
+
+			if (inRange or closeFlip) and canClick then
 				doParry()
-				lastParryTime = tick()
+				getgenv().IvoryParryLastClick = tick()
 				if now - lastLog > 3 then
 					lastLog = now
-					print(string.format("[Ivory Parry] fired | dist=%d speed=%d lead=%d ping=%d flip=%s", dist, speed, leadDist, currentPing, tostring(not wasOnMe)))
+					print(string.format("[Ivory Parry] click | dist=%d flip=%s", dist, tostring(not wasOnMe)))
 				end
 			end
 			wasOnMe = true
@@ -99,5 +89,5 @@ spawn(function()
 	end
 end)
 
-print("[Ivory Parry] running - minimal auto-parry, no GUI")
-print("[Ivory Parry] input: " .. (ParryBtn and "ParryButtonPress" or "mouse1click"))
+print("[Ivory Parry v2] running - 1100ms click spacing, 45-stud range")
+print("[Ivory Parry v2] input: " .. (ParryBtn and "ParryButtonPress" or "mouse1click"))
