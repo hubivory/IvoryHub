@@ -438,19 +438,39 @@ local function GetTeamKey(player)
 		local v = player:GetAttribute(attr)
 		if v then return "attr:" .. tostring(v) end
 	end
+	for _, child in ipairs(player:GetChildren()) do
+		if child:IsA("ObjectValue") and child.Name:lower():find("team") and child.Value then
+			return "obj:" .. tostring(child.Value)
+		end
+	end
 	local char = player.Character
 	if char then
 		for _, attr in ipairs(TeamAttributeNames) do
 			local v = char:GetAttribute(attr)
 			if v then return "cattr:" .. tostring(v) end
 		end
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		if hum then
+			for _, attr in ipairs(TeamAttributeNames) do
+				local v = hum:GetAttribute(attr)
+				if v then return "hattr:" .. tostring(v) end
+			end
+		end
 		for _, child in ipairs(char:GetChildren()) do
+			if child:IsA("ObjectValue") and child.Name:lower():find("team") and child.Value then
+				return "cobj:" .. tostring(child.Value)
+			end
 			if child:IsA("Folder") and child.Name:lower():find("team") then
 				return "folder:" .. child.Name
 			end
 			if (child:IsA("StringValue") or child:IsA("BoolValue")) and child.Name:lower():find("team") then
 				return "val:" .. tostring(child.Value)
 			end
+		end
+		--// Character parented inside a workspace team folder
+		local parent = char.Parent
+		if parent and parent ~= Workspace and parent:IsA("Model") and parent ~= player then
+			return "parent:" .. parent.Name
 		end
 	end
 	return nil
