@@ -136,45 +136,209 @@ TeleportGroup:AddButton("Teleport", function()
 end)
 
 ------------------------------------------------------------------------
-UpgradesGroup:AddButton("Buy Rake", function() pcall(function() getRemote("BuyToolCash"):FireServer("Rake") end); Library:Notify({ Title = "Ivory", Description = "Buying Rake...", Type = "Info", Time = 3 }) end)
-UpgradesGroup:AddButton("Buy Leaf Blower", function() pcall(function() getRemote("BuyToolCash"):FireServer("LeafBlower") end); Library:Notify({ Title = "Ivory", Description = "Buying Leaf Blower...", Type = "Info", Time = 3 }) end)
-UpgradesGroup:AddButton("Buy Molotov", function() pcall(function() getRemote("BuyToolCash"):FireServer("Molotov") end); Library:Notify({ Title = "Ivory", Description = "Buying Molotov...", Type = "Info", Time = 3 }) end)
-UpgradesGroup:AddButton("Upgrade Bag", function() pcall(function() getRemote("BuyBagUpgrade"):FireServer() end); Library:Notify({ Title = "Ivory", Description = "Bag upgraded!", Type = "Success", Time = 3 }) end)
+--// UPGRADE HELPERS
+------------------------------------------------------------------------
+local UpgradeConfig = nil
+local BagConfig = nil
+pcall(function() UpgradeConfig = require(ReplicatedStorage:WaitForChild("UpgradeConfig")) end)
+pcall(function() BagConfig = require(ReplicatedStorage:WaitForChild("BagConfig")) end)
 
---// Vent Purchasing
-UpgradesGroup:AddLabel("--- Vents ---")
-UpgradesGroup:AddButton("Buy All Vents", function()
-    pcall(function()
-        local ventsFolder = Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("Vents")
-        if ventsFolder then
-            local buyRemote = getRemote("BuyVent")
-            for _, vent in ipairs(ventsFolder:GetChildren()) do
-                if vent:IsA("BasePart") and not vent:GetAttribute("Unlocked") then
-                    buyRemote:FireServer(vent)
-                    task.wait(0.5)
+local function getCash() return LocalPlayer:GetAttribute("Cash") or 0 end
+
+local function notify(desc, kind)
+    Library:Notify({ Title = "Ivory", Description = desc, Type = kind or "Info", Time = 2.5 })
+end
+
+local function inGameGuard(silent)
+    if isLobby then
+        if not silent then notify("Upgrades only work in the game!", "Info") end
+        return false
+    end
+    return true
+end
+
+local function toolPrice(key)
+    if UpgradeConfig and UpgradeConfig.shop and UpgradeConfig.shop[key] then
+        local price = UpgradeConfig.shop[key].cash
+        local discount = 0
+        if key == "Rake" then discount = LocalPlayer:GetAttribute("LobbyRakeDiscount") or 0
+        elseif key == "LeafBlower" then discount = LocalPlayer:GetAttribute("LobbyBlowerDiscount") or 0 end
+        if price and discount > 0 then
+            return math.round(price * (1 - discount) * 100) / 100
+        end
+        return price
+    end
+    return nil
+end
+
+local function ownsTool(key)
+    if UpgradeConfig and UpgradeConfig.tools[key] and UpgradeConfig.tools[key].ownsAttr then
+        return LocalPlayer:GetAttribute(UpgradeConfig.tools[key].ownsAttr) == true
+    end
+    return true
+end
+
+local function upgradeLevel(tool, upg)
+    return LocalPlayer:GetAttribute("Upg_" .. tool .. "_" .. upg) or 0
+end
+
+local function upgradeMax(tool, upg)
+    if UpgradeConfig and UpgradeConfig.tools[tool] and UpgradeConfig.tools[tool].upgrades[upg] then
+        return UpgradeConfig.tools[tool].upgrades[upg].max or 0
+    end
+    return 5
+end
+
+local function upgradePrice(tool, upg)
+    local level = upgradeLevel(tool, upg)
+    if UpgradeConfig and UpgradeConfig.tools[tool] and UpgradeConfig.tools[tool].upgrades[upg] then
+        local prices = UpgradeConfig.tools[tool].upgrades[upg].prices or {}
+        return prices[level + 1]
+    end
+    return nil
+end
+
+local function buyTool(key, silent)
+    if not inGameGuard(silent) then return false end
+    local display = key == "LeafBlower" and "Leaf Blower" or key
+    if ownsTool(key) then
+        if not silent then notify(display .. " already owned!", "Info") end
+        return true
+    end
+    local price = toolPrice(key)
+    if price and getCash() < price then
+        if not silent then notify("Need $" .. tostring(price) .. " for " .. display .. "!", "Error") end
+        return false
+    end
+    getRemote("BuyToolCash"):FireServer(key)
+    task.wait(0.5)
+    if ownsTool(key) then
+        if not silent then notify(display .. " purchased!", "Success") end
+        return true
+    end
+    if not silent then notify(display .. " purchase failed!", "Error") end
+    return false
+end
+
+local function buyUpgrade(tool, upg, silent)
+    if not inGameGuard(silent) then return false end
+    local level = upgradeLevel(tool, upg)
+    local max = upgradeMax(tool, upg)
+    if level >= max then
+        if not silent then notify(tool .. " " .. upg .. " is maxed!", "Info") end
+        return false
+    end
+    if not ownsTool(tool) then
+        if not silent then notify("Buying " .. tool .. " first...", "Info") end
+        if not buyTool(tool, silent) then return false end
+        task.wait(0.3)
+    end
+    local price = upgradePrice(tool, upg)
+    if price and getCash() < price then
+        if not silent then notify("Need $" .. tostring(price) .. " for " .. upg .. "!", "Error") end
+        return false
+    end
+    getRemote("BuyUpgrade"):FireServer(tool, upg)
+    task.wait(0.5)
+    if upgradeLevel(tool, upg) > level then
+        if not silent then notify(tool .. " " .. upg .. " upgraded!", "Success") end
+        return true
+    end
+    if not silent then notify(tool .. " " .. upg .. " upgrade failed!", "Error") end
+    return false
+end
+
+local function buyBag(silent)
+    if not inGameGuard(silent) then return false end
+    if LocalPlayer:GetAttribute("InfiniteBag") == true then
+        if not silent then notify("Bag is infinite!", "Info") end
+        return false
+    end
+    local maxLevel = BagConfig and (#BagConfig.caps - 1) or 3
+    local level = LocalPlayer:GetAttribute("BagLevel") or 0
+    if level >= maxLevel then
+        if not silent then notify("Bag is maxed!", "Info") end
+        return false
+    end
+    local price = BagConfig and BagConfig.prices[level + 1] or 2
+    if getCash() < price then
+        if not silent then notify("Need $" .. tostring(price) .. " for bag upgrade!", "Error") end
+        return false
+    end
+    getRemote("BuyBagUpgrade"):FireServer()
+    task.wait(0.5)
+    if (LocalPlayer:GetAttribute("BagLevel") or 0) > level then
+        if not silent then notify("Bag upgraded!", "Success") end
+        return true
+    end
+    if not silent then notify("Bag upgrade failed!", "Error") end
+    return false
+end
+
+local function buyAllVents(silent)
+    if not inGameGuard(silent) then return 0 end
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then
+        if not silent then notify("No character!", "Error") end
+        return 0
+    end
+    local ventsFolder = Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("Vents")
+    if not ventsFolder then
+        if not silent then notify("No vents found!", "Error") end
+        return 0
+    end
+    local buyRemote = getRemote("BuyVent")
+    if not buyRemote then return 0 end
+    local bought = 0
+    for _, vent in ipairs(ventsFolder:GetChildren()) do
+        if vent:IsA("BasePart") and not vent:GetAttribute("Unlocked") then
+            local cost = vent:GetAttribute("Cost") or 0
+            if getCash() >= cost then
+                -- Must stand next to the vent: the server validates proximity
+                hrp.CFrame = vent.CFrame + Vector3.new(0, 3, 0)
+                task.wait(0.35)
+                buyRemote:FireServer(vent)
+                task.wait(0.4)
+                if vent:GetAttribute("Unlocked") then
+                    bought = bought + 1
                 end
             end
         end
-    end)
-    Library:Notify({ Title = "Ivory", Description = "Buying all vents...", Type = "Info", Time = 3 })
-end)
+    end
+    if not silent then
+        if bought > 0 then notify("Bought " .. bought .. " vent(s)!", "Success")
+        else notify("No affordable vents left!", "Info") end
+    end
+    return bought
+end
+
+------------------------------------------------------------------------
+UpgradesGroup:AddButton("Buy Rake", function() pcall(buyTool, "Rake") end)
+UpgradesGroup:AddButton("Buy Leaf Blower", function() pcall(buyTool, "LeafBlower") end)
+UpgradesGroup:AddButton("Buy Molotov", function() pcall(buyTool, "Molotov") end)
+UpgradesGroup:AddButton("Upgrade Bag", function() pcall(buyBag) end)
+
+--// Vent Purchasing
+UpgradesGroup:AddLabel("--- Vents ---")
+UpgradesGroup:AddButton("Buy All Vents", function() pcall(buyAllVents) end)
 UpgradesGroup:AddToggle("AutoBuyVents", { Text = "Auto Buy Vents", Default = false, Callback = function(s) _G.IvoryAutoBuyVents = s end })
 
 --// Tool Upgrades
 UpgradesGroup:AddLabel("--- Hand Upgrades ---")
-UpgradesGroup:AddButton("Hand: Hold (Auto Collect)", function() pcall(function() getRemote("BuyUpgrade"):FireServer("Hand", "Hold") end); Library:Notify({ Title = "Ivory", Description = "Hold upgrade purchased!", Type = "Success", Time = 2 }) end)
-UpgradesGroup:AddButton("Hand: Dexterity (Speed)", function() pcall(function() getRemote("BuyUpgrade"):FireServer("Hand", "Dexterity") end); Library:Notify({ Title = "Ivory", Description = "Dexterity upgrade purchased!", Type = "Success", Time = 2 }) end)
-UpgradesGroup:AddButton("Hand: Grasp (Multi-Collect)", function() pcall(function() getRemote("BuyUpgrade"):FireServer("Hand", "Grasp") end); Library:Notify({ Title = "Ivory", Description = "Grasp upgrade purchased!", Type = "Success", Time = 2 }) end)
+UpgradesGroup:AddButton("Hand: Hold (Auto Collect)", function() pcall(buyUpgrade, "Hand", "Hold") end)
+UpgradesGroup:AddButton("Hand: Dexterity (Speed)", function() pcall(buyUpgrade, "Hand", "Dexterity") end)
+UpgradesGroup:AddButton("Hand: Grasp (Multi-Collect)", function() pcall(buyUpgrade, "Hand", "Grasp") end)
 
 UpgradesGroup:AddLabel("--- Rake Upgrades ---")
-UpgradesGroup:AddButton("Rake: Radius", function() pcall(function() getRemote("BuyUpgrade"):FireServer("Rake", "Radius") end); Library:Notify({ Title = "Ivory", Description = "Rake Radius purchased!", Type = "Success", Time = 2 }) end)
-UpgradesGroup:AddButton("Rake: Range", function() pcall(function() getRemote("BuyUpgrade"):FireServer("Rake", "Range") end); Library:Notify({ Title = "Ivory", Description = "Rake Range purchased!", Type = "Success", Time = 2 }) end)
-UpgradesGroup:AddButton("Rake: Stickiness", function() pcall(function() getRemote("BuyUpgrade"):FireServer("Rake", "Stickiness") end); Library:Notify({ Title = "Ivory", Description = "Rake Stickiness purchased!", Type = "Success", Time = 2 }) end)
+UpgradesGroup:AddButton("Rake: Radius", function() pcall(buyUpgrade, "Rake", "Radius") end)
+UpgradesGroup:AddButton("Rake: Range", function() pcall(buyUpgrade, "Rake", "Range") end)
+UpgradesGroup:AddButton("Rake: Stickiness", function() pcall(buyUpgrade, "Rake", "Stickiness") end)
 
 UpgradesGroup:AddLabel("--- Leaf Blower Upgrades ---")
-UpgradesGroup:AddButton("Blower: Width", function() pcall(function() getRemote("BuyUpgrade"):FireServer("LeafBlower", "Width") end); Library:Notify({ Title = "Ivory", Description = "Blower Width purchased!", Type = "Success", Time = 2 }) end)
-UpgradesGroup:AddButton("Blower: Power", function() pcall(function() getRemote("BuyUpgrade"):FireServer("LeafBlower", "Power") end); Library:Notify({ Title = "Ivory", Description = "Blower Power purchased!", Type = "Success", Time = 2 }) end)
-UpgradesGroup:AddButton("Blower: Spread", function() pcall(function() getRemote("BuyUpgrade"):FireServer("LeafBlower", "Spread") end); Library:Notify({ Title = "Ivory", Description = "Blower Spread purchased!", Type = "Success", Time = 2 }) end)
+UpgradesGroup:AddButton("Blower: Width", function() pcall(buyUpgrade, "LeafBlower", "Width") end)
+UpgradesGroup:AddButton("Blower: Power", function() pcall(buyUpgrade, "LeafBlower", "Power") end)
+UpgradesGroup:AddButton("Blower: Spread", function() pcall(buyUpgrade, "LeafBlower", "Spread") end)
 
 UpgradesGroup:AddLabel("--- Auto Buy ---")
 UpgradesGroup:AddToggle("AutoBuyBag", { Text = "Auto Buy Bag Upgrades", Default = false, Callback = function(s) _G.IvoryAutoBuyBag = s end })
@@ -495,14 +659,7 @@ task.spawn(function() while true do if _G.IvoryAutoDailyClaim then pcall(functio
 task.spawn(function()
     while true do
         if _G.IvoryAutoBuyBag and not isLobby then
-            pcall(function()
-                local LP = game:GetService("Players").LocalPlayer
-                local bagLevel = LP:GetAttribute("BagLevel") or 0
-                local hasInfinite = LP:GetAttribute("InfiniteBag") == true
-                if not hasInfinite and bagLevel < 10 then
-                    getRemote("BuyBagUpgrade"):FireServer()
-                end
-            end)
+            pcall(function() buyBag(true) end)
         end
         task.wait(5)
     end
@@ -517,10 +674,7 @@ task.spawn(function()
             pcall(function()
                 local handUpgrades = {"Hold", "Dexterity", "Grasp"}
                 for _, upg in ipairs(handUpgrades) do
-                    local currentLevel = LocalPlayer:GetAttribute("Upg_Hand_" .. upg) or 0
-                    if currentLevel < 5 then
-                        getRemote("BuyUpgrade"):FireServer("Hand", upg)
-                    end
+                    buyUpgrade("Hand", upg, true)
                 end
             end)
         end
@@ -534,24 +688,9 @@ end)
 task.spawn(function()
     while true do
         if _G.IvoryAutoBuyVents and not isLobby then
-            pcall(function()
-                local ventsFolder = Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("Vents")
-                if ventsFolder then
-                    local buyRemote = getRemote("BuyVent")
-                    for _, vent in ipairs(ventsFolder:GetChildren()) do
-                        if vent:IsA("BasePart") and not vent:GetAttribute("Unlocked") then
-                            local cost = vent:GetAttribute("Cost") or 0
-                            local cash = LocalPlayer:GetAttribute("Cash") or 0
-                            if cash >= cost then
-                                buyRemote:FireServer(vent)
-                                task.wait(0.5)
-                            end
-                        end
-                    end
-                end
-            end)
+            pcall(function() buyAllVents(true) end)
         end
-        task.wait(5)
+        task.wait(10)
     end
 end)
 
