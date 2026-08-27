@@ -107,43 +107,52 @@ end)
 
 local function DoAutoPick()
 	local char = LocalPlayer.Character
-	if not char then return end
+	if not char then
+		--// Wait for character to spawn
+		Library:Notify({ Title = "Ivory", Description = "Waiting for character...", Type = "Info", Time = 3 })
+		local waited = 0
+		repeat
+			task.wait(0.5)
+			waited = waited + 0.5
+			char = LocalPlayer.Character
+		until char or waited > 15
+		if not char then
+			Library:Notify({ Title = "Ivory", Description = "No character - spawn first", Type = "Error", Time = 3 })
+			return
+		end
+	end
 	local hrp = char:FindFirstChild("HumanoidRootPart")
-	if not hrp then return end
+	if not hrp then
+		Library:Notify({ Title = "Ivory", Description = "No HumanoidRootPart", Type = "Error", Time = 3 })
+		return
+	end
 
 	local tpsFolder = Workspace:FindFirstChild("TPS")
 	if not tpsFolder then
-		Library:Notify({
-			Title = "Ivory",
-			Description = "Could not find TPS folder",
-			Type = "Error",
-			Time = 3,
-		})
+		Library:Notify({ Title = "Ivory", Description = "Could not find TPS folder", Type = "Error", Time = 3 })
 		return
 	end
 
 	local teleporters = tpsFolder:GetChildren()
-	Library:Notify({
-		Title = "Ivory",
-		Description = "Teleporting to all " .. #teleporters .. " pads...",
-		Type = "Info",
-		Time = 3,
-	})
+	Library:Notify({ Title = "Ivory", Description = "Teleporting to all " .. #teleporters .. " pads...", Type = "Info", Time = 3 })
 
 	for i, pad in ipairs(teleporters) do
-		pcall(function()
-			local targetCF = pad.CFrame + Vector3.new(0, 3, 0)
-			hrp.CFrame = targetCF
-			task.wait(0.3)
+		local ok, err = pcall(function()
+			local part = pad
+			if pad:IsA("Model") then
+				part = pad:FindFirstChild("Part") or pad:FindFirstChildOfClass("BasePart") or pad.PrimaryPart
+			end
+			if part and part:IsA("BasePart") then
+				hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0)
+			end
 		end)
+		if not ok then
+			warn("[Ivory] Pad " .. i .. " failed: " .. tostring(err))
+		end
+		task.wait(0.3)
 	end
 
-	Library:Notify({
-		Title = "Ivory",
-		Description = "Done! Teleported to all pads",
-		Type = "Success",
-		Time = 3,
-	})
+	Library:Notify({ Title = "Ivory", Description = "Done! Teleported to all pads", Type = "Success", Time = 3 })
 end
 local function GetWarthofGodModule()
 	return ReplicatedStorage:FindFirstChild("MoveSets"):FindFirstChild("Light"):FindFirstChild("WarthofGodClient")
