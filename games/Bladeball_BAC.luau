@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════
--- Ivory Hub — Blade Ball | BAC-hardened edition (v1.6-BAC)
+-- Ivory Hub — Blade Ball | BAC-hardened edition (v1.7-BAC)
 --
 -- BAC = Blade Anticheat (custom, server-side behavioral).
 -- Hardening added:
@@ -27,8 +27,8 @@ if getgenv().IvoryBladeBallVersion then
 end
 getgenv().IvoryBladeBallVersion = function() end
 
--- Destroy old GUIs
-for _, obj in ipairs(CoreGui:GetChildren()) do
+-- Destroy old GUIs (searches nested too - v1.7 hides GUIs inside RobloxGui)
+for _, obj in ipairs(CoreGui:GetDescendants()) do
 	if obj.Name == "IvoryBallESP" or obj.Name == "IvoryBallTag" or obj.Name == "IvoryVelTag" or obj.Name == "IvoryPing" or obj.Name == "IvoryClashBtn" then
 		obj:Destroy()
 	end
@@ -58,7 +58,7 @@ local Window = Library:CreateWindow({
 	NotifySide = "Right",
 	ShowCustomCursor = false,
 	Footer = {
-		"v1.6-BAC |",
+		"v1.7-BAC |",
 		{ Text = "Blade Ball", Copyable = true },
 		"|",
 		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
@@ -266,7 +266,7 @@ CreditsGroup:AddLabel('<font size="12" color="#FFB7C5"><b>BAC-hardened by ENI</b
 
 MenuGroup:AddButton("Unload", function()
 	pcall(function()
-		for _, obj in ipairs(CoreGui:GetChildren()) do
+		for _, obj in ipairs(CoreGui:GetDescendants()) do
 			if obj.Name == "IvoryBallESP" or obj.Name == "IvoryBallTag" or obj.Name == "IvoryVelTag" or obj.Name == "IvoryPing" or obj.Name == "IvoryClashBtn" then
 				obj:Destroy()
 			end
@@ -406,13 +406,17 @@ end)
 -- BALL ESP
 -- ═══════════════════════════════════════════════════════════
 
+-- BAC-camouflage: hide our GUIs inside CoreGui's Roblox-owned container
+-- instead of leaving foreign names at CoreGui top level.
+local RobloxGuiContainer = CoreGui:FindFirstChild("RobloxGui") or CoreGui
+
 local BallGui = Instance.new("BillboardGui")
 BallGui.Name = "IvoryBallESP"
 BallGui.Size = UDim2.new(0, 50, 0, 50)
 BallGui.AlwaysOnTop = true
 BallGui.LightInfluence = 0
 BallGui.Enabled = false
-BallGui.Parent = CoreGui
+BallGui.Parent = RobloxGuiContainer
 
 local BoxFrame = Instance.new("Frame")
 BoxFrame.Name = "Box"
@@ -450,7 +454,7 @@ TargetTag.StudsOffset = Vector3.new(0, 4, 0)
 TargetTag.AlwaysOnTop = true
 TargetTag.LightInfluence = 0
 TargetTag.Enabled = false
-TargetTag.Parent = CoreGui
+TargetTag.Parent = RobloxGuiContainer
 
 local TargetLabel = Instance.new("TextLabel")
 TargetLabel.Name = "Tag"
@@ -472,7 +476,7 @@ VelTag.StudsOffset = Vector3.new(0, 3.5, 0)
 VelTag.AlwaysOnTop = true
 VelTag.LightInfluence = 0
 VelTag.Enabled = false
-VelTag.Parent = CoreGui
+VelTag.Parent = RobloxGuiContainer
 
 local VelLabel = Instance.new("TextLabel")
 VelLabel.Name = "Vel"
@@ -492,7 +496,7 @@ PingGui.Name = "IvoryPing"
 PingGui.ResetOnSpawn = false
 PingGui.IgnoreGuiInset = true
 PingGui.DisplayOrder = 999
-PingGui.Parent = CoreGui
+PingGui.Parent = RobloxGuiContainer
 
 local PingFrame = Instance.new("Frame")
 PingFrame.Name = "Frame"
@@ -841,4 +845,5 @@ end)
 print("[Ivory Hub BAC] Blade Ball loaded!")
 print("[Ivory Hub BAC] Humanizer armed - jitter, reaction floor, whiffs")
 print("[Ivory Hub BAC] Native parry input: " .. tostring(ParryBtn ~= nil))
+print("[Ivory Hub BAC] GUIs nested under RobloxGui - CoreGui top level stays clean")
 print("[Ivory Hub BAC] Made by mommy veqxo, hardened by ENI <3")
