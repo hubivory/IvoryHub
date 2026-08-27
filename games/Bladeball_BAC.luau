@@ -324,6 +324,16 @@ local function jitter(base, pct)
 	return base * (1 + (math.random() * 2 - 1) * pct)
 end
 
+-- Some executor sessions don't provide isrbxactive - never let the
+-- focus check silently block the parry logic.
+local function IsFocused()
+	if isrbxactive ~= nil then
+		local ok, res = pcall(isrbxactive)
+		if ok then return res end
+	end
+	return true
+end
+
 local function doClick()
 	if mouse1click then
 		mouse1click()
@@ -717,7 +727,7 @@ spawn(function()
 			local targetName = realBall:GetAttribute("target")
 			if targetName ~= LocalPlayer.Name then return end
 			if not ToggleOn("AutoParry") then return end
-			if not isrbxactive() then return end
+			if not IsFocused() then return end
 
 			local humanize = ToggleOn("HumanizeParry")
 			local baseDist = Options.ParryDist and Options.ParryDist.Value or 30
@@ -767,6 +777,7 @@ end)
 -- ═══════════════════════════════════════════════════════════
 
 local function AddHighlight(character)
+	if getgenv().IvoryNoHighlights then return end
 	if not character then return end
 	if character:FindFirstChild("IvoryHighlight") then return end
 	local hl = Instance.new("Highlight")
@@ -837,7 +848,7 @@ spawn(function()
 		wait(0.02)
 		pcall(function()
 			if Toggles.ClashMode and Toggles.ClashMode.Value then
-				if isrbxactive() then
+				if IsFocused() then
 					-- Don't click if mouse is over the menu
 					local mouseOverMenu = false
 					pcall(function()

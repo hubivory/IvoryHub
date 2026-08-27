@@ -46,6 +46,16 @@ local function jitter(base, pct)
 	return base * (1 + (math.random() * 2 - 1) * pct)
 end
 
+-- Some executor sessions don't provide isrbxactive - never let the
+-- focus check silently block the parry logic.
+local function IsFocused()
+	if isrbxactive ~= nil then
+		local ok, res = pcall(isrbxactive)
+		if ok then return res end
+	end
+	return true
+end
+
 local function GetRealBall()
 	for _, obj in ipairs(Workspace.Balls:GetChildren()) do
 		if obj:IsA("BasePart") and obj:GetAttribute("realBall") == true then
@@ -82,7 +92,7 @@ spawn(function()
 
 			local targetName = realBall:GetAttribute("target")
 			if targetName ~= LocalPlayer.Name then return end
-			if not isrbxactive() then return end
+			if not IsFocused() then return end
 
 			local baseDist = 30
 			local baseCD = 350
