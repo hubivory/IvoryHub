@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════
--- Ivory Hub — Blade Ball | BAC-hardened edition (v1.5-BAC)
+-- Ivory Hub — Blade Ball | BAC-hardened edition (v1.6-BAC)
 --
 -- BAC = Blade Anticheat (custom, server-side behavioral).
 -- Hardening added:
@@ -58,7 +58,7 @@ local Window = Library:CreateWindow({
 	NotifySide = "Right",
 	ShowCustomCursor = false,
 	Footer = {
-		"v1.5-BAC |",
+		"v1.6-BAC |",
 		{ Text = "Blade Ball", Copyable = true },
 		"|",
 		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
@@ -173,6 +173,12 @@ HumanizerGroup:AddSlider("WhiffRate", {
 	Max = 20,
 	Rounding = 0,
 	Tooltip = "Chance to hesitate and be late on purpose. A 100% success rate is a flag.",
+})
+
+HumanizerGroup:AddToggle("GameInputChannel", {
+	Text = "Native Parry Input",
+	Default = true,
+	Tooltip = "Fires the game's own ParryButtonPress bindable instead of mouse clicks. Cleaner, no VIM latency.",
 })
 
 -- ─── CLASH ───
@@ -319,6 +325,24 @@ local function doClick()
 		wait(0.03)
 		VIM:SendMouseButtonEvent(0, 0, 0, false, nil, 0)
 	end)
+end
+
+-- The game's own parry button channel. Firing it is indistinguishable
+-- from a real click and skips VIM latency entirely.
+local ParryBtn = nil
+pcall(function()
+	local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+	if remotes then
+		ParryBtn = remotes:FindFirstChild("ParryButtonPress")
+	end
+end)
+
+local function doParry()
+	if ToggleOn("GameInputChannel") and ParryBtn and ParryBtn:IsA("BindableEvent") then
+		local ok, err = pcall(function() ParryBtn:Fire() end)
+		if ok then return end
+	end
+	doClick()
 end
 
 local function GetVisibleBall()
@@ -697,7 +721,7 @@ spawn(function()
 						end
 					end
 				end
-				doClick()
+				doParry()
 				lastParryTime = tick()
 			end
 		end)
@@ -816,4 +840,5 @@ end)
 
 print("[Ivory Hub BAC] Blade Ball loaded!")
 print("[Ivory Hub BAC] Humanizer armed - jitter, reaction floor, whiffs")
+print("[Ivory Hub BAC] Native parry input: " .. tostring(ParryBtn ~= nil))
 print("[Ivory Hub BAC] Made by mommy veqxo, hardened by ENI <3")
