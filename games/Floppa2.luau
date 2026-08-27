@@ -84,7 +84,7 @@ local Window = Library:CreateWindow({
 	Footer={"v1.4 |",{Text="Game",Copyable=true},"|",{Text=tostring(LP.UserId),Copyable=true}},
 	CopyableFooter=true, FuzzySearch=true, SearchValues=true,
 	Minimizable=true, MinimizeKeybind=Enum.KeyCode.RightBracket, MinimizedWidth=280,
-	NotifySide="Right", ShowCustomCursor=true, SearchKeybind=Enum.KeyCode.F, CornerRadius=4,
+	NotifySide="Right", ShowCustomCursor=false, SearchKeybind=Enum.KeyCode.F, CornerRadius=4,
 	Animations={ToggleWindow=false,TabSwitch=false,Groupbox=false,Dropdown=false,KeyPicker=false,SubTabUnderline=true},
 })
 

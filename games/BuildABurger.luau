@@ -156,7 +156,7 @@ local Window = Library:CreateWindow({
     MinimizeKeybind = Enum.KeyCode.RightBracket,
     MinimizedWidth = 280,
     NotifySide = "Right",
-    ShowCustomCursor = true,
+    ShowCustomCursor = false,
     CornerRadius = 4,
 })
 

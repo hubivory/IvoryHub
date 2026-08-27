@@ -20,7 +20,7 @@ local Window = Library:CreateWindow({
     Footer = { "v1.4 |", { Text = isLobby and "Lobby" or "Game", Copyable = true }, "|", { Text = tostring(LocalPlayer.UserId), Copyable = true } },
     CopyableFooter = true, FuzzySearch = true, SearchValues = true, Minimizable = true,
     MinimizeKeybind = Enum.KeyCode.RightBracket, MinimizedWidth = 280, NotifySide = "Right",
-    ShowCustomCursor = true, SearchKeybind = Enum.KeyCode.F, CornerRadius = 4,
+    ShowCustomCursor = false, SearchKeybind = Enum.KeyCode.F, CornerRadius = 4,
     Animations = { SubTabUnderline = true },
 })
 
@@ -347,7 +347,7 @@ UpgradesGroup:AddToggle("AutoBuyHand", { Text = "Auto Buy Hand Upgrades", Defaul
 ------------------------------------------------------------------------
 ThemeManager:ApplyToTab(SettingsTab); SaveManager:BuildConfigSection(SettingsTab)
 MenuGroup:AddToggle("MenuToggle", { Text = "Toggle Menu", Default = true }):AddKeyPicker("MenuKeybind", { Default = "RightShift", Text = "Menu Keybind", Mode = "Toggle", SyncToggleState = false, NoUI = false })
-MenuGroup:AddToggle("CustomCursor", { Text = "Custom Cursor", Default = true, Callback = function(s) Library.ShowCustomCursor = s end })
+MenuGroup:AddToggle("CustomCursor", { Text = "Custom Cursor", Default = false, Callback = function(s) Library.ShowCustomCursor = s end })
 MenuGroup:AddButton("Test Notification", function() Library:Notify({ Title = "Ivory", Description = "Test Notification!", Type = "Success", Time = 5 }) end)
 MenuGroup:AddDropdown("NotifySide", { Text = "Notification Side", Values = {"Left", "Right"}, Default = "Right", Multi = false, Callback = function(v) Library.NotifySide = v end })
 MenuGroup:AddSlider("CornerRadius", { Text = "Corner Radius", Default = 4, Min = 0, Max = 20, Rounding = 0, Callback = function(v) Library.CornerRadius = v end })

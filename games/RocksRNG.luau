@@ -64,7 +64,7 @@ local Window = Library:CreateWindow({
 	MinimizeKeybind = Enum.KeyCode.RightBracket,
 	MinimizedWidth = 280,
 	NotifySide = "Right",
-	ShowCustomCursor = true,
+	ShowCustomCursor = false,
 	SearchKeybind = Enum.KeyCode.F,
 	CornerRadius = 4,
 })

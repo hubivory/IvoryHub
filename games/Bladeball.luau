@@ -42,7 +42,7 @@ Library.ShowToggleFrameInKeybinds = true
 local Window = Library:CreateWindow({
 	Title = "Ivory Hub",
 	NotifySide = "Right",
-	ShowCustomCursor = true,
+	ShowCustomCursor = false,
 	Footer = {
 		"v1.4 |",
 		{ Text = "Blade Ball", Copyable = true },
