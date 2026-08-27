@@ -424,12 +424,52 @@ local function isPartVisible(targetPart)
 	return workspace:Raycast(origin, direction, rayParams) == nil
 end
 
+--// Team detection: supports built-in Teams AND custom team systems
+local TeamAttributeNames = { "Team", "TeamName", "team", "teamName" }
+
+local function GetTeamKey(player)
+	if player.Team then
+		return "team:" .. player.Team.Name
+	end
+	if player.TeamColor and player.TeamColor ~= BrickColor.new("Medium stone grey") then
+		return "color:" .. tostring(player.TeamColor)
+	end
+	for _, attr in ipairs(TeamAttributeNames) do
+		local v = player:GetAttribute(attr)
+		if v then return "attr:" .. tostring(v) end
+	end
+	local char = player.Character
+	if char then
+		for _, attr in ipairs(TeamAttributeNames) do
+			local v = char:GetAttribute(attr)
+			if v then return "cattr:" .. tostring(v) end
+		end
+		for _, child in ipairs(char:GetChildren()) do
+			if child:IsA("Folder") and child.Name:lower():find("team") then
+				return "folder:" .. child.Name
+			end
+			if (child:IsA("StringValue") or child:IsA("BoolValue")) and child.Name:lower():find("team") then
+				return "val:" .. tostring(child.Value)
+			end
+		end
+	end
+	return nil
+end
+
+local function IsTeammate(player)
+	local myTeam = GetTeamKey(LocalPlayer)
+	if not myTeam then return false end
+	local theirTeam = GetTeamKey(player)
+	if not theirTeam then return false end
+	return theirTeam == myTeam
+end
+
 local function getNearestTarget()
 	local closestPlayer = nil
 	local closestDist = State.Aimbot_FOV
 	for _, player in ipairs(Players:GetPlayers()) do
 		if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(State.Aimbot_TargetPart) then
-			if State.Aimbot_TeamCheck and player.Team and player.Team == LocalPlayer.Team then
+			if State.Aimbot_TeamCheck and IsTeammate(player) then
 				continue
 			end
 			if not State.Aimbot_WallCheck or isPartVisible(player.Character[State.Aimbot_TargetPart]) then
@@ -569,6 +609,9 @@ RunService.RenderStepped:Connect(function()
 	for player, esp in pairs(espObjects) do
 		local show = State.ESP_Enabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 			and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0
+		if show and State.ESP_TeamCheck and IsTeammate(player) then
+			show = false
+		end
 		if State.Highlight_Enabled then applyHighlight(player) else removeHighlight(player) end
 		if show then
 			local hrp = player.Character.HumanoidRootPart
