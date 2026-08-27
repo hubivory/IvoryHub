@@ -18,7 +18,8 @@ local GameScripts = {
 	[120617974337690] = "games/CatchABillionDucks.luau",
 	[137363360166684] = "games/RocksRNG.luau",
 	[9772878203] = "games/Floppa2.luau",
-	[13772394625] = "games/Bladeball.luau",
+	[13772394625] = "games/Bladeball_BAC.luau",
+	[16281300371] = "games/Bladeball_BAC.luau",
 	[142823291] = "games/MM2.luau",
 	[17516596118] = "games/Hypershot.luau",
 	[92637789841354] = "games/CleanAllTheLeaves.luau",
@@ -26,8 +27,13 @@ local GameScripts = {
 	-- Add more: [PlaceId] = "games/ScriptName.luau"
 }
 
+local UniverseScripts = {
+	[4777817887] = "games/Bladeball_BAC.luau",
+	-- Add more: [UniverseId] = "games/ScriptName.luau"
+}
+
 local PlaceId = game.PlaceId
-local ScriptFile = GameScripts[PlaceId]
+local ScriptFile = GameScripts[PlaceId] or UniverseScripts[game.GameId]
 
 if not ScriptFile then
 	--// No game script found, load universal splash screen
