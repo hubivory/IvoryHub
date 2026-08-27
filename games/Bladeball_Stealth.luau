@@ -82,6 +82,7 @@ end)
 
 spawn(function()
 	wait(1)
+	local lastLog = 0
 	while true do
 		wait(0.01)
 		pcall(function()
@@ -91,30 +92,33 @@ spawn(function()
 			if not realBall or not myRoot then return end
 
 			local targetName = realBall:GetAttribute("target")
+			local now = tick()
+
+			-- light heartbeat log so we can verify the loop is alive
+			if now - lastLog > 2 then
+				lastLog = now
+				print(string.format("[Ivory Stealth] alive | target=%s me=%s dist=%d", tostring(targetName), LocalPlayer.Name, math.floor((realBall.Position - myRoot.Position).Magnitude)))
+			end
+
 			if targetName ~= LocalPlayer.Name then return end
 			if not IsFocused() then return end
 
-			local baseDist = 30
-			local baseCD = 350
-
-			local speed = realBall.AssemblyLinearVelocity.Magnitude
-			local adaptiveDist = math.clamp(baseDist + (speed / 3), baseDist, 150)
-
-			local distNoise = (math.random() * 2 - 1) * 5
+			-- Time-to-impact trigger: parry when the ball is ~150ms away.
+			-- Distance-based triggers fire early at high speeds, waste the
+			-- attempt out of range, and the cooldown eats the real parry.
 			local dist = (realBall.Position - myRoot.Position).Magnitude
-			local now = tick()
+			local toBall = (myRoot.Position - realBall.Position).Unit
+			local closing = math.max(realBall.AssemblyLinearVelocity:Dot(toBall), 60)
+			local tti = dist / closing
+
 			local msSince = (now - lastParryTime) * 1000
+			local cd = math.max(jitter(350, 0.2), 180, currentPing * 0.75)
 
-			local cd = math.max(jitter(baseCD, 0.2), 180, currentPing * 0.75)
+			-- panic mode: ball right on top of you, fire up to ~8x/sec
+			local danger = dist < 25
+			local canFire = msSince > cd or (danger and msSince > 120)
 
-			if dist < (adaptiveDist + distNoise) and msSince > cd then
-				if math.random(100) <= 5 and dist > 20 then
-					wait(math.random(50, 160) / 1000)
-					if realBall:GetAttribute("target") ~= LocalPlayer.Name then
-						lastParryTime = tick()
-						return
-					end
-				end
+			if (tti < 0.16 or dist < 22) and canFire then
 				doParry()
 				lastParryTime = tick()
 			end
