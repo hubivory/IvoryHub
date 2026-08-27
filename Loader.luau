@@ -116,6 +116,7 @@ local State = {
 	Aimbot_PredictionOffset = 0.5,
 	Aimbot_FOV_Circle = true,
 	Aimbot_TargetPart = "Head",
+	Aimbot_TeamCheck = false,
 	Highlight_Enabled = false,
 	Highlight_FillTransparency = 0.5,
 	Highlight_OutlineTransparency = 0,
@@ -240,6 +241,7 @@ AimbotGroup:AddToggle("Aimbot WallCheck", { Text = "Wall Check", Default = true,
 AimbotGroup:AddToggle("Aimbot Prediction", { Text = "Predict Movement", Default = true, Callback = function(v) State.Aimbot_Prediction = v end })
 AimbotGroup:AddSlider("Aimbot Pred Offset", { Text = "Prediction Lead", Default = 5, Min = 0, Max = 50, Rounding = 0, Callback = function(v) State.Aimbot_PredictionOffset = v / 10 end })
 AimbotGroup:AddToggle("Aimbot FOV Circle", { Text = "Show FOV Circle", Default = true, Callback = function(v) State.Aimbot_FOV_Circle = v end })
+AimbotGroup:AddToggle("Aimbot TeamCheck", { Text = "Team Check", Default = false, Callback = function(v) State.Aimbot_TeamCheck = v end })
 
 --// ═══════════════════════════════════════════════════════════
 --// WORLD TAB
@@ -427,6 +429,9 @@ local function getNearestTarget()
 	local closestDist = State.Aimbot_FOV
 	for _, player in ipairs(Players:GetPlayers()) do
 		if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(State.Aimbot_TargetPart) then
+			if State.Aimbot_TeamCheck and player.Team and player.Team == LocalPlayer.Team then
+				continue
+			end
 			if not State.Aimbot_WallCheck or isPartVisible(player.Character[State.Aimbot_TargetPart]) then
 				local pos = Camera:WorldToViewportPoint(player.Character[State.Aimbot_TargetPart].Position)
 				local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)).Magnitude
