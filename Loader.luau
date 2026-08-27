@@ -301,6 +301,47 @@ Library.ToggleKeybind = Options.MenuKeybind
 SaveManager:LoadAutoloadConfig()
 
 --// ═══════════════════════════════════════════════════════════
+--// MOUSE MANAGEMENT
+--// ═══════════════════════════════════════════════════════════
+
+local MouseUnlocked = false --// K override
+
+local function UpdateMouse()
+	if MouseUnlocked then
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+		return
+	end
+	if Library.Toggled and not Window:IsMinimized() then
+		--// UI open: unlock so you can click
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+	else
+		--// UI closed/minimized: lock the mouse
+		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+	end
+end
+
+UserInputService.InputBegan:Connect(function(input, gpe)
+	if gpe then return end
+	if input.KeyCode == Enum.KeyCode.K then
+		MouseUnlocked = not MouseUnlocked
+		UpdateMouse()
+		Library:Notify({
+			Title = "Ivory",
+			Description = MouseUnlocked and "Mouse unlocked (K)" or "Mouse locked",
+			Type = "Info",
+			Time = 2,
+		})
+	end
+end)
+
+spawn(function()
+	while true do
+		wait(0.2)
+		UpdateMouse()
+	end
+end)
+
+--// ═══════════════════════════════════════════════════════════
 --// ESP LOGIC
 --// ═══════════════════════════════════════════════════════════
 
@@ -562,7 +603,15 @@ RunService.RenderStepped:Connect(function()
 			if State.Aimbot_Prediction then
 				targetPos = targetPos + targetPart.AssemblyLinearVelocity * State.Aimbot_PredictionOffset * 0.1
 			end
+			--// Take over the camera so the game cant fight us while mouse is locked
+			if Camera.CameraType ~= Enum.CameraType.Scriptable then
+				Camera.CameraType = Enum.CameraType.Scriptable
+			end
 			Camera.CFrame = Camera.CFrame:Lerp(CFrame.lookAt(Camera.CFrame.Position, targetPos), 1 / State.Aimbot_Smooth)
+		end
+	else
+		if Camera.CameraType == Enum.CameraType.Scriptable then
+			Camera.CameraType = Enum.CameraType.Custom
 		end
 	end
 
