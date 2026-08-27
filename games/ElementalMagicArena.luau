@@ -106,7 +106,9 @@ pcall(function()
 end)
 
 local function DoAutoPick()
-	local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+	local char = LocalPlayer.Character
+	if not char then return end
+	local hrp = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("HumanoidRootPart")
 	if not hrp then return end
 
 	local tpsFolder = Workspace:FindFirstChild("TPS")
@@ -133,7 +135,17 @@ local function DoAutoPick()
 		return
 	end
 
-	hrp.CFrame = teleporters[padIndex].CFrame + Vector3.new(0, 3, 0)
+	local pad = teleporters[padIndex]
+	local targetCF = pad.CFrame + Vector3.new(0, 3, 0)
+
+	--// Try multiple methods
+	pcall(function() char:PivotTo(targetCF) end)
+	hrp.CFrame = targetCF
+	task.wait(0.1)
+	hrp.CFrame = targetCF
+	task.wait(0.1)
+	hrp.CFrame = targetCF
+
 	Library:Notify({
 		Title = "Ivory",
 		Description = "Teleported to pad " .. padIndex,
