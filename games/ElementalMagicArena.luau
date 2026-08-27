@@ -309,13 +309,7 @@ local PickGroup = AutoSub:AddLeftGroupbox("Auto Pick Class", "person-standing")
 PickGroup:AddToggle("AutoPickOnSpawn", {
 	Text = "Auto Pick On Spawn",
 	Default = false,
-	Tooltip = "Teleports to the class selector when not spawned",
-})
-PickGroup:AddDropdown("AutoPickElement", {
-	Text = "Class",
-	Values = ElementLabels,
-	Default = "Light",
-	Tooltip = "Pick only classes you own",
+	Tooltip = "Teleports to the selected pad whenever you're not spawned",
 })
 
 PickGroup:AddDropdown("AutoPickPad", {
@@ -808,51 +802,69 @@ end
 --// ═══════════════════════════════════════════════════════════
 
 local lastAutoPick = 0
+
+local function TeleportToPad()
+	local padIndex = tonumber(Options.AutoPickPad and Options.AutoPickPad.Value or State.LockedPad or 1)
+	local tpsFolder = Workspace:FindFirstChild("TPS")
+	if not tpsFolder or not padIndex then return end
+	local teleporters = tpsFolder:GetChildren()
+	local pad = teleporters[padIndex]
+	if not pad then return end
+
+	local char = LocalPlayer.Character
+	if not char then
+		local waited = 0
+		repeat
+			task.wait(0.5)
+			waited = waited + 0.5
+			char = LocalPlayer.Character
+		until char or waited > 10
+	end
+	if not char then return end
+
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+
+	local part = pad
+	if pad:IsA("Model") then
+		part = pad:FindFirstChild("Part") or pad:FindFirstChildOfClass("BasePart") or pad.PrimaryPart
+	end
+	if not part or not part:IsA("BasePart") then return end
+
+	hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0)
+	Library:Notify({
+		Title = "Ivory",
+		Description = "Auto teleported to pad " .. padIndex,
+		Type = "Success",
+		Time = 3,
+	})
+end
+
+--// Trigger on respawn
+LocalPlayer.CharacterAdded:Connect(function(char)
+	if not State.AutoPickOnSpawn then return end
+	if os.clock() - lastAutoPick < 3 then return end
+	lastAutoPick = os.clock()
+	task.wait(1)
+	TeleportToPad()
+end)
+
 task.spawn(function()
 	task.wait(4)
 	while true do
 		task.wait(2)
 		if State.AutoPickOnSpawn then
-			if not LocalPlayer.Character and os.clock() - lastAutoPick > 5 then
-				lastAutoPick = os.clock()
-				--// Get pad from dropdown
-				local padIndex = tonumber(Options.AutoPickPad and Options.AutoPickPad.Value or State.LockedPad or 1)
-				local tpsFolder = Workspace:FindFirstChild("TPS")
-				if tpsFolder and padIndex then
-					local teleporters = tpsFolder:GetChildren()
-					local pad = teleporters[padIndex]
-					if pad then
-						pcall(function()
-							local char = LocalPlayer.Character
-							if not char then
-								--// Wait for character
-								local waited = 0
-								repeat
-									task.wait(0.5)
-									waited = waited + 0.5
-									char = LocalPlayer.Character
-								until char or waited > 10
-							end
-							if char then
-								local hrp = char:FindFirstChild("HumanoidRootPart")
-								if hrp then
-									local part = pad
-									if pad:IsA("Model") then
-										part = pad:FindFirstChild("Part") or pad:FindFirstChildOfClass("BasePart") or pad.PrimaryPart
-									end
-									if part and part:IsA("BasePart") then
-										hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0)
-										Library:Notify({
-											Title = "Ivory",
-											Description = "Auto teleported to pad " .. padIndex,
-											Type = "Success",
-											Time = 3,
-										})
-									end
-								end
-							end
-						end)
-					end
+			local char = LocalPlayer.Character
+			if not char then
+				if os.clock() - lastAutoPick > 5 then
+					lastAutoPick = os.clock()
+					TeleportToPad()
+				end
+			else
+				local hum = char:FindFirstChildOfClass("Humanoid")
+				if hum and hum.Health <= 0 and os.clock() - lastAutoPick > 5 then
+					lastAutoPick = os.clock()
+					TeleportToPad()
 				end
 			end
 		end
