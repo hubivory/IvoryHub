@@ -308,11 +308,20 @@ SaveManager:LoadAutoloadConfig()
 local MouseUnlocked = false --// K override
 
 local function UpdateMouse()
-	local uiOpen = Library.Toggled and not Window:IsMinimized()
-	if MouseUnlocked or uiOpen then
+	if MouseUnlocked then
 		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-	else
+		return
+	end
+	if not Library.Toggled then
+		--// UI fully closed: leave the mouse alone, let the game control it
+		return
+	end
+	if Window:IsMinimized() then
+		--// Minimized: relock the mouse
 		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+	else
+		--// UI open: unlock so you can click
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 	end
 end
 
@@ -323,7 +332,7 @@ UserInputService.InputBegan:Connect(function(input, gpe)
 		UpdateMouse()
 		Library:Notify({
 			Title = "Ivory",
-			Description = MouseUnlocked and "Mouse unlocked (K)" or "Mouse locked (follows UI)",
+			Description = MouseUnlocked and "Mouse unlocked (K)" or "Mouse follows UI",
 			Type = "Info",
 			Time = 2,
 		})
