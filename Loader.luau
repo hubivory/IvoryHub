@@ -68,7 +68,6 @@ local Window = Library:CreateWindow({
 	MinimizedWidth = 280,
 	NotifySide = "Right",
 	ShowCustomCursor = false,
-	UnlockMouseWhileOpen = false,
 	SearchKeybind = Enum.KeyCode.F,
 	CornerRadius = 4,
 	Animations = {
@@ -300,42 +299,6 @@ MenuGroup:AddLabel("Menu: RightShift (default)"):AddKeyPicker("MenuKeybind", { D
 MenuGroup:AddButton("Unload", function() Library:Unload() end)
 Library.ToggleKeybind = Options.MenuKeybind
 SaveManager:LoadAutoloadConfig()
-
---// ═══════════════════════════════════════════════════════════
---// MOUSE MANAGEMENT
---// ═══════════════════════════════════════════════════════════
-
-local MouseUnlocked = false --// K override
-
-local function UpdateMouse()
-	local uiOpen = Library.Toggled and not Window:IsMinimized()
-	if MouseUnlocked or uiOpen then
-		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-	else
-		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
-	end
-end
-
-UserInputService.InputBegan:Connect(function(input, gpe)
-	if gpe then return end
-	if input.KeyCode == Enum.KeyCode.K then
-		MouseUnlocked = not MouseUnlocked
-		UpdateMouse()
-		Library:Notify({
-			Title = "Ivory",
-			Description = MouseUnlocked and "Mouse unlocked (K)" or "Mouse locked (follows UI)",
-			Type = "Info",
-			Time = 2,
-		})
-	end
-end)
-
-spawn(function()
-	while true do
-		wait(0.1)
-		UpdateMouse()
-	end
-end)
 
 --// ═══════════════════════════════════════════════════════════
 --// ESP LOGIC
