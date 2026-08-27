@@ -40,6 +40,7 @@ pcall(function()
 end)
 
 local GameScripts = {
+	[7243409883] = { name = "Elemental Magic Arena", file = "games/ElementalMagicArena.luau" },
 	[116497287371701] = { name = "Karinderya", file = "games/Karinderya.luau" },
 	[99521272836282] = { name = "Final Swarm", file = "games/FinalSwarm.luau" },
 	[79787558257549] = { name = "Final Swarm", file = "games/FinalSwarm.luau" },
