@@ -164,15 +164,24 @@ local FloatDirection = 1
 
 --// RNG titles
 local rngTitles = {
-	"Ivory", "Ivory Hub", "ivory :3", "Ivory.exe", "Ivory.lua",
-	"IVORY HUB", "ivory is cool", "Ivory (real)", "the ivory experience",
-	"ivory go brr", "Ivory <3", "i am ivory", "Ivory on top",
-	"welcome to ivory", "Ivory moment", "ivory for the win",
-	"Ivory sweep", "ilovivory", "ivory deluxe", "ivory pro max",
-	"ivory studio", "Ivory Central", "peak ivory", "ivory core",
-	"Ivory's revenge", "return of ivory", "ivory strikes back",
-	"ultra ivory", "mega ivory", "super ivory", "ivory supreme",
-	"ultimate ivory", "ivory edition", "platinum ivory", "ivory XL",
+	"Ivory", "Ivory Hub", "Ivory :3", "Ivory.exe", "Ivory.lua",
+	"IVORY HUB", "Ivory is cool", "Ivory (real)", "The Ivory Experience",
+	"Ivory go brr", "Ivory <3", "I am Ivory", "Ivory on top",
+	"Welcome to Ivory", "Ivory moment", "Ivory for the win",
+	"Ivory sweep", "Ivory deluxe", "Ivory pro max",
+	"Ivory studio", "Ivory Central", "Peak Ivory", "Ivory core",
+	"Ivory's revenge", "Return of Ivory", "Ivory strikes back",
+	"Ultra Ivory", "Mega Ivory", "Super Ivory", "Ivory Supreme",
+	"Ultimate Ivory", "Ivory Edition", "Platinum Ivory", "Ivory XL",
+	"Ivory Remastered", "Ivory Definitive", "Ivory Royale",
+	"Ivory Odyssey", "Ivory Chronicles", "Ivory Legacy",
+	"Ivory Unleashed", "Ivory Rising", "Ivory Legends",
+	"Ivory Vanguard", "Ivory Infinite", "Ivory Zero",
+	"Ivory One", "Ivory Prime", "Ivory Ultra", "Ivory Max",
+	"Ivory Pro", "Ivory Plus", "Ivory Gold", "Ivory Diamond",
+	"Ivory Obsidian", "Ivory Phantom", "Ivory Shadow",
+	"Ivory Storm", "Ivory Fury", "Ivory Blaze",
+	"Ivory Frost", "Ivory Thunder", "Ivory Void",
 }
 
 --// RNG memes
@@ -498,6 +507,34 @@ else
 		"Works in any game\nESP, Aimbot, Speed, etc."
 	)
 end
+
+--// Collect all option icons for cycling
+local allOptionIcons = {}
+if GameIcon then table.insert(allOptionIcons, GameIcon) end
+if UniIcon then table.insert(allOptionIcons, UniIcon) end
+
+--// Cycle option icons
+task.spawn(function()
+	local lastIconChange = 0
+	while ScreenGui and ScreenGui.Parent do
+		if tick() - lastIconChange > math.random(3, 6) then
+			local newIcon = rngIcons[math.random(1, #rngIcons)]
+			for _, icon in ipairs(allOptionIcons) do
+				local tween = TweenService:Create(icon, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
+					ImageTransparency = 1,
+				})
+				tween:Play()
+				tween.Completed:Wait()
+				icon.Image = newIcon
+				TweenService:Create(icon, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
+					ImageTransparency = 0,
+				}):Play()
+			end
+			lastIconChange = tick()
+		end
+		task.wait(0.5)
+	end
+end)
 
 --// Entrance animation
 local function tw()
