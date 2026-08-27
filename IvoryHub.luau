@@ -6,6 +6,7 @@ local GITHUB_RAW = "https://raw.githubusercontent.com/hubivory/IvoryHub/"
 local GITHUB_API = "https://api.github.com/repos/hubivory/IvoryHub/commits?per_page=1"
 
 local GameScripts = {
+	[7243409883] = "games/ElementalMagicArena.luau",
 	[116497287371701] = "games/Karinderya.luau",
 	[99521272836282] = "games/FinalSwarm.luau",
 	[79787558257549] = "games/FinalSwarm.luau",
