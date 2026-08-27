@@ -109,12 +109,24 @@ local function DoAutoPick()
 	local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
 	if not hrp then return end
 
-	--// Find teleporter pad
-	local teleporter = Workspace:FindFirstChild("teleporter", true)
+	--// Find the teleporter for the selected class
+	local chosen = State.AutoPickElement
+	local tpsFolder = Workspace:FindFirstChild("TPS")
+	if not tpsFolder then
+		Library:Notify({
+			Title = "Ivory",
+			Description = "Could not find TPS folder",
+			Type = "Error",
+			Time = 3,
+		})
+		return
+	end
+
+	local teleporter = tpsFolder:FindFirstChild(chosen)
 	if not teleporter then
 		Library:Notify({
 			Title = "Ivory",
-			Description = "Could not find teleporter pad",
+			Description = "No teleporter found for " .. tostring(chosen),
 			Type = "Error",
 			Time = 3,
 		})
@@ -125,7 +137,7 @@ local function DoAutoPick()
 	hrp.CFrame = teleporter.CFrame + Vector3.new(0, 3, 0)
 	Library:Notify({
 		Title = "Ivory",
-		Description = "Teleported to class selector",
+		Description = "Teleported to " .. tostring(chosen) .. " selector",
 		Type = "Success",
 		Time = 3,
 	})
