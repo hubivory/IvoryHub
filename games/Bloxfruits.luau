@@ -244,11 +244,63 @@ local function toTarget(Pos)
 	end
 
 	local speed = 315
-	local tweenInfo = TweenInfo.new(dist / speed, Enum.EasingStyle.Linear)
-	pcall(function()
-		tweenActive = TweenService:Create(hrp, tweenInfo, {CFrame = RealTarget})
-		tweenActive:Play()
-	end)
+	local origin = hrp.Position
+	local target = RealTarget.Position
+	local flyHeight = math.max(origin.Y, target.Y) + 80
+
+	-- If we're close horizontally or already high enough, just tween directly
+	if math.abs(origin.Y - target.Y) < 30 or (math.abs(origin.X - target.X) < 50 and math.abs(origin.Z - target.Z) < 50) then
+		local tweenInfo = TweenInfo.new(dist / speed, Enum.EasingStyle.Linear)
+		pcall(function()
+			tweenActive = TweenService:Create(hrp, tweenInfo, {CFrame = RealTarget})
+			tweenActive:Play()
+		end)
+		return
+	end
+
+	-- Phase 1: Fly straight up to safe height
+	local upEnd = CFrame.new(Vector3.new(origin.X, flyHeight, origin.Z))
+	local upDist = (flyHeight - origin.Y)
+	if upDist > 5 then
+		local upTween = TweenInfo.new(upDist / speed, Enum.EasingStyle.Linear)
+		pcall(function()
+			tweenActive = TweenService:Create(hrp, upTween, {CFrame = upEnd})
+			tweenActive:Play()
+			tweenActive.Completed:Wait()
+		end)
+	end
+
+	-- Phase 2: Fly horizontally to target XZ
+	hrp = getHRP()
+	if not hrp then return end
+	local midEnd = CFrame.new(Vector3.new(target.X, flyHeight, target.Z))
+	local hDist = (Vector3.new(target.X, 0, target.Z) - Vector3.new(origin.X, 0, origin.Z)).Magnitude
+	if hDist > 5 then
+		local hTween = TweenInfo.new(hDist / speed, Enum.EasingStyle.Linear)
+		pcall(function()
+			tweenActive = TweenService:Create(hrp, hTween, {CFrame = midEnd})
+			tweenActive:Play()
+			tweenActive.Completed:Wait()
+		end)
+	end
+
+	-- Phase 3: Drop down to target
+	hrp = getHRP()
+	if not hrp then return end
+	local downDist = (flyHeight - target.Y)
+	if downDist > 5 then
+		local downTween = TweenInfo.new(downDist / speed, Enum.EasingStyle.Linear)
+		pcall(function()
+			tweenActive = TweenService:Create(hrp, downTween, {CFrame = RealTarget})
+			tweenActive:Play()
+			tweenActive.Completed:Wait()
+		end)
+	end
+
+	hrp = getHRP()
+	if hrp then
+		hrp.CFrame = RealTarget
+	end
 end
 
 local function GetIsLand(...)
@@ -697,7 +749,7 @@ local Window = Library:CreateWindow({
 	Title = "Ivory",
 	Icon = "swords",
 	Footer = {
-		"v1.5 |",
+		"v1.4 |",
 		{ Text = "Game", Copyable = true },
 		"|",
 		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
@@ -729,16 +781,16 @@ local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "eye" })
 local PlayerTab = Window:AddTab({ Name = "Player", Icon = "user" })
 local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
 
-local DiscordGroup = MainTab:AddLeftGroupbox("Community", "users")
+local FarmSub = MainTab:AddSubTab("Farming", "zap")
+local DiscordGroup = FarmSub:AddLeftGroupbox("Community", "users")
 DiscordGroup:AddButton("Join Discord For Dupe", function()
 	pcall(function() setclipboard("https://discord.gg/MCWYKBdB4E") end)
 	Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 })
 end)
 DiscordGroup:AddLabel("Click above to join our Discord for dupes, updates & more!")
 
-local FarmSub = MainTab:AddSubTab("Farming", "zap")
-local FarmGroup = FarmSub:AddLeftGroupbox("Auto Farm", "cpu")
-local ChestGroup = FarmSub:AddRightGroupbox("Chests", "package")
+local FarmGroup = FarmSub:AddRightGroupbox("Auto Farm", "cpu")
+local ChestGroup = FarmSub:AddLeftGroupbox("Chests", "package")
 
 FarmGroup:AddToggle("AutoFarm", {
 	Text = "Auto Farm Level",
@@ -1680,7 +1732,7 @@ SaveManager:IgnoreThemeSettings()
 SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
 ThemeManager:SetFolder("IvoryHub")
 SaveManager:SetFolder("IvoryHub")
-SaveManager:SetSubFolder("bloxfruits")
+SaveManager:SetSubFolder("game")
 ThemeManager:ApplyToTab(SettingsTab)
 SaveManager:BuildConfigSection(SettingsTab)
 
