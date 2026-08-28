@@ -57,6 +57,7 @@ local GameScripts = {
 	[92637789841354] = { name = "Clean All The Leaves", file = "games/CleanAllTheLeaves.luau" },
 	[100068273119174] = { name = "Clean All The Leaves", file = "games/CleanAllTheLeaves.luau" },
     [13772394625] = { name = "Blade Ball", file = "games/Bladeball_BAC.luau" },
+	[2753915549] = { name = "Blox Fruits", file = "games/Bloxfruits.luau" },
 }
 
 local DetectedGame = GameScripts[PlaceId]
