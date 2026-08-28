@@ -44,6 +44,8 @@ local MenuRemotes = Remotes:WaitForChild("MenuRemotes")
 local UnlockMenu = MenuRemotes:WaitForChild("UnlockMenu")
 local ToggleMenu = MenuRemotes:WaitForChild("ToggleMenu")
 local GetMenuData = MenuRemotes:WaitForChild("GetMenuData")
+local ChillerRemotes = Remotes:WaitForChild("ChillerRemotes")
+local StartRepair = ChillerRemotes:WaitForChild("StartRepair")
 
 local Modules = ReplicatedStorage:WaitForChild("Modules")
 local FoodConfig = require(Modules:WaitForChild("FoodConfig"))
@@ -184,6 +186,7 @@ local cfg = {
     furnitureWhitelist = {},
     autoBuyIngredients = false,
     autoSoftdrinks = false,
+    autoFixChiller = false,
     autoUseBoosts = false,
     autoUnlockTables = false,
     autoUnlockMenu = false,
@@ -284,6 +287,7 @@ local status = {
     boosts = "Idle",
     unlockTbl = "Idle",
     unlockMenu = "Idle",
+    chiller = "Idle",
 }
 
 local function setStatus(key, text)
@@ -361,6 +365,7 @@ local KitchenBox = AutoSub:AddLeftGroupbox("Kitchen", "chef-hat")
 KitchenBox:AddToggle("AutoClean", { Text = "Auto Clean Tables", Default = false })
 KitchenBox:AddToggle("AutoWash", { Text = "Auto Wash Dishes", Default = false, Tooltip = "Auto-collects dirty dishes, puts in sink, and washes them" })
 KitchenBox:AddToggle("AutoPan", { Text = "Auto Pan (Hit Runaway)", Default = false })
+KitchenBox:AddToggle("AutoFixChiller", { Text = "Auto Fix Chiller", Default = false, Tooltip = "Auto-repairs the chiller when it breaks (costs $200,000)" })
 
 local CodesBox = AutoSub:AddRightGroupbox("Codes", "ticket")
 CodesBox:AddToggle("AutoClaimCodes", { Text = "Auto Claim Codes", Default = false })
@@ -475,8 +480,8 @@ local ConfigSub = SettingsTab:AddSubTab({ Name = "Config", Icon = "save" })
 -- LOGS TAB
 local StatusBox = LogsTab:AddLeftGroupbox("Status", "activity")
 local StatusLabels = {}
-local statusOrder = {"serve", "order", "drink", "codes", "pan", "clean", "wash", "buyFurn", "placeFurn", "buyIng", "boosts", "unlockTbl", "unlockMenu"}
-local statusNames = {serve="Serve", order="Order", drink="Drinks", codes="Codes", pan="Pan", clean="Clean", wash="Wash", buyFurn="Buy Furn", placeFurn="Place Furn", buyIng="Buy Ing", boosts="Boosts", unlockTbl="Unlock Tbl", unlockMenu="Unlock Menu"}
+local statusOrder = {"serve", "order", "drink", "codes", "pan", "clean", "wash", "buyFurn", "placeFurn", "buyIng", "boosts", "unlockTbl", "unlockMenu", "chiller"}
+local statusNames = {serve="Serve", order="Order", drink="Drinks", codes="Codes", pan="Pan", clean="Clean", wash="Wash", buyFurn="Buy Furn", placeFurn="Place Furn", buyIng="Buy Ing", boosts="Boosts", unlockTbl="Unlock Tbl", unlockMenu="Unlock Menu", chiller="Chiller"}
 for _, key in ipairs(statusOrder) do
     StatusLabels[key] = StatusBox:AddLabel(statusNames[key] .. ": Idle", true)
 end
@@ -559,6 +564,7 @@ Toggles.AutoClaimCodes:OnChanged(function(s) cfg.autoClaimCodes = s end)
 Toggles.AutoPan:OnChanged(function(s) cfg.autoPan = s end)
 Toggles.AutoClean:OnChanged(function(s) cfg.autoClean = s end)
 Toggles.AutoWash:OnChanged(function(s) cfg.autoWash = s end)
+Toggles.AutoFixChiller:OnChanged(function(s) cfg.autoFixChiller = s end)
 Toggles.AutoBuyFurniture:OnChanged(function(s) cfg.autoBuyFurniture = s end)
 Toggles.AutoPlaceFurniture:OnChanged(function(s) cfg.autoPlaceFurniture = s end)
 Options.FurnitureWhitelist:OnChanged(function(v)
@@ -1016,6 +1022,49 @@ task.spawn(function() while true do
         setStatus("wash", "Disabled")
     end
     task.wait(Options.WashDelay and Options.WashDelay.Value or 2)
+end end)
+
+-- ═══ AUTO FIX CHILLER ═══
+task.spawn(function() while true do
+    if cfg.autoFixChiller then
+        local plot = getPlot()
+        if plot then
+            local softdrinks = plot:FindFirstChild("Softdrinks")
+            if softdrinks then
+                local chiller = softdrinks:FindFirstChild("Chiller")
+                if chiller then
+                    local promptPart = chiller:FindFirstChild("PromptPart")
+                    if promptPart then
+                        for _, pp in ipairs(promptPart:GetChildren()) do
+                            if pp:IsA("ProximityPrompt") and pp.Name == "Repair" and pp.Enabled then
+                                local release = acquireTp()
+                                tp(pp.Parent.CFrame * CFrame.new(0, 3, 0))
+                                task.wait(0.2)
+                                pcall(function() fireproximityprompt(pp) end)
+                                release()
+                                setStatus("chiller", "Repairing...")
+                                task.wait(1)
+                                setStatus("chiller", "Done!")
+                                break
+                            end
+                        end
+                        if not promptPart:FindFirstChild("Repair") or not promptPart.Repair.Enabled then
+                            setStatus("chiller", "Chiller OK")
+                        end
+                    else
+                        setStatus("chiller", "No prompt part")
+                    end
+                else
+                    setStatus("chiller", "No chiller")
+                end
+            else
+                setStatus("chiller", "No softdrinks")
+            end
+        end
+    else
+        setStatus("chiller", "Disabled")
+    end
+    task.wait(3)
 end end)
 
 -- ═══ AUTO BUY FURNITURE ═══
@@ -1484,7 +1533,7 @@ task.spawn(function()
         task.wait(3)
         local currentCash = getCash()
         local diff = currentCash - lastCash
-        if diff ~= 0 and not cfg.autoServe and not cfg.autoBuyFurniture and not cfg.autoBuyIngredients and not cfg.autoUnlockTables then
+        if diff ~= 0 and not cfg.autoServe and not cfg.autoBuyFurniture and not cfg.autoBuyIngredients and not cfg.autoUnlockTables and not cfg.autoFixChiller then
             if diff > 0 then
                 logMoney("Passive earn", diff)
             else
