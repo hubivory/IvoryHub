@@ -754,7 +754,9 @@ task.spawn(function() while true do
         local char, hum = getChar()
         if char and hum then
             local bp = LocalPlayer:FindFirstChild("Backpack")
-            local pan = bp and bp:FindFirstChild("Pan") if not pan then pan = char:FindFirstChild("Pan") end
+            local pan = nil
+            if bp then for _, t in ipairs(bp:GetChildren()) do if t:IsA("Tool") and t.Name:lower():find("pan") then pan = t break end end end
+            if not pan and char then for _, t in ipairs(char:GetChildren()) do if t:IsA("Tool") and t.Name:lower():find("pan") then pan = t break end end end
 
             if not pan then
                 setStatus("pan", "No pan equipped")
