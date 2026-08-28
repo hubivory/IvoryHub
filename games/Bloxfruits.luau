@@ -1775,24 +1775,26 @@ MenuGroup:AddSlider("UICornerSlider", {
 	local CreditTL = CreditLabel.TextLabel
 	CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
 	CreditTL.Font = Enum.Font.GothamBold
+	CreditTL.Text = ""
 
-	local CreditStroke = Instance.new("UIStroke")
-	CreditStroke.Color = Color3.fromRGB(255, 105, 180)
-	CreditStroke.Thickness = 2
-	CreditStroke.Transparency = 0
-	CreditStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
-	CreditStroke.Parent = CreditTL
-
-	local RunService = game:GetService("RunService")
-	RunService.RenderStepped:Connect(function()
-		local t = tick()
-		local pulse = (math.sin(t * 2.5) + 1) / 2
-		CreditStroke.Transparency = 0.25 + 0.55 * (1 - pulse)
-		CreditTL.TextTransparency = 0.15 + 0.35 * (1 - pulse)
-		local hue = 0.9 + 0.04 * math.sin(t * 1.5)
-		local col = Color3.fromHSV(hue, 0.6, 1)
-		CreditTL.TextColor3 = col
-		CreditStroke.Color = col
+	task.spawn(function()
+		local full = "Made by mommy Crow"
+		local cursor = "_"
+		while true do
+			local shown = ""
+			for i = 1, #full do
+				shown = shown .. full:sub(i, i)
+				CreditTL.Text = shown .. cursor
+				task.wait(math.random(4, 9) / 100)
+			end
+			task.wait(2)
+			for i = #full, 1, -1 do
+				shown = full:sub(1, i - 1)
+				CreditTL.Text = shown .. cursor
+				task.wait(math.random(2, 5) / 100)
+			end
+			task.wait(0.8)
+		end
 	end)
 MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", {
 	Default = "RightShift", NoUI = true, Text = "Menu keybind",
