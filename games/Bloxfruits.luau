@@ -1767,7 +1767,33 @@ MenuGroup:AddSlider("UICornerSlider", {
 	Callback = function(v) Window:SetCornerRadius(v) end,
 })
 
-MenuGroup:AddDivider()
+	MenuGroup:AddDivider()
+
+	local CreditGroup = SettingsTab:AddLeftGroupbox("Credits", "heart")
+	local CreditLabel = CreditGroup:AddLabel("Made by mommy Crow")
+
+	local CreditTL = CreditLabel.TextLabel
+	CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
+	CreditTL.Font = Enum.Font.GothamBold
+
+	local CreditStroke = Instance.new("UIStroke")
+	CreditStroke.Color = Color3.fromRGB(255, 105, 180)
+	CreditStroke.Thickness = 2
+	CreditStroke.Transparency = 0
+	CreditStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+	CreditStroke.Parent = CreditTL
+
+	local RunService = game:GetService("RunService")
+	RunService.RenderStepped:Connect(function()
+		local t = tick()
+		local pulse = (math.sin(t * 2.5) + 1) / 2
+		CreditStroke.Transparency = 0.25 + 0.55 * (1 - pulse)
+		CreditTL.TextTransparency = 0.15 + 0.35 * (1 - pulse)
+		local hue = 0.9 + 0.04 * math.sin(t * 1.5)
+		local col = Color3.fromHSV(hue, 0.6, 1)
+		CreditTL.TextColor3 = col
+		CreditStroke.Color = col
+	end)
 MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", {
 	Default = "RightShift", NoUI = true, Text = "Menu keybind",
 })
