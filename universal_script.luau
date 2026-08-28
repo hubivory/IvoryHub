@@ -824,26 +824,45 @@ CreditText.TextSize = 16
 CreditText.TextXAlignment = Enum.TextXAlignment.Center
 CreditText.TextWrapped = true
 CreditText.TextYAlignment = Enum.TextYAlignment.Center
+CreditText.RichText = false
 CreditText.ZIndex = 30
 CreditText.Parent = MainFrame
 
 task.spawn(function()
 	local full = "Made by mommy Crow & Veqxo </3"
-	local cursor = "_"
 	while true do
-		local shown = ""
-		for i = 1, #full do
-			shown = shown .. full:sub(i, i)
-			CreditText.Text = shown .. cursor
-			task.wait(math.random(4, 9) / 100)
-		end
-		task.wait(2)
-		for i = #full, 1, -1 do
-			shown = full:sub(1, i - 1)
-			CreditText.Text = shown .. cursor
-			task.wait(math.random(2, 5) / 100)
-		end
-		task.wait(0.8)
+		local ok = pcall(function()
+			local cursorVisible = true
+			local shown = ""
+			local isErasing = false
+			local charIndex = 1
+			while true do
+				if not isErasing then
+					if charIndex <= #full then
+						shown = shown .. full:sub(charIndex, charIndex)
+						charIndex = charIndex + 1
+						CreditText.Text = shown .. (cursorVisible and "_" or "")
+						task.wait(math.random(3, 8) / 100)
+					else
+						task.wait(2)
+						isErasing = true
+					end
+				else
+					if #shown > 0 then
+						shown = shown:sub(1, #shown - 1)
+						CreditText.Text = shown .. (cursorVisible and "_" or "")
+						task.wait(math.random(2, 5) / 100)
+					else
+						isErasing = false
+						charIndex = 1
+						shown = ""
+						task.wait(0.8)
+					end
+				end
+				cursorVisible = not cursorVisible
+			end
+		end)
+		if not ok then task.wait(1) end
 	end
 end)
 
