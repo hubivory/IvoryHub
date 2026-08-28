@@ -788,7 +788,6 @@ FarmGroup:AddToggle("AutoFarm", {
 								end
 							end
 						end -- end Quest mode
-						end -- end Nearest/Quest branch
 						for _, bodypart in ipairs(Character:GetChildren()) do
 							if bodypart:IsA("BasePart") then bodypart.CanCollide = false end
 						end
