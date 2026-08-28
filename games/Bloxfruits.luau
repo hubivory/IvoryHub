@@ -32,8 +32,8 @@ local RegisterAttack = nil
 local RegisterHit = nil
 
 task.spawn(function()
-	RegisterAttack = Net and Net:WaitForChild("RE", 10) and Net.RE:WaitForChild("RegisterAttack", 10)
-	RegisterHit = Net and Net:WaitForChild("RE", 10) and Net.RE:WaitForChild("RegisterHit", 10)
+	RegisterAttack = Net and Net:WaitForChild("RE/RegisterAttack", 10)
+	RegisterHit = Net and Net:WaitForChild("RE/RegisterHit", 10)
 end)
 
 local httpGet = function(url)
