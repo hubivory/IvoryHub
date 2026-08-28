@@ -155,14 +155,16 @@ local function moveTo(position)
 	if not hrp then return end
 	local dist = (hrp.Position - position).Magnitude
 	if dist < 3 then return end
-	local stepSize = math.clamp(dist / 8, 15, 100)
-	local steps = math.clamp(math.ceil(dist / stepSize), 1, 30)
+	local speed = 350
+	local duration = dist / speed
+	local steps = math.clamp(math.ceil(dist / 30), 1, 40)
+	local delayPerStep = duration / steps
 	for i = 1, steps do
-		if not getHRP() or not STATE.AutoFarm and not STATE.AutoChest and not STATE.AutoBounty and not STATE.AutoFruit then return end
+		if not getHRP() or (not STATE.AutoFarm and not STATE.AutoChest and not STATE.AutoBounty and not STATE.AutoFruit) then return end
 		local alpha = i / steps
 		local targetCFrame = CFrame.new(hrp.Position:Lerp(position, alpha)) * (hrp.CFrame - hrp.CFrame.Position)
 		hrp.CFrame = targetCFrame
-		task.wait()
+		task.wait(delayPerStep)
 	end
 end
 
