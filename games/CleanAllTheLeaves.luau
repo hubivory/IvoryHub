@@ -1,5 +1,42 @@
 --// Ivory Hub - Clean All The Leaves
 --// PlaceId: 92637789841354 / 100068273119174
+--//
+--// Features:
+--// [ + ] Auto Farm Leaves (Toggle, Keybind)
+--// [ + ] Farm Mode (Teleport to Leaves / Collect In Range)
+--// [ + ] Target Zone (All, Frontyard, Porch, Garage, Shed, Court, Rooftop, Backyard, Maze, Pool, Farm, Basement)
+--// [ + ] Instant Batch Collect (budget aware, up to 40 leaves per tick)
+--// [ + ] Auto Collect Nearest
+--// [ + ] Auto Sell at Dumpster (verifies bag actually emptied)
+--// [ + ] Auto Equip Tool
+--// [ + ] Auto Zone Progression
+--// [ + ] Anti AFK
+--// [ + ] NoClip
+--// [ + ] Auto Daily Claim
+--// [ + ] Claim Daily / Free Gift
+--// [ + ] Double Leaves / Double Cash Boosts
+--// [ + ] Speed Hack (Slider, Reset)
+--// [ + ] Jump Hack (Slider, Reset)
+--// [ + ] Player ESP (Box, Name, Health, Distance)
+--// [ + ] ESP Color
+--// [ + ] Leaf Pile ESP
+--// [ + ] Vent ESP (Locked/Open)
+--// [ + ] Zone Progress ESP
+--// [ + ] ESP Range
+--// [ + ] Buy Rake / Leaf Blower / Molotov (cash & discount aware)
+--// [ + ] Upgrade Bag (real max levels, price check)
+--// [ + ] Buy All Vents (teleports beside each vent)
+--// [ + ] Auto Buy Vents
+--// [ + ] Hand Upgrades (Hold, Dexterity, Grasp)
+--// [ + ] Rake Upgrades (Radius, Range, Stickiness)
+--// [ + ] Leaf Blower Upgrades (Width, Power, Spread)
+--// [ + ] Auto Buy Bag Upgrades
+--// [ + ] Auto Buy Hand Upgrades
+--// [ + ] Teleport (Spawn, Shop, Upgrades, Dumpster)
+--// [ + ] Config Save / Load
+--// [ + ] Theme Manager
+--// [ + ] Custom Cursor / Menu Keybind / Notification Side
+--// [ + ] Unload Script
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
