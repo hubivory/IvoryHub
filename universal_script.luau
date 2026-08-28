@@ -811,6 +811,40 @@ FooterText.TextTransparency = 1
 FooterText.ZIndex = 15
 FooterText.Parent = MainFrame
 
+local CreditText = Instance.new("TextLabel")
+CreditText.Name = "CreditText"
+CreditText.AnchorPoint = Vector2.new(0.5, 0)
+CreditText.Size = UDim2.new(1, -32, 0, 18)
+CreditText.Position = UDim2.new(0.5, 0, 0, 326)
+CreditText.BackgroundTransparency = 1
+CreditText.Text = ""
+CreditText.TextColor3 = Color3.fromRGB(255, 105, 180)
+CreditText.Font = Enum.Font.GothamBold
+CreditText.TextSize = 16
+CreditText.TextXAlignment = Enum.TextXAlignment.Center
+CreditText.ZIndex = 15
+CreditText.Parent = MainFrame
+
+task.spawn(function()
+	local full = "Made by mommy Crow & Veqxo </3"
+	local cursor = "_"
+	while true do
+		local shown = ""
+		for i = 1, #full do
+			shown = shown .. full:sub(i, i)
+			CreditText.Text = shown .. cursor
+			task.wait(math.random(4, 9) / 100)
+		end
+		task.wait(2)
+		for i = #full, 1, -1 do
+			shown = full:sub(1, i - 1)
+			CreditText.Text = shown .. cursor
+			task.wait(math.random(2, 5) / 100)
+		end
+		task.wait(0.8)
+	end
+end)
+
 local rngMemes = {
 	"ivory hub on top gang", "no cap this hub is different",
 	"certified ivory moment", "we don't miss, we ivory",
