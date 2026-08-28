@@ -154,25 +154,48 @@ local function BTP(Point)
 	end)
 end
 
+local IslandNameMap = {
+	Windmill = "Windmill", MarineStart = "MarineStart", Jungle = "Jungle",
+	Pirate = "Pirate", Desert = "Desert", Ice = "Frozen",
+	MarineBase = "MarineBase", Sky = "Sky", Prison = "Prison",
+	Colosseum = "Colosseum", Magma = "Magma", Fishmen = "Fishman", Fountain = "Fountain",
+	DarkArea = "DarkArea", Cafe = "Cafe", Ship = "Ship",
+	Usoapp = "Usoapp", Forgotten = "Forgotten", Cursed = "Cursed",
+	Hydra = "Hydra", Roundtable = "Roundtable", Mansion = "Mansion",
+	Castle = "Castle", Temple = "Temple",
+}
+
 local function teleportToIsland(island)
 	local hrp = getHRP()
 	if not hrp then return end
 	local map = Workspace:FindFirstChild("Map")
 	if not map then return end
+
 	if island == "Fishmen" or island == "Fishman" then
 		if isOnIsland("Fishmen") or isOnIsland("Fishman") then
-			toTarget(workspace.Map.TeleportSpawn.ExitPoint.Position)
+			pcall(function() toTarget(workspace.Map.TeleportSpawn.ExitPoint.Position) end)
 		else
-			toTarget(workspace.Map.TeleportSpawn.EntrancePoint.Position)
+			pcall(function() CommF:InvokeServer("requestEntrance", Vector3.new(61163.8515625, 11.6796875, 1819.7841796875)) end)
 		end
 		return
 	end
+
 	if island == "Sky" then
 		pcall(function() CommF:InvokeServer("requestEntrance", Vector3.new(-4607.82275, 872.54248, -1667.55688)) end)
 		task.wait(1)
 	end
-	local islandModel = map:FindFirstChild(island)
-	if islandModel and islandModel:GetPivot() then
+
+	local mapped = IslandNameMap[island] or island
+	local islandModel = map:FindFirstChild(mapped)
+	if not islandModel then
+		for _, child in ipairs(map:GetChildren()) do
+			if child.Name:lower():find(mapped:lower()) then
+				islandModel = child
+				break
+			end
+		end
+	end
+	if islandModel then
 		toTarget(islandModel:GetPivot().Position + Vector3.new(0, 50, 0))
 	end
 end
@@ -360,6 +383,50 @@ local function CheckQuest()
 		Monster = "Galley Pirate" NameQuest = "FountainQuest" LevelQuest = 1 NameCheckQuest = "Galley Pirate" CFrameQ = CFrame.new(5256,39,4050) CFrameMon = CFrame.new(5589,45,3996)
 	elseif level >= 650 and level <= 850 then
 		Monster = "Galley Captain" NameQuest = "FountainQuest" LevelQuest = 2 NameCheckQuest = "Galley Captain" CFrameQ = CFrame.new(5256,39,4050) CFrameMon = CFrame.new(5649,39,4936)
+	elseif level >= 700 and level <= 724 then
+		Monster = "Raider" NameQuest = "Area1Quest" LevelQuest = 1 NameCheckQuest = "Raider" CFrameQ = CFrame.new(-429,71,1836) CFrameMon = CFrame.new(-728,52,2345)
+	elseif level >= 725 and level <= 774 then
+		Monster = "Mercenary" NameQuest = "Area1Quest" LevelQuest = 2 NameCheckQuest = "Mercenary" CFrameQ = CFrame.new(-429,71,1836) CFrameMon = CFrame.new(-1004,80,1424)
+	elseif level >= 775 and level <= 799 then
+		Monster = "Swan Pirate" NameQuest = "Area2Quest" LevelQuest = 1 NameCheckQuest = "Swan Pirate" CFrameQ = CFrame.new(638,71,918) CFrameMon = CFrame.new(1068,137,1322)
+	elseif level >= 800 and level <= 874 then
+		Monster = "Factory Staff" NameQuest = "Area2Quest" LevelQuest = 2 NameCheckQuest = "Factory Staff" CFrameQ = CFrame.new(632,73,918) CFrameMon = CFrame.new(73,81,-27)
+	elseif level >= 875 and level <= 899 then
+		Monster = "Marine Lieutenant" NameQuest = "MarineQuest3" LevelQuest = 1 NameCheckQuest = "Marine Lieutenant" CFrameQ = CFrame.new(-2440,71,-3216) CFrameMon = CFrame.new(-2821,75,-3070)
+	elseif level >= 900 and level <= 949 then
+		Monster = "Marine Captain" NameQuest = "MarineQuest3" LevelQuest = 2 NameCheckQuest = "Marine Captain" CFrameQ = CFrame.new(-2440,71,-3216) CFrameMon = CFrame.new(-1861,80,-3254)
+	elseif level >= 950 and level <= 974 then
+		Monster = "Zombie" NameQuest = "ZombieQuest" LevelQuest = 1 NameCheckQuest = "Zombie" CFrameQ = CFrame.new(-5497,47,-795) CFrameMon = CFrame.new(-5657,78,-928)
+	elseif level >= 975 and level <= 999 then
+		Monster = "Vampire" NameQuest = "ZombieQuest" LevelQuest = 2 NameCheckQuest = "Vampire" CFrameQ = CFrame.new(-5497,47,-795) CFrameMon = CFrame.new(-6037,32,-1340)
+	elseif level >= 1000 and level <= 1049 then
+		Monster = "Snow Trooper" NameQuest = "SnowMountainQuest" LevelQuest = 1 NameCheckQuest = "Snow Trooper" CFrameQ = CFrame.new(609,400,-5372) CFrameMon = CFrame.new(549,427,-5563)
+	elseif level >= 1050 and level <= 1099 then
+		Monster = "Winter Warrior" NameQuest = "SnowMountainQuest" LevelQuest = 2 NameCheckQuest = "Winter Warrior" CFrameQ = CFrame.new(609,400,-5372) CFrameMon = CFrame.new(1142,475,-5199)
+	elseif level >= 1100 and level <= 1124 then
+		Monster = "Lab Subordinate" NameQuest = "IceSideQuest" LevelQuest = 1 NameCheckQuest = "Lab Subordinate" CFrameQ = CFrame.new(-6064,15,-4902) CFrameMon = CFrame.new(-5707,15,-4513)
+	elseif level >= 1125 and level <= 1174 then
+		Monster = "Horned Warrior" NameQuest = "IceSideQuest" LevelQuest = 2 NameCheckQuest = "Horned Warrior" CFrameQ = CFrame.new(-6064,15,-4902) CFrameMon = CFrame.new(-6341,15,-5723)
+	elseif level >= 1175 and level <= 1199 then
+		Monster = "Magma Ninja" NameQuest = "FireSideQuest" LevelQuest = 1 NameCheckQuest = "Magma Ninja" CFrameQ = CFrame.new(-5428,15,-5299) CFrameMon = CFrame.new(-5449,76,-5808)
+	elseif level >= 1200 and level <= 1249 then
+		Monster = "Lava Pirate" NameQuest = "FireSideQuest" LevelQuest = 2 NameCheckQuest = "Lava Pirate" CFrameQ = CFrame.new(-5428,15,-5299) CFrameMon = CFrame.new(-5213,49,-4701)
+	elseif level >= 1250 and level <= 1274 then
+		Monster = "Ship Deckhand" NameQuest = "ShipQuest1" LevelQuest = 1 NameCheckQuest = "Ship Deckhand" CFrameQ = CFrame.new(1037,125,32911) CFrameMon = CFrame.new(1212,150,33059) EntranceCF = Vector3.new(923.21252441406, 126.9760055542, 32852.83203125)
+	elseif level >= 1275 and level <= 1299 then
+		Monster = "Ship Engineer" NameQuest = "ShipQuest1" LevelQuest = 2 NameCheckQuest = "Ship Engineer" CFrameQ = CFrame.new(1037,125,32911) CFrameMon = CFrame.new(919,43,32779) EntranceCF = Vector3.new(923.21252441406, 126.9760055542, 32852.83203125)
+	elseif level >= 1300 and level <= 1324 then
+		Monster = "Ship Steward" NameQuest = "ShipQuest2" LevelQuest = 1 NameCheckQuest = "Ship Steward" CFrameQ = CFrame.new(968,125,33244) CFrameMon = CFrame.new(919,129,33436) EntranceCF = Vector3.new(923.21252441406, 126.9760055542, 32852.83203125)
+	elseif level >= 1325 and level <= 1349 then
+		Monster = "Ship Officer" NameQuest = "ShipQuest2" LevelQuest = 2 NameCheckQuest = "Ship Officer" CFrameQ = CFrame.new(968,125,33244) CFrameMon = CFrame.new(1036,181,33315) EntranceCF = Vector3.new(923.21252441406, 126.9760055542, 32852.83203125)
+	elseif level >= 1350 and level <= 1374 then
+		Monster = "Arctic Warrior" NameQuest = "FrostQuest" LevelQuest = 1 NameCheckQuest = "Arctic Warrior" CFrameQ = CFrame.new(5667,26,-6486) CFrameMon = CFrame.new(5966,62,-6179) EntranceCF = Vector3.new(-6508.5581054688, 5000.034996032715, -132.83953857422)
+	elseif level >= 1375 and level <= 1424 then
+		Monster = "Snow Lurker" NameQuest = "FrostQuest" LevelQuest = 2 NameCheckQuest = "Snow Lurker" CFrameQ = CFrame.new(5667,26,-6486) CFrameMon = CFrame.new(5407,69,-6880)
+	elseif level >= 1425 and level <= 1449 then
+		Monster = "Sea Soldier" NameQuest = "ForgottenQuest" LevelQuest = 1 NameCheckQuest = "Sea Soldier" CFrameQ = CFrame.new(-3054,235,-10142) CFrameMon = CFrame.new(-3028,64,-9775)
+	elseif level >= 1450 then
+		Monster = "Water Fighter" NameQuest = "ForgottenQuest" LevelQuest = 2 NameCheckQuest = "Water Fighter" CFrameQ = CFrame.new(-3054,235,-10142) CFrameMon = CFrame.new(-3352,285,-10534)
 	end
 end
 
@@ -398,6 +465,7 @@ local function IsOwn(name)
 end
 
 local function Attack(v)
+	if not RegisterAttack or not RegisterHit or not r then return end
 	if tick() - LastAttackTime >= 0.2 then
 		if not LocalPlayer.Character:FindFirstChild("HasBuso") then
 			CommF:InvokeServer("Buso")
@@ -556,7 +624,7 @@ local Window = Library:CreateWindow({
 	Title = "Ivory",
 	Icon = "swords",
 	Footer = {
-		"v1.4 |",
+		"v1.5 |",
 		{ Text = "Game", Copyable = true },
 		"|",
 		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
@@ -611,10 +679,49 @@ FarmGroup:AddToggle("AutoFarm", {
 					pcall(function()
 						local hrp = getHRP()
 						if not hrp then return end
-						local Quest = LocalPlayer.PlayerGui.Main.Quest
-						local QuestTitle = Quest.Container.QuestTitle
 
-						if Quest.Visible then
+						if STATE.AutoFarmMethod == "Nearest" then
+							local closest, closestDist = nil, math.huge
+							for _, mob in pairs(workspace.Enemies:GetChildren()) do
+								if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+									local mobDist = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+									if mobDist < closestDist then
+										closest = mob
+										closestDist = mobDist
+									end
+								end
+							end
+							if closest then
+								repeat task.wait()
+									hrp = getHRP()
+									if not hrp then break end
+									EquipWeapon(STATE.SelectedWeapon)
+									local mobHRP = closest.HumanoidRootPart
+									closest.Humanoid.WalkSpeed = 0
+									closest.HumanoidRootPart.CanCollide = false
+									closest.Head.CanCollide = false
+									closest.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+									closest.HumanoidRootPart.Transparency = 1
+									closest.Humanoid:ChangeState(11)
+
+									local targets = BringMob(closest)
+									toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
+
+									hrp = getHRP()
+									if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
+										if tick() - LastRotate >= 0.25 then
+											AttackRotation = (AttackRotation + 180) % 360
+											LastRotate = tick()
+										end
+										if #targets >= 2 then
+											Attack({targets[1], targets[2]})
+										else
+											Attack(closest)
+										end
+									end
+								until not STATE.AutoFarm or not closest.Parent or closest.Humanoid.Health <= 0
+							end
+						else
 							CheckQuest()
 							if string.find(QuestTitle.Title.Text, NameCheckQuest) then
 								if workspace.Enemies:FindFirstChild(Monster) then
@@ -674,7 +781,8 @@ FarmGroup:AddToggle("AutoFarm", {
 								CommF:InvokeServer("StartQuest", NameQuest, LevelQuest)
 								task.wait(0.5)
 							end
-						end
+						end -- end Quest mode
+						end -- end Nearest/Quest branch
 						for _, bodypart in ipairs(Character:GetChildren()) do
 							if bodypart:IsA("BasePart") then bodypart.CanCollide = false end
 						end
@@ -810,7 +918,81 @@ local RaidSet = RaidSub:AddRightGroupbox("Raid Settings", "settings")
 RaidGroup:AddToggle("AutoRaid", {
 	Text = "Auto Raid",
 	Default = false,
-	Callback = function(v) STATE.AutoRaid = v end,
+	Callback = function(v)
+		STATE.AutoRaid = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoRaid do
+					pcall(function()
+						local hrp = getHRP()
+						if not hrp then return end
+
+						if not (LocalPlayer.Backpack:FindFirstChild("Special Microchip") or (Character and Character:FindFirstChild("Special Microchip"))) then
+							pcall(function() CommF:InvokeServer("RaidsNpc", "Buy", STATE.RaidType) end)
+							task.wait(1)
+						end
+
+						if not (LocalPlayer.Backpack:FindFirstChild("Special Microchip") or (Character and Character:FindFirstChild("Special Microchip"))) then
+							return
+						end
+
+						pcall(function()
+							CommF:InvokeServer("RaidsNpc", "Select", STATE.RaidType)
+							task.wait(1)
+							CommF:InvokeServer("RaidsNpc", "Start")
+						end)
+						task.wait(2)
+
+						local raidFolder = Workspace:FindFirstChild("RaidsFolder") or Workspace:FindFirstChild("ridge")
+						if not raidFolder then
+							raidFolder = Workspace:FindFirstChildWhichIsA("Folder")
+						end
+
+						for i = 1, 4 do
+							if not STATE.AutoRaid then break end
+							repeat task.wait()
+								hrp = getHRP()
+								if not hrp then break end
+								EquipWeapon(STATE.SelectedWeapon)
+
+								local closest, closestDist = nil, math.huge
+								local enemies = Workspace:FindFirstChild("Enemies") or Workspace:FindFirstChild("RaidsFolder")
+								if enemies then
+									for _, mob in pairs(enemies:GetChildren()) do
+										if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+											local mobDist = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+											if mobDist < closestDist then
+												closest = mob
+												closestDist = mobDist
+											end
+										end
+									end
+								end
+
+								if closest then
+									toTarget(closest.HumanoidRootPart.CFrame * CFrame.new(0, 30, 5))
+									closest.Humanoid.WalkSpeed = 0
+									closest.HumanoidRootPart.CanCollide = false
+									closest.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+									closest.HumanoidRootPart.Transparency = 1
+									closest.Humanoid:ChangeState(11)
+
+									hrp = getHRP()
+									if hrp and (hrp.Position - closest.HumanoidRootPart.Position).Magnitude <= 150 then
+										Attack(closest)
+									end
+								end
+							until not STATE.AutoRaid or i > 4
+						end
+
+						pcall(function() CommF:InvokeServer("RaidsNpc", "Start") end)
+						task.wait(2)
+					end)
+					task.wait(0.1)
+				end
+			end)
+		end
+	end,
 }):AddKeyPicker("AutoRaidKey", {
 	Default = "None", Text = "Raid Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
@@ -845,6 +1027,59 @@ BountyGroup:AddToggle("AutoBounty", {
 		STATE.AutoBounty = v
 		if v then
 			attachFloat()
+			task.spawn(function()
+				while STATE.AutoBounty do
+					pcall(function()
+						local hrp = getHRP()
+						if not hrp then return end
+
+						local closest, closestDist = nil, math.huge
+						for _, plr in ipairs(Players:GetPlayers()) do
+							if plr ~= LocalPlayer and plr.Character then
+								local targetHRP = plr.Character:FindFirstChild("HumanoidRootPart")
+								local targetHum = plr.Character:FindFirstChild("Humanoid")
+								if targetHRP and targetHum and targetHum.Health > 0 then
+									if not plr.Team or plr.Team ~= LocalPlayer.Team then
+										local dist = (targetHRP.Position - hrp.Position).Magnitude
+										if dist < closestDist then
+											closest = plr
+											closestDist = dist
+										end
+									end
+								end
+							end
+						end
+
+						if closest and closestDist <= STATE.BountyDistance then
+							repeat task.wait()
+								hrp = getHRP()
+								if not hrp then break end
+								if not closest.Character then break end
+								local targetHRP = closest.Character:FindFirstChild("HumanoidRootPart")
+								local targetHum = closest.Character:FindFirstChild("Humanoid")
+								if not targetHRP or not targetHum or targetHum.Health <= 0 then break end
+
+								EquipWeapon(STATE.SelectedWeapon)
+								toTarget(targetHRP.CFrame * CFrame.new(0, 30, 5))
+
+								hrp = getHRP()
+								if hrp and (hrp.Position - targetHRP.Position).Magnitude <= 150 then
+									if tick() - LastRotate >= 0.25 then
+										AttackRotation = (AttackRotation + 180) % 360
+										LastRotate = tick()
+									end
+									hrp.CFrame = targetHRP.CFrame * CFrame.new(0, 30, 5) * CFrame.Angles(0, math.rad(AttackRotation), 0)
+									Attack(closest.Character)
+								end
+							until not STATE.AutoBounty or closestDist > STATE.BountyDistance
+						elseif closest and closestDist > STATE.BountyDistance then
+							toTarget(closest.Character.HumanoidRootPart.CFrame)
+						end
+					end)
+					task.wait()
+				end
+				detachFloat()
+			end)
 		else
 			detachFloat()
 		end
@@ -914,15 +1149,20 @@ local TeleSub2 = TeleportTab:AddSubTab("NPCs", "user")
 local QuestNPCGroup = TeleSub2:AddLeftGroupbox("Quest NPCs", "scroll")
 local ShopNPCGroup = TeleSub2:AddRightGroupbox("Shop NPCs", "shopping-cart")
 
-for _, npc in ipairs({"BanditQuest1", "MarineQuest", "JungleQuest", "BuggyQuest1", "DesertQuest", "SnowQuest", "MarineQuest2", "SkyQuest", "PrisonerQuest", "ColosseumQuest", "MagmaQuest", "FishmanQuest"}) do
-	QuestNPCGroup:AddButton(npc, function()
-		pcall(function() CommF:InvokeServer("StartQuest", npc) end)
+local QuestNPCData = {
+	{"BanditQuest1", 1}, {"MarineQuest", 1}, {"JungleQuest", 1}, {"BuggyQuest1", 1},
+	{"DesertQuest", 1}, {"SnowQuest", 1}, {"MarineQuest2", 1}, {"SkyQuest", 1},
+	{"PrisonerQuest", 1}, {"ColosseumQuest", 1}, {"MagmaQuest", 1}, {"FishmanQuest", 1},
+}
+for _, data in ipairs(QuestNPCData) do
+	QuestNPCGroup:AddButton(data[1], function()
+		pcall(function() CommF:InvokeServer("StartQuest", data[1], data[2]) end)
 	end)
 end
 
 for _, npc in ipairs({"Sword Dealer", "Archangel", "Master of Enhancement", "Expert Swordsman", "Blox Fruits Dealer"}) do
 	ShopNPCGroup:AddButton(npc, function()
-		pcall(function() CommF:InvokeServer("Buy" .. npc:gsub(" ", "")) end)
+		pcall(function() CommF:InvokeServer("Buy" .. npc:gsub("%s+", "")) end)
 	end)
 end
 
@@ -1062,13 +1302,27 @@ MiscGroup:AddToggle("WalkOnWater", {
 	Callback = function(v)
 		STATE.WalkOnWater = v
 		if v then
-			local ww = Instance.new("Part")
-			ww.Name = "IvoryWaterWalk"
-			ww.Transparency = 1
-			ww.CanCollide = true
-			ww.Size = Vector3.new(1000, 1, 1000)
-			ww.Anchored = true
-			ww.Parent = Workspace
+			task.spawn(function()
+				while STATE.WalkOnWater do
+					pcall(function()
+						local hrp = getHRP()
+						if hrp then
+							local ww = Workspace:FindFirstChild("IvoryWaterWalk")
+							if not ww then
+								ww = Instance.new("Part")
+								ww.Name = "IvoryWaterWalk"
+								ww.Transparency = 1
+								ww.CanCollide = true
+								ww.Size = Vector3.new(1000, 1, 1000)
+								ww.Anchored = true
+								ww.Parent = Workspace
+							end
+							ww.Position = Vector3.new(hrp.Position.X, hrp.Position.Y - 3, hrp.Position.Z)
+						end
+					end)
+					task.wait()
+				end
+			end)
 		else
 			local ww = Workspace:FindFirstChild("IvoryWaterWalk")
 			if ww then ww:Destroy() end
