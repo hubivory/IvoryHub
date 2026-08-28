@@ -90,6 +90,7 @@ local STATE = {
 	RaidType = "Light",
 	AutoFruit = false,
 	AutoStoreFruit = false,
+	CollectingFruit = false,
 }
 
 local LOCAL_AFK_CONN = nil
@@ -678,6 +679,7 @@ FarmGroup:AddToggle("AutoFarm", {
 			task.spawn(function()
 				while STATE.AutoFarm do
 					pcall(function()
+						if STATE.CollectingFruit then task.wait(0.5) return end
 						local hrp = getHRP()
 						if not hrp then return end
 
@@ -831,6 +833,7 @@ ChestGroup:AddToggle("AutoChest", {
 			task.spawn(function()
 				while STATE.AutoChest do
 					pcall(function()
+						if STATE.CollectingFruit then task.wait(0.5) return end
 						local hrp = getHRP()
 						if not hrp then return end
 						local chestModels = Workspace:FindFirstChild("ChestModels")
@@ -874,7 +877,7 @@ ChestGroup:AddButton("Collect All Chests", function()
 end)
 
 local FruitGroup = FarmSub:AddLeftGroupbox("Fruits", "apple")
-FruitGroup:AddToggle("AutoFruit", {
+	FruitGroup:AddToggle("AutoFruit", {
 	Text = "Auto Collect Fruits",
 	Default = false,
 	Callback = function(v)
@@ -890,6 +893,9 @@ FruitGroup:AddToggle("AutoFruit", {
 							if not fruit or not fruit.Parent then return end
 							local handle = fruit:FindFirstChild("Handle")
 							if not handle then return end
+
+							STATE.CollectingFruit = true
+							if tweenActive then pcall(function() tweenActive:Cancel() end) end
 
 							local dist = (handle.Position - hrp.Position).Magnitude
 
@@ -907,12 +913,16 @@ FruitGroup:AddToggle("AutoFruit", {
 										CommF:InvokeServer("StoreFruit", originalName, fruit)
 									end
 								end)
+								STATE.CollectingFruit = false
 							end
 						end
+
+						local foundFruit = false
 
 						for _, obj in ipairs(Workspace:GetChildren()) do
 							if obj:IsA("Tool") and STATE.AutoFruit then
 								collectFruit(obj)
+								foundFruit = true
 							end
 						end
 
@@ -921,13 +931,21 @@ FruitGroup:AddToggle("AutoFruit", {
 							for _, obj in ipairs(map:GetDescendants()) do
 								if obj:IsA("Tool") and STATE.AutoFruit then
 									collectFruit(obj)
+									foundFruit = true
 								end
 							end
+						end
+
+						if not foundFruit then
+							STATE.CollectingFruit = false
 						end
 					end)
 					task.wait(0.5)
 				end
+				STATE.CollectingFruit = false
 			end)
+		else
+			STATE.CollectingFruit = false
 		end
 	end,
 }):AddKeyPicker("AutoFruitKey", {
@@ -977,6 +995,7 @@ RaidGroup:AddToggle("AutoRaid", {
 			task.spawn(function()
 				while STATE.AutoRaid do
 					pcall(function()
+						if STATE.CollectingFruit then task.wait(0.5) return end
 						local hrp = getHRP()
 						if not hrp then return end
 
@@ -1083,6 +1102,7 @@ BountyGroup:AddToggle("AutoBounty", {
 			task.spawn(function()
 				while STATE.AutoBounty do
 					pcall(function()
+						if STATE.CollectingFruit then task.wait(0.5) return end
 						local hrp = getHRP()
 						if not hrp then return end
 
