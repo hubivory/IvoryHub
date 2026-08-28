@@ -89,6 +89,7 @@ local STATE = {
 	AutoRaid = false,
 	RaidType = "Light",
 	AutoFruit = false,
+	AutoStoreFruit = false,
 }
 
 local LOCAL_AFK_CONN = nil
@@ -881,21 +882,70 @@ FruitGroup:AddToggle("AutoFruit", {
 					pcall(function()
 						local hrp = getHRP()
 						if not hrp then return end
-						for _, obj in ipairs(Workspace:GetChildren()) do
-							if obj:IsA("Tool") and STATE.AutoFruit then
-								local handle = obj:FindFirstChild("Handle")
-								if handle then
-									toTarget(handle.Position)
-								end
+
+						local function collectFruit(fruit)
+							if not fruit or not fruit.Parent then return end
+							local handle = fruit:FindFirstChild("Handle")
+							if not handle then return end
+
+							local dist = (handle.Position - hrp.Position).Magnitude
+
+							if dist > 3000 then
+								BTP(CFrame.new(handle.Position))
+							else
+								toTarget(handle.Position)
+							end
+
+							hrp = getHRP()
+							if hrp and (hrp.Position - handle.Position).Magnitude <= 15 then
+								pcall(function()
+									local originalName = fruit:GetAttribute("OriginalName")
+									if originalName then
+										CommF:InvokeServer("StoreFruit", originalName, fruit)
+									end
+								end)
 							end
 						end
+
+						for _, obj in ipairs(Workspace:GetChildren()) do
+							if obj:IsA("Tool") and STATE.AutoFruit then
+								collectFruit(obj)
+							end
+						end
+
 						local map = Workspace:FindFirstChild("Map")
 						if map then
 							for _, obj in ipairs(map:GetDescendants()) do
 								if obj:IsA("Tool") and STATE.AutoFruit then
-									local handle = obj:FindFirstChild("Handle")
-									if handle then
-										toTarget(handle.Position)
+									collectFruit(obj)
+								end
+							end
+						end
+					end)
+					task.wait(0.5)
+				end
+			end)
+		end
+	end,
+}):AddKeyPicker("AutoFruitKey", {
+	Default = "None", Text = "Fruit Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
+})
+
+FruitGroup:AddToggle("AutoStoreFruit", {
+	Text = "Auto Store Fruits",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoStoreFruit = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoStoreFruit do
+					pcall(function()
+						for _, backpack in ipairs({LocalPlayer.Backpack, Character}) do
+							for _, tool in ipairs(backpack:GetChildren()) do
+								if tool:IsA("Tool") and tool.Name:find("Fruit") then
+									local originalName = tool:GetAttribute("OriginalName")
+									if originalName then
+										CommF:InvokeServer("StoreFruit", originalName, tool)
 									end
 								end
 							end
@@ -906,10 +956,10 @@ FruitGroup:AddToggle("AutoFruit", {
 			end)
 		end
 	end,
-}):AddKeyPicker("AutoFruitKey", {
-	Default = "None", Text = "Fruit Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
-FruitGroup:AddLabel("Automatically tweens to spawned fruits")
+
+FruitGroup:AddLabel("Auto Collect: tweens to spawned fruits on map")
+FruitGroup:AddLabel("Auto Store: stores all fruits in inventory")
 
 local RaidSub = MainTab:AddSubTab("Raids", "shield")
 local RaidGroup = RaidSub:AddLeftGroupbox("Raid Control", "zap")
