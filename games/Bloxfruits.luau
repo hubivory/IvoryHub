@@ -1736,6 +1736,36 @@ SaveManager:SetSubFolder("game")
 ThemeManager:ApplyToTab(SettingsTab)
 SaveManager:BuildConfigSection(SettingsTab)
 
+local CreditGroup = SettingsTab:AddLeftGroupbox("Credits", "heart")
+local CreditLabel = CreditGroup:AddLabel({ Text = "Made by mommy Crow", Size = 26 })
+local CreditTL = CreditLabel.TextLabel
+CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
+CreditTL.Font = Enum.Font.GothamBold
+CreditTL.TextSize = 26
+CreditTL.Size = UDim2.new(1, 0, 0, 34)
+CreditTL.Text = ""
+CreditGroup:Resize()
+
+task.spawn(function()
+	local full = "Made by mommy Crow"
+	local cursor = "_"
+	while true do
+		local shown = ""
+		for i = 1, #full do
+			shown = shown .. full:sub(i, i)
+			CreditTL.Text = shown .. cursor
+			task.wait(math.random(4, 9) / 100)
+		end
+		task.wait(2)
+		for i = #full, 1, -1 do
+			shown = full:sub(1, i - 1)
+			CreditTL.Text = shown .. cursor
+			task.wait(math.random(2, 5) / 100)
+		end
+		task.wait(0.8)
+	end
+end)
+
 local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "wrench")
 
 MenuGroup:AddToggle("KeybindMenuOpen", {
@@ -1769,33 +1799,6 @@ MenuGroup:AddSlider("UICornerSlider", {
 
 	MenuGroup:AddDivider()
 
-	local CreditGroup = SettingsTab:AddLeftGroupbox("Credits", "heart")
-	local CreditLabel = CreditGroup:AddLabel("Made by mommy Crow")
-
-	local CreditTL = CreditLabel.TextLabel
-	CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-	CreditTL.Font = Enum.Font.GothamBold
-	CreditTL.Text = ""
-
-	task.spawn(function()
-		local full = "Made by mommy Crow"
-		local cursor = "_"
-		while true do
-			local shown = ""
-			for i = 1, #full do
-				shown = shown .. full:sub(i, i)
-				CreditTL.Text = shown .. cursor
-				task.wait(math.random(4, 9) / 100)
-			end
-			task.wait(2)
-			for i = #full, 1, -1 do
-				shown = full:sub(1, i - 1)
-				CreditTL.Text = shown .. cursor
-				task.wait(math.random(2, 5) / 100)
-			end
-			task.wait(0.8)
-		end
-	end)
 MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", {
 	Default = "RightShift", NoUI = true, Text = "Menu keybind",
 })
