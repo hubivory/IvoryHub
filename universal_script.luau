@@ -814,7 +814,7 @@ FooterText.Parent = MainFrame
 local CreditText = Instance.new("TextLabel")
 CreditText.Name = "CreditText"
 CreditText.AnchorPoint = Vector2.new(0.5, 0)
-CreditText.Size = UDim2.new(1, -32, 0, 18)
+CreditText.Size = UDim2.new(1, -32, 0, 36)
 CreditText.Position = UDim2.new(0.5, 0, 0, 326)
 CreditText.BackgroundTransparency = 1
 CreditText.Text = ""
@@ -822,7 +822,9 @@ CreditText.TextColor3 = Color3.fromRGB(255, 105, 180)
 CreditText.Font = Enum.Font.GothamBold
 CreditText.TextSize = 16
 CreditText.TextXAlignment = Enum.TextXAlignment.Center
-CreditText.ZIndex = 15
+CreditText.TextWrapped = true
+CreditText.TextYAlignment = Enum.TextYAlignment.Center
+CreditText.ZIndex = 30
 CreditText.Parent = MainFrame
 
 task.spawn(function()
