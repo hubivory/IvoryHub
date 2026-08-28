@@ -470,8 +470,8 @@ local function CheckQuest()
 		Monster = "Royal Soldier" NameQuest = "SkyExp2Quest" LevelQuest = 2 NameCheckQuest = "Royal Soldier" CFrameQ = CFrame.new(-7904,5636,-1412) CFrameMon = CFrame.new(-7828,5607,-1744) EntranceCF = Vector3.new(-7894.6176757813, 5547.1416015625, -380.29119873047)
 	elseif level >= 625 and level <= 649 then
 		Monster = "Galley Pirate" NameQuest = "FountainQuest" LevelQuest = 1 NameCheckQuest = "Galley Pirate" CFrameQ = CFrame.new(5256,39,4050) CFrameMon = CFrame.new(5589,45,3996)
-	elseif level >= 650 and level <= 850 then
-		Monster = "Galley Captain" NameQuest = "FountainQuest" LevelQuest = 2 NameCheckQuest = "Galley Captain" CFrameQ = CFrame.new(5256,39,4050) CFrameMon = CFrame.new(5649,39,4936)
+	elseif level >= 650 and level <= 699 then
+		Monster = "Galley Captain" NameQuest = "FountainQuest" LevelQuest = 2 NameCheckQuest = "Galley Captain" CFrameQ = CFrame.new(5256,39,4050) CFrameMon = CFrame.new(5441,42,4950)
 	elseif level >= 700 and level <= 724 then
 		Monster = "Raider" NameQuest = "Area1Quest" LevelQuest = 1 NameCheckQuest = "Raider" CFrameQ = CFrame.new(-429,71,1836) CFrameMon = CFrame.new(-728,52,2345)
 	elseif level >= 725 and level <= 774 then
