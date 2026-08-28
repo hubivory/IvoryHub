@@ -138,34 +138,97 @@ local function teleportToIsland(island)
 	if not map then return end
 	if island == "Fishmen" or island == "Fishman" then
 		if isOnIsland("Fishmen") or isOnIsland("Fishman") then
-			moveTo(workspace.Map.TeleportSpawn.ExitPoint.Position)
+			toTarget(workspace.Map.TeleportSpawn.ExitPoint.Position)
 		else
-			moveTo(workspace.Map.TeleportSpawn.EntrancePoint.Position)
+			toTarget(workspace.Map.TeleportSpawn.EntrancePoint.Position)
 		end
 		return
 	end
+	if island == "Sky" then
+		pcall(function() CommF:InvokeServer("requestEntrance", Vector3.new(-4607.82275, 872.54248, -1667.55688)) end)
+		task.wait(1)
+	end
 	local islandModel = map:FindFirstChild(island)
 	if islandModel and islandModel:GetPivot() then
-		moveTo(islandModel:GetPivot().Position + Vector3.new(0, 50, 0))
+		toTarget(islandModel:GetPivot().Position + Vector3.new(0, 50, 0))
 	end
 end
 
-local function moveTo(position)
+local activeTween = nil
+
+local function toTarget(...)
+	local args = {...}
+	local targetPos = args[1]
+	local RealTarget
+	if type(targetPos) == "vector" then
+		RealTarget = CFrame.new(targetPos)
+	elseif type(targetPos) == "userdata" then
+		RealTarget = targetPos
+	elseif type(targetPos) == "number" then
+		RealTarget = CFrame.new(unpack(args))
+	end
+
 	local hrp = getHRP()
 	if not hrp then return end
-	local dist = (hrp.Position - position).Magnitude
-	if dist < 3 then return end
-	local speed = 350
-	local duration = dist / speed
-	local steps = math.clamp(math.ceil(dist / 30), 1, 40)
-	local delayPerStep = duration / steps
-	for i = 1, steps do
-		if not getHRP() or (not STATE.AutoFarm and not STATE.AutoChest and not STATE.AutoBounty and not STATE.AutoFruit) then return end
-		local alpha = i / steps
-		local targetCFrame = CFrame.new(hrp.Position:Lerp(position, alpha)) * (hrp.CFrame - hrp.CFrame.Position)
-		hrp.CFrame = targetCFrame
-		task.wait(delayPerStep)
+	local hum = getHum()
+	if not hum then return end
+	if hum.Health <= 0 then
+		if activeTween then activeTween:Cancel() end
+		repeat task.wait() until getHum() and getHum().Health > 0
+		task.wait(0.2)
+		hrp = getHRP()
+		if not hrp then return end
 	end
+
+	pcall(function() hum.Sit = false; hum:ChangeState(Enum.HumanoidStateType.Running) end)
+
+	local dist = (RealTarget.Position - hrp.Position).Magnitude
+	local speed = 315
+
+	local tweenInfo = TweenInfo.new(dist / speed, Enum.EasingStyle.Linear)
+	local tweenOk, tweenErr = pcall(function()
+		if activeTween then activeTween:Cancel() end
+		activeTween = TweenService:Create(hrp, tweenInfo, {CFrame = RealTarget})
+		activeTween:Play()
+	end)
+
+	return {
+		Stop = function()
+			if activeTween then activeTween:Cancel() end
+		end,
+		Wait = function()
+			if activeTween then activeTween.Completed:Wait() end
+		end,
+	}
+end
+
+local function GetIsLand(...)
+	local RealtargetPos = {...}
+	local targetPos = RealtargetPos[1]
+	local RealTarget
+	if type(targetPos) == "vector" then
+		RealTarget = targetPos
+	elseif type(targetPos) == "userdata" then
+		RealTarget = targetPos.Position
+	elseif type(targetPos) == "number" then
+		RealTarget = CFrame.new(unpack(RealtargetPos))
+		RealTarget = RealTarget.Position
+	end
+	local ReturnValue
+	local CheckInOut = math.huge
+	if LocalPlayer.Team then
+		local spawns = Workspace._WorldOrigin.PlayerSpawns:FindFirstChild(tostring(LocalPlayer.Team))
+		if spawns then
+			for _, v in pairs(spawns:GetChildren()) do
+				local ReMagnitude = (RealTarget - v:GetModelCFrame().p).Magnitude
+				if ReMagnitude < CheckInOut then
+					CheckInOut = ReMagnitude
+					ReturnValue = v.Name
+				end
+			end
+		end
+	end
+	return ReturnValue
 end
 
 local function loadEnemy(enemyName)
@@ -176,7 +239,7 @@ local function loadEnemy(enemyName)
 	for _, spawn in ipairs(spawns:GetChildren()) do
 		local cleanName = spawn.Name:gsub("%[Lv%.%s*%d+%]%s*", ""):gsub("%s+$", "")
 		if cleanName == enemyName then
-			moveTo(spawn.Position + Vector3.new(0, 20, 0))
+			toTarget(spawn.Position + Vector3.new(0, 20, 0))
 			return spawn
 		end
 	end
@@ -230,7 +293,9 @@ local function detachFloat()
 	if bg then bg:Destroy() end
 end
 
+local EntranceCF = nil
 local function CheckQuest()
+	EntranceCF = nil
 	local level = getLevel()
 	if level >= 0 and level <= 9 then
 		Monster = "Bandit" NameQuest = "BanditQuest1" LevelQuest = 1 NameCheckQuest = "Bandit" CFrameQ = CFrame.new(1060,17,1547) CFrameMon = CFrame.new(1145,17,1634)
@@ -253,9 +318,9 @@ local function CheckQuest()
 	elseif level >= 120 and level <= 149 then
 		Monster = "Chief Petty Officer" NameQuest = "MarineQuest2" LevelQuest = 1 NameCheckQuest = "Chief Petty Officer" CFrameQ = CFrame.new(-5036,29,4325) CFrameMon = CFrame.new(-4855,23,4308)
 	elseif level >= 150 and level <= 174 then
-		Monster = "Sky Bandit" NameQuest = "SkyQuest" LevelQuest = 1 NameCheckQuest = "Sky Bandit" CFrameQ = CFrame.new(-4842,718,-2623) CFrameMon = CFrame.new(-4981,278,-2830)
+		Monster = "Sky Bandit" NameQuest = "SkyQuest" LevelQuest = 1 NameCheckQuest = "Sky Bandit" CFrameQ = CFrame.new(-4842,718,-2623) CFrameMon = CFrame.new(-4981,278,-2830) EntranceCF = Vector3.new(-4607.82275, 872.54248, -1667.55688)
 	elseif level >= 175 and level <= 189 then
-		Monster = "Dark Master" NameQuest = "SkyQuest" LevelQuest = 2 NameCheckQuest = "Dark Master" CFrameQ = CFrame.new(-4842,718,-2623) CFrameMon = CFrame.new(-5250,389,-2272)
+		Monster = "Dark Master" NameQuest = "SkyQuest" LevelQuest = 2 NameCheckQuest = "Dark Master" CFrameQ = CFrame.new(-4842,718,-2623) CFrameMon = CFrame.new(-5250,389,-2272) EntranceCF = Vector3.new(-4607.82275, 872.54248, -1667.55688)
 	elseif level >= 190 and level <= 209 then
 		Monster = "Prisoner" NameQuest = "PrisonerQuest" LevelQuest = 1 NameCheckQuest = "Prisoners" CFrameQ = CFrame.new(5308,2,474) CFrameMon = CFrame.new(5411,96,690)
 	elseif level >= 210 and level <= 249 then
@@ -267,17 +332,17 @@ local function CheckQuest()
 	elseif level >= 330 and level <= 374 then
 		Monster = "Military Spy" NameQuest = "MagmaQuest" LevelQuest = 2 NameCheckQuest = "Military Spy" CFrameQ = CFrame.new(-5316,12,8517) CFrameMon = CFrame.new(-5815,84,8820)
 	elseif level >= 375 and level <= 399 then
-		Monster = "Fishman Warrior" NameQuest = "FishmanQuest" LevelQuest = 1 NameCheckQuest = "Fishman Warrior" CFrameQ = CFrame.new(61123,19,1569) CFrameMon = CFrame.new(60859,19,1501)
+		Monster = "Fishman Warrior" NameQuest = "FishmanQuest" LevelQuest = 1 NameCheckQuest = "Fishman Warrior" CFrameQ = CFrame.new(61123,19,1569) CFrameMon = CFrame.new(60859,19,1501) EntranceCF = Vector3.new(61163.8515625, 11.6796875, 1819.7841796875)
 	elseif level >= 400 and level <= 449 then
-		Monster = "Fishman Commando" NameQuest = "FishmanQuest" LevelQuest = 2 NameCheckQuest = "Fishman Commando" CFrameQ = CFrame.new(61123,19,1569) CFrameMon = CFrame.new(61891,19,1470)
+		Monster = "Fishman Commando" NameQuest = "FishmanQuest" LevelQuest = 2 NameCheckQuest = "Fishman Commando" CFrameQ = CFrame.new(61123,19,1569) CFrameMon = CFrame.new(61891,19,1470) EntranceCF = Vector3.new(61163.8515625, 11.6796875, 1819.7841796875)
 	elseif level >= 450 and level <= 474 then
-		Monster = "God's Guard" NameQuest = "SkyExp1Quest" LevelQuest = 1 NameCheckQuest = "God's Guards" CFrameQ = CFrame.new(-4722,845,-1954) CFrameMon = CFrame.new(-4698,845,-1912)
+		Monster = "God's Guard" NameQuest = "SkyExp1Quest" LevelQuest = 1 NameCheckQuest = "God's Guards" CFrameQ = CFrame.new(-4722,845,-1954) CFrameMon = CFrame.new(-4698,845,-1912) EntranceCF = Vector3.new(-4607.82275, 872.54248, -1667.55688)
 	elseif level >= 475 and level <= 524 then
-		Monster = "Shanda" NameQuest = "SkyExp1Quest" LevelQuest = 2 NameCheckQuest = "Shandas" CFrameQ = CFrame.new(-7862,5546,-380) CFrameMon = CFrame.new(-7685,5567,-502)
+		Monster = "Shanda" NameQuest = "SkyExp1Quest" LevelQuest = 2 NameCheckQuest = "Shandas" CFrameQ = CFrame.new(-7862,5546,-380) CFrameMon = CFrame.new(-7685,5567,-502) EntranceCF = Vector3.new(-7894.6176757813, 5547.1416015625, -380.29119873047)
 	elseif level >= 525 and level <= 549 then
-		Monster = "Royal Squad" NameQuest = "SkyExp2Quest" LevelQuest = 1 NameCheckQuest = "Royal Squad" CFrameQ = CFrame.new(-7904,5636,-1412) CFrameMon = CFrame.new(-7670,5607,-1460)
+		Monster = "Royal Squad" NameQuest = "SkyExp2Quest" LevelQuest = 1 NameCheckQuest = "Royal Squad" CFrameQ = CFrame.new(-7904,5636,-1412) CFrameMon = CFrame.new(-7670,5607,-1460) EntranceCF = Vector3.new(-7894.6176757813, 5547.1416015625, -380.29119873047)
 	elseif level >= 550 and level <= 624 then
-		Monster = "Royal Soldier" NameQuest = "SkyExp2Quest" LevelQuest = 2 NameCheckQuest = "Royal Soldier" CFrameQ = CFrame.new(-7904,5636,-1412) CFrameMon = CFrame.new(-7828,5607,-1744)
+		Monster = "Royal Soldier" NameQuest = "SkyExp2Quest" LevelQuest = 2 NameCheckQuest = "Royal Soldier" CFrameQ = CFrame.new(-7904,5636,-1412) CFrameMon = CFrame.new(-7828,5607,-1744) EntranceCF = Vector3.new(-7894.6176757813, 5547.1416015625, -380.29119873047)
 	elseif level >= 625 and level <= 649 then
 		Monster = "Galley Pirate" NameQuest = "FountainQuest" LevelQuest = 1 NameCheckQuest = "Galley Pirate" CFrameQ = CFrame.new(5256,39,4050) CFrameMon = CFrame.new(5589,45,3996)
 	elseif level >= 650 and level <= 850 then
@@ -538,49 +603,88 @@ FarmGroup:AddToggle("AutoFarm", {
 						if not hrp then return end
 
 						if not Quest.Visible then
-							if (CFrameQ.Position - hrp.Position).Magnitude > 150 then
-								moveTo(CFrameQ.Position)
+							local questDist = (CFrameQ.Position - hrp.Position).Magnitude
+							if questDist >= 3000 then
+								local entPos = EntranceCF or CFrameQ.Position
+								pcall(function()
+									CommF:InvokeServer("requestEntrance", entPos)
+								end)
+								task.wait(1)
+								hrp = getHRP()
+								if hrp then
+									toTarget(CFrameQ.Position)
+								end
+							elseif questDist > 20 then
+								toTarget(CFrameQ.Position)
 							else
 								CommF:InvokeServer("StartQuest", NameQuest, LevelQuest)
+								task.wait(0.5)
 							end
 						else
-							if workspace.Enemies:FindFirstChild(Monster) then
-								for _, v in pairs(workspace.Enemies:GetChildren()) do
-									if v.Name == Monster and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-										if string.find(QuestTitle.Title.Text, NameCheckQuest) then
-											local mobHRP = v.HumanoidRootPart
-											v.Humanoid.JumpPower = 0
-											v.Humanoid.WalkSpeed = 0
-											mobHRP.CanCollide = false
+							if string.find(QuestTitle.Title.Text, NameCheckQuest) then
+								if workspace.Enemies:FindFirstChild(Monster) then
+									for _, v in pairs(workspace.Enemies:GetChildren()) do
+										if v.Name == Monster and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+											if string.find(QuestTitle.Title.Text, NameCheckQuest) then
+												local mobHRP = v.HumanoidRootPart
+												v.Humanoid.JumpPower = 0
+												v.Humanoid.WalkSpeed = 0
+												v.HumanoidRootPart.CanCollide = false
+												v.Head.CanCollide = false
+												v.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+												v.HumanoidRootPart.Transparency = 1
+												v.Humanoid:ChangeState(11)
 
-											local targets = BringMob(v)
-											local myHRP = getHRP()
-											if not myHRP then return end
-											local dist = (myHRP.Position - mobHRP.Position).Magnitude
+												local targets = BringMob(v)
+												local myHRP = getHRP()
+												if not myHRP then return end
+												local dist = (myHRP.Position - mobHRP.Position).Magnitude
 
-											if dist > 150 then
-												moveTo(mobHRP.Position + Vector3.new(0, 30, 0))
-											else
-												EquipWeapon(STATE.SelectedWeapon)
-												if tick() - LastRotate >= 0.25 then
-													AttackRotation = (AttackRotation + 180) % 360
-													LastRotate = tick()
-												end
-												myHRP.CFrame = mobHRP.CFrame * CFrame.new(0, 30, 0) * CFrame.Angles(0, math.rad(AttackRotation), 0)
-												if #targets >= 2 then
-													Attack({targets[1], targets[2]})
+												if dist > 150 then
+													if dist >= 3000 then
+														local entPos = EntranceCF or mobHRP.Position
+														pcall(function()
+															CommF:InvokeServer("requestEntrance", entPos)
+														end)
+														task.wait(1)
+													else
+														toTarget(mobHRP.Position + Vector3.new(0, 30, 5))
+													end
 												else
-													Attack(v)
+													EquipWeapon(STATE.SelectedWeapon)
+													if tick() - LastRotate >= 0.25 then
+														AttackRotation = (AttackRotation + 180) % 360
+														LastRotate = tick()
+													end
+													myHRP.CFrame = mobHRP.CFrame * CFrame.new(0, 30, 5) * CFrame.Angles(0, math.rad(AttackRotation), 0)
+													if #targets >= 2 then
+														Attack({targets[1], targets[2]})
+													else
+														Attack(v)
+													end
 												end
+												break
+											else
+												CommF:InvokeServer("AbandonQuest")
 											end
-											break
+										end
+									end
+								else
+								if CFrameMon and CFrameMon.Position then
+									local monDist = (CFrameMon.Position - hrp.Position).Magnitude
+									if monDist >= 3000 then
+										local entPos = EntranceCF or CFrameMon.Position
+										pcall(function()
+											CommF:InvokeServer("requestEntrance", entPos)
+										end)
+										task.wait(1)
 										else
-											CommF:InvokeServer("AbandonQuest")
+											toTarget(CFrameMon.Position)
 										end
 									end
 								end
 							else
-								moveTo(CFrameMon.Position)
+								CommF:InvokeServer("AbandonQuest")
 							end
 						end
 						for _, bodypart in ipairs(Character:GetChildren()) do
@@ -635,7 +739,7 @@ ChestGroup:AddToggle("AutoChest", {
 								if chest:IsA("Model") and STATE.AutoChest then
 									local part = chest.PrimaryPart or chest:FindFirstChildWhichIsA("BasePart")
 									if part then
-										moveTo(part.Position)
+										toTarget(part.Position)
 									end
 								end
 							end
@@ -660,7 +764,7 @@ ChestGroup:AddButton("Collect All Chests", function()
 				if chest:IsA("Model") then
 					local part = chest.PrimaryPart or chest:FindFirstChildWhichIsA("BasePart")
 					if part then
-						moveTo(part.Position)
+						toTarget(part.Position)
 					end
 				end
 			end
@@ -685,7 +789,7 @@ FruitGroup:AddToggle("AutoFruit", {
 							if obj:IsA("Tool") and STATE.AutoFruit then
 								local handle = obj:FindFirstChild("Handle")
 								if handle then
-									moveTo(handle.Position)
+									toTarget(handle.Position)
 								end
 							end
 						end
@@ -695,7 +799,7 @@ FruitGroup:AddToggle("AutoFruit", {
 								if obj:IsA("Tool") and STATE.AutoFruit then
 									local handle = obj:FindFirstChild("Handle")
 									if handle then
-										moveTo(handle.Position)
+										toTarget(handle.Position)
 									end
 								end
 							end
