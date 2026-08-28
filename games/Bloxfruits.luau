@@ -270,10 +270,12 @@ local islandNames = {
 	SkyExp1Quest = "SkyArea1", SkyExp2Quest = "SkyArea2", FountainQuest = "Fountain",
 }
 
+print("[BF] Loading quest data...")
 local Quests = nil
 pcall(function()
 	Quests = loadstring(game:HttpGet("https://raw.githubusercontent.com/CFR-Executor/resources/refs/heads/main/bfquestdumpfull"))()
 end)
+print("[BF] Quests loaded: " .. tostring(Quests ~= nil))
 
 local function getQuest()
 	if not Quests then return nil end
@@ -477,9 +479,11 @@ DiscordGroup:AddButton("Join Discord For Dupe", function()
 end)
 DiscordGroup:AddLabel("Click above to join our Discord for dupes, updates & more!")
 
+print("[BF] Building Farming subtab...")
 local FarmSub = MainTab:AddSubTab("Farming", "zap")
 local FarmGroup = FarmSub:AddLeftGroupbox("Auto Farm", "cpu")
 local ChestGroup = FarmSub:AddRightGroupbox("Chests", "package")
+print("[BF] FarmGroup created, adding toggle...")
 
 FarmGroup:AddToggle("AutoFarm", {
 	Text = "Auto Farm Level",
@@ -537,6 +541,7 @@ FarmGroup:AddToggle("AutoFarm", {
 }):AddKeyPicker("AutoFarmKey", {
 	Default = "None", Text = "Auto Farm Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
+print("[BF] AutoFarm toggle OK")
 
 FarmGroup:AddDropdown("FarmMethod", {
 	Values = { "Quest", "Nearest" }, Default = "Quest", Text = "Farm Method",
@@ -1016,6 +1021,7 @@ pcall(function()
 	CommF:InvokeServer("Buso")
 end)
 
+print("[BF] Script complete!")
 Library:Notify({
 	Title = "Ivory",
 	Description = "v1.4 loaded successfully",
