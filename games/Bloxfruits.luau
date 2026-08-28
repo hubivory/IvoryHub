@@ -88,6 +88,7 @@ local STATE = {
 	FastMode = false,
 	AutoRaid = false,
 	RaidType = "Light",
+	AutoFruit = false,
 }
 
 local LOCAL_AFK_CONN = nil
@@ -137,15 +138,15 @@ local function teleportToIsland(island)
 	if not map then return end
 	if island == "Fishmen" or island == "Fishman" then
 		if isOnIsland("Fishmen") or isOnIsland("Fishman") then
-			hrp.CFrame = workspace.Map.TeleportSpawn.ExitPoint.CFrame
+			moveTo(workspace.Map.TeleportSpawn.ExitPoint.Position)
 		else
-			hrp.CFrame = workspace.Map.TeleportSpawn.EntrancePoint.CFrame
+			moveTo(workspace.Map.TeleportSpawn.EntrancePoint.Position)
 		end
 		return
 	end
 	local islandModel = map:FindFirstChild(island)
 	if islandModel and islandModel:GetPivot() then
-		hrp.CFrame = islandModel:GetPivot() + Vector3.new(0, 50, 0)
+		moveTo(islandModel:GetPivot().Position + Vector3.new(0, 50, 0))
 	end
 end
 
@@ -153,13 +154,16 @@ local function moveTo(position)
 	local hrp = getHRP()
 	if not hrp then return end
 	local dist = (hrp.Position - position).Magnitude
-	if dist < 2 then return end
-	local speed = 350
-	local duration = math.clamp(dist / speed, 0.1, 3)
-	local goal = CFrame.new(position) * CFrame.new(0, 0, 0)
-	local tween = TweenService:Create(hrp, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = goal})
-	tween:Play()
-	tween.Completed:Wait()
+	if dist < 3 then return end
+	local stepSize = math.clamp(dist / 8, 15, 100)
+	local steps = math.clamp(math.ceil(dist / stepSize), 1, 30)
+	for i = 1, steps do
+		if not getHRP() or not STATE.AutoFarm and not STATE.AutoChest and not STATE.AutoBounty and not STATE.AutoFruit then return end
+		local alpha = i / steps
+		local targetCFrame = CFrame.new(hrp.Position:Lerp(position, alpha)) * (hrp.CFrame - hrp.CFrame.Position)
+		hrp.CFrame = targetCFrame
+		task.wait()
+	end
 end
 
 local function loadEnemy(enemyName)
@@ -274,12 +278,10 @@ local islandNames = {
 	SkyExp1Quest = "SkyArea1", SkyExp2Quest = "SkyArea2", FountainQuest = "Fountain",
 }
 
-print("[BF] Loading quest data...")
 local Quests = nil
 pcall(function()
 	Quests = loadstring(game:HttpGet("https://raw.githubusercontent.com/CFR-Executor/resources/refs/heads/main/bfquestdumpfull"))()
 end)
-print("[BF] Quests loaded: " .. tostring(Quests ~= nil))
 
 local function getQuest()
 	if not Quests then return nil end
@@ -483,11 +485,9 @@ DiscordGroup:AddButton("Join Discord For Dupe", function()
 end)
 DiscordGroup:AddLabel("Click above to join our Discord for dupes, updates & more!")
 
-print("[BF] Building Farming subtab...")
 local FarmSub = MainTab:AddSubTab("Farming", "zap")
 local FarmGroup = FarmSub:AddLeftGroupbox("Auto Farm", "cpu")
 local ChestGroup = FarmSub:AddRightGroupbox("Chests", "package")
-print("[BF] FarmGroup created, adding toggle...")
 
 FarmGroup:AddToggle("AutoFarm", {
 	Text = "Auto Farm Level",
@@ -543,7 +543,6 @@ FarmGroup:AddToggle("AutoFarm", {
 }):AddKeyPicker("AutoFarmKey", {
 	Default = "None", Text = "Auto Farm Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
-print("[BF] AutoFarm toggle OK")
 
 FarmGroup:AddDropdown("FarmMethod", {
 	Values = { "Quest", "Nearest" }, Default = "Quest", Text = "Farm Method",
@@ -578,9 +577,11 @@ ChestGroup:AddToggle("AutoChest", {
 						local chestModels = Workspace:FindFirstChild("ChestModels")
 						if chestModels then
 							for _, chest in ipairs(chestModels:GetChildren()) do
-								if chest:IsA("Model") then
-									hrp.CFrame = chest:GetPivot()
-									task.wait(0.1)
+								if chest:IsA("Model") and STATE.AutoChest then
+									local part = chest.PrimaryPart or chest:FindFirstChildWhichIsA("BasePart")
+									if part then
+										moveTo(part.Position)
+									end
 								end
 							end
 						end
@@ -602,14 +603,58 @@ ChestGroup:AddButton("Collect All Chests", function()
 		if chestModels then
 			for _, chest in ipairs(chestModels:GetChildren()) do
 				if chest:IsA("Model") then
-					hrp.CFrame = chest:GetPivot()
-					task.wait(0.1)
+					local part = chest.PrimaryPart or chest:FindFirstChildWhichIsA("BasePart")
+					if part then
+						moveTo(part.Position)
+					end
 				end
 			end
 		end
 		Library:Notify({ Title = "Ivory", Description = "Collected all chests!", Type = "Success", Time = 3 })
 	end)
 end)
+
+local FruitGroup = FarmSub:AddLeftGroupbox("Fruits", "apple")
+FruitGroup:AddToggle("AutoFruit", {
+	Text = "Auto Collect Fruits",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoFruit = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoFruit do
+					pcall(function()
+						local hrp = getHRP()
+						if not hrp then return end
+						for _, obj in ipairs(Workspace:GetChildren()) do
+							if obj:IsA("Tool") and STATE.AutoFruit then
+								local handle = obj:FindFirstChild("Handle")
+								if handle then
+									moveTo(handle.Position)
+								end
+							end
+						end
+						local map = Workspace:FindFirstChild("Map")
+						if map then
+							for _, obj in ipairs(map:GetDescendants()) do
+								if obj:IsA("Tool") and STATE.AutoFruit then
+									local handle = obj:FindFirstChild("Handle")
+									if handle then
+										moveTo(handle.Position)
+									end
+								end
+							end
+						end
+					end)
+					task.wait(1)
+				end
+			end)
+		end
+	end,
+}):AddKeyPicker("AutoFruitKey", {
+	Default = "None", Text = "Fruit Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
+})
+FruitGroup:AddLabel("Automatically tweens to spawned fruits")
 
 local RaidSub = MainTab:AddSubTab("Raids", "shield")
 local RaidGroup = RaidSub:AddLeftGroupbox("Raid Control", "zap")
@@ -1023,7 +1068,6 @@ pcall(function()
 	CommF:InvokeServer("Buso")
 end)
 
-print("[BF] Script complete!")
 Library:Notify({
 	Title = "Ivory",
 	Description = "v1.4 loaded successfully",
