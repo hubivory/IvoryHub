@@ -1068,11 +1068,11 @@ FruitGroup:AddToggle("AutoStoreFruit", {
 	end,
 })
 
-FruitGroup:AddLabel("Auto Collect: tweens to spawned fruits on map")
-FruitGroup:AddLabel("Auto Store: stores all fruits in inventory")
-
 local MoonPhaseLabel = FruitGroup:AddLabel("Moon: detecting...")
 local FruitTimerLabel = FruitGroup:AddLabel("Next fruit in: calculating...")
+
+FruitGroup:AddLabel("Auto Collect: tweens to spawned fruits on map")
+FruitGroup:AddLabel("Auto Store: stores all fruits in inventory")
 
 local MOON_TEXTURES = {
 	["9709149431"] = "Full Moon (100%)",
