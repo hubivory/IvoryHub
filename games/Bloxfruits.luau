@@ -92,7 +92,7 @@ local STATE = {
 	AutoFruit = false,
 	AutoStoreFruit = false,
 	CollectingFruit = false,
-	LastFruitSeen = os.time(),
+	LastFruitSeen = 0,
 	FruitRespawnTime = 2700,
 	AutoSkill = false,
 	SkillZ = true,
@@ -1071,6 +1071,11 @@ FruitGroup:AddToggle("AutoStoreFruit", {
 
 local MoonPhaseLabel = FruitGroup:AddLabel("Moon: detecting...")
 local FruitTimerLabel = FruitGroup:AddLabel("Next fruit in: calculating...")
+
+FruitGroup:AddButton("Reset Fruit Timer", function()
+	STATE.LastFruitSeen = os.time()
+	Library:Notify({ Title = "Ivory", Description = "Fruit timer reset! Counting down...", Type = "Success", Time = 3 })
+end)
 
 FruitGroup:AddLabel("Auto Collect: tweens to spawned fruits on map")
 FruitGroup:AddLabel("Auto Store: stores all fruits in inventory")
