@@ -46,6 +46,9 @@ local ToggleMenu = MenuRemotes:WaitForChild("ToggleMenu")
 local GetMenuData = MenuRemotes:WaitForChild("GetMenuData")
 local ChillerRemotes = Remotes:WaitForChild("ChillerRemotes")
 local StartRepair = ChillerRemotes:WaitForChild("StartRepair")
+local MerchantRemotes = Remotes:WaitForChild("MerchantRemotes")
+local GetMerchantStock = MerchantRemotes:WaitForChild("GetMerchantStock")
+local BuyMerchantItem = MerchantRemotes:WaitForChild("BuyMerchantItem")
 
 local Modules = ReplicatedStorage:WaitForChild("Modules")
 local FoodConfig = require(Modules:WaitForChild("FoodConfig"))
@@ -187,6 +190,8 @@ local cfg = {
     autoBuyIngredients = false,
     autoSoftdrinks = false,
     autoFixChiller = false,
+    autoBuyMerchant = false,
+    merchantWhitelist = {},
     autoUseBoosts = false,
     autoUnlockTables = false,
     autoUnlockMenu = false,
@@ -288,6 +293,7 @@ local status = {
     unlockTbl = "Idle",
     unlockMenu = "Idle",
     chiller = "Idle",
+    merchant = "Idle",
 }
 
 local function setStatus(key, text)
@@ -432,6 +438,10 @@ local GroceryBox = GrocerySub:AddLeftGroupbox("Ingredients", "apple")
 GroceryBox:AddToggle("AutoBuyIngredients", { Text = "Auto Buy Ingredients", Default = false, Tooltip = "Auto-buys ingredients when stock is low" })
 GroceryBox:AddSlider("IngBuyThreshold", { Text = "Buy When Below", Default = 5, Min = 1, Max = 50, Rounding = 1, Tooltip = "Buy ingredient when count drops below this" })
 
+local MerchantBox = GrocerySub:AddRightGroupbox("Merchant", "store")
+MerchantBox:AddToggle("AutoBuyMerchant", { Text = "Auto Buy Merchant", Default = false, Tooltip = "Auto-buys selected items from the rotating merchant when in stock" })
+MerchantBox:AddDropdown("MerchantWhitelist", { Text = "Items to Buy", Multi = true, Default = 0, Values = {"FoldingChair", "FoldingTable", "BambooChair", "BambooTable", "Dipper", "Hanger", "Slipper", "MalunggayPandesal"}, Tooltip = "Select which merchant items to auto-buy" })
+
 local UnlockBox = GrocerySub:AddRightGroupbox("Unlocks", "lock-open")
 UnlockBox:AddToggle("AutoUnlockTables", { Text = "Auto Unlock Tables", Default = false, Tooltip = "Auto-unlocks Table7-12 when affordable" })
 UnlockBox:AddButton({ Text = "Upgrade to Golden Pan", Func = function() pcall(function() UpgradeToGoldenPan:InvokeServer() end) end })
@@ -480,8 +490,8 @@ local ConfigSub = SettingsTab:AddSubTab({ Name = "Config", Icon = "save" })
 -- LOGS TAB
 local StatusBox = LogsTab:AddLeftGroupbox("Status", "activity")
 local StatusLabels = {}
-local statusOrder = {"serve", "order", "drink", "codes", "pan", "clean", "wash", "buyFurn", "placeFurn", "buyIng", "boosts", "unlockTbl", "unlockMenu", "chiller"}
-local statusNames = {serve="Serve", order="Order", drink="Drinks", codes="Codes", pan="Pan", clean="Clean", wash="Wash", buyFurn="Buy Furn", placeFurn="Place Furn", buyIng="Buy Ing", boosts="Boosts", unlockTbl="Unlock Tbl", unlockMenu="Unlock Menu", chiller="Chiller"}
+local statusOrder = {"serve", "order", "drink", "codes", "pan", "clean", "wash", "buyFurn", "placeFurn", "buyIng", "boosts", "unlockTbl", "unlockMenu", "chiller", "merchant"}
+local statusNames = {serve="Serve", order="Order", drink="Drinks", codes="Codes", pan="Pan", clean="Clean", wash="Wash", buyFurn="Buy Furn", placeFurn="Place Furn", buyIng="Buy Ing", boosts="Boosts", unlockTbl="Unlock Tbl", unlockMenu="Unlock Menu", chiller="Chiller", merchant="Merchant"}
 for _, key in ipairs(statusOrder) do
     StatusLabels[key] = StatusBox:AddLabel(statusNames[key] .. ": Idle", true)
 end
@@ -580,6 +590,13 @@ Options.FurnitureWhitelist:OnChanged(function(v)
     end
 end)
 Toggles.AutoBuyIngredients:OnChanged(function(s) cfg.autoBuyIngredients = s end)
+Toggles.AutoBuyMerchant:OnChanged(function(s) cfg.autoBuyMerchant = s end)
+Options.MerchantWhitelist:OnChanged(function(v)
+    cfg.merchantWhitelist = {}
+    for name, enabled in pairs(v) do
+        if enabled then cfg.merchantWhitelist[name] = true end
+    end
+end)
 Toggles.AutoSoftdrinks:OnChanged(function(s) cfg.autoSoftdrinks = s end)
 Toggles.AutoUseBoosts:OnChanged(function(s) cfg.autoUseBoosts = s end)
 Toggles.AutoUnlockTables:OnChanged(function(s) cfg.autoUnlockTables = s end)
@@ -1067,6 +1084,52 @@ task.spawn(function() while true do
     task.wait(3)
 end end)
 
+-- ═══ AUTO BUY MERCHANT ═══
+task.spawn(function() while true do
+    if cfg.autoBuyMerchant then
+        local hasItems = false
+        for _ in pairs(cfg.merchantWhitelist) do hasItems = true; break end
+        if not hasItems then
+            setStatus("merchant", "No items selected")
+        else
+            setStatus("merchant", "Checking stock...")
+            local ok, stock = pcall(function() return GetMerchantStock:InvokeServer() end)
+            if ok and stock and type(stock) == "table" then
+                local bought = 0
+                for _, item in ipairs(stock) do
+                    if item.Stock > 0 and not item.Owned and cfg.merchantWhitelist[item.Key] then
+                        local cash = getCash()
+                        if cash >= item.Price then
+                            setStatus("merchant", "Buying " .. item.Name .. "...")
+                            local buyOk, buyErr = pcall(function() return BuyMerchantItem:InvokeServer(item.Key) end)
+                            if buyOk then
+                                bought = bought + 1
+                                logMoney("Merchant: " .. item.Name, -item.Price)
+                                task.wait(0.5)
+                            else
+                                setStatus("merchant", "Failed: " .. item.Name)
+                                task.wait(1)
+                            end
+                        else
+                            setStatus("merchant", "Need $" .. item.Price .. " for " .. item.Name)
+                        end
+                    end
+                end
+                if bought > 0 then
+                    setStatus("merchant", "Bought " .. bought .. " items")
+                else
+                    setStatus("merchant", "Nothing to buy")
+                end
+            else
+                setStatus("merchant", "Failed to fetch stock")
+            end
+        end
+    else
+        setStatus("merchant", "Disabled")
+    end
+    task.wait(5)
+end end)
+
 -- ═══ AUTO BUY FURNITURE ═══
 task.spawn(function() while true do
     if cfg.autoBuyFurniture then
@@ -1533,7 +1596,7 @@ task.spawn(function()
         task.wait(3)
         local currentCash = getCash()
         local diff = currentCash - lastCash
-        if diff ~= 0 and not cfg.autoServe and not cfg.autoBuyFurniture and not cfg.autoBuyIngredients and not cfg.autoUnlockTables and not cfg.autoFixChiller then
+        if diff ~= 0 and not cfg.autoServe and not cfg.autoBuyFurniture and not cfg.autoBuyIngredients and not cfg.autoUnlockTables and not cfg.autoFixChiller and not cfg.autoBuyMerchant then
             if diff > 0 then
                 logMoney("Passive earn", diff)
             else
