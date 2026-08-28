@@ -23,12 +23,18 @@ LocalPlayer.CharacterAdded:Connect(function(c)
 	HumanoidRootPart = c:WaitForChild("HumanoidRootPart")
 end)
 
-local Remotes = ReplicatedStorage:WaitForChild("Remotes")
-local CommF = Remotes:WaitForChild("CommF_")
-local Modules = ReplicatedStorage:WaitForChild("Modules")
-local Net = Modules:WaitForChild("Net")
-local RegisterAttack = Net:WaitForChild("RE"):WaitForChild("RegisterAttack")
-local RegisterHit = Net:WaitForChild("RE"):WaitForChild("RegisterHit")
+local Remotes = ReplicatedStorage:WaitForChild("Remotes", 10)
+local CommF = Remotes and Remotes:WaitForChild("CommF_", 10)
+local Modules = ReplicatedStorage:WaitForChild("Modules", 10)
+local Net = Modules and Modules:WaitForChild("Net", 10)
+
+local RegisterAttack = nil
+local RegisterHit = nil
+
+task.spawn(function()
+	RegisterAttack = Net and Net:WaitForChild("RE", 10) and Net.RE:WaitForChild("RegisterAttack", 10)
+	RegisterHit = Net and Net:WaitForChild("RE", 10) and Net.RE:WaitForChild("RegisterHit", 10)
+end)
 
 local httpGet = function(url)
 	local ok, res = pcall(function()
