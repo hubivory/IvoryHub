@@ -11,6 +11,7 @@ local Lighting = game:GetService("Lighting")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local VirtualUser = game:GetService("VirtualUser")
+local VIM = game:GetService("VirtualInputManager")
 
 local LocalPlayer = Players.LocalPlayer
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -91,6 +92,13 @@ local STATE = {
 	AutoFruit = false,
 	AutoStoreFruit = false,
 	CollectingFruit = false,
+	LastFruitSeen = 0,
+	FruitRespawnTime = 2700,
+	AutoSkill = false,
+	SkillZ = true,
+	SkillX = true,
+	SkillC = true,
+	SkillV = true,
 }
 
 local LOCAL_AFK_CONN = nil
@@ -329,6 +337,33 @@ local function detachFloat()
 	if bv then bv:Destroy() end
 	local bg = hrp:FindFirstChild("IvoryFloatBG")
 	if bg then bg:Destroy() end
+end
+
+local function useSkills(targetPos)
+	if not STATE.AutoSkill then return end
+	pcall(function()
+		local char = LocalPlayer.Character
+		if not char then return end
+		local fruitTool = char:FindFirstChildOfClass("Tool")
+		if not fruitTool then return end
+
+		local remote = fruitTool:FindFirstChild("RemoteEvent")
+		if not remote then return end
+
+		local keys = {}
+		if STATE.SkillZ then table.insert(keys, "Z") end
+		if STATE.SkillX then table.insert(keys, "X") end
+		if STATE.SkillC then table.insert(keys, "C") end
+		if STATE.SkillV then table.insert(keys, "V") end
+
+		for _, key in ipairs(keys) do
+			remote:FireServer(targetPos)
+			VIM:SendKeyEvent(true, key, false, game)
+			task.wait(0.1)
+			VIM:SendKeyEvent(false, key, false, game)
+			task.wait(0.15)
+		end
+	end)
 end
 
 local EntranceCF = nil
@@ -710,21 +745,22 @@ FarmGroup:AddToggle("AutoFarm", {
 									local targets = BringMob(closest)
 									toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
 
-									hrp = getHRP()
-									if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
-										if tick() - LastRotate >= 0.25 then
-											AttackRotation = (AttackRotation + 180) % 360
-											LastRotate = tick()
-										end
-										if #targets >= 2 then
-											Attack({targets[1], targets[2]})
-										else
-											Attack(closest)
-										end
+								hrp = getHRP()
+								if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
+									if tick() - LastRotate >= 0.25 then
+										AttackRotation = (AttackRotation + 180) % 360
+										LastRotate = tick()
 									end
-								until not STATE.AutoFarm or not closest.Parent or closest.Humanoid.Health <= 0
-							end
-						else
+									if #targets >= 2 then
+										Attack({targets[1], targets[2]})
+									else
+										Attack(closest)
+									end
+									useSkills(mobHRP.Position)
+								end
+							until not STATE.AutoFarm or not closest.Parent or closest.Humanoid.Health <= 0
+						end
+					else
 							CheckQuest()
 							local Quest = LocalPlayer.PlayerGui.Main.Quest
 							local QuestTitle = Quest.Container.QuestTitle
@@ -749,18 +785,19 @@ FarmGroup:AddToggle("AutoFarm", {
 														local targets = BringMob(v)
 														toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
 
-														hrp = getHRP()
-														if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
-															if tick() - LastRotate >= 0.25 then
-																AttackRotation = (AttackRotation + 180) % 360
-																LastRotate = tick()
-															end
-															if #targets >= 2 then
-																Attack({targets[1], targets[2]})
-															else
-																Attack(v)
-															end
+													hrp = getHRP()
+													if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
+														if tick() - LastRotate >= 0.25 then
+															AttackRotation = (AttackRotation + 180) % 360
+															LastRotate = tick()
 														end
+														if #targets >= 2 then
+															Attack({targets[1], targets[2]})
+														else
+															Attack(v)
+														end
+														useSkills(mobHRP.Position)
+													end
 													until not STATE.AutoFarm or not v.Parent or v.Humanoid.Health <= 0 or not Quest.Visible or not v:FindFirstChild("HumanoidRootPart")
 												else
 													CommF:InvokeServer("AbandonQuest")
@@ -778,7 +815,12 @@ FarmGroup:AddToggle("AutoFarm", {
 							else
 								local questDist = (CFrameQ.Position - hrp.Position).Magnitude
 								if questDist >= 3000 then
-									BTP(CFrameQ)
+									if EntranceCF then
+										pcall(function() CommF:InvokeServer("requestEntrance", EntranceCF) end)
+										task.wait(1)
+									else
+										BTP(CFrameQ)
+									end
 								else
 									toTarget(CFrameQ)
 								end
@@ -922,6 +964,7 @@ local FruitGroup = FarmSub:AddLeftGroupbox("Fruits", "apple")
 							if obj:IsA("Tool") and STATE.AutoFruit then
 								collectFruit(obj)
 								foundFruit = true
+								STATE.LastFruitSeen = os.time()
 							end
 						end
 
@@ -931,6 +974,7 @@ local FruitGroup = FarmSub:AddLeftGroupbox("Fruits", "apple")
 								if obj:IsA("Tool") and STATE.AutoFruit then
 									collectFruit(obj)
 									foundFruit = true
+									STATE.LastFruitSeen = os.time()
 								end
 							end
 						end
@@ -980,6 +1024,81 @@ FruitGroup:AddToggle("AutoStoreFruit", {
 
 FruitGroup:AddLabel("Auto Collect: tweens to spawned fruits on map")
 FruitGroup:AddLabel("Auto Store: stores all fruits in inventory")
+
+local MoonPhaseLabel = FruitGroup:AddLabel("Moon: detecting...")
+local FruitTimerLabel = FruitGroup:AddLabel("Next fruit in: calculating...")
+
+local MOON_TEXTURES = {
+	["9709149431"] = "Full Moon (100%)",
+	["9709149052"] = "Full Moon (75%)",
+	["9709143733"] = "Full Moon (50%)",
+	["9709150401"] = "Full Moon (25%)",
+	["9709149680"] = "Full Moon (15%)",
+}
+
+task.spawn(function()
+	while task.wait(5) do
+		pcall(function()
+			local sky = Lighting:FindFirstChildOfClass("Sky")
+			if sky then
+				local texId = sky.MoonTextureId
+				local id = texId:match("%d+")
+				if id and MOON_TEXTURES[id] then
+					MoonPhaseLabel:SetText("Moon: " .. MOON_TEXTURES[id])
+				else
+					MoonPhaseLabel:SetText("Moon: Waiting...")
+				end
+			end
+
+			local dayOfWeek = os.date("*t").wday
+			local isWeekend = (dayOfWeek == 1 or dayOfWeek == 7)
+			STATE.FruitRespawnTime = isWeekend and 2700 or 3600
+		end)
+	end
+end)
+
+task.spawn(function()
+	while task.wait(15) do
+		pcall(function()
+			for _, obj in ipairs(Workspace:GetChildren()) do
+				if obj:IsA("Tool") then
+					STATE.LastFruitSeen = os.time()
+				end
+			end
+			local map = Workspace:FindFirstChild("Map")
+			if map then
+				for _, obj in ipairs(map:GetDescendants()) do
+					if obj:IsA("Tool") then
+						STATE.LastFruitSeen = os.time()
+					end
+				end
+			end
+		end)
+	end
+end)
+
+task.spawn(function()
+	while task.wait(1) do
+		pcall(function()
+			if STATE.LastFruitSeen == 0 then
+				FruitTimerLabel:SetText("Next fruit in: searching...")
+			else
+				local elapsed = os.time() - STATE.LastFruitSeen
+				local remaining = math.max(0, STATE.FruitRespawnTime - elapsed)
+				if remaining <= 0 then
+					FruitTimerLabel:SetText("Next fruit in: soon")
+				else
+					local mins = math.floor(remaining / 60)
+					local secs = remaining % 60
+					local dayOfWeek = os.date("*t").wday
+					local isWeekend = (dayOfWeek == 1 or dayOfWeek == 7)
+					local serverType = isWeekend and "Private" or "Public"
+					FruitTimerLabel:SetText("Next fruit in: " .. mins .. "m " .. secs .. "s (" .. serverType .. ")")
+				end
+			end
+		end)
+	end
+end)
 
 local RaidSub = MainTab:AddSubTab("Raids", "shield")
 local RaidGroup = RaidSub:AddLeftGroupbox("Raid Control", "zap")
@@ -1048,10 +1167,11 @@ RaidGroup:AddToggle("AutoRaid", {
 									closest.HumanoidRootPart.Transparency = 1
 									closest.Humanoid:ChangeState(11)
 
-									hrp = getHRP()
-									if hrp and (hrp.Position - closest.HumanoidRootPart.Position).Magnitude <= 150 then
-										Attack(closest)
-									end
+								hrp = getHRP()
+								if hrp and (hrp.Position - closest.HumanoidRootPart.Position).Magnitude <= 150 then
+									Attack(closest)
+									useSkills(closest.HumanoidRootPart.Position)
+								end
 								end
 							until not STATE.AutoRaid or i > 4
 						end
@@ -1089,6 +1209,27 @@ RaidSet:AddDropdown("RaidType", {
 local CombatSub = CombatTab:AddSubTab("Bounty", "crosshair")
 local BountyGroup = CombatSub:AddLeftGroupbox("Bounty Farm", "target")
 local BountySet = CombatSub:AddRightGroupbox("Settings", "sliders")
+
+local SkillsSub = CombatTab:AddSubTab("Skills", "zap")
+local SkillsGroup = SkillsSub:AddLeftGroupbox("Auto Skills", "swords")
+local SkillsSet = SkillsSub:AddRightGroupbox("Skill Config", "sliders")
+
+SkillsGroup:AddToggle("AutoSkill", {
+	Text = "Auto Use Skills",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoSkill = v
+	end,
+}):AddKeyPicker("AutoSkillKey", {
+	Default = "None", Text = "Skill Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
+})
+
+SkillsSet:AddToggle("SkillZ", { Text = "Skill Z", Default = true, Callback = function(v) STATE.SkillZ = v end })
+SkillsSet:AddToggle("SkillX", { Text = "Skill X", Default = true, Callback = function(v) STATE.SkillX = v end })
+SkillsSet:AddToggle("SkillC", { Text = "Skill C", Default = true, Callback = function(v) STATE.SkillC = v end })
+SkillsSet:AddToggle("SkillV", { Text = "Skill V", Default = true, Callback = function(v) STATE.SkillV = v end })
+
+SkillsGroup:AddLabel("Uses fruit skills automatically during combat")
 
 BountyGroup:AddToggle("AutoBounty", {
 	Text = "Auto Bounty Farm",
