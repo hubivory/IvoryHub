@@ -153,9 +153,13 @@ local function moveTo(position)
 	local hrp = getHRP()
 	if not hrp then return end
 	local dist = (hrp.Position - position).Magnitude
-	local tweenInfo = TweenInfo.new(math.clamp(dist / 350, 0.1, 5), Enum.EasingStyle.Linear)
-	local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(position)})
+	if dist < 2 then return end
+	local speed = 350
+	local duration = math.clamp(dist / speed, 0.1, 3)
+	local goal = CFrame.new(position) * CFrame.new(0, 0, 0)
+	local tween = TweenService:Create(hrp, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = goal})
 	tween:Play()
+	tween.Completed:Wait()
 end
 
 local function loadEnemy(enemyName)
@@ -499,6 +503,10 @@ FarmGroup:AddToggle("AutoFarm", {
 						if info and info.enemy then
 							local hrp = getHRP()
 							if not hrp then return end
+							if not LocalPlayer.PlayerGui.Main.Quest.Visible then
+								getQuest()
+								return
+							end
 							local target
 							for _, enemy in ipairs(Workspace.Enemies:GetChildren()) do
 								local hum = enemy:FindFirstChildWhichIsA("Humanoid")
@@ -507,18 +515,12 @@ FarmGroup:AddToggle("AutoFarm", {
 									break
 								end
 							end
-							if not LocalPlayer.PlayerGui.Main.Quest.Visible then
-								getQuest()
-								return
-							end
 							if target then
 								local root = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("Head")
 								if root then
 									local dist = (hrp.Position - root.Position).Magnitude
 									if dist > 15 then
-										moveTo(root.Position + Vector3.new(0, 10, 0))
-									else
-										hrp.CFrame = root.CFrame * CFrame.new(0, 10, -8)
+										moveTo(root.Position + Vector3.new(0, 10, -6))
 									end
 								end
 							else
@@ -529,7 +531,7 @@ FarmGroup:AddToggle("AutoFarm", {
 							end
 						end
 					end)
-					task.wait(0.3)
+					task.wait(0.1)
 				end
 				detachFloat()
 			end)
