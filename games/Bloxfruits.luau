@@ -969,9 +969,9 @@ local FruitGroup = FarmSub:AddLeftGroupbox("Fruits", "apple")
 						if not hrp then return end
 
 						local function collectFruit(fruit)
-							if not fruit or not fruit.Parent then return end
+							if not fruit or not fruit.Parent then STATE.CollectingFruit = false; return end
 							local handle = fruit:FindFirstChild("Handle")
-							if not handle then return end
+							if not handle then STATE.CollectingFruit = false; return end
 
 							STATE.CollectingFruit = true
 							if tweenActive then pcall(function() tweenActive:Cancel() end) end
@@ -984,16 +984,17 @@ local FruitGroup = FarmSub:AddLeftGroupbox("Fruits", "apple")
 								toTarget(handle.Position)
 							end
 
+							task.wait(0.5)
 							hrp = getHRP()
-							if hrp and (hrp.Position - handle.Position).Magnitude <= 15 then
+							if hrp and (hrp.Position - handle.Position).Magnitude <= 25 then
 								pcall(function()
 									local originalName = fruit:GetAttribute("OriginalName")
 									if originalName then
 										CommF:InvokeServer("StoreFruit", originalName, fruit)
 									end
 								end)
-								STATE.CollectingFruit = false
 							end
+							STATE.CollectingFruit = false
 						end
 
 						local foundFruit = false
