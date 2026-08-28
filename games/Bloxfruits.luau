@@ -61,7 +61,7 @@ local Toggles = Library.Toggles
 Library.ForceCheckbox = false
 Library.ShowToggleFrameInKeybinds = true
 
-local hitData = {[4] = "4676ac1a"}
+local Monster, NameQuest, LevelQuest, NameCheckQuest, CFrameQ, CFrameMon
 
 local STATE = {
 	AutoFarm = false,
@@ -198,6 +198,8 @@ local function equipWeapon(weaponType)
 	end
 end
 
+local EquipWeapon = equipWeapon
+
 local function attachFloat()
 	local hrp = getHRP()
 	if not hrp then return end
@@ -226,111 +228,139 @@ local function detachFloat()
 	if bg then bg:Destroy() end
 end
 
-local function autoAttackLoop()
-	while STATE.AutoFarm or STATE.AutoBounty do
-		task.wait(0.05)
-		pcall(function()
-			local hrp = getHRP()
-			if not hrp then return end
-			local enemiesInRange = {}
-			for _, enemy in ipairs(Workspace.Enemies:GetChildren()) do
-				local hum = enemy:FindFirstChildWhichIsA("Humanoid")
-				local head = enemy:FindFirstChild("Head")
-				if hum and head and hum.Health > 0 then
-					if (hrp.Position - head.Position).Magnitude <= 60 then
-						table.insert(enemiesInRange, {enemy, head})
-					end
-				end
-			end
-			if STATE.AutoBounty then
-				for _, p in ipairs(Players:GetPlayers()) do
-					if p ~= LocalPlayer and p.Character then
-						local head = p.Character:FindFirstChild("Head")
-						if head and (hrp.Position - head.Position).Magnitude <= 60 then
-							table.insert(enemiesInRange, {p.Character, head})
-						end
-					end
-				end
-			end
-			if #enemiesInRange >= 1 then
-				local target = enemiesInRange[1]
-				local args
-				if #enemiesInRange >= 2 then
-					local other = enemiesInRange[2]
-					args = {target[2], {{other[1], other[2]}}, [4] = hitData[4]}
-				else
-					args = {target[2], {}, [4] = hitData[4]}
-				end
-				RegisterAttack:FireServer(0)
-				RegisterHit:FireServer(unpack(args))
-			end
-			equipWeapon(STATE.SelectedWeapon)
-		end)
+local function CheckQuest()
+	local level = getLevel()
+	if level >= 0 and level <= 9 then
+		Monster = "Bandit" NameQuest = "BanditQuest1" LevelQuest = 1 NameCheckQuest = "Bandit" CFrameQ = CFrame.new(1060,17,1547) CFrameMon = CFrame.new(1145,17,1634)
+	elseif level >= 10 and level <= 14 then
+		Monster = "Monkey" NameQuest = "JungleQuest" LevelQuest = 1 NameCheckQuest = "Monkey" CFrameQ = CFrame.new(-1602,37,152) CFrameMon = CFrame.new(-1496,39,35)
+	elseif level >= 15 and level <= 29 then
+		Monster = "Gorilla" NameQuest = "JungleQuest" LevelQuest = 2 NameCheckQuest = "Gorilla" CFrameQ = CFrame.new(-1602,37,152) CFrameMon = CFrame.new(-1237,6,-486)
+	elseif level >= 30 and level <= 39 then
+		Monster = "Pirate" NameQuest = "BuggyQuest1" LevelQuest = 1 NameCheckQuest = "Pirate" CFrameQ = CFrame.new(-1140,5,3828) CFrameMon = CFrame.new(-1115,14,3938)
+	elseif level >= 40 and level <= 59 then
+		Monster = "Brute" NameQuest = "BuggyQuest1" LevelQuest = 2 NameCheckQuest = "Brute" CFrameQ = CFrame.new(-1140,5,3828) CFrameMon = CFrame.new(-1145,15,4350)
+	elseif level >= 60 and level <= 74 then
+		Monster = "Desert Bandit" NameQuest = "DesertQuest" LevelQuest = 1 NameCheckQuest = "Desert Bandit" CFrameQ = CFrame.new(897,7,4388) CFrameMon = CFrame.new(932,7,4484)
+	elseif level >= 75 and level <= 89 then
+		Monster = "Desert Officer" NameQuest = "DesertQuest" LevelQuest = 2 NameCheckQuest = "Desert Officers" CFrameQ = CFrame.new(897,7,4388) CFrameMon = CFrame.new(1572,10,4373)
+	elseif level >= 90 and level <= 99 then
+		Monster = "Snow Bandit" NameQuest = "SnowQuest" LevelQuest = 1 NameCheckQuest = "Snow Bandits" CFrameQ = CFrame.new(1386,87,-1297) CFrameMon = CFrame.new(1289,150,-1442)
+	elseif level >= 100 and level <= 119 then
+		Monster = "Snowman" NameQuest = "SnowQuest" LevelQuest = 2 NameCheckQuest = "Snowman" CFrameQ = CFrame.new(1386,87,-1297) CFrameMon = CFrame.new(1289,150,-1442)
+	elseif level >= 120 and level <= 149 then
+		Monster = "Chief Petty Officer" NameQuest = "MarineQuest2" LevelQuest = 1 NameCheckQuest = "Chief Petty Officer" CFrameQ = CFrame.new(-5036,29,4325) CFrameMon = CFrame.new(-4855,23,4308)
+	elseif level >= 150 and level <= 174 then
+		Monster = "Sky Bandit" NameQuest = "SkyQuest" LevelQuest = 1 NameCheckQuest = "Sky Bandit" CFrameQ = CFrame.new(-4842,718,-2623) CFrameMon = CFrame.new(-4981,278,-2830)
+	elseif level >= 175 and level <= 189 then
+		Monster = "Dark Master" NameQuest = "SkyQuest" LevelQuest = 2 NameCheckQuest = "Dark Master" CFrameQ = CFrame.new(-4842,718,-2623) CFrameMon = CFrame.new(-5250,389,-2272)
+	elseif level >= 190 and level <= 209 then
+		Monster = "Prisoner" NameQuest = "PrisonerQuest" LevelQuest = 1 NameCheckQuest = "Prisoners" CFrameQ = CFrame.new(5308,2,474) CFrameMon = CFrame.new(5411,96,690)
+	elseif level >= 210 and level <= 249 then
+		Monster = "Dangerous Prisoner" NameQuest = "PrisonerQuest" LevelQuest = 2 NameCheckQuest = "Dangerous Prisoner" CFrameQ = CFrame.new(5308,2,474) CFrameMon = CFrame.new(5411,96,690)
+	elseif level >= 250 and level <= 299 then
+		Monster = "Toga Warrior" NameQuest = "ColosseumQuest" LevelQuest = 1 NameCheckQuest = "Toga Warrior" CFrameQ = CFrame.new(-1576,8,-2985) CFrameMon = CFrame.new(-1641,7,-2864)
+	elseif level >= 300 and level <= 329 then
+		Monster = "Military Soldier" NameQuest = "MagmaQuest" LevelQuest = 1 NameCheckQuest = "Military Soldier" CFrameQ = CFrame.new(-5316,12,8517) CFrameMon = CFrame.new(-5408,11,8447)
+	elseif level >= 330 and level <= 374 then
+		Monster = "Military Spy" NameQuest = "MagmaQuest" LevelQuest = 2 NameCheckQuest = "Military Spy" CFrameQ = CFrame.new(-5316,12,8517) CFrameMon = CFrame.new(-5815,84,8820)
+	elseif level >= 375 and level <= 399 then
+		Monster = "Fishman Warrior" NameQuest = "FishmanQuest" LevelQuest = 1 NameCheckQuest = "Fishman Warrior" CFrameQ = CFrame.new(61123,19,1569) CFrameMon = CFrame.new(60859,19,1501)
+	elseif level >= 400 and level <= 449 then
+		Monster = "Fishman Commando" NameQuest = "FishmanQuest" LevelQuest = 2 NameCheckQuest = "Fishman Commando" CFrameQ = CFrame.new(61123,19,1569) CFrameMon = CFrame.new(61891,19,1470)
+	elseif level >= 450 and level <= 474 then
+		Monster = "God's Guard" NameQuest = "SkyExp1Quest" LevelQuest = 1 NameCheckQuest = "God's Guards" CFrameQ = CFrame.new(-4722,845,-1954) CFrameMon = CFrame.new(-4698,845,-1912)
+	elseif level >= 475 and level <= 524 then
+		Monster = "Shanda" NameQuest = "SkyExp1Quest" LevelQuest = 2 NameCheckQuest = "Shandas" CFrameQ = CFrame.new(-7862,5546,-380) CFrameMon = CFrame.new(-7685,5567,-502)
+	elseif level >= 525 and level <= 549 then
+		Monster = "Royal Squad" NameQuest = "SkyExp2Quest" LevelQuest = 1 NameCheckQuest = "Royal Squad" CFrameQ = CFrame.new(-7904,5636,-1412) CFrameMon = CFrame.new(-7670,5607,-1460)
+	elseif level >= 550 and level <= 624 then
+		Monster = "Royal Soldier" NameQuest = "SkyExp2Quest" LevelQuest = 2 NameCheckQuest = "Royal Soldier" CFrameQ = CFrame.new(-7904,5636,-1412) CFrameMon = CFrame.new(-7828,5607,-1744)
+	elseif level >= 625 and level <= 649 then
+		Monster = "Galley Pirate" NameQuest = "FountainQuest" LevelQuest = 1 NameCheckQuest = "Galley Pirate" CFrameQ = CFrame.new(5256,39,4050) CFrameMon = CFrame.new(5589,45,3996)
+	elseif level >= 650 and level <= 850 then
+		Monster = "Galley Captain" NameQuest = "FountainQuest" LevelQuest = 2 NameCheckQuest = "Galley Captain" CFrameQ = CFrame.new(5256,39,4050) CFrameMon = CFrame.new(5649,39,4936)
 	end
 end
 
-local islandNames = {
-	BanditQuest1 = "Windmill", MarineQuest = "MarineStart", JungleQuest = "Jungle",
-	BuggyQuest1 = "Pirate", BuggyQuest2 = "Pirate", DesertQuest = "Desert",
-	SnowQuest = "Ice", MarineQuest2 = "MarineBase", SkyQuest = "Sky",
-	SkyQuest2 = "Sky", PrisonerQuest = "Prison", ImpelQuest = "Prison",
-	ColosseumQuest = "Colosseum", MagmaQuest = "Magma", FishmanQuest = "Fishmen",
-	SkyExp1Quest = "SkyArea1", SkyExp2Quest = "SkyArea2", FountainQuest = "Fountain",
-}
+local v106 = tostring(LocalPlayer.UserId):sub(2, 4) .. tostring(coroutine.running()):sub(11, 15)
+local seed = ReplicatedStorage.Modules.Net.seed:InvokeServer() * 2
+local AttackRotation = 0
+local LastRotate = 0
+local LastAttackTime = 0
 
-local Quests = nil
-pcall(function()
-	Quests = loadstring(game:HttpGet("https://raw.githubusercontent.com/CFR-Executor/resources/refs/heads/main/bfquestdumpfull"))()
-end)
-
-local function getQuest()
-	if not Quests then return nil end
-	local level = getLevel()
-	local highestQuest, highestIsland
-	for islandName, questList in pairs(Quests) do
-		for _, quest in ipairs(questList) do
-			if level >= quest.LevelReq then
-				if not highestQuest or quest.LevelReq > highestQuest.LevelReq then
-					highestQuest = quest
-					highestIsland = islandName
+local r = nil
+task.spawn(function()
+	while task.wait() do
+		local paths = {ReplicatedStorage.Util, ReplicatedStorage.Remotes, ReplicatedStorage.Assets, ReplicatedStorage.Common, ReplicatedStorage.FX}
+		for _, v in paths do
+			for _, v1 in v:GetChildren() do
+				if v1:GetAttribute("Id") and v1:IsA("RemoteEvent") then
+					r = v1
+					break
 				end
 			end
 		end
 	end
-	if not highestQuest then return nil end
-	local questFrame = LocalPlayer.PlayerGui:WaitForChild("Main"):WaitForChild("Quest")
-	local hasQuest = questFrame.Visible
-	if not hasQuest then
-		pcall(function()
-			CommF:InvokeServer(unpack(highestQuest.Args))
-		end)
+end)
+
+local function IsOwn(name)
+	if LocalPlayer.Backpack:FindFirstChild(name) then
+		return LocalPlayer.Backpack:FindFirstChild(name)
 	end
-	local enemyName
-	if hasQuest then
-		local titleLabel = questFrame.Container.QuestTitle:FindFirstChild("Title")
-		if titleLabel then
-			local parsed = titleLabel.Text:match("Defeat%s+%d+%s+(.+)%s+%(%d+/%d+%)")
-			if parsed then enemyName = parsed end
+	local k
+	for _, v in LocalPlayer.Character:GetChildren() do
+		if v:IsA("Tool") and v.Name == name then
+			k = v
 		end
 	end
-	if not enemyName and highestQuest.Task then
-		for name, _ in pairs(highestQuest.Task) do
-			enemyName = name
+	return k or LocalPlayer.Character:FindFirstChild(name)
+end
+
+local function Attack(v)
+	if tick() - LastAttackTime >= 0.2 then
+		if not LocalPlayer.Character:FindFirstChild("HasBuso") then
+			CommF:InvokeServer("Buso")
+		end
+		local h = "RE/RegisterHit"
+		local key = math.floor(workspace:GetServerTimeNow() / 10 % 10)
+		local encoded = ""
+		for i = 1, #h do
+			encoded = encoded .. string.char(bit32.bxor(string.byte(h, i), key + 1))
+		end
+		if type(v) == "table" then
+			RegisterAttack:FireServer(0)
+			r:FireServer(encoded, bit32.bxor(r:GetAttribute("Id") + 909090, seed), v[1]:FindFirstChild("Head"), {{v[1], v[1]:FindFirstChild("Head")}, v[1], {v[2], v[2]:FindFirstChild("Head")}, v[2]}, nil, v106)
+			RegisterHit:FireServer(v[1]:FindFirstChild("Head"), {{v[1], v[1]:FindFirstChild("Head")}, v[1], {v[2], v[2]:FindFirstChild("Head")}, v[2]}, nil, v106)
+		else
+			RegisterAttack:FireServer(0)
+			r:FireServer(encoded, bit32.bxor(r:GetAttribute("Id") + 909090, seed), v:FindFirstChild("Head"), {v, v:FindFirstChild("Head")}, v106)
+			RegisterHit:FireServer(v:FindFirstChild("Head"), {v, v:FindFirstChild("Head")}, v106)
+		end
+		LastAttackTime = tick()
+	end
+end
+
+local function BringMob(target)
+	pcall(sethiddenproperty, LocalPlayer, "SimulationRadius", math.huge)
+	local acf = target.HumanoidRootPart.CFrame
+	local targets = {target}
+	for _, v in ipairs(workspace.Enemies:GetChildren()) do
+		if v.Name == target.Name and v ~= target and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 and (acf.Position - v.HumanoidRootPart.Position).Magnitude <= 350 then
+			local bv = v.HumanoidRootPart:FindFirstChild("BringVelocity")
+			if not bv then
+				bv = Instance.new("BodyVelocity")
+				bv.Name = "BringVelocity"
+				bv.MaxForce = Vector3.new(10000, 10000, 10000)
+				bv.Parent = v.HumanoidRootPart
+			end
+			bv.Velocity = Vector3.zero
+			v.HumanoidRootPart.CFrame = acf
+			table.insert(targets, v)
 			break
 		end
 	end
-	local island = islandNames[highestIsland] or highestIsland
-	if not isOnIsland(island) then
-		teleportToIsland(island)
-	end
-	if enemyName then loadEnemy(enemyName) end
-	return {
-		quest = highestQuest,
-		enemy = enemyName,
-		island = island,
-		levelReq = highestQuest.LevelReq,
-		args = highestQuest.Args,
-	}
+	return targets
 end
 
 local ESPObjects = {}
@@ -499,43 +529,66 @@ FarmGroup:AddToggle("AutoFarm", {
 			task.spawn(function()
 				while STATE.AutoFarm do
 					pcall(function()
-						local info = getQuest()
-						if info and info.enemy then
-							local hrp = getHRP()
-							if not hrp then return end
-							if not LocalPlayer.PlayerGui.Main.Quest.Visible then
-								getQuest()
-								return
+						CheckQuest()
+						local Quest = LocalPlayer.PlayerGui.Main.Quest
+						local QuestTitle = Quest.Container.QuestTitle
+						local hrp = getHRP()
+						if not hrp then return end
+
+						if not Quest.Visible then
+							if (CFrameQ.Position - hrp.Position).Magnitude > 150 then
+								moveTo(CFrameQ.Position)
+							else
+								CommF:InvokeServer("StartQuest", NameQuest, LevelQuest)
 							end
-							local target
-							for _, enemy in ipairs(Workspace.Enemies:GetChildren()) do
-								local hum = enemy:FindFirstChildWhichIsA("Humanoid")
-								if enemy.Name == info.enemy and hum and hum.Health > 0 then
-									target = enemy
-									break
-								end
-							end
-							if target then
-								local root = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("Head")
-								if root then
-									local dist = (hrp.Position - root.Position).Magnitude
-									if dist > 15 then
-										moveTo(root.Position + Vector3.new(0, 10, -6))
+						else
+							if workspace.Enemies:FindFirstChild(Monster) then
+								for _, v in pairs(workspace.Enemies:GetChildren()) do
+									if v.Name == Monster and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+										if string.find(QuestTitle.Title.Text, NameCheckQuest) then
+											local mobHRP = v.HumanoidRootPart
+											v.Humanoid.JumpPower = 0
+											v.Humanoid.WalkSpeed = 0
+											mobHRP.CanCollide = false
+
+											local targets = BringMob(v)
+											local myHRP = getHRP()
+											if not myHRP then return end
+											local dist = (myHRP.Position - mobHRP.Position).Magnitude
+
+											if dist > 150 then
+												moveTo(mobHRP.Position + Vector3.new(0, 30, 0))
+											else
+												EquipWeapon(STATE.SelectedWeapon)
+												if tick() - LastRotate >= 0.25 then
+													AttackRotation = (AttackRotation + 180) % 360
+													LastRotate = tick()
+												end
+												myHRP.CFrame = mobHRP.CFrame * CFrame.new(0, 30, 0) * CFrame.Angles(0, math.rad(AttackRotation), 0)
+												if #targets >= 2 then
+													Attack({targets[1], targets[2]})
+												else
+													Attack(v)
+												end
+											end
+											break
+										else
+											CommF:InvokeServer("AbandonQuest")
+										end
 									end
 								end
 							else
-								loadEnemy(info.enemy)
+								moveTo(CFrameMon.Position)
 							end
-							for _, bodypart in ipairs(Character:GetChildren()) do
-								if bodypart:IsA("BasePart") then bodypart.CanCollide = false end
-							end
+						end
+						for _, bodypart in ipairs(Character:GetChildren()) do
+							if bodypart:IsA("BasePart") then bodypart.CanCollide = false end
 						end
 					end)
 					task.wait(0.1)
 				end
 				detachFloat()
 			end)
-			task.spawn(autoAttackLoop)
 		else
 			detachFloat()
 		end
@@ -555,7 +608,7 @@ FarmGroup:AddDropdown("WeaponType", {
 })
 
 FarmGroup:AddButton("Refresh Quest", function()
-	pcall(function() getQuest() end)
+	pcall(function() CheckQuest() end)
 end)
 
 FarmGroup:AddButton("Stop Farming", function()
@@ -698,7 +751,6 @@ BountyGroup:AddToggle("AutoBounty", {
 		STATE.AutoBounty = v
 		if v then
 			attachFloat()
-			task.spawn(autoAttackLoop)
 		else
 			detachFloat()
 		end
