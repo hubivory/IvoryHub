@@ -724,63 +724,66 @@ FarmGroup:AddToggle("AutoFarm", {
 							end
 						else
 							CheckQuest()
-							if string.find(QuestTitle.Title.Text, NameCheckQuest) then
-								if workspace.Enemies:FindFirstChild(Monster) then
-									for _, v in pairs(workspace.Enemies:GetChildren()) do
-										if v.Name == Monster and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-											if string.find(QuestTitle.Title.Text, NameCheckQuest) then
-												repeat task.wait()
-													hrp = getHRP()
-													if not hrp then break end
-													EquipWeapon(STATE.SelectedWeapon)
-													local mobHRP = v.HumanoidRootPart
-													v.Humanoid.WalkSpeed = 0
-													v.HumanoidRootPart.CanCollide = false
-													v.Head.CanCollide = false
-													v.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-													v.HumanoidRootPart.Transparency = 1
-													v.Humanoid:ChangeState(11)
+							local Quest = LocalPlayer.PlayerGui.Main.Quest
+							local QuestTitle = Quest.Container.QuestTitle
+							if Quest.Visible then
+								if string.find(QuestTitle.Title.Text, NameCheckQuest) then
+									if workspace.Enemies:FindFirstChild(Monster) then
+										for _, v in pairs(workspace.Enemies:GetChildren()) do
+											if v.Name == Monster and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+												if string.find(QuestTitle.Title.Text, NameCheckQuest) then
+													repeat task.wait()
+														hrp = getHRP()
+														if not hrp then break end
+														EquipWeapon(STATE.SelectedWeapon)
+														local mobHRP = v.HumanoidRootPart
+														v.Humanoid.WalkSpeed = 0
+														v.HumanoidRootPart.CanCollide = false
+														v.Head.CanCollide = false
+														v.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+														v.HumanoidRootPart.Transparency = 1
+														v.Humanoid:ChangeState(11)
 
-													local targets = BringMob(v)
-													toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
+														local targets = BringMob(v)
+														toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
 
-													hrp = getHRP()
-													if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
-														if tick() - LastRotate >= 0.25 then
-															AttackRotation = (AttackRotation + 180) % 360
-															LastRotate = tick()
+														hrp = getHRP()
+														if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
+															if tick() - LastRotate >= 0.25 then
+																AttackRotation = (AttackRotation + 180) % 360
+																LastRotate = tick()
+															end
+															if #targets >= 2 then
+																Attack({targets[1], targets[2]})
+															else
+																Attack(v)
+															end
 														end
-														if #targets >= 2 then
-															Attack({targets[1], targets[2]})
-														else
-															Attack(v)
-														end
-													end
-												until not STATE.AutoFarm or not v.Parent or v.Humanoid.Health <= 0 or not Quest.Visible or not v:FindFirstChild("HumanoidRootPart")
-											else
-												CommF:InvokeServer("AbandonQuest")
+													until not STATE.AutoFarm or not v.Parent or v.Humanoid.Health <= 0 or not Quest.Visible or not v:FindFirstChild("HumanoidRootPart")
+												else
+													CommF:InvokeServer("AbandonQuest")
+												end
 											end
+										end
+									else
+										if CFrameMon and CFrameMon.Position then
+											toTarget(CFrameMon * CFrame.new(0, 30, 5))
 										end
 									end
 								else
-									if CFrameMon and CFrameMon.Position then
-										toTarget(CFrameMon * CFrame.new(0, 30, 5))
-									end
+									CommF:InvokeServer("AbandonQuest")
 								end
 							else
-								CommF:InvokeServer("AbandonQuest")
-							end
-						else
-							CheckQuest()
-							local questDist = (CFrameQ.Position - hrp.Position).Magnitude
-							if questDist >= 3000 then
-								BTP(CFrameQ)
-							else
-								toTarget(CFrameQ)
-							end
-							if (hrp.Position - CFrameQ.Position).Magnitude <= 20 then
-								CommF:InvokeServer("StartQuest", NameQuest, LevelQuest)
-								task.wait(0.5)
+								local questDist = (CFrameQ.Position - hrp.Position).Magnitude
+								if questDist >= 3000 then
+									BTP(CFrameQ)
+								else
+									toTarget(CFrameQ)
+								end
+								if (hrp.Position - CFrameQ.Position).Magnitude <= 20 then
+									CommF:InvokeServer("StartQuest", NameQuest, LevelQuest)
+									task.wait(0.5)
+								end
 							end
 						end -- end Quest mode
 						end -- end Nearest/Quest branch
