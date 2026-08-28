@@ -131,6 +131,29 @@ local function isOnIsland(islandName)
 	return false
 end
 
+local function BTP(Point)
+	pcall(function()
+		local hrp = getHRP()
+		if not hrp then return end
+		local hum = getHum()
+		if not hum then return end
+		if (Point.Position - hrp.Position).Magnitude < 1500 then return end
+		if hum.Health <= 0 then
+			repeat task.wait() until hum.Health > 0
+			task.wait(0.2)
+		end
+		hrp.CFrame = Point
+		task.wait(0.1)
+		hum.Health = 0
+		task.wait(1.5)
+		hrp = getHRP()
+		if hrp then
+			hrp.CFrame = Point
+			task.wait(0.1)
+		end
+	end)
+end
+
 local function teleportToIsland(island)
 	local hrp = getHRP()
 	if not hrp then return end
@@ -154,65 +177,55 @@ local function teleportToIsland(island)
 	end
 end
 
-local activeTween = nil
+local tweenActive = nil
 
-local function toTarget(...)
-	local args = {...}
-	local targetPos = args[1]
-	local RealTarget
-	if type(targetPos) == "vector" then
-		RealTarget = CFrame.new(targetPos)
-	elseif type(targetPos) == "userdata" then
-		RealTarget = targetPos
-	elseif type(targetPos) == "number" then
-		RealTarget = CFrame.new(unpack(args))
-	end
-
+local function toTarget(Pos)
 	local hrp = getHRP()
 	if not hrp then return end
 	local hum = getHum()
 	if not hum then return end
+
 	if hum.Health <= 0 then
-		if activeTween then activeTween:Cancel() end
+		if tweenActive then pcall(function() tweenActive:Cancel() end) end
 		repeat task.wait() until getHum() and getHum().Health > 0
 		task.wait(0.2)
 		hrp = getHRP()
 		if not hrp then return end
 	end
 
-	pcall(function() hum.Sit = false; hum:ChangeState(Enum.HumanoidStateType.Running) end)
+	pcall(function() hum.Sit = false end)
+
+	local RealTarget
+	if typeof(Pos) == "Vector3" then
+		RealTarget = CFrame.new(Pos)
+	elseif typeof(Pos) == "CFrame" then
+		RealTarget = Pos
+	else
+		return
+	end
 
 	local dist = (RealTarget.Position - hrp.Position).Magnitude
+	if dist < 10 then
+		hrp.CFrame = RealTarget
+		return
+	end
+
 	local speed = 315
-
 	local tweenInfo = TweenInfo.new(dist / speed, Enum.EasingStyle.Linear)
-	local tweenOk, tweenErr = pcall(function()
-		if activeTween then activeTween:Cancel() end
-		activeTween = TweenService:Create(hrp, tweenInfo, {CFrame = RealTarget})
-		activeTween:Play()
+	pcall(function()
+		tweenActive = TweenService:Create(hrp, tweenInfo, {CFrame = RealTarget})
+		tweenActive:Play()
 	end)
-
-	return {
-		Stop = function()
-			if activeTween then activeTween:Cancel() end
-		end,
-		Wait = function()
-			if activeTween then activeTween.Completed:Wait() end
-		end,
-	}
 end
 
 local function GetIsLand(...)
 	local RealtargetPos = {...}
 	local targetPos = RealtargetPos[1]
 	local RealTarget
-	if type(targetPos) == "vector" then
+	if typeof(targetPos) == "Vector3" then
 		RealTarget = targetPos
-	elseif type(targetPos) == "userdata" then
+	elseif typeof(targetPos) == "CFrame" then
 		RealTarget = targetPos.Position
-	elseif type(targetPos) == "number" then
-		RealTarget = CFrame.new(unpack(RealtargetPos))
-		RealTarget = RealTarget.Position
 	end
 	local ReturnValue
 	local CheckInOut = math.huge
@@ -596,102 +609,77 @@ FarmGroup:AddToggle("AutoFarm", {
 			task.spawn(function()
 				while STATE.AutoFarm do
 					pcall(function()
-						CheckQuest()
-						local Quest = LocalPlayer.PlayerGui.Main.Quest
-						local QuestTitle = Quest.Container.QuestTitle
 						local hrp = getHRP()
 						if not hrp then return end
+						local Quest = LocalPlayer.PlayerGui.Main.Quest
+						local QuestTitle = Quest.Container.QuestTitle
 
-						if not Quest.Visible then
-							local questDist = (CFrameQ.Position - hrp.Position).Magnitude
-							if questDist >= 3000 then
-								local entPos = EntranceCF or CFrameQ.Position
-								pcall(function()
-									CommF:InvokeServer("requestEntrance", entPos)
-								end)
-								task.wait(1)
-								hrp = getHRP()
-								if hrp then
-									toTarget(CFrameQ.Position)
-								end
-							elseif questDist > 20 then
-								toTarget(CFrameQ.Position)
-							else
-								CommF:InvokeServer("StartQuest", NameQuest, LevelQuest)
-								task.wait(0.5)
-							end
-						else
+						if Quest.Visible then
+							CheckQuest()
 							if string.find(QuestTitle.Title.Text, NameCheckQuest) then
 								if workspace.Enemies:FindFirstChild(Monster) then
 									for _, v in pairs(workspace.Enemies:GetChildren()) do
 										if v.Name == Monster and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
 											if string.find(QuestTitle.Title.Text, NameCheckQuest) then
-												local mobHRP = v.HumanoidRootPart
-												v.Humanoid.JumpPower = 0
-												v.Humanoid.WalkSpeed = 0
-												v.HumanoidRootPart.CanCollide = false
-												v.Head.CanCollide = false
-												v.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-												v.HumanoidRootPart.Transparency = 1
-												v.Humanoid:ChangeState(11)
-
-												local targets = BringMob(v)
-												local myHRP = getHRP()
-												if not myHRP then return end
-												local dist = (myHRP.Position - mobHRP.Position).Magnitude
-
-												if dist > 150 then
-													if dist >= 3000 then
-														local entPos = EntranceCF or mobHRP.Position
-														pcall(function()
-															CommF:InvokeServer("requestEntrance", entPos)
-														end)
-														task.wait(1)
-													else
-														toTarget(mobHRP.Position + Vector3.new(0, 30, 5))
-													end
-												else
+												repeat task.wait()
+													hrp = getHRP()
+													if not hrp then break end
 													EquipWeapon(STATE.SelectedWeapon)
-													if tick() - LastRotate >= 0.25 then
-														AttackRotation = (AttackRotation + 180) % 360
-														LastRotate = tick()
+													local mobHRP = v.HumanoidRootPart
+													v.Humanoid.WalkSpeed = 0
+													v.HumanoidRootPart.CanCollide = false
+													v.Head.CanCollide = false
+													v.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+													v.HumanoidRootPart.Transparency = 1
+													v.Humanoid:ChangeState(11)
+
+													local targets = BringMob(v)
+													toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
+
+													hrp = getHRP()
+													if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
+														if tick() - LastRotate >= 0.25 then
+															AttackRotation = (AttackRotation + 180) % 360
+															LastRotate = tick()
+														end
+														if #targets >= 2 then
+															Attack({targets[1], targets[2]})
+														else
+															Attack(v)
+														end
 													end
-													myHRP.CFrame = mobHRP.CFrame * CFrame.new(0, 30, 5) * CFrame.Angles(0, math.rad(AttackRotation), 0)
-													if #targets >= 2 then
-														Attack({targets[1], targets[2]})
-													else
-														Attack(v)
-													end
-												end
-												break
+												until not STATE.AutoFarm or not v.Parent or v.Humanoid.Health <= 0 or not Quest.Visible or not v:FindFirstChild("HumanoidRootPart")
 											else
 												CommF:InvokeServer("AbandonQuest")
 											end
 										end
 									end
 								else
-								if CFrameMon and CFrameMon.Position then
-									local monDist = (CFrameMon.Position - hrp.Position).Magnitude
-									if monDist >= 3000 then
-										local entPos = EntranceCF or CFrameMon.Position
-										pcall(function()
-											CommF:InvokeServer("requestEntrance", entPos)
-										end)
-										task.wait(1)
-										else
-											toTarget(CFrameMon.Position)
-										end
+									if CFrameMon and CFrameMon.Position then
+										toTarget(CFrameMon * CFrame.new(0, 30, 5))
 									end
 								end
 							else
 								CommF:InvokeServer("AbandonQuest")
+							end
+						else
+							CheckQuest()
+							local questDist = (CFrameQ.Position - hrp.Position).Magnitude
+							if questDist >= 3000 then
+								BTP(CFrameQ)
+							else
+								toTarget(CFrameQ)
+							end
+							if (hrp.Position - CFrameQ.Position).Magnitude <= 20 then
+								CommF:InvokeServer("StartQuest", NameQuest, LevelQuest)
+								task.wait(0.5)
 							end
 						end
 						for _, bodypart in ipairs(Character:GetChildren()) do
 							if bodypart:IsA("BasePart") then bodypart.CanCollide = false end
 						end
 					end)
-					task.wait(0.1)
+					task.wait()
 				end
 				detachFloat()
 			end)
