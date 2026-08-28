@@ -627,9 +627,11 @@ local function updateESP()
 end
 
 local noclipConn = nil
+local autoNoclipActive = false
 local function setNoclip(on)
 	if noclipConn then noclipConn:Disconnect(); noclipConn = nil end
 	if on then
+		autoNoclipActive = true
 		noclipConn = RunService.Stepped:Connect(function()
 			local c = LocalPlayer.Character
 			if c then
@@ -638,7 +640,41 @@ local function setNoclip(on)
 				end
 			end
 		end)
+	else
+		autoNoclipActive = false
 	end
+end
+
+local lastStuckCheck = 0
+local lastPosition = nil
+local stuckNoclipOn = false
+local function checkAndFixStuck(targetPos)
+	if not STATE.AutoFarm then return end
+	local hrp = getHRP()
+	if not hrp then return end
+
+	local now = tick()
+	if now - lastStuckCheck < 0.5 then return end
+	lastStuckCheck = now
+
+	local distToTarget = (hrp.Position - targetPos).Magnitude
+	if distToTarget < 15 then
+		if stuckNoclipOn then setNoclip(false); stuckNoclipOn = false end
+		lastPosition = nil
+		return
+	end
+
+	if lastPosition then
+		local moved = (hrp.Position - lastPosition).Magnitude
+		if moved < 1 and distToTarget > 20 and not stuckNoclipOn then
+			setNoclip(true)
+			stuckNoclipOn = true
+		elseif moved > 5 and stuckNoclipOn and not STATE.Noclip then
+			setNoclip(false)
+			stuckNoclipOn = false
+		end
+	end
+	lastPosition = hrp.Position
 end
 
 local infJumpConn = nil
@@ -742,8 +778,9 @@ FarmGroup:AddToggle("AutoFarm", {
 									closest.HumanoidRootPart.Transparency = 1
 									closest.Humanoid:ChangeState(11)
 
-									local targets = BringMob(closest)
-									toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
+								local targets = BringMob(closest)
+								toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
+								checkAndFixStuck(mobHRP.Position)
 
 								hrp = getHRP()
 								if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
@@ -782,8 +819,9 @@ FarmGroup:AddToggle("AutoFarm", {
 														v.HumanoidRootPart.Transparency = 1
 														v.Humanoid:ChangeState(11)
 
-														local targets = BringMob(v)
-														toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
+													local targets = BringMob(v)
+													toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
+													checkAndFixStuck(mobHRP.Position)
 
 													hrp = getHRP()
 													if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
@@ -983,12 +1021,20 @@ local FruitGroup = FarmSub:AddLeftGroupbox("Fruits", "apple")
 							STATE.CollectingFruit = false
 						end
 					end)
-					task.wait(0.5)
+					task.wait()
 				end
-				STATE.CollectingFruit = false
+				detachFloat()
+				if stuckNoclipOn and not STATE.Noclip then
+					setNoclip(false)
+					stuckNoclipOn = false
+				end
 			end)
 		else
-			STATE.CollectingFruit = false
+			detachFloat()
+			if stuckNoclipOn and not STATE.Noclip then
+				setNoclip(false)
+				stuckNoclipOn = false
+			end
 		end
 	end,
 }):AddKeyPicker("AutoFruitKey", {
@@ -1159,13 +1205,14 @@ RaidGroup:AddToggle("AutoRaid", {
 									end
 								end
 
-								if closest then
-									toTarget(closest.HumanoidRootPart.CFrame * CFrame.new(0, 30, 5))
-									closest.Humanoid.WalkSpeed = 0
-									closest.HumanoidRootPart.CanCollide = false
-									closest.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-									closest.HumanoidRootPart.Transparency = 1
-									closest.Humanoid:ChangeState(11)
+							if closest then
+								toTarget(closest.HumanoidRootPart.CFrame * CFrame.new(0, 30, 5))
+								checkAndFixStuck(closest.HumanoidRootPart.Position)
+								closest.Humanoid.WalkSpeed = 0
+								closest.HumanoidRootPart.CanCollide = false
+								closest.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+								closest.HumanoidRootPart.Transparency = 1
+								closest.Humanoid:ChangeState(11)
 
 								hrp = getHRP()
 								if hrp and (hrp.Position - closest.HumanoidRootPart.Position).Magnitude <= 150 then
