@@ -1479,7 +1479,7 @@ FarmGroup:AddSlider("CutSecs", {
 
 ZoneGroup:AddDropdown("ZoneMode", {
 	Text = "Zone pick",
-	Options = {"Auto", "Manual"},
+	Values = {"Auto", "Manual"},
 	Default = CONFIG.zoneMode,
 	Callback = function(v) CONFIG.zoneMode = v end,
 })
@@ -1600,14 +1600,8 @@ task.spawn(function()
 end)
 
 ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({"MenuKeybind"})
 ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub")
-SaveManager:SetSubFolder("game")
 ThemeManager:ApplyToTab(SettingsTab)
-SaveManager:BuildConfigSection(SettingsTab)
 
 local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "box-icon")
 MenuGroup:AddToggle("CustomCursor", {Text = "Custom Cursor", Default = true, Callback = function(v) Library.ShowCustomCursor = v end})
