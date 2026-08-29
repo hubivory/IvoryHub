@@ -631,15 +631,25 @@ end)
 
 local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
 
+local req = request or http_request or (syn and syn.request) or (http and http.request) or function(options)
+	return { Body = game:HttpGet(options.Url) }
+end
+
 local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = nil
-local ThemeManager = nil
-local SaveManager = nil
+local Library, ThemeManager, SaveManager
+
+local function fetch(path)
+	local res = req({ Url = repo .. path, Method = "GET" })
+	if res and res.Body then
+		return loadstring(res.Body)()
+	end
+	error("Failed to fetch " .. path)
+end
 
 pcall(function()
-	Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-	ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-	SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+	Library = fetch("Library.lua")
+	ThemeManager = fetch("addons/ThemeManager.lua")
+	SaveManager = fetch("addons/SaveManager.lua")
 end)
 
 if not Library then
