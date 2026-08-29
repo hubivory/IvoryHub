@@ -1002,154 +1002,217 @@ local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
 
 local AutomationSub = MainTab:AddSubTab("Automation", "zap")
 local FarmGroup = AutomationSub:AddLeftGroupbox("Core Features", "box-icon")
-local ExtraGroup = AutomationSub:AddRightGroupbox("Extra Features", "box-icon")
+local ZoneGroup = AutomationSub:AddRightGroupbox("Zone & Extras", "box-icon")
+local SpendGroup = AutomationSub:AddRightGroupbox("Spending", "box-icon")
+local ManualGroup = AutomationSub:AddLeftGroupbox("Manual", "box-icon")
 
-FarmGroup:AddToggle("Auto Farm", CONFIG.auto, function(v)
-    CONFIG.auto = v
-    STATE.phase = v and "farming" or "idle"
-    if not v then stopWalking() end
-    note(v and "running" or "stopped")
-end)
+FarmGroup:AddToggle("AutoFarm", {
+    Text = "Auto Farm",
+    Default = CONFIG.auto,
+    Tooltip = "Click, train, cut, collect, sell, repeat",
+    Callback = function(v)
+        CONFIG.auto = v
+        STATE.phase = v and "farming" or "idle"
+        if not v then stopWalking() end
+        note(v and "running" or "stopped")
+    end,
+})
 
-FarmGroup:AddToggle("Click Engine", CONFIG.click, function(v)
-    CONFIG.click = v
-end)
+FarmGroup:AddToggle("ClickEngine", {
+    Text = "Click Engine",
+    Default = CONFIG.click,
+    Tooltip = "12.5 strength/s is the whole server budget",
+    Callback = function(v) CONFIG.click = v end,
+})
 
-FarmGroup:AddToggle("Training Pad", CONFIG.train, function(v)
-    CONFIG.train = v
-end)
+FarmGroup:AddToggle("TrainPad", {
+    Text = "Training Pad",
+    Default = CONFIG.train,
+    Tooltip = "Stacks with clicking: 2.75/s alone, 13.37/s together",
+    Callback = function(v) CONFIG.train = v end,
+})
 
-FarmGroup:AddSlider("Train Secs/Trip", {
+FarmGroup:AddSlider("TrainSecs", {
+    Text = "Seconds on pad per trip",
     Default = CONFIG.trainSecs,
     Min = 0,
     Max = 90,
     Rounding = 0,
     Callback = function(v) CONFIG.trainSecs = v end,
-    Text = "Seconds on pad per trip",
 })
 
-FarmGroup:AddSlider("Min Pad Mult", {
+FarmGroup:AddSlider("MinPadMult", {
+    Text = "Minimum pad multiplier",
     Default = CONFIG.trainMinMult,
     Min = 1,
     Max = 15,
     Rounding = 0,
     Callback = function(v) CONFIG.trainMinMult = v end,
-    Text = "Minimum pad multiplier",
 })
 
-FarmGroup:AddToggle("Cut Grass", CONFIG.cut, function(v)
-    CONFIG.cut = v
-end)
+FarmGroup:AddToggle("CutGrass", {
+    Text = "Cut Grass",
+    Default = CONFIG.cut,
+    Tooltip = "Opens the next zone - grass is cut once and stays cut",
+    Callback = function(v) CONFIG.cut = v end,
+})
 
-FarmGroup:AddToggle("Pick Up Loot", CONFIG.loot, function(v)
-    CONFIG.loot = v
-end)
+FarmGroup:AddToggle("Loot", {
+    Text = "Pick Up Loot",
+    Default = CONFIG.loot,
+    Tooltip = "The only income - skips loot about to despawn",
+    Callback = function(v) CONFIG.loot = v end,
+})
 
-FarmGroup:AddSlider("Loot Secs/Lap", {
+FarmGroup:AddSlider("TripSecs", {
+    Text = "Seconds for loot patrol",
     Default = CONFIG.tripSecs,
     Min = 15,
     Max = 120,
     Rounding = 0,
     Callback = function(v) CONFIG.tripSecs = v end,
-    Text = "Seconds for loot patrol",
 })
 
-FarmGroup:AddSlider("Cut Secs/Lap", {
+FarmGroup:AddSlider("CutSecs", {
+    Text = "Seconds for cutting",
     Default = CONFIG.cutSecs,
     Min = 10,
     Max = 90,
     Rounding = 0,
     Callback = function(v) CONFIG.cutSecs = v end,
-    Text = "Seconds for cutting",
 })
 
-ExtraGroup:AddDropdown("Zone Mode", {
+ZoneGroup:AddDropdown("ZoneMode", {
+    Text = "Zone pick",
     Options = { "Auto", "Manual" },
     Default = CONFIG.zoneMode,
     Callback = function(v) CONFIG.zoneMode = v end,
-    Text = "Zone selection",
 })
 
-ExtraGroup:AddSlider("Manual Zone", {
+ZoneGroup:AddSlider("ZoneTarget", {
+    Text = "Manual zone",
     Default = CONFIG.zoneTarget,
     Min = 1,
     Max = 15,
     Rounding = 0,
     Callback = function(v) CONFIG.zoneTarget = v end,
-    Text = "Target zone (Manual mode)",
 })
 
-ExtraGroup:AddSlider("Probe Hold (s)", {
+ZoneGroup:AddSlider("ProbeHold", {
+    Text = "Hold walled zone (s)",
     Default = CONFIG.probeHoldSecs,
     Min = 30,
     Max = 300,
     Rounding = 0,
     Callback = function(v) CONFIG.probeHoldSecs = v end,
-    Text = "Hold time for walled zone",
 })
 
-ExtraGroup:AddToggle("Sell Loot", CONFIG.sell, function(v)
-    CONFIG.sell = v
-end)
-
-ExtraGroup:AddToggle("Buy Cutters", CONFIG.cutters, function(v)
-    CONFIG.cutters = v
-end)
-
-ExtraGroup:AddToggle("Buy Auras", CONFIG.auras, function(v)
-    CONFIG.auras = v
-end)
-
-ExtraGroup:AddToggle("Buy Upgrades", CONFIG.upgrades, function(v)
-    CONFIG.upgrades = v
-end)
-
-ExtraGroup:AddToggle("Auto Rebirth", CONFIG.rebirth, function(v)
-    CONFIG.rebirth = v
-end)
-
-ExtraGroup:AddToggle("Travel Worlds", CONFIG.worlds, function(v)
-    CONFIG.worlds = v
-end)
-
-ExtraGroup:AddToggle("Free Rewards", CONFIG.freebies, function(v)
-    CONFIG.freebies = v
-end)
-
-ExtraGroup:AddSlider("Reserve Window", {
+ZoneGroup:AddSlider("ReserveWindow", {
+    Text = "Reserve window (s)",
     Default = CONFIG.reserveWindow,
     Min = 15,
     Max = 300,
     Rounding = 0,
     Callback = function(v) CONFIG.reserveWindow = v end,
-    Text = "Reserve window for cutters",
 })
 
+SpendGroup:AddToggle("Cutters", {
+    Text = "Buy Cutters",
+    Default = CONFIG.cutters,
+    Tooltip = "DamageMult is the damage engine - first call on money",
+    Callback = function(v) CONFIG.cutters = v end,
+})
+
+SpendGroup:AddToggle("Auras", {
+    Text = "Buy Auras",
+    Default = CONFIG.auras,
+    Tooltip = "Money priced, x1.2 to x300 strength",
+    Callback = function(v) CONFIG.auras = v end,
+})
+
+SpendGroup:AddToggle("Upgrades", {
+    Text = "Buy Upgrades",
+    Default = CONFIG.upgrades,
+    Tooltip = "Attack speed, range, carry, walk speed - round-robin",
+    Callback = function(v) CONFIG.upgrades = v end,
+})
+
+SpendGroup:AddToggle("SellLoot", {
+    Text = "Auto Sell",
+    Default = CONFIG.sell,
+    Tooltip = "SellAllBackpackLoot works from anywhere",
+    Callback = function(v) CONFIG.sell = v end,
+})
+
+SpendGroup:AddToggle("Rebirth", {
+    Text = "Auto Rebirth",
+    Default = CONFIG.rebirth,
+    Tooltip = "Gated on LEVEL, unlocks next free training pads",
+    Callback = function(v) CONFIG.rebirth = v end,
+})
+
+SpendGroup:AddToggle("Worlds", {
+    Text = "Travel Worlds",
+    Default = CONFIG.worlds,
+    Tooltip = "Level gated: 185 / 380 / 570 / 750",
+    Callback = function(v) CONFIG.worlds = v end,
+})
+
+SpendGroup:AddToggle("Freebies", {
+    Text = "Free Rewards",
+    Default = CONFIG.freebies,
+    Tooltip = "Offline, like reward, quests, free wheel spin",
+    Callback = function(v) CONFIG.freebies = v end,
+})
+
+ManualGroup:AddButton("Trip Now", function() task.spawn(cutPass) end)
+ManualGroup:AddButton("Sell All", function() task.spawn(sellPass) end)
+ManualGroup:AddButton("Shop Now", function() task.spawn(function() cutterPass() auraPass() end) end)
+ManualGroup:AddButton("Claim Free", function() task.spawn(freePass) end)
+ManualGroup:AddButton("Unstuck", unstuck)
+
 --------------------------------------------------------------------------------
--- Main > Manual sub tab
+-- Main > Status sub tab
 --------------------------------------------------------------------------------
 
-local ManualSub = MainTab:AddSubTab("Manual", "play")
-local ManualGroup = ManualSub:AddLeftGroupbox("Actions", "box-icon")
+local StatusSub = MainTab:AddSubTab("Status", "bar-chart")
+local StatusGroup = StatusSub:AddLeftGroupbox("Live Stats", "box-icon")
 
-ManualGroup:AddButton("Trip Now", function()
-    task.spawn(cutPass)
-end)
+local statusLabels = {}
+local statusNames = {
+    "auto", "phase", "strength", "money", "level", "world", "zone",
+    "cutter", "aura", "pad", "backpack", "trips", "loot", "earned", "note",
+}
+for _, name in ipairs(statusNames) do
+    statusLabels[name] = StatusGroup:AddLabel(name .. ": ...")
+end
 
-ManualGroup:AddButton("Sell All", function()
-    task.spawn(sellPass)
-end)
+StatusGroup:AddDivider()
+local haltLabel = StatusGroup:AddLabel("")
 
-ManualGroup:AddButton("Shop Now", function()
-    task.spawn(function() cutterPass() auraPass() end)
-end)
-
-ManualGroup:AddButton("Claim Free", function()
-    task.spawn(freePass)
-end)
-
-ManualGroup:AddButton("Unstuck", function()
-    unstuck()
+task.spawn(function()
+    while GEN == _G.__CUTGRASS do
+        pcall(function()
+            statusLabels.auto:SetText("Auto: " .. (CONFIG.auto and "ON" or "OFF"))
+            statusLabels.phase:SetText("Phase: " .. STATE.phase)
+            statusLabels.strength:SetText("Strength: " .. short(STATE.strength) .. " (" .. short(STATE.strRate) .. "/s)")
+            statusLabels.money:SetText("Money: $" .. short(STATE.money) .. " ($" .. short(STATE.moneyRate) .. "/s)")
+            statusLabels.level:SetText("Level: " .. tostring(STATE.level) .. "  Rebirths: " .. tostring(STATE.rebirths) .. "  World " .. tostring(STATE.world))
+            statusLabels.world:SetText("Zone: " .. tostring(STATE.zone) .. " / " .. tostring(STATE.zoneBest)
+                .. ((os.clock() < (STATE.probeHold or 0))
+                    and string.format("  held %.0fs", STATE.probeHold - os.clock()) or "  probing"))
+            statusLabels.cutter:SetText("Cutter: " .. STATE.cutter .. "  x" .. short(STATE.cutterMult))
+            statusLabels.aura:SetText("Aura: " .. STATE.aura .. "  x" .. tostring(STATE.auraMult))
+            statusLabels.pad:SetText("Pad: " .. STATE.pad .. "  x" .. tostring(STATE.padMult) .. "  click x" .. short(STATE.clickAmount))
+            statusLabels.backpack:SetText("Backpack: " .. STATE.bag .. "/" .. STATE.bagCap .. "  $" .. short(STATE.bagValue))
+            statusLabels.trips:SetText("Trips: " .. STATE.trips .. "  walled " .. STATE.blocked .. "  home " .. STATE.homeTrips .. "  grass " .. short(STATE.cutTotal))
+            statusLabels.loot:SetText("Loot: " .. STATE.lootTotal .. " taken  " .. STATE.sold .. " sold")
+            statusLabels.earned:SetText("Earned: $" .. short(STATE.earned) .. "  Spent: $" .. short(STATE.spent))
+            statusLabels.note:SetText(STATE.note)
+            haltLabel:SetText(STATE.halted and "!! ANTI-CHEAT WARNING - EVERYTHING STOPPED !!" or "")
+        end)
+        task.wait(0.5)
+    end
 end)
 
 --------------------------------------------------------------------------------
@@ -1159,68 +1222,15 @@ end)
 local DiscordSub = MainTab:AddSubTab("Discord", "message-circle")
 local DiscordGroup = DiscordSub:AddLeftGroupbox("Community", "box-icon")
 
-DiscordGroup:AddButton("Join Discord For Dupe", function()
+DiscordGroup:AddButton("Join Discord", function()
     if setclipboard then
         setclipboard("https://discord.gg/MCWYKBdB4E")
-        Library:Notify({ Title = "Ivory", Description = "Discord link copied to clipboard!", Type = "Success", Time = 3 })
-    end
-end)
-
-DiscordGroup:AddLabel("Join our community for updates, support, and exclusive features.")
-
---------------------------------------------------------------------------------
--- Main > Status sub tab
---------------------------------------------------------------------------------
-
-local StatusSub = MainTab:AddSubTab("Status", "bar-chart")
-local StatusGroup = StatusSub:AddLeftGroupbox("Live Stats", "box-icon")
-
-StatusGroup:AddLabel("Phase: " .. STATE.phase)
-StatusGroup:AddLabel("Strength: " .. short(STATE.strength))
-StatusGroup:AddLabel("Money: $" .. short(STATE.money))
-StatusGroup:AddLabel("Level: " .. tostring(STATE.level))
-StatusGroup:AddLabel("Rebirths: " .. tostring(STATE.rebirths))
-StatusGroup:AddLabel("World: " .. tostring(STATE.world))
-StatusGroup:AddLabel("Zone: " .. tostring(STATE.zone) .. " (open to " .. tostring(STATE.zoneBest) .. ")")
-StatusGroup:AddLabel("Cutter: " .. STATE.cutter .. " x" .. short(STATE.cutterMult))
-StatusGroup:AddLabel("Aura: " .. STATE.aura .. " x" .. tostring(STATE.auraMult))
-StatusGroup:AddLabel("Pad: " .. STATE.pad .. " x" .. tostring(STATE.padMult))
-StatusGroup:AddLabel("Backpack: " .. tostring(STATE.bag) .. "/" .. tostring(STATE.bagCap))
-StatusGroup:AddLabel("Trips: " .. tostring(STATE.trips))
-StatusGroup:AddLabel("Loot: " .. tostring(STATE.lootTotal) .. " taken, " .. tostring(STATE.sold) .. " sold")
-StatusGroup:AddLabel("Earned: $" .. short(STATE.earned) .. " | Spent: $" .. short(STATE.spent))
-StatusGroup:AddLabel("Note: " .. STATE.note)
-
-StatusGroup:AddDivider()
-StatusGroup:AddLabel("Auto: " .. (CONFIG.auto and "ON" or "OFF"))
-StatusGroup:AddLabel("Phase: " .. STATE.phase)
-
--- Update status labels
-task.spawn(function()
-    while GEN == _G.__CUTGRASS do
-        pcall(function()
-            StatusGroup:Clear()
-            StatusGroup:AddLabel("Phase: " .. STATE.phase)
-            StatusGroup:AddLabel("Strength: " .. short(STATE.strength) .. " (" .. short(STATE.strRate) .. "/s)")
-            StatusGroup:AddLabel("Money: $" .. short(STATE.money) .. " ($" .. short(STATE.moneyRate) .. "/s)")
-            StatusGroup:AddLabel("Level: " .. tostring(STATE.level) .. " | Rebirths: " .. tostring(STATE.rebirths))
-            StatusGroup:AddLabel("World: " .. tostring(STATE.world))
-            StatusGroup:AddLabel("Zone: " .. tostring(STATE.zone) .. " (open to " .. tostring(STATE.zoneBest) .. ")")
-            StatusGroup:AddLabel("Cutter: " .. STATE.cutter .. " x" .. short(STATE.cutterMult))
-            StatusGroup:AddLabel("Aura: " .. STATE.aura .. " x" .. tostring(STATE.auraMult))
-            StatusGroup:AddLabel("Pad: " .. STATE.pad .. " x" .. tostring(STATE.padMult))
-            StatusGroup:AddLabel("Backpack: " .. tostring(STATE.bag) .. "/" .. tostring(STATE.bagCap) .. " ($" .. short(STATE.bagValue) .. ")")
-            StatusGroup:AddLabel("Trips: " .. tostring(STATE.trips) .. " | Walled: " .. tostring(STATE.blocked))
-            StatusGroup:AddLabel("Loot: " .. tostring(STATE.lootTotal) .. " taken, " .. tostring(STATE.sold) .. " sold")
-            StatusGroup:AddLabel("Earned: $" .. short(STATE.earned) .. " | Spent: $" .. short(STATE.spent))
-            StatusGroup:AddLabel("Note: " .. STATE.note)
-        end)
-        task.wait(0.5)
+        Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 })
     end
 end)
 
 --------------------------------------------------------------------------------
--- Player > Stats sub tab
+-- Player tab
 --------------------------------------------------------------------------------
 
 local StatsSub = PlayerTab:AddSubTab("Stats", "activity")
@@ -1228,15 +1238,26 @@ local StatsGroup = StatsSub:AddLeftGroupbox("Player Stats", "box-icon")
 
 StatsGroup:AddLabel("UserId: " .. tostring(plr.UserId))
 StatsGroup:AddLabel("Display: " .. tostring(plr.DisplayName))
-StatsGroup:AddLabel("Strength: " .. short(STATE.strength))
-StatsGroup:AddLabel("Money: $" .. short(STATE.money))
-StatsGroup:AddLabel("Level: " .. tostring(STATE.level))
-StatsGroup:AddLabel("Rebirths: " .. tostring(STATE.rebirths))
-StatsGroup:AddLabel("World: " .. tostring(STATE.world))
-StatsGroup:AddLabel("Zone: " .. tostring(STATE.zoneBest))
+
+local pStrLabel = StatsGroup:AddLabel("Strength: ...")
+local pMoneyLabel = StatsGroup:AddLabel("Money: ...")
+local pLvlLabel = StatsGroup:AddLabel("Level: ...")
+local pWorldLabel = StatsGroup:AddLabel("World: ...")
+
+task.spawn(function()
+    while GEN == _G.__CUTGRASS do
+        pcall(function()
+            pStrLabel:SetText("Strength: " .. short(STATE.strength))
+            pMoneyLabel:SetText("Money: $" .. short(STATE.money))
+            pLvlLabel:SetText("Level: " .. tostring(STATE.level) .. "  Rebirths: " .. tostring(STATE.rebirths))
+            pWorldLabel:SetText("World: " .. tostring(STATE.world) .. "  Zone: " .. tostring(STATE.zoneBest))
+        end)
+        task.wait(1)
+    end
+end)
 
 --------------------------------------------------------------------------------
--- Settings tab (always last)
+-- Settings tab
 --------------------------------------------------------------------------------
 
 ThemeManager:ApplyToTab(SettingsTab)
@@ -1244,42 +1265,10 @@ SaveManager:BuildConfigSection(SettingsTab)
 
 local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "box-icon")
 
-MenuGroup:AddToggle("Custom Cursor", true, function(v)
-    Library.ShowCustomCursor = v
-end)
-
-MenuGroup:AddButton("Test Notification", function()
-    Library:Notify({ Title = "Ivory", Description = "Test notification!", Type = "Info", Time = 3 })
-end)
-
-MenuGroup:AddDropdown("Notification Side", {
-    Options = { "Right", "Left" },
-    Default = "Right",
-    Callback = function(v)
-        Library.NotifySide = v
-    end,
-    Text = "Notification position",
-})
-
-MenuGroup:AddDropdown("DPI Scale", {
-    Options = { "50%", "75%", "100%", "125%", "150%", "200%" },
-    Default = "100%",
-    Callback = function(v)
-        local scale = tonumber(v:gsub("%%", "")) / 100
-        Library.DPIScale = scale
-    end,
-    Text = "UI scale",
-})
-
-MenuGroup:AddSlider("Corner Radius", {
-    Default = 4,
-    Min = 0,
-    Max = 20,
-    Rounding = 0,
-    Callback = function(v)
-        Library.CornerRadius = v
-    end,
-    Text = "Corner radius",
+MenuGroup:AddToggle("CustomCursor", {
+    Text = "Custom Cursor",
+    Default = true,
+    Callback = function(v) Library.ShowCustomCursor = v end,
 })
 
 MenuGroup:AddKeyPicker("MenuKeybind", {
