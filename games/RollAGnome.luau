@@ -1335,7 +1335,6 @@ SaveManager:SetSubFolder("game")
 local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
 local FarmingTab = Window:AddTab({ Name = "Farming", Icon = "leaf" })
 local ShopTab = Window:AddTab({ Name = "Shop", Icon = "bag" })
-local PlayerTab = Window:AddTab({ Name = "Player", Icon = "user" })
 local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
 
 -- Main Tab
