@@ -1401,3 +1401,7 @@ _G.__CUTGRASS_DBG = {
 }
 
 print("[Ivory] gen " .. GEN .. " ready - " .. (isLobby and "Lobby" or "Game") .. " mode")
+print("[Ivory] SERVICES: " .. (SERVICES and SERVICES:GetFullName() or "MISSING"))
+print("[Ivory] character: " .. (plr.Character and plr.Character.Name or "NONE"))
+print("[Ivory] PadConfig: " .. (PadConfig and "loaded" or "MISSING"))
+print("[Ivory] zoneCount: " .. zoneCount() .. "  worldId: " .. worldId())
