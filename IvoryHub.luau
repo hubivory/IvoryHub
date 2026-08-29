@@ -29,6 +29,7 @@ local GameScripts = {
 	[2753915549] = "games/Bloxfruits.luau",
 	[79091703265657] = "games/Bloxfruits.luau",
 	[114234929420007] = "games/Bloxstrike.luau",
+	[83038462357724] = "games/DigAndClean.luau",
 	-- Add more: [PlaceId] = "games/ScriptName.luau"
 }
 
