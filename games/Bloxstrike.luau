@@ -20,7 +20,7 @@ local Window = Library:CreateWindow({
     AutoShow = true,
     TabPadding = 8,
     MenuFadeTime = 0.2,
-    Footer = "made by L10"
+    Footer = "made by Veqxoo"
 })
 
 local Tabs = {
@@ -630,8 +630,8 @@ ThemeManager:SetLibrary(Library)
 SaveManager:SetLibrary(Library)
 SaveManager:IgnoreThemeSettings()
 SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("l10hub")
-SaveManager:SetFolder("l10hub/bloxstrike")
+ThemeManager:SetFolder("Ivoryhub")
+SaveManager:SetFolder("Ivoryhub/bloxstrike")
 SaveManager:SetSubFolder("bloxstrike")
 SaveManager:BuildConfigSection(Tabs.Settings)
 ThemeManager:ApplyToTab(Tabs.Settings)
