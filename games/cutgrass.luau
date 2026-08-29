@@ -1173,7 +1173,7 @@ local StatusGroup = StatusSub:AddLeftGroupbox("Live Stats", "box-icon")
 
 local statusLabels = {}
 local statusNames = {
-    "auto", "phase", "strength", "money", "level", "world", "zone",
+    "auto", "phase", "services", "strength", "money", "level", "world", "zone",
     "cutter", "aura", "pad", "backpack", "trips", "loot", "earned", "note",
 }
 for _, name in ipairs(statusNames) do
@@ -1188,6 +1188,8 @@ task.spawn(function()
         pcall(function()
             statusLabels.auto:SetText("Auto: " .. (CONFIG.auto and "ON" or "OFF"))
             statusLabels.phase:SetText("Phase: " .. STATE.phase)
+            statusLabels.services:SetText("Services: " .. (SERVICES and SERVICES:GetFullName() or "MISSING"))
+
             statusLabels.strength:SetText("Strength: " .. short(STATE.strength) .. " (" .. short(STATE.strRate) .. "/s)")
             statusLabels.money:SetText("Money: $" .. short(STATE.money) .. " ($" .. short(STATE.moneyRate) .. "/s)")
             statusLabels.level:SetText("Level: " .. tostring(STATE.level) .. "  Rebirths: " .. tostring(STATE.rebirths) .. "  World " .. tostring(STATE.world))
