@@ -26,21 +26,9 @@ local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main
 local function httpGet(url)
     return request({ Url = url, Method = "GET" }).Body
 end
-
-local function loadWithIdentity(src)
-    local prev
-    pcall(function() prev = getthreadidentity and getthreadidentity() end)
-    pcall(function() setthreadidentity(7) end)
-    local fn = loadstring(src)
-    local ok, lib = pcall(fn)
-    pcall(function() setthreadidentity(prev or 8) end)
-    if not ok then error(tostring(lib), 0) end
-    return lib
-end
-
-local Library = loadWithIdentity(httpGet(repo .. "Library.lua"))
-local ThemeManager = loadWithIdentity(httpGet(repo .. "addons/ThemeManager.lua"))
-local SaveManager = loadWithIdentity(httpGet(repo .. "addons/SaveManager.lua"))
+local Library = loadstring(httpGet(repo .. "Library.lua"))()
+local ThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
+local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
 
 --------------------------------------------------------------------------------
 -- config
