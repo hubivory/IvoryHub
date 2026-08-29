@@ -1362,6 +1362,11 @@ local AutoSubTab = FarmingTab:AddSubTab("Automation", "zap")
 local GardenGroup = AutoSubTab:AddLeftGroupbox("Garden", "box-icon")
 local RollGroup = AutoSubTab:AddRightGroupbox("Rolling", "refresh-cw")
 
+GardenGroup:AddToggle("AutoFarm", {
+    Text = "Auto Farm (Master)",
+    Default = CONFIG.auto,
+    Callback = function(v) CONFIG.auto = v end
+})
 GardenGroup:AddToggle("AutoHarvest", {
     Text = "Auto Harvest",
     Default = CONFIG.autoCollect,
