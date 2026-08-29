@@ -26,10 +26,17 @@ local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main
 local function httpGet(url)
     return request({ Url = url, Method = "GET" }).Body
 end
-local genv = getgenv and getgenv() or _G
-local Library = loadstring(genv._IvoryLibSrc or httpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(genv._IvoryTMSrc or httpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(genv._IvorySMSrc or httpGet(repo .. "addons/SaveManager.lua"))()
+
+pcall(function() setthreadidentity(8) end)
+
+gethui = gethui or function()
+    return plr:WaitForChild("PlayerGui", 10)
+end
+protectgui = protectgui or function() end
+
+local Library = loadstring(httpGet(repo .. "Library.lua"))()
+local ThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
+local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
 
 --------------------------------------------------------------------------------
 -- config
@@ -322,7 +329,7 @@ local function clickOnce() return fire("StrengthService", "ClickRequested") end
 local PadConfig
 do
     local ok, cfg = pcall(function()
-        pcall(function() setthreadidentity(2) end)
+        pcall(function() setthreadidentity(8) end)
         return require(waitFor(waitFor(waitFor(ReplicatedStorage, "Shared"), "Configs"), "TrainingPads"))
     end)
     if ok then PadConfig = cfg end
@@ -1002,13 +1009,7 @@ FarmGroup:AddToggle("Auto Farm", CONFIG.auto, function(v)
     STATE.phase = v and "farming" or "idle"
     if not v then stopWalking() end
     note(v and "running" or "stopped")
-end):AddKeyPicker("AutoFarmKey", {
-    Default = "RightShift",
-    Text = "Auto Farm Toggle",
-    Mode = "Toggle",
-    SyncToggleState = true,
-    NoUI = true,
-})
+end)
 
 FarmGroup:AddToggle("Click Engine", CONFIG.click, function(v)
     CONFIG.click = v
