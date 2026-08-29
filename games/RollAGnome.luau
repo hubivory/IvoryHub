@@ -1512,10 +1512,10 @@ StatusGroup:AddLabel("Loading...")
 PetStatusGroup:AddLabel("Loading...")
 
 -- Settings Tab
+local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "box-icon")
+
 ThemeManager:ApplyToTab(SettingsTab)
 SaveManager:BuildConfigSection(SettingsTab)
-
-local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "settings")
 
 MenuGroup:AddToggle("CustomCursor", {
     Text = "Custom Cursor",
