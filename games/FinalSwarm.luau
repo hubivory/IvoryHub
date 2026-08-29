@@ -630,6 +630,8 @@ task.spawn(function()
 end)
 
 local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
+
+local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
 local Library = nil
 local ThemeManager = nil
 local SaveManager = nil
