@@ -1004,7 +1004,6 @@ local AutomationSub = MainTab:AddSubTab("Automation", "zap")
 local FarmGroup = AutomationSub:AddLeftGroupbox("Core Features", "box-icon")
 local ZoneGroup = AutomationSub:AddRightGroupbox("Zone & Extras", "box-icon")
 local SpendGroup = AutomationSub:AddRightGroupbox("Spending", "box-icon")
-local ManualGroup = AutomationSub:AddLeftGroupbox("Manual", "box-icon")
 
 FarmGroup:AddToggle("AutoFarm", {
     Text = "Auto Farm",
@@ -1165,12 +1164,6 @@ SpendGroup:AddToggle("Freebies", {
     Callback = function(v) CONFIG.freebies = v end,
 })
 
-ManualGroup:AddButton("Trip Now", function() task.spawn(cutPass) end)
-ManualGroup:AddButton("Sell All", function() task.spawn(sellPass) end)
-ManualGroup:AddButton("Shop Now", function() task.spawn(function() cutterPass() auraPass() end) end)
-ManualGroup:AddButton("Claim Free", function() task.spawn(freePass) end)
-ManualGroup:AddButton("Unstuck", unstuck)
-
 --------------------------------------------------------------------------------
 -- Main > Status sub tab
 --------------------------------------------------------------------------------
@@ -1283,6 +1276,8 @@ MenuGroup:AddButton("Unload", function()
     stopWalking()
     pcall(function() Library:Destroy() end)
 end)
+
+MenuGroup:AddButton("Unstuck", unstuck)
 
 --------------------------------------------------------------------------------
 -- loops
