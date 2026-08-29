@@ -45,27 +45,27 @@ local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
 local CONFIG = {
     auto = false,
 
-    click = true,
-    train = true,
+    click = false,
+    train = false,
     trainSecs = 20,
     trainMinMult = 2,
     trainMinShare = 0.25,
 
-    cut = true,
-    loot = true,
+    cut = false,
+    loot = false,
     tripSecs = 45,
     cutSecs = 25,
     zoneMode = "Auto",
     zoneTarget = 1,
     probeHoldSecs = 120,
 
-    sell = true,
-    cutters = true,
-    auras = true,
-    upgrades = true,
-    rebirth = true,
-    worlds = true,
-    freebies = true,
+    sell = false,
+    cutters = false,
+    auras = false,
+    upgrades = false,
+    rebirth = false,
+    worlds = false,
+    freebies = false,
 
     reserveWindow = 90,
 }
