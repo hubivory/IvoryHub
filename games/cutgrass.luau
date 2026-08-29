@@ -946,7 +946,7 @@ local Window = Library:CreateWindow({
         "v1.4 |",
         { Text = isLobby and "Lobby" or "Game", Copyable = true },
         "|",
-        { Text = tostring(LocalPlayer.UserId), Copyable = true },
+        { Text = tostring(plr.UserId), Copyable = true },
     },
     CopyableFooter = true,
     FuzzySearch = true,
