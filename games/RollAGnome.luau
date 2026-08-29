@@ -1352,52 +1352,157 @@ MainLeft:AddButton("Join Discord For Dupe", function()
     end
 end)
 
-MainRight:AddLabel("Status: Idle")
-MainRight:AddLabel("Cash: $0")
-MainRight:AddLabel("Gnomes: 0")
-MainRight:AddLabel("Pets: 0/3")
+local StatusLabel = MainRight:AddLabel("Status: Idle")
+local CashLabel = MainRight:AddLabel("Cash: $0")
+local GnomesLabel = MainRight:AddLabel("Gnomes: 0")
+local PetsLabel = MainRight:AddLabel("Pets: 0/3")
 
 -- Farming Tab
 local AutoSubTab = FarmingTab:AddSubTab("Automation", "zap")
 local GardenGroup = AutoSubTab:AddLeftGroupbox("Garden", "box-icon")
 local RollGroup = AutoSubTab:AddRightGroupbox("Rolling", "refresh-cw")
 
-GardenGroup:AddToggle("Auto Harvest", CONFIG.autoCollect, function(v) CONFIG.autoCollect = v end)
-GardenGroup:AddToggle("Auto Sell", CONFIG.autoSell, function(v) CONFIG.autoSell = v end)
-GardenGroup:AddToggle("Auto Place", CONFIG.autoPlace, function(v) CONFIG.autoPlace = v end)
-GardenGroup:AddToggle("Auto Place Pets", CONFIG.autoPets, function(v) CONFIG.autoPets = v end)
-GardenGroup:AddSlider("Harvest Gap", { Min = 40, Max = 300, Default = math.floor(CONFIG.collectGap * 1000), Callback = function(v) CONFIG.collectGap = v / 1000 end })
-GardenGroup:AddSlider("Sell At %", { Min = 40, Max = 100, Default = math.floor(CONFIG.sellAt * 100), Callback = function(v) CONFIG.sellAt = v / 100 end })
-GardenGroup:AddSlider("Placement Clearance", { Min = 2, Max = 8, Default = math.floor(CONFIG.placeClear), Callback = function(v) CONFIG.placeClear = v end })
+GardenGroup:AddToggle("AutoHarvest", {
+    Text = "Auto Harvest",
+    Default = CONFIG.autoCollect,
+    Callback = function(v) CONFIG.autoCollect = v end
+})
+GardenGroup:AddToggle("AutoSell", {
+    Text = "Auto Sell",
+    Default = CONFIG.autoSell,
+    Callback = function(v) CONFIG.autoSell = v end
+})
+GardenGroup:AddToggle("AutoPlace", {
+    Text = "Auto Place",
+    Default = CONFIG.autoPlace,
+    Callback = function(v) CONFIG.autoPlace = v end
+})
+GardenGroup:AddToggle("AutoPlacePets", {
+    Text = "Auto Place Pets",
+    Default = CONFIG.autoPets,
+    Callback = function(v) CONFIG.autoPets = v end
+})
+GardenGroup:AddSlider("HarvestGap", {
+    Text = "Harvest Gap (ms)",
+    Min = 40,
+    Max = 300,
+    Default = math.floor(CONFIG.collectGap * 1000),
+    Callback = function(v) CONFIG.collectGap = v / 1000 end
+})
+GardenGroup:AddSlider("SellAt", {
+    Text = "Sell At %",
+    Min = 40,
+    Max = 100,
+    Default = math.floor(CONFIG.sellAt * 100),
+    Callback = function(v) CONFIG.sellAt = v / 100 end
+})
+GardenGroup:AddSlider("PlacementClearance", {
+    Text = "Placement Clearance",
+    Min = 2,
+    Max = 8,
+    Default = math.floor(CONFIG.placeClear),
+    Callback = function(v) CONFIG.placeClear = v end
+})
 
-RollGroup:AddToggle("Auto Roll", CONFIG.autoRoll, function(v) CONFIG.autoRoll = v end)
-RollGroup:AddToggle("Auto Buy Gnome", CONFIG.autoBuy, function(v) CONFIG.autoBuy = v end)
-RollGroup:AddSlider("Buy Margin", { Min = 100, Max = 300, Default = math.floor(CONFIG.buyMargin * 100), Callback = function(v) CONFIG.buyMargin = v / 100 end })
+RollGroup:AddToggle("AutoRoll", {
+    Text = "Auto Roll",
+    Default = CONFIG.autoRoll,
+    Callback = function(v) CONFIG.autoRoll = v end
+})
+RollGroup:AddToggle("AutoBuyGnome", {
+    Text = "Auto Buy Gnome",
+    Default = CONFIG.autoBuy,
+    Callback = function(v) CONFIG.autoBuy = v end
+})
+RollGroup:AddSlider("BuyMargin", {
+    Text = "Buy Margin",
+    Min = 100,
+    Max = 300,
+    Default = math.floor(CONFIG.buyMargin * 100),
+    Callback = function(v) CONFIG.buyMargin = v / 100 end
+})
 
 local SpendSubTab = FarmingTab:AddSubTab("Spending", "dollar-sign")
 local UpgradeGroup = SpendSubTab:AddLeftGroupbox("Upgrades", "arrow-up-circle")
 local ExpandGroup = SpendSubTab:AddRightGroupbox("Expansion", "maximize-2")
 
-UpgradeGroup:AddToggle("Auto Upgrades", CONFIG.autoUpgrade, function(v) CONFIG.autoUpgrade = v end)
-UpgradeGroup:AddToggle("Auto Free Gnome", CONFIG.autoFreeGnome, function(v) CONFIG.autoFreeGnome = v end)
-UpgradeGroup:AddToggle("Auto Rebirth", CONFIG.autoRebirth, function(v) CONFIG.autoRebirth = v end)
+UpgradeGroup:AddToggle("AutoUpgrades", {
+    Text = "Auto Upgrades",
+    Default = CONFIG.autoUpgrade,
+    Callback = function(v) CONFIG.autoUpgrade = v end
+})
+UpgradeGroup:AddToggle("AutoFreeGnome", {
+    Text = "Auto Free Gnome",
+    Default = CONFIG.autoFreeGnome,
+    Callback = function(v) CONFIG.autoFreeGnome = v end
+})
+UpgradeGroup:AddToggle("AutoRebirth", {
+    Text = "Auto Rebirth",
+    Default = CONFIG.autoRebirth,
+    Callback = function(v) CONFIG.autoRebirth = v end,
+    Tooltip = "UNVERIFIED - never tested on a real save"
+})
 
-ExpandGroup:AddToggle("Auto Expand Plot", CONFIG.autoExpand, function(v) CONFIG.autoExpand = v end)
-ExpandGroup:AddSlider("Expand Cash Multiple", { Min = 1, Max = 10, Default = math.floor(CONFIG.expandKeep), Callback = function(v) CONFIG.expandKeep = v end })
+ExpandGroup:AddToggle("AutoExpandPlot", {
+    Text = "Auto Expand Plot",
+    Default = CONFIG.autoExpand,
+    Callback = function(v) CONFIG.autoExpand = v end
+})
+ExpandGroup:AddSlider("ExpandKeep", {
+    Text = "Expand Cash Multiple",
+    Min = 1,
+    Max = 10,
+    Default = math.floor(CONFIG.expandKeep),
+    Callback = function(v) CONFIG.expandKeep = v end
+})
 
 -- Shop Tab
 local GearSubTab = ShopTab:AddSubTab("Gear", "package")
 local GearGroup = GearSubTab:AddLeftGroupbox("Item Shop", "shopping-cart")
 local PetShopGroup = GearSubTab:AddRightGroupbox("Pet Field", "heart")
 
-GearGroup:AddToggle("Auto Buy Gear", CONFIG.autoGear, function(v) CONFIG.autoGear = v end)
-GearGroup:AddToggle("Auto Use Gear", CONFIG.autoGearUse, function(v) CONFIG.autoGearUse = v end)
-GearGroup:AddDropdown("Gear Mode", { Options = { "Sprinklers + fertilizer", "Sprinklers only", "Everything" }, Default = CONFIG.gearMode, Callback = function(v) CONFIG.gearMode = v end })
-GearGroup:AddSlider("Gear Cash Multiple", { Min = 1, Max = 10, Default = math.floor(CONFIG.gearKeep), Callback = function(v) CONFIG.gearKeep = v end })
+GearGroup:AddToggle("AutoBuyGear", {
+    Text = "Auto Buy Gear",
+    Default = CONFIG.autoGear,
+    Callback = function(v) CONFIG.autoGear = v end
+})
+GearGroup:AddToggle("AutoUseGear", {
+    Text = "Auto Use Gear",
+    Default = CONFIG.autoGearUse,
+    Callback = function(v) CONFIG.autoGearUse = v end
+})
+GearGroup:AddDropdown("GearMode", {
+    Text = "Gear Mode",
+    Values = { "Sprinklers + fertilizer", "Sprinklers only", "Everything" },
+    Default = CONFIG.gearMode,
+    Callback = function(v) CONFIG.gearMode = v end
+})
+GearGroup:AddSlider("GearKeep", {
+    Text = "Gear Cash Multiple",
+    Min = 1,
+    Max = 10,
+    Default = math.floor(CONFIG.gearKeep),
+    Callback = function(v) CONFIG.gearKeep = v end
+})
 
-PetShopGroup:AddToggle("Auto Buy Pets", CONFIG.autoBuyPets, function(v) CONFIG.autoBuyPets = v end)
-PetShopGroup:AddDropdown("Lowest Rarity", { Options = PET_CHOICES, Default = CONFIG.petRarity, Callback = function(v) CONFIG.petRarity = v end })
-PetShopGroup:AddSlider("Pet Cash Multiple", { Min = 1, Max = 10, Default = math.floor(CONFIG.petKeep), Callback = function(v) CONFIG.petKeep = v end })
+PetShopGroup:AddToggle("AutoBuyPets", {
+    Text = "Auto Buy Pets",
+    Default = CONFIG.autoBuyPets,
+    Callback = function(v) CONFIG.autoBuyPets = v end
+})
+PetShopGroup:AddDropdown("LowestRarity", {
+    Text = "Lowest Rarity",
+    Values = PET_CHOICES,
+    Default = CONFIG.petRarity,
+    Callback = function(v) CONFIG.petRarity = v end
+})
+PetShopGroup:AddSlider("PetKeep", {
+    Text = "Pet Cash Multiple",
+    Min = 1,
+    Max = 10,
+    Default = math.floor(CONFIG.petKeep),
+    Callback = function(v) CONFIG.petKeep = v end
+})
 
 local StatusSubTab = ShopTab:AddSubTab("Status", "bar-chart-2")
 local StatusGroup = StatusSubTab:AddLeftGroupbox("Shop Stock", "package")
@@ -1412,21 +1517,49 @@ SaveManager:BuildConfigSection(SettingsTab)
 
 local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "settings")
 
-MenuGroup:AddToggle("Custom Cursor", true, function(v)
-    Library.ShowCustomCursor = v
-end)
+MenuGroup:AddToggle("CustomCursor", {
+    Text = "Custom Cursor",
+    Default = true,
+    Callback = function(v) Library.ShowCustomCursor = v end
+})
 
-MenuGroup:AddDropdown("Notification Side", { Options = { "Left", "Right" }, Default = "Right", Callback = function(v) Library.NotifySide = v end })
+MenuGroup:AddDropdown("NotifSide", {
+    Text = "Notification Side",
+    Values = { "Left", "Right" },
+    Default = "Right",
+    Callback = function(v) Library.NotifySide = v end
+})
 
 MenuGroup:AddButton("Test Notification", function()
     Library:Notify({ Title = "Ivory", Description = "This is a test notification!", Type = "Info", Time = 3 })
 end)
 
-MenuGroup:AddSlider("DPI Scale", { Min = 50, Max = 200, Default = 100, Callback = function(v) Library.DPI = v / 100 end })
+MenuGroup:AddSlider("DPIScale", {
+    Text = "DPI Scale",
+    Min = 50,
+    Max = 200,
+    Default = 100,
+    Callback = function(v) Library:SetDPIScale(v) end
+})
 
-MenuGroup:AddSlider("Corner Radius", { Min = 0, Max = 20, Default = 4, Callback = function(v) Library.CornerRadius = v end })
+MenuGroup:AddSlider("CornerRadius", {
+    Text = "Corner Radius",
+    Min = 0,
+    Max = 20,
+    Default = 4,
+    Callback = function(v) Library.CornerRadius = v end
+})
 
-MenuGroup:AddKeyPicker("MenuKeybind", { Default = "RightShift", Text = "Menu Toggle", Mode = "Toggle", SyncToggleState = true })
+local MenuKeybind = MenuGroup:AddToggle("MenuKeybindToggle", {
+    Text = "Menu Keybind",
+    Default = false,
+})
+MenuKeybind:AddKeyPicker("MenuKeybind", {
+    Default = "RightShift",
+    Text = "Menu Toggle",
+    Mode = "Toggle",
+    SyncToggleState = true
+})
 
 MenuGroup:AddButton("Unload", function()
     _G.__IVORY = (_G.__IVORY or 0) + 1
@@ -1441,13 +1574,10 @@ end)
 task.spawn(function()
     while alive() do
         pcall(function()
-            local mainLabels = MainRight:GetChildren()
-            if #mainLabels >= 4 then
-                mainLabels[1].Text = "Status: " .. STATE.phase
-                mainLabels[2].Text = "Cash: $" .. tostring(STATE.money)
-                mainLabels[3].Text = "Gnomes: " .. tostring(STATE.gnomes)
-                mainLabels[4].Text = "Pets: " .. tostring(STATE.pets) .. "/" .. tostring(STATE.petCap)
-            end
+            StatusLabel.Text = "Status: " .. STATE.phase
+            CashLabel.Text = "Cash: $" .. tostring(STATE.money)
+            GnomesLabel.Text = "Gnomes: " .. tostring(STATE.gnomes)
+            PetsLabel.Text = "Pets: " .. tostring(STATE.pets) .. "/" .. tostring(STATE.petCap)
         end)
         task.wait(1)
     end
