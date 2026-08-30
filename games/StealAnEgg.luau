@@ -94,7 +94,7 @@ local function TeleportTo(position)
 		AgentHeight = 5,
 		AgentCanJump = true,
 		AgentCanClimb = false,
-		WaypointSpacing = 4,
+		WaypointSpacing = 8,
 	})
 
 	local success, _ = pcall(function()
@@ -103,16 +103,15 @@ local function TeleportTo(position)
 
 	if success and path.Status == Enum.PathStatus.Success then
 		local waypoints = path:GetWaypoints()
+		local speedMult = Config.TweenSpeed / 5
+		local baseSpeed = math.max(speedMult, 0.2)
 		for i, waypoint in ipairs(waypoints) do
 			if i > 1 then
 				local target = waypoint.Position + Vector3.new(0, 3, 0)
-				local startCF = hrp.CFrame
-				local endCF = CFrame.new(target)
 				local distance = (waypoint.Position - hrp.Position).Magnitude
-				local speedMult = Config.TweenSpeed / 5
-				local tweenTime = math.clamp(distance / (200 * math.max(speedMult, 0.1)), 0.01, 0.3)
-				local tween = TweenService:Create(hrp, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {
-					CFrame = endCF
+				local tweenTime = math.clamp(distance / (20 * baseSpeed), 0.08, 0.6)
+				local tween = TweenService:Create(hrp, TweenInfo.new(tweenTime, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+					CFrame = CFrame.new(target)
 				})
 				tween:Play()
 				tween.Completed:Wait()
