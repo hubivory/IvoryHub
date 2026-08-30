@@ -196,6 +196,7 @@ local cfg = {
     autoBuyMerchant = false,
     merchantWhitelist = {},
     autoBuyMysteryBox = false,
+    autoOpenMysteryBox = false,
     autoUseBoosts = false,
     autoUnlockTables = false,
     autoUnlockMenu = false,
@@ -463,6 +464,7 @@ BoostBox:AddButton({ Text = "Use Ultra Luck Potion", Func = function() pcall(fun
 local StoreBox = BoostStoreSub:AddRightGroupbox("Store", "store")
 StoreBox:AddButton({ Text = "Toggle Store Open/Close", Func = function() pcall(function() ToggleStoreStatus:InvokeServer() end) end })
 StoreBox:AddToggle("AutoBuyMysteryBox", { Text = "Auto Buy Mystery Box", Default = false, Tooltip = "Buys Mystery Box when you can afford it ($10,000 each, max 5)" })
+StoreBox:AddToggle("AutoOpenMysteryBox", { Text = "Auto Open Mystery Box", Default = false, Tooltip = "Auto-opens mystery boxes when available" })
 
 -- ═══ PLAYER TAB: Character Sub-Tab ═══
 local CharSub = PlayerTab:AddSubTab({ Name = "Character", Icon = "person-standing" })
@@ -606,6 +608,7 @@ end)
 Toggles.AutoSoftdrinks:OnChanged(function(s) cfg.autoSoftdrinks = s end)
 Toggles.AutoUseBoosts:OnChanged(function(s) cfg.autoUseBoosts = s end)
 Toggles.AutoBuyMysteryBox:OnChanged(function(s) cfg.autoBuyMysteryBox = s end)
+Toggles.AutoOpenMysteryBox:OnChanged(function(s) cfg.autoOpenMysteryBox = s end)
 Toggles.AutoUnlockTables:OnChanged(function(s) cfg.autoUnlockTables = s end)
 Toggles.AutoUnlockMenu:OnChanged(function(s) cfg.autoUnlockMenu = s end)
 Toggles.NoClip:OnChanged(function(s) cfg.noclip = s end)
@@ -1162,6 +1165,32 @@ task.spawn(function() while true do
         setStatus("mysteryBox", "Disabled")
     end
     task.wait(5)
+end end)
+
+-- ═══ AUTO OPEN MYSTERY BOX ═══
+task.spawn(function() while true do
+    if cfg.autoOpenMysteryBox then
+        local gui = LocalPlayer:FindFirstChild("PlayerGui")
+        if gui then
+            local myInfo = gui:FindFirstChild("GUI", true) and gui.GUI:FindFirstChild("Frames", true) and gui.GUI.Frames:FindFirstChild("MyInfo", true)
+            if myInfo then
+                local scroll = myInfo:FindFirstChild("Scrolling")
+                if scroll then
+                    local openFrame = scroll:FindFirstChild("Open/Close")
+                    if openFrame then
+                        local btn = openFrame:FindFirstChild("open/close")
+                        if btn and btn.Visible and btn.Active then
+                            setStatus("mysteryBox", "Opening...")
+                            pcall(function() btn:Activate() end)
+                            task.wait(1)
+                            setStatus("mysteryBox", "Opened!")
+                        end
+                    end
+                end
+            end
+        end
+    end
+    task.wait(3)
 end end)
 
 -- ═══ AUTO BUY FURNITURE ═══
