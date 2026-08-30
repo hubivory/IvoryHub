@@ -1210,7 +1210,7 @@ task.spawn(function() while true do
                             local prompt = mp:FindFirstChildOfClass("ProximityPrompt")
                             if prompt then
                                 prompt:InputHoldBegin()
-                                task.wait(3)
+                                task.wait(5)
                                 prompt:InputHoldEnd()
                             end
                         end)
