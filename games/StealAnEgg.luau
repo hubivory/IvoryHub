@@ -85,8 +85,6 @@ local function TeleportTo(position)
 	local hum = GetHumanoid()
 	if not hrp or not hum then return false end
 
-	pcall(function() hum:ChangeState(Enum.HumanoidStateType.Running) end)
-
 	if Config.InstantSteal then
 		hrp.CFrame = CFrame.new(position + Vector3.new(0, 3, 0))
 		hrp.AssemblyLinearVelocity = Vector3.zero
@@ -94,40 +92,29 @@ local function TeleportTo(position)
 		return true
 	end
 
-	local startPos = hrp.Position
-	local targetPos = position + Vector3.new(0, 3, 0)
-	local dist = (targetPos - startPos).Magnitude
+	local target = position + Vector3.new(0, 3, 0)
+	local dist = (target - hrp.Position).Magnitude
 	if dist <= 0.5 then return true end
 
-	local speed = math.max(Config.WalkSpeed * 6, 30)
-	local duration = dist / speed
-	local startTime = os.clock()
+	local prevSpeed = hum.WalkSpeed
+	hum.WalkSpeed = math.max(Config.WalkSpeed, 16)
 
-	local diff = Vector3.new(targetPos.X - startPos.X, 0, targetPos.Z - startPos.Z)
-	local lookDir = (diff.Magnitude > 0.1) and diff.Unit or hrp.CFrame.LookVector
+	local done = false
+	local timeout = tick() + math.clamp(dist / 20, 3, 15)
+	local conn
+	conn = hum.MoveToFinished:Connect(function()
+		done = true
+		if conn then conn:Disconnect() end
+	end)
 
-	while true do
-		local curHRP = GetHRP()
-		if not curHRP then break end
+	hum:MoveTo(target)
 
-		local alpha = math.clamp((os.clock() - startTime) / duration, 0, 1)
-		local currentPos = startPos:Lerp(targetPos, alpha)
-		curHRP.CFrame = CFrame.lookAt(currentPos, currentPos + lookDir)
-		curHRP.AssemblyLinearVelocity = Vector3.zero
-		curHRP.AssemblyAngularVelocity = Vector3.zero
-
-		if alpha >= 1 then break end
-		RunService.Heartbeat:Wait()
+	while not done and tick() < timeout do
+		task.wait(0.05)
 	end
 
-	hrp = GetHRP()
-	if hrp and hrp.Parent then
-		hrp.CFrame = (diff.Magnitude > 0.1) and CFrame.lookAt(targetPos, targetPos + lookDir) or CFrame.new(targetPos)
-		hrp.AssemblyLinearVelocity = Vector3.zero
-		hrp.AssemblyAngularVelocity = Vector3.zero
-	end
-
-	pcall(function() hum:ChangeState(Enum.HumanoidStateType.Running) end)
+	if conn then conn:Disconnect() end
+	hum.WalkSpeed = prevSpeed
 	return true
 end
 
