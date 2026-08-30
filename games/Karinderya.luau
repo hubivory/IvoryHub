@@ -51,6 +51,7 @@ local GetMerchantStock = MerchantRemotes:WaitForChild("GetMerchantStock")
 local BuyMerchantItem = MerchantRemotes:WaitForChild("BuyMerchantItem")
 local MysteryBoxRemotes = Remotes:WaitForChild("MysteryBoxRemotes")
 local BuyMysteryBox = MysteryBoxRemotes:WaitForChild("BuyMysteryBox")
+local GetMysteryBoxState = MysteryBoxRemotes:WaitForChild("GetMysteryBoxState")
 
 local Modules = ReplicatedStorage:WaitForChild("Modules")
 local FoodConfig = require(Modules:WaitForChild("FoodConfig"))
@@ -1177,34 +1178,43 @@ task.spawn(function() while true do
         local char = LocalPlayer.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         if hrp then
-            -- Find mystery box ProximityPrompt (on MysteryPlace part)
-            local prompt = nil
-            for _, desc in ipairs(workspace:GetDescendants()) do
-                if desc:IsA("ProximityPrompt") and desc.Parent and desc.Parent.Name == "MysteryPlace" then
-                    prompt = desc
-                    break
+            local bestPrompt, bestDist = nil, math.huge
+            for _, plot in ipairs(workspace:GetChildren()) do
+                if plot.Name:match("^Karenderya%d+$") then
+                    local mystery = plot:FindFirstChild("Mystery")
+                    if mystery then
+                        local mp = mystery:FindFirstChild("MysteryPlace")
+                        local nb = mystery:FindFirstChild("NormalBox")
+                        if mp and mp:IsA("BasePart") and nb then
+                            local prompt = mp:FindFirstChildOfClass("ProximityPrompt")
+                            if prompt then
+                                local dist = (mp.Position - hrp.Position).Magnitude
+                                if dist < 50 and dist < bestDist then
+                                    bestDist = dist
+                                    bestPrompt = prompt
+                                end
+                            end
+                        end
+                    end
                 end
             end
 
-            if prompt then
-                local part = prompt.Parent
-                if part and part:IsA("BasePart") then
-                    local origPos = hrp.CFrame
-                    setStatus("mysteryBox", "Teleporting to box...")
-                    hrp.CFrame = part.CFrame * CFrame.new(0, 0, -2)
-                    task.wait(1)
-                    setStatus("mysteryBox", "Opening box...")
-                    pcall(function()
-                        prompt:InputHoldBegin()
-                        task.wait(2)
-                        prompt:InputHoldEnd()
-                    end)
-                    task.wait(1)
-                    hrp.CFrame = origPos
-                    setStatus("mysteryBox", "Opened!")
-                end
+            if bestPrompt and bestPrompt.Parent and bestPrompt.Parent:IsA("BasePart") then
+                local origPos = hrp.CFrame
+                setStatus("mysteryBox", "Teleporting to box...")
+                hrp.CFrame = bestPrompt.Parent.CFrame + Vector3.new(0, 3, 0)
+                task.wait(1)
+                setStatus("mysteryBox", "Opening box...")
+                pcall(function()
+                    bestPrompt:InputHoldBegin()
+                    task.wait(2)
+                    bestPrompt:InputHoldEnd()
+                end)
+                task.wait(2)
+                hrp.CFrame = origPos
+                setStatus("mysteryBox", "Done!")
             else
-                setStatus("mysteryBox", "No box found")
+                setStatus("mysteryBox", "No box to open")
             end
         end
     else
