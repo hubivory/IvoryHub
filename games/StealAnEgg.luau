@@ -38,7 +38,7 @@ local Config = {
 	ServerHopDelay = 30,
 	AntiAFK = false,
 	CustomSpeed = false,
-	WalkSpeed = 50,
+	WalkSpeed = 150,
 	StealDelay = 0.5,
 	TweenSpeed = 5,
 	TargetRarities = {},
@@ -96,7 +96,7 @@ local function TeleportTo(position)
 	local dist = (target - hrp.Position).Magnitude
 	if dist <= 0.5 then return true end
 
-	local maxSafeSpeed = 120
+	local maxSafeSpeed = 300
 	local speed = math.clamp(Config.WalkSpeed, 16, maxSafeSpeed)
 
 	local pathWaypoints = nil
@@ -1526,7 +1526,7 @@ local function Main()
 		if state then task.spawn(SpeedLoop) end
 	end)
 
-	autoSection:AddSlider("Walk Speed", 16, 120, 50, function(value)
+	autoSection:AddSlider("Walk Speed", 16, 300, 150, function(value)
 		Config.WalkSpeed = value
 		local hum = GetHumanoid()
 		if hum and Config.CustomSpeed then
