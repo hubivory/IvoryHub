@@ -40,6 +40,15 @@ local Config = {
 	CustomSpeed = false,
 	WalkSpeed = 50,
 	StealDelay = 0.5,
+	TargetRarities = {},
+	SelectedRarities = {},
+}
+
+local RarityCache = {}
+local RarityNames = {
+	"Common", "Uncommon", "Rare", "Epic", "Legendary",
+	"Mythic", "Cosmic", "Secret", "Eternal", "Divine",
+	"Exotic", "Limited", "Exclusive", "Superior", "Titan",
 }
 
 local ScreenGui = nil
@@ -171,6 +180,135 @@ local function GetHeldEgg()
 		or char:FindFirstChildWhichIsA("MeshPart")
 end
 
+local function InitRaritySystem()
+	pcall(function()
+		local rarityData = require(ReplicatedStorage:WaitForChild("Data"):WaitForChild("Rarity"))
+		if rarityData and rarityData.Configs then
+			for name, config in pairs(rarityData.Configs) do
+				if config.DisplayName then
+					RarityCache[name] = config.DisplayName
+				end
+			end
+		end
+	end)
+
+	pcall(function()
+		local eggState = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("EggState"))
+		if eggState and eggState.RarityPresented then
+			eggState.RarityPresented:Connect(function(data)
+				if type(data) == "table" then
+					for uid, rarity in pairs(data) do
+						if type(rarity) == "string" then
+							RarityCache[tostring(uid)] = rarity
+						end
+					end
+				end
+			end)
+		end
+	end)
+
+	pcall(function()
+		local rarityShown = ReplicatedStorage
+			:WaitForChild("Packages")
+			:WaitForChild("Networking")
+			:FindFirstChild("RE/EggWorld/FieldEggRaritiesShown")
+		if rarityShown and rarityShown:IsA("RemoteEvent") then
+			rarityShown.OnClientEvent:Connect(function(data)
+				if type(data) == "table" then
+					for key, val in pairs(data) do
+						if type(val) == "string" then
+							RarityCache[tostring(key)] = val
+						elseif type(val) == "table" and val.Rarity then
+							RarityCache[tostring(key)] = val.Rarity
+						elseif type(val) == "table" and val.rarity then
+							RarityCache[tostring(key)] = val.rarity
+						end
+					end
+				end
+			end)
+		end
+	end)
+end
+
+local function GetEggRarityFromSmartPart(smartPart)
+	if not smartPart then return "Unknown" end
+
+	local pos = smartPart.Position
+	local posKey = math.floor(pos.X) .. "," .. math.floor(pos.Z)
+	if RarityCache[posKey] then return RarityCache[posKey] end
+
+	local cra = Workspace:FindFirstChild("ClientRenderedAssets")
+	if cra then
+		for _, model in ipairs(cra:GetChildren()) do
+			if model:IsA("Model") then
+				local pivot = model:GetPivot()
+				local dist = (pivot.Position - pos).Magnitude
+				if dist < 12 then
+					local bbg = model:FindFirstChild("Data")
+					if bbg and bbg:IsA("BillboardGui") then
+						local odds = bbg:FindFirstChild("Odds")
+						if odds and odds:IsA("TextLabel") and odds.Text ~= "" then
+							RarityCache[posKey] = odds.Text
+							return odds.Text
+						end
+						local rarityLabel = bbg:FindFirstChild("Rarity")
+						if rarityLabel and rarityLabel:IsA("TextLabel") and rarityLabel.Text ~= "" then
+							RarityCache[posKey] = rarityLabel.Text
+							return rarityLabel.Text
+						end
+					end
+				end
+			end
+		end
+	end
+
+	local eggModel = nil
+	local eggDist = math.huge
+	for _, obj in ipairs(Workspace:GetChildren()) do
+		if obj:IsA("Model") and obj.Name:find("Egg") then
+			local pivot = obj:GetPivot()
+			local dist = (pivot.Position - pos).Magnitude
+			if dist < eggDist then
+				eggDist = dist
+				eggModel = obj
+			end
+		end
+	end
+
+	if eggModel and eggDist < 12 then
+		for _, descendant in ipairs(eggModel:GetDescendants()) do
+			if descendant:IsA("TextLabel") and descendant.Visible then
+				local text = descendant.Text
+				if text and text ~= "" then
+					for _, rName in ipairs(RarityNames) do
+						if text:lower():find(rName:lower()) then
+							RarityCache[posKey] = rName
+							return rName
+						end
+					end
+				end
+			end
+		end
+	end
+
+	return "Unknown"
+end
+
+local function IsEggTargeted(smartPart)
+	if #Config.SelectedRarities == 0 then return true end
+
+	local rarity = GetEggRarityFromSmartPart(smartPart)
+	if rarity == "Unknown" then return true end
+
+	for _, r in ipairs(Config.SelectedRarities) do
+		if r == rarity then
+			return true
+		end
+	end
+
+	return false
+end
+
 local function StealEgg(prompt)
 	if not prompt or not IsAlive() then return false end
 
@@ -202,7 +340,7 @@ local function AutoStealLoop()
 	while Config.AutoSteal do
 		if IsAlive() then
 			local prompt = GetNearestStealPrompt()
-			if prompt then
+			if prompt and IsEggTargeted(prompt.Parent) then
 				StealEgg(prompt)
 			end
 		end
@@ -413,7 +551,9 @@ local function UpdateESP()
 		for _, prompt in ipairs(GetStealPrompts()) do
 			local part = prompt.Parent
 			if part and part:IsA("BasePart") and not ESPObjects[part] then
-				CreateESP(part, Color3.fromRGB(90, 220, 120), "Egg")
+				local rarity = GetEggRarityFromSmartPart(part)
+				local color = Color3.fromRGB(90, 220, 120)
+				CreateESP(part, color, rarity)
 			end
 		end
 	else
@@ -1128,6 +1268,7 @@ local function CreateWindow(title)
 end
 
 local function Main()
+	InitRaritySystem()
 	local window = CreateWindow("Ivory")
 
 	local stealSection = window:AddSection("Steal", "Egg Stealing")
@@ -1151,10 +1292,14 @@ local function Main()
 		Config.AutoReturnToBase = state
 	end)
 
+	stealSection:AddDropdown("Rarity Filter", RarityNames, {}, true, function(selected)
+		Config.SelectedRarities = selected
+	end)
+
 	stealSection:AddButton("Steal Nearest Egg", function()
 		if IsAlive() then
 			local prompt = GetNearestStealPrompt()
-			if prompt then
+			if prompt and IsEggTargeted(prompt.Parent) then
 				StealEgg(prompt)
 			end
 		end
@@ -1164,7 +1309,7 @@ local function Main()
 		task.spawn(function()
 			local prompts = GetStealPrompts()
 			for _, prompt in ipairs(prompts) do
-				if IsAlive() then
+				if IsAlive() and IsEggTargeted(prompt.Parent) then
 					StealEgg(prompt)
 					task.wait(Config.StealDelay)
 				end
