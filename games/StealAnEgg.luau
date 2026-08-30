@@ -40,6 +40,7 @@ local Config = {
 	CustomSpeed = false,
 	WalkSpeed = 50,
 	StealDelay = 0.5,
+	TargetRarities = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Golden", "Shiny", "Rainbow", "Cosmic", "Eternal", "Secret"},
 	SelectedRarities = {},
 	SelectedMutations = {},
 }
@@ -460,8 +461,8 @@ local function CreateWindow(title)
 	ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 	MainFrame = Instance.new("Frame")
-	MainFrame.Size = UDim2.new(0, 380, 0, 480)
-	MainFrame.Position = UDim2.new(0.5, -190, 0.5, -240)
+	MainFrame.Size = UDim2.new(0, 380, 0, 520)
+	MainFrame.Position = UDim2.new(0.5, -190, 0.5, -260)
 	MainFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 30)
 	MainFrame.BorderSizePixel = 0
 	MainFrame.Active = true
@@ -1153,6 +1154,10 @@ local function Main()
 
 	stealSection:AddToggle("Auto Return to Base", true, function(state)
 		Config.AutoReturnToBase = state
+	end)
+
+	stealSection:AddDropdown("Rarity Filter", Config.TargetRarities, {}, true, function(selected)
+		Config.SelectedRarities = selected
 	end)
 
 	stealSection:AddButton("Steal Nearest Egg", function()
