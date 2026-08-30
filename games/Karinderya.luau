@@ -1147,8 +1147,7 @@ task.spawn(function() while true do
         local cost = mbCfg and mbCfg.Cost or 10000
         local cash = getCash()
         if cash >= cost then
-            local clientLoader = LocalPlayer:WaitForChild("PlayerScripts"):FindFirstChild("ClientLoader")
-            local ok, result = pcall(function() return BuyMysteryBox:InvokeServer(clientLoader) end)
+            local ok, result = pcall(function() return BuyMysteryBox:InvokeServer("Common", 1) end)
             if ok and result then
                 setStatus("mysteryBox", "Bought! (-$" .. cost .. ")")
                 logMoney("Mystery Box", -cost)
