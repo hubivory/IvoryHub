@@ -1,30 +1,130 @@
 --// Ivory Hub | Steal An Egg
 --// Place ID: 107778070777162
 
-local getconstants = getconstants or debug.getconstants
-local setconstant = setconstant or debug.setconstant
+--// ═══════════════════════════════════════════════════════════
+--// ANTICHEAT BYPASS - Humanoid Replacement
+--// Replaces the Humanoid instance to sever hooks/references
+--// the anticheat (Kernel LocalScript) has on the original.
+--// All game scripts are compiled (src=0) so constant-wiping
+--// is impossible. Instance replacement is the correct approach.
+--// ═══════════════════════════════════════════════════════════
 
-local islclosure = islclosure or function(Function)
-	return not pcall(setfenv, getfenv(Function))
-end
+local getnamecallmethod = getnamecallmethod or nil
+local hookmetamethod = hookmetamethod or nil
+local checkcaller = checkcaller or function() return false end
+local getgenv = getgenv or getfenv
 
-for _, Function in getgc(true) do
-	if typeof(Function) ~= "function" or not islclosure(Function) then continue end
+local function replaceHumanoid(char)
+	if not char then return nil end
+	local oldHum = char:FindFirstChildOfClass("Humanoid")
+	if not oldHum then return nil end
 
-	local Source = debug.info(Function, "s")
+	local animScript = char:FindFirstChild("Animate")
+	if animScript and animScript:IsA("LocalScript") then
+		animScript.Disabled = true
+	end
 
-	if not Source:find("ReplicatedFirst", 1, true) or not Source:find("UGI", 1, true) then continue end
-
-	local Constants = getconstants(Function)
-
-	for Index, Constant in next, Constants do
-		if type(Constant) ~= "string" then continue end
-
-		if Constant == "Humanoid" then
-			pcall(setconstant, Function, Index, "")
+	local animator = oldHum:FindFirstChildOfClass("Animator")
+	if animator then
+		for _, track in next, animator:GetPlayingAnimationTracks() do
+			track:Stop(0)
 		end
 	end
+
+	oldHum.Archivable = true
+	local newHum = oldHum:Clone()
+
+	for _, child in next, newHum:GetChildren() do
+		if child:IsA("Animator") then child:Destroy() end
+	end
+
+	oldHum.Name = "_OldHumanoid"
+	newHum.Name = "Humanoid"
+	newHum.Parent = char
+
+	local newAnimator = Instance.new("Animator")
+	newAnimator.Parent = newHum
+
+	newHum.WalkSpeed = oldHum.WalkSpeed
+	newHum.JumpPower = oldHum.JumpPower
+	newHum.JumpHeight = oldHum.JumpHeight
+	newHum.MaxHealth = oldHum.MaxHealth
+	newHum.Health = math.min(oldHum.Health, oldHum.MaxHealth)
+
+	local cam = workspace.CurrentCamera
+	if cam then cam.CameraSubject = newHum end
+
+	oldHum:Destroy()
+
+	task.defer(function()
+		if animScript and animScript:IsA("LocalScript") then
+			animScript.Disabled = false
+			task.defer(function()
+				if animScript.Parent then
+					animScript.Disabled = true
+					task.wait()
+					animScript.Disabled = false
+				end
+			end)
+		end
+		if newHum.Parent then
+			newHum:ChangeState(Enum.HumanoidStateType.Running)
+		end
+	end)
+
+	return newHum
 end
+
+--// Safety: Hook namecall to block Kick and suspicious remotes
+if hookmetamethod and getnamecallmethod then
+	pcall(function()
+		local oldNamecall
+		oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
+			local method = getnamecallmethod()
+
+			if method == "Kick" then
+				if typeof(self) == "Instance" and self:IsA("Player") then
+					return nil
+				end
+			end
+
+			if method == "FireServer" or method == "InvokeServer" then
+				local ok, remoteName = pcall(function() return self.Name end)
+				if ok and remoteName then
+					local lower = remoteName:lower()
+					if lower:find("kick") or lower:find("ban") or lower:find("anti") or lower:find("report") then
+						return nil
+					end
+				end
+			end
+
+			return oldNamecall(self, ...)
+		end))
+	end)
+end
+
+--// Safety: Hook __index to spoof humanoid property reads for game scripts
+pcall(function()
+	if hookmetamethod and checkcaller then
+		local oldIndex
+		oldIndex = hookmetamethod(game, "__index", newcclosure(function(self, key)
+			if not checkcaller() and typeof(self) == "Instance" and self:IsA("Humanoid") then
+				if key == "WalkSpeed" then return 16 end
+				if key == "JumpPower" then return 50 end
+				if key == "JumpHeight" then return 7.2 end
+				if key == "HipHeight" then return 0 end
+			end
+			return oldIndex(self, key)
+		end))
+	end
+end)
+
+--// Safety: Hide exploit environment markers
+pcall(function()
+	local genv = getgenv()
+	genv.绘制 = nil
+	genv.identifyexecutor = function() return "Ivory", "1.0" end
+end)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -39,6 +139,12 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Player = Players.LocalPlayer
+
+-- Replace Humanoid on current character immediately
+if Player.Character then
+	task.spawn(function() replaceHumanoid(Player.Character) end)
+end
+
 local Character = Player.Character or Player.CharacterAdded:Wait()
 local Humanoid = Character:WaitForChild("Humanoid")
 local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
@@ -46,7 +152,8 @@ local Camera = Workspace.CurrentCamera
 
 Player.CharacterAdded:Connect(function(c)
 	Character = c
-	Humanoid = c:WaitForChild("Humanoid")
+	replaceHumanoid(c)
+	Humanoid = c:FindFirstChildOfClass("Humanoid") or c:WaitForChild("Humanoid")
 	HumanoidRootPart = c:WaitForChild("HumanoidRootPart")
 end)
 
