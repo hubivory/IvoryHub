@@ -37,29 +37,17 @@ local Config = {
 	ServerHop = false,
 	ServerHopDelay = 30,
 	AntiAFK = false,
+	CustomSpeed = false,
+	WalkSpeed = 32,
 	StealDelay = 0.5,
 	SelectedRarities = {},
 	SelectedMutations = {},
-	TargetRarities = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Golden", "Shiny", "Rainbow", "Cosmic"},
 }
 
 local ScreenGui = nil
 local MainFrame = nil
 local CurrentTab = "Steal"
 local Tabs = {}
-
-local RARITIES = {
-	{Name = "Common", Color = Color3.fromRGB(180, 180, 180), Priority = 1},
-	{Name = "Uncommon", Color = Color3.fromRGB(80, 200, 80), Priority = 2},
-	{Name = "Rare", Color = Color3.fromRGB(80, 120, 255), Priority = 3},
-	{Name = "Epic", Color = Color3.fromRGB(180, 80, 255), Priority = 4},
-	{Name = "Legendary", Color = Color3.fromRGB(255, 180, 50), Priority = 5},
-	{Name = "Mythic", Color = Color3.fromRGB(255, 50, 50), Priority = 6},
-	{Name = "Golden", Color = Color3.fromRGB(255, 215, 0), Priority = 7},
-	{Name = "Shiny", Color = Color3.fromRGB(200, 200, 255), Priority = 8},
-	{Name = "Rainbow", Color = Color3.fromRGB(255, 100, 100), Priority = 9},
-	{Name = "Cosmic", Color = Color3.fromRGB(150, 50, 255), Priority = 10},
-}
 
 local function GetCharacter()
 	return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -162,72 +150,8 @@ local function GetHeldEgg()
 		or char:FindFirstChildWhichIsA("MeshPart")
 end
 
-local function GetEggRarityFromSmartPart(smartPart)
-	if not smartPart then return "Unknown" end
-
-	local pos = smartPart.Position
-	local cra = Workspace:FindFirstChild("ClientRenderedAssets")
-	if not cra then return "Unknown" end
-
-	local nearestModel = nil
-	local nearestDist = math.huge
-
-	for _, model in ipairs(cra:GetChildren()) do
-		if model:IsA("Model") then
-			local pivot = model:GetPivot()
-			local dist = (pivot.Position - pos).Magnitude
-			if dist < nearestDist then
-				nearestDist = dist
-				nearestModel = model
-			end
-		end
-	end
-
-	if nearestModel and nearestDist < 20 then
-		local bbg = nearestModel:FindFirstChild("Data")
-		if bbg and bbg:IsA("BillboardGui") then
-			local oddsLabel = bbg:FindFirstChild("Odds")
-			if oddsLabel and oddsLabel:IsA("TextLabel") then
-				local rarity = oddsLabel.Text
-				if rarity and rarity ~= "" then
-					return rarity
-				end
-			end
-
-			local rarityLabel = bbg:FindFirstChild("Rarity")
-			if rarityLabel and rarityLabel:IsA("TextLabel") then
-				local rarity = rarityLabel.Text
-				if rarity and rarity ~= "" then
-					return rarity
-				end
-			end
-
-			local displayName = bbg:FindFirstChild("DisplayName")
-			if displayName and displayName:IsA("TextLabel") then
-				local name = displayName.Text
-				for _, rarity in ipairs(RARITIES) do
-					if name:lower():find(rarity.Name:lower()) then
-						return rarity.Name
-					end
-				end
-			end
-		end
-	end
-
-	return "Unknown"
-end
-
-local function IsEggTargeted(smartPart)
-	if #Config.SelectedRarities == 0 then return true end
-
-	local rarity = GetEggRarityFromSmartPart(smartPart)
-	for _, r in ipairs(Config.SelectedRarities) do
-		if r == rarity then
-			return true
-		end
-	end
-
-	return false
+local function IsEggTargeted(_prompt)
+	return true
 end
 
 local function StealEgg(prompt)
@@ -406,6 +330,20 @@ local function AntiAFKLoop()
 	end
 end
 
+local function SpeedLoop()
+	while Config.CustomSpeed do
+		local hum = GetHumanoid()
+		if hum then
+			hum.WalkSpeed = Config.WalkSpeed
+		end
+		task.wait(0.5)
+	end
+	local hum = GetHumanoid()
+	if hum then
+		hum.WalkSpeed = 16
+	end
+end
+
 local ESPObjects = {}
 
 local function CreateESP(part, color, text)
@@ -458,17 +396,7 @@ local function UpdateESP()
 		for _, prompt in ipairs(GetStealPrompts()) do
 			local part = prompt.Parent
 			if part and part:IsA("BasePart") and not ESPObjects[part] then
-				local rarity = GetEggRarityFromSmartPart(part)
-				local rarityColor = Color3.new(1, 1, 1)
-
-				for _, r in ipairs(RARITIES) do
-					if r.Name == rarity then
-						rarityColor = r.Color
-						break
-					end
-				end
-
-				CreateESP(part, rarityColor, rarity)
+				CreateESP(part, Color3.fromRGB(90, 220, 120), "Egg")
 			end
 		end
 	else
@@ -1206,10 +1134,6 @@ local function Main()
 		Config.AutoReturnToBase = state
 	end)
 
-	stealSection:AddDropdown("Rarity Filter", Config.TargetRarities, {}, true, function(selected)
-		Config.SelectedRarities = selected
-	end)
-
 	stealSection:AddButton("Steal Nearest Egg", function()
 		if IsAlive() then
 			local prompt = GetNearestStealPrompt()
@@ -1278,6 +1202,15 @@ local function Main()
 		if state then task.spawn(AntiAFKLoop) end
 	end)
 
+	autoSection:AddToggle("Custom Speed", false, function(state)
+		Config.CustomSpeed = state
+		if state then task.spawn(SpeedLoop) end
+	end)
+
+	autoSection:AddSlider("Walk Speed", 16, 200, 32, function(value)
+		Config.WalkSpeed = value
+	end)
+
 	local espSection = window:AddSection("ESP", "Egg ESP")
 
 	espSection:AddToggle("Show Egg ESP", false, function(state)
@@ -1343,6 +1276,9 @@ local function Main()
 		Character = char
 		Humanoid = char:WaitForChild("Humanoid")
 		HumanoidRootPart = char:WaitForChild("HumanoidRootPart")
+		if Config.CustomSpeed then
+			task.spawn(SpeedLoop)
+		end
 	end)
 end
 
