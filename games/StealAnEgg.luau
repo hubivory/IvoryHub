@@ -92,61 +92,40 @@ local function TeleportTo(position)
 		return true
 	end
 
-	local target = position + Vector3.new(0, 3, 0)
-	local dist = (target - hrp.Position).Magnitude
+	local startPos = hrp.Position
+	local targetPos = position + Vector3.new(0, 3, 0)
+	local dist = (targetPos - startPos).Magnitude
 	if dist <= 0.5 then return true end
 
-	local prevSpeed = hum.WalkSpeed
-	hum.WalkSpeed = math.max(Config.WalkSpeed, 16)
+	local speed = math.max(Config.WalkSpeed, 16)
+	local duration = dist / speed
+	local startTime = os.clock()
 
-	local waypoints = nil
-	pcall(function()
-		local path = PathfindingService:CreatePath({
-			AgentRadius = 2,
-			AgentHeight = 5,
-			AgentCanJump = true,
-			AgentCanClimb = false,
-			WaypointSpacing = 8,
-		})
-		path:ComputeAsync(hrp.Position, target)
-		if path.Status == Enum.PathStatus.Success then
-			waypoints = path:GetWaypoints()
-		end
-	end)
+	local diff = Vector3.new(targetPos.X - startPos.X, 0, targetPos.Z - startPos.Z)
+	local lookDir = (diff.Magnitude > 0.1) and diff.Unit or hrp.CFrame.LookVector
 
-	if waypoints then
-		for i = 2, #waypoints do
-			local wp = waypoints[i]
-			local wpTarget = wp.Position + Vector3.new(0, 3, 0)
-			local done = false
-			local timeout = tick() + 5
-			local conn
-			conn = hum.MoveToFinished:Connect(function()
-				done = true
-				if conn then conn:Disconnect() end
-			end)
-			hum:MoveTo(wpTarget)
-			while not done and tick() < timeout do
-				task.wait(0.05)
-			end
-			if conn then conn:Disconnect() end
-		end
-	else
-		local done = false
-		local timeout = tick() + math.clamp(dist / 20, 3, 15)
-		local conn
-		conn = hum.MoveToFinished:Connect(function()
-			done = true
-			if conn then conn:Disconnect() end
-		end)
-		hum:MoveTo(target)
-		while not done and tick() < timeout do
-			task.wait(0.05)
-		end
-		if conn then conn:Disconnect() end
+	while true do
+		local curHRP = GetHRP()
+		if not curHRP then break end
+
+		local alpha = math.clamp((os.clock() - startTime) / duration, 0, 1)
+		local currentPos = startPos:Lerp(targetPos, alpha)
+		curHRP.CFrame = CFrame.lookAt(currentPos, currentPos + lookDir)
+		curHRP.AssemblyLinearVelocity = Vector3.zero
+		curHRP.AssemblyAngularVelocity = Vector3.zero
+
+		if alpha >= 1 then break end
+		RunService.Heartbeat:Wait()
 	end
 
-	hum.WalkSpeed = prevSpeed
+	hrp = GetHRP()
+	if hrp and hrp.Parent then
+		hrp.CFrame = (diff.Magnitude > 0.1) and CFrame.lookAt(targetPos, targetPos + lookDir) or CFrame.new(targetPos)
+		hrp.AssemblyLinearVelocity = Vector3.zero
+		hrp.AssemblyAngularVelocity = Vector3.zero
+	end
+
+	pcall(function() hum:ChangeState(Enum.HumanoidStateType.Running) end)
 	return true
 end
 
