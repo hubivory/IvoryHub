@@ -1145,19 +1145,17 @@ task.spawn(function() while true do
     if cfg.autoBuyMysteryBox then
         local mbCfg = MysteryBoxConfig and MysteryBoxConfig.Common
         local cost = mbCfg and mbCfg.Cost or 10000
-        local eta = mbCfg and mbCfg.ETASeconds or 300
         local cash = getCash()
         if cash >= cost then
-            setStatus("mysteryBox", "Buying...")
             local clientLoader = LocalPlayer:WaitForChild("PlayerScripts"):FindFirstChild("ClientLoader")
             local ok, result = pcall(function() return BuyMysteryBox:InvokeServer(clientLoader) end)
             if ok and result then
                 setStatus("mysteryBox", "Bought! (-$" .. cost .. ")")
                 logMoney("Mystery Box", -cost)
-                task.wait(eta)
+                task.wait(3)
             else
                 setStatus("mysteryBox", "Waiting for box...")
-                task.wait(eta)
+                task.wait(5)
             end
         else
             setStatus("mysteryBox", "Need $" .. cost .. " (have $" .. cash .. ")")
