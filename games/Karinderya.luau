@@ -49,6 +49,8 @@ local StartRepair = ChillerRemotes:WaitForChild("StartRepair")
 local MerchantRemotes = Remotes:WaitForChild("MerchantRemotes")
 local GetMerchantStock = MerchantRemotes:WaitForChild("GetMerchantStock")
 local BuyMerchantItem = MerchantRemotes:WaitForChild("BuyMerchantItem")
+local MysteryBoxRemotes = Remotes:WaitForChild("MysteryBoxRemotes")
+local BuyMysteryBox = MysteryBoxRemotes:WaitForChild("BuyMysteryBox")
 
 local Modules = ReplicatedStorage:WaitForChild("Modules")
 local FoodConfig = require(Modules:WaitForChild("FoodConfig"))
@@ -56,6 +58,7 @@ local IngredientsConfig = require(Modules:WaitForChild("IngredientsConfig"))
 local SoftdrinkConfig = require(Modules:WaitForChild("SoftdrinkConfig"))
 local FurnitureConfig = require(Modules:WaitForChild("FurnitureConfig"))
 local NPCConfig = require(Modules:WaitForChild("NPCConfig"))
+local MysteryBoxConfig = require(Modules:WaitForChild("MysteryBoxConfig"))
 
 -- Build NPC list with rarities
 local npcNamesWithRarity = {}
@@ -192,6 +195,7 @@ local cfg = {
     autoFixChiller = false,
     autoBuyMerchant = false,
     merchantWhitelist = {},
+    autoBuyMysteryBox = false,
     autoUseBoosts = false,
     autoUnlockTables = false,
     autoUnlockMenu = false,
@@ -294,6 +298,7 @@ local status = {
     unlockMenu = "Idle",
     chiller = "Idle",
     merchant = "Idle",
+    mysteryBox = "Idle",
 }
 
 local function setStatus(key, text)
@@ -457,6 +462,7 @@ BoostBox:AddButton({ Text = "Use Ultra Luck Potion", Func = function() pcall(fun
 
 local StoreBox = BoostStoreSub:AddRightGroupbox("Store", "store")
 StoreBox:AddButton({ Text = "Toggle Store Open/Close", Func = function() pcall(function() ToggleStoreStatus:InvokeServer() end) end })
+StoreBox:AddToggle("AutoBuyMysteryBox", { Text = "Auto Buy Mystery Box", Default = false, Tooltip = "Buys Mystery Box when you can afford it ($10,000 each, max 5)" })
 
 -- ═══ PLAYER TAB: Character Sub-Tab ═══
 local CharSub = PlayerTab:AddSubTab({ Name = "Character", Icon = "person-standing" })
@@ -490,8 +496,8 @@ local ConfigSub = SettingsTab:AddSubTab({ Name = "Config", Icon = "save" })
 -- LOGS TAB
 local StatusBox = LogsTab:AddLeftGroupbox("Status", "activity")
 local StatusLabels = {}
-local statusOrder = {"serve", "order", "drink", "codes", "pan", "clean", "wash", "buyFurn", "placeFurn", "buyIng", "boosts", "unlockTbl", "unlockMenu", "chiller", "merchant"}
-local statusNames = {serve="Serve", order="Order", drink="Drinks", codes="Codes", pan="Pan", clean="Clean", wash="Wash", buyFurn="Buy Furn", placeFurn="Place Furn", buyIng="Buy Ing", boosts="Boosts", unlockTbl="Unlock Tbl", unlockMenu="Unlock Menu", chiller="Chiller", merchant="Merchant"}
+local statusOrder = {"serve", "order", "drink", "codes", "pan", "clean", "wash", "buyFurn", "placeFurn", "buyIng", "boosts", "unlockTbl", "unlockMenu", "chiller", "merchant", "mysteryBox"}
+local statusNames = {serve="Serve", order="Order", drink="Drinks", codes="Codes", pan="Pan", clean="Clean", wash="Wash", buyFurn="Buy Furn", placeFurn="Place Furn", buyIng="Buy Ing", boosts="Boosts", unlockTbl="Unlock Tbl", unlockMenu="Unlock Menu", chiller="Chiller", merchant="Merchant", mysteryBox="Mystery Box"}
 for _, key in ipairs(statusOrder) do
     StatusLabels[key] = StatusBox:AddLabel(statusNames[key] .. ": Idle", true)
 end
@@ -599,6 +605,7 @@ Options.MerchantWhitelist:OnChanged(function(v)
 end)
 Toggles.AutoSoftdrinks:OnChanged(function(s) cfg.autoSoftdrinks = s end)
 Toggles.AutoUseBoosts:OnChanged(function(s) cfg.autoUseBoosts = s end)
+Toggles.AutoBuyMysteryBox:OnChanged(function(s) cfg.autoBuyMysteryBox = s end)
 Toggles.AutoUnlockTables:OnChanged(function(s) cfg.autoUnlockTables = s end)
 Toggles.AutoUnlockMenu:OnChanged(function(s) cfg.autoUnlockMenu = s end)
 Toggles.NoClip:OnChanged(function(s) cfg.noclip = s end)
@@ -1130,6 +1137,33 @@ task.spawn(function() while true do
     task.wait(5)
 end end)
 
+-- ═══ AUTO BUY MYSTERY BOX ═══
+task.spawn(function() while true do
+    if cfg.autoBuyMysteryBox then
+        local mbCfg = MysteryBoxConfig and MysteryBoxConfig.Common
+        local cost = mbCfg and mbCfg.Cost or 10000
+        local maxQty = mbCfg and mbCfg.MaxQuantity or 5
+        local cash = getCash()
+        if cash >= cost then
+            setStatus("mysteryBox", "Buying...")
+            local clientLoader = LocalPlayer:WaitForChild("PlayerScripts"):FindFirstChild("ClientLoader")
+            local ok, result = pcall(function() return BuyMysteryBox:InvokeServer(clientLoader) end)
+            if ok and result then
+                setStatus("mysteryBox", "Bought! (-$" .. cost .. ")")
+                logMoney("Mystery Box", -cost)
+            else
+                setStatus("mysteryBox", "Failed (max reached?)")
+            end
+            task.wait(2)
+        else
+            setStatus("mysteryBox", "Need $" .. cost .. " (have $" .. cash .. ")")
+        end
+    else
+        setStatus("mysteryBox", "Disabled")
+    end
+    task.wait(5)
+end end)
+
 -- ═══ AUTO BUY FURNITURE ═══
 task.spawn(function() while true do
     if cfg.autoBuyFurniture then
@@ -1596,7 +1630,7 @@ task.spawn(function()
         task.wait(3)
         local currentCash = getCash()
         local diff = currentCash - lastCash
-        if diff ~= 0 and not cfg.autoServe and not cfg.autoBuyFurniture and not cfg.autoBuyIngredients and not cfg.autoUnlockTables and not cfg.autoFixChiller and not cfg.autoBuyMerchant then
+        if diff ~= 0 and not cfg.autoServe and not cfg.autoBuyFurniture and not cfg.autoBuyIngredients and not cfg.autoUnlockTables and not cfg.autoFixChiller and not cfg.autoBuyMerchant and not cfg.autoBuyMysteryBox then
             if diff > 0 then
                 logMoney("Passive earn", diff)
             else
