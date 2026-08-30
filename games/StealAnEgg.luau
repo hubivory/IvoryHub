@@ -1,6 +1,31 @@
 --// Ivory Hub | Steal An Egg
 --// Place ID: 107778070777162
 
+local getconstants = getconstants or debug.getconstants
+local setconstant = setconstant or debug.setconstant
+
+local islclosure = islclosure or function(Function)
+	return not pcall(setfenv, getfenv(Function))
+end
+
+for _, Function in getgc(true) do
+	if typeof(Function) ~= "function" or not islclosure(Function) then continue end
+
+	local Source = debug.info(Function, "s")
+
+	if not Source:find("ReplicatedFirst", 1, true) or not Source:find("UGI", 1, true) then continue end
+
+	local Constants = getconstants(Function)
+
+	for Index, Constant in next, Constants do
+		if type(Constant) ~= "string" then continue end
+
+		if Constant == "Humanoid" then
+			pcall(setconstant, Function, Index, "")
+		end
+	end
+end
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -589,6 +614,7 @@ if isLobby then SaveManager:SetSubFolder("lobby") else SaveManager:SetSubFolder(
 local CreditGroup = SettingsTab:AddLeftGroupbox("Credits", "heart")
 local CreditLabel = CreditGroup:AddLabel({ Text = "", Size = 26, DoesWrap = true })
 local CreditTL = CreditLabel.TextLabel
+CreditTL.RichText = false
 CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
 CreditTL.Font = Enum.Font.GothamBold
 CreditTL.TextSize = 26
@@ -600,14 +626,14 @@ task.spawn(function()
 		local shown = ""
 		for i = 1, #full do
 			shown = shown .. full:sub(i, i)
-			CreditLabel:SetText(shown .. cursor)
+			CreditTL.Text = shown .. cursor
 			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
 			task.wait(math.random(4, 9) / 100)
 		end
 		task.wait(2)
 		for i = #full, 1, -1 do
 			shown = full:sub(1, i - 1)
-			CreditLabel:SetText(shown .. cursor)
+			CreditTL.Text = shown .. cursor
 			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
 			task.wait(math.random(2, 5) / 100)
 		end
