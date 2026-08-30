@@ -82,44 +82,53 @@ end
 
 local function TeleportTo(position)
 	local hrp = GetHRP()
-	if not hrp then return end
+	local hum = GetHumanoid()
+	if not hrp or not hum then return false end
+
+	pcall(function() hum:ChangeState(Enum.HumanoidStateType.Running) end)
 
 	if Config.InstantSteal then
 		hrp.CFrame = CFrame.new(position + Vector3.new(0, 3, 0))
-		return
+		hrp.AssemblyLinearVelocity = Vector3.zero
+		hrp.AssemblyAngularVelocity = Vector3.zero
+		return true
 	end
 
-	local path = PathfindingService:CreatePath({
-		AgentRadius = 2,
-		AgentHeight = 5,
-		AgentCanJump = true,
-		AgentCanClimb = false,
-		WaypointSpacing = 6,
-	})
+	local startPos = hrp.Position
+	local targetPos = position + Vector3.new(0, 3, 0)
+	local dist = (targetPos - startPos).Magnitude
+	if dist <= 0.5 then return true end
 
-	local success, _ = pcall(function()
-		path:ComputeAsync(hrp.Position, position)
-	end)
+	local speed = math.max(Config.WalkSpeed * 6, 30)
+	local duration = dist / speed
+	local startTime = os.clock()
 
-	if success and path.Status == Enum.PathStatus.Success then
-		local waypoints = path:GetWaypoints()
-		local speedMult = Config.TweenSpeed / 5
-		local baseSpeed = math.max(speedMult, 0.2)
-		for i, waypoint in ipairs(waypoints) do
-			if i > 1 then
-				local target = waypoint.Position + Vector3.new(0, 3, 0)
-				local distance = (waypoint.Position - hrp.Position).Magnitude
-				local tweenTime = math.clamp(distance / (200 * baseSpeed), 0.02, 0.12)
-				local tween = TweenService:Create(hrp, TweenInfo.new(tweenTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-					CFrame = CFrame.new(target)
-				})
-				tween:Play()
-				tween.Completed:Wait()
-			end
-		end
-	else
-		hrp.CFrame = CFrame.new(position + Vector3.new(0, 3, 0))
+	local diff = Vector3.new(targetPos.X - startPos.X, 0, targetPos.Z - startPos.Z)
+	local lookDir = (diff.Magnitude > 0.1) and diff.Unit or hrp.CFrame.LookVector
+
+	while true do
+		local curHRP = GetHRP()
+		if not curHRP then break end
+
+		local alpha = math.clamp((os.clock() - startTime) / duration, 0, 1)
+		local currentPos = startPos:Lerp(targetPos, alpha)
+		curHRP.CFrame = CFrame.lookAt(currentPos, currentPos + lookDir)
+		curHRP.AssemblyLinearVelocity = Vector3.zero
+		curHRP.AssemblyAngularVelocity = Vector3.zero
+
+		if alpha >= 1 then break end
+		RunService.Heartbeat:Wait()
 	end
+
+	hrp = GetHRP()
+	if hrp and hrp.Parent then
+		hrp.CFrame = (diff.Magnitude > 0.1) and CFrame.lookAt(targetPos, targetPos + lookDir) or CFrame.new(targetPos)
+		hrp.AssemblyLinearVelocity = Vector3.zero
+		hrp.AssemblyAngularVelocity = Vector3.zero
+	end
+
+	pcall(function() hum:ChangeState(Enum.HumanoidStateType.Running) end)
+	return true
 end
 
 local function BuildAreaMap()
