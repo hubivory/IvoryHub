@@ -99,21 +99,53 @@ local function TeleportTo(position)
 	local prevSpeed = hum.WalkSpeed
 	hum.WalkSpeed = math.max(Config.WalkSpeed, 16)
 
-	local done = false
-	local timeout = tick() + math.clamp(dist / 20, 3, 15)
-	local conn
-	conn = hum.MoveToFinished:Connect(function()
-		done = true
-		if conn then conn:Disconnect() end
+	local waypoints = nil
+	pcall(function()
+		local path = PathfindingService:CreatePath({
+			AgentRadius = 2,
+			AgentHeight = 5,
+			AgentCanJump = true,
+			AgentCanClimb = false,
+			WaypointSpacing = 8,
+		})
+		path:ComputeAsync(hrp.Position, target)
+		if path.Status == Enum.PathStatus.Success then
+			waypoints = path:GetWaypoints()
+		end
 	end)
 
-	hum:MoveTo(target)
-
-	while not done and tick() < timeout do
-		task.wait(0.05)
+	if waypoints then
+		for i = 2, #waypoints do
+			local wp = waypoints[i]
+			local wpTarget = wp.Position + Vector3.new(0, 3, 0)
+			local done = false
+			local timeout = tick() + 5
+			local conn
+			conn = hum.MoveToFinished:Connect(function()
+				done = true
+				if conn then conn:Disconnect() end
+			end)
+			hum:MoveTo(wpTarget)
+			while not done and tick() < timeout do
+				task.wait(0.05)
+			end
+			if conn then conn:Disconnect() end
+		end
+	else
+		local done = false
+		local timeout = tick() + math.clamp(dist / 20, 3, 15)
+		local conn
+		conn = hum.MoveToFinished:Connect(function()
+			done = true
+			if conn then conn:Disconnect() end
+		end)
+		hum:MoveTo(target)
+		while not done and tick() < timeout do
+			task.wait(0.05)
+		end
+		if conn then conn:Disconnect() end
 	end
 
-	if conn then conn:Disconnect() end
 	hum.WalkSpeed = prevSpeed
 	return true
 end
