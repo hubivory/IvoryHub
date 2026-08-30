@@ -1171,17 +1171,12 @@ task.spawn(function() while true do
         local char = LocalPlayer.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         if hrp then
-            -- Find mystery box ProximityPrompt in workspace
+            -- Find mystery box ProximityPrompt (on MysteryPlace part)
             local prompt = nil
             for _, desc in ipairs(workspace:GetDescendants()) do
-                if desc:IsA("ProximityPrompt") then
-                    local actionLower = string.lower(tostring(desc.ActionText))
-                    local objLower = string.lower(tostring(desc.ObjectText))
-                    local nameLower = string.lower(desc.Name)
-                    if actionLower:find("open") or objLower:find("mystery") or objLower:find("box") or nameLower:find("mystery") or nameLower:find("box") or nameLower:find("open") then
-                        prompt = desc
-                        break
-                    end
+                if desc:IsA("ProximityPrompt") and desc.Parent and desc.Parent.Name == "MysteryPlace" then
+                    prompt = desc
+                    break
                 end
             end
 
@@ -1190,18 +1185,15 @@ task.spawn(function() while true do
                 if part and part:IsA("BasePart") then
                     local origPos = hrp.CFrame
                     setStatus("mysteryBox", "Teleporting to box...")
-                    hrp.CFrame = part.CFrame + Vector3.new(0, 0, 3)
-                    task.wait(0.3)
+                    hrp.CFrame = part.CFrame * CFrame.new(0, 0, -2)
+                    task.wait(1)
                     setStatus("mysteryBox", "Opening box...")
-                    -- Fire the ProximityPrompt
                     pcall(function()
-                        prompt.HoldDuration = 0
                         prompt:InputHoldBegin()
-                        task.wait(1.5)
+                        task.wait(2)
                         prompt:InputHoldEnd()
                     end)
                     task.wait(1)
-                    -- Return to original position
                     hrp.CFrame = origPos
                     setStatus("mysteryBox", "Opened!")
                 end
