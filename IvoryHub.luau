@@ -32,7 +32,8 @@ local GameScripts = {
 	[83038462357724] = "games/DigAndClean.luau",
 	[117539213094671] = "games/RollAGnome.luau",
 	[90086669327265] = "games/cutgrass.luau",
-    [9285238704] = "games/raceclick.luau",
+	[9285238704] = "games/raceclick.luau",
+	[107778070777162] = "games/StealAnEgg.luau",
 	-- Add more: [PlaceId] = "games/ScriptName.luau"
 }
 
