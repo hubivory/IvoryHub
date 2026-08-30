@@ -122,7 +122,6 @@ end)
 --// Safety: Hide exploit environment markers
 pcall(function()
 	local genv = getgenv()
-	genv.绘制 = nil
 	genv.identifyexecutor = function() return "Ivory", "1.0" end
 end)
 
