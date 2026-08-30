@@ -1168,27 +1168,51 @@ end end)
 -- ═══ AUTO OPEN MYSTERY BOX ═══
 task.spawn(function() while true do
     if cfg.autoOpenMysteryBox then
-        local gui = LocalPlayer:FindFirstChild("PlayerGui")
-        if gui then
-            local myInfo = gui:FindFirstChild("GUI", true) and gui.GUI:FindFirstChild("Frames", true) and gui.GUI.Frames:FindFirstChild("MyInfo", true)
-            if myInfo then
-                local scroll = myInfo:FindFirstChild("Scrolling")
-                if scroll then
-                    local openFrame = scroll:FindFirstChild("Open/Close")
-                    if openFrame then
-                        local btn = openFrame:FindFirstChild("open/close")
-                        if btn and btn.Visible and btn.Active then
-                            setStatus("mysteryBox", "Opening...")
-                            pcall(function() btn:Activate() end)
-                            task.wait(1)
-                            setStatus("mysteryBox", "Opened!")
-                        end
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            -- Find mystery box ProximityPrompt in workspace
+            local prompt = nil
+            for _, desc in ipairs(workspace:GetDescendants()) do
+                if desc:IsA("ProximityPrompt") then
+                    local actionLower = string.lower(tostring(desc.ActionText))
+                    local objLower = string.lower(tostring(desc.ObjectText))
+                    local nameLower = string.lower(desc.Name)
+                    if actionLower:find("open") or objLower:find("mystery") or objLower:find("box") or nameLower:find("mystery") or nameLower:find("box") or nameLower:find("open") then
+                        prompt = desc
+                        break
                     end
                 end
             end
+
+            if prompt then
+                local part = prompt.Parent
+                if part and part:IsA("BasePart") then
+                    local origPos = hrp.CFrame
+                    setStatus("mysteryBox", "Teleporting to box...")
+                    hrp.CFrame = part.CFrame + Vector3.new(0, 0, 3)
+                    task.wait(0.3)
+                    setStatus("mysteryBox", "Opening box...")
+                    -- Fire the ProximityPrompt
+                    pcall(function()
+                        prompt.HoldDuration = 0
+                        prompt:InputHoldBegin()
+                        task.wait(1.5)
+                        prompt:InputHoldEnd()
+                    end)
+                    task.wait(1)
+                    -- Return to original position
+                    hrp.CFrame = origPos
+                    setStatus("mysteryBox", "Opened!")
+                end
+            else
+                setStatus("mysteryBox", "No box found")
+            end
         end
+    else
+        setStatus("mysteryBox", "Disabled")
     end
-    task.wait(3)
+    task.wait(5)
 end end)
 
 -- ═══ AUTO BUY FURNITURE ═══
