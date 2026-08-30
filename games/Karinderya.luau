@@ -1145,6 +1145,7 @@ task.spawn(function() while true do
     if cfg.autoBuyMysteryBox then
         local mbCfg = MysteryBoxConfig and MysteryBoxConfig.Common
         local cost = mbCfg and mbCfg.Cost or 10000
+        local eta = mbCfg and mbCfg.ETASeconds or 300
         local cash = getCash()
         if cash >= cost then
             setStatus("mysteryBox", "Buying...")
@@ -1153,10 +1154,10 @@ task.spawn(function() while true do
             if ok and result then
                 setStatus("mysteryBox", "Bought! (-$" .. cost .. ")")
                 logMoney("Mystery Box", -cost)
-                task.wait(3)
+                task.wait(eta)
             else
-                setStatus("mysteryBox", "On cooldown, retrying...")
-                task.wait(10)
+                setStatus("mysteryBox", "Waiting for box...")
+                task.wait(eta)
             end
         else
             setStatus("mysteryBox", "Need $" .. cost .. " (have $" .. cash .. ")")
@@ -1164,7 +1165,7 @@ task.spawn(function() while true do
     else
         setStatus("mysteryBox", "Disabled")
     end
-    task.wait(5)
+    task.wait(3)
 end end)
 
 -- ═══ AUTO OPEN MYSTERY BOX ═══
