@@ -1173,58 +1173,67 @@ task.spawn(function() while true do
 end end)
 
 -- ═══ AUTO OPEN MYSTERY BOX ═══
+local MYSTERY_COORDS = {
+    Karenderya  = Vector3.new(-183.31, 2.72, -92.42),
+    Karenderya2 = Vector3.new(-9.31, 2.72, -92.42),
+    Karenderya3 = Vector3.new(64.61, 2.72, -92.42),
+    Karenderya4 = Vector3.new(88.06, 2.72, -10.73),
+    Karenderya5 = Vector3.new(-100.94, 2.72, -10.73),
+    Karenderya6 = Vector3.new(-165.99, 2.72, -10.73),
+}
 task.spawn(function() while true do
     if cfg.autoOpenMysteryBox then
         local char = LocalPlayer.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         if hrp then
-            local target = nil
-            local targetPrompt = nil
-            for _, nb in ipairs(workspace:GetDescendants()) do
-                if nb.Name == "NormalBox" and nb:IsA("Model") then
-                    local mystery = nb.Parent
-                    if mystery and mystery:IsA("Folder") then
-                        local mp = mystery:FindFirstChild("MysteryPlace")
-                        if mp and mp:IsA("BasePart") then
-                            local prompt = mp:FindFirstChildOfClass("ProximityPrompt")
-                            if prompt then
-                                local dist = (mp.Position - hrp.Position).Magnitude
-                                if not target or dist < (target.Position - hrp.Position).Magnitude then
-                                    target = mp
-                                    targetPrompt = prompt
-                                end
-                            end
-                        end
-                    end
+            local closestPlot, closestDist = nil, math.huge
+            for name, coords in pairs(MYSTERY_COORDS) do
+                local dist = (coords - hrp.Position).Magnitude
+                if dist < closestDist then
+                    closestDist = dist
+                    closestPlot = name
                 end
             end
 
-            if target and targetPrompt then
-                local origPos = hrp.CFrame
-                setStatus("mysteryBox", "Teleporting to box...")
-                hrp.CFrame = target.CFrame + Vector3.new(0, 3, 0)
-                task.wait(1)
-
-                setStatus("mysteryBox", "Opening box...")
-                pcall(function()
-                    targetPrompt:InputHoldBegin()
-                    task.wait(3)
-                    targetPrompt:InputHoldEnd()
-                end)
-                task.wait(1)
-                pcall(function() firesignal(targetPrompt.Triggered, LocalPlayer) end)
-                task.wait(1)
-                pcall(function()
-                    local VIM = game:GetService("VirtualInputManager")
-                    VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-                    task.wait(1.5)
-                    VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
-                end)
-                task.wait(2)
-                hrp.CFrame = origPos
-                setStatus("mysteryBox", "Done!")
-            else
-                setStatus("mysteryBox", "No box to open")
+            if closestPlot then
+                local plot = workspace:FindFirstChild(closestPlot)
+                if plot then
+                    local nb = plot:FindFirstChild("Mystery") and plot.Mystery:FindFirstChild("NormalBox")
+                    if nb then
+                        local origPos = hrp.CFrame
+                        setStatus("mysteryBox", "Teleporting to box...")
+                        hrp.CFrame = CFrame.new(MYSTERY_COORDS[closestPlot] + Vector3.new(0, 3, 0))
+                        task.wait(1)
+                        setStatus("mysteryBox", "Opening box...")
+                        pcall(function()
+                            local mp = plot.Mystery.MysteryPlace
+                            local prompt = mp:FindFirstChildOfClass("ProximityPrompt")
+                            if prompt then
+                                prompt:InputHoldBegin()
+                                task.wait(3)
+                                prompt:InputHoldEnd()
+                            end
+                        end)
+                        task.wait(1)
+                        pcall(function()
+                            local mp = plot.Mystery.MysteryPlace
+                            local prompt = mp:FindFirstChildOfClass("ProximityPrompt")
+                            if prompt then firesignal(prompt.Triggered, LocalPlayer) end
+                        end)
+                        task.wait(1)
+                        pcall(function()
+                            local VIM = game:GetService("VirtualInputManager")
+                            VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                            task.wait(1.5)
+                            VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                        end)
+                        task.wait(2)
+                        hrp.CFrame = origPos
+                        setStatus("mysteryBox", "Done!")
+                    else
+                        setStatus("mysteryBox", "No box on " .. closestPlot)
+                    end
+                end
             end
         end
     else
