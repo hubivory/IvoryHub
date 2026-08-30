@@ -38,7 +38,7 @@ local Config = {
 	ServerHopDelay = 30,
 	AntiAFK = false,
 	CustomSpeed = false,
-	WalkSpeed = 32,
+	WalkSpeed = 50,
 	StealDelay = 0.5,
 	SelectedRarities = {},
 	SelectedMutations = {},
@@ -68,7 +68,7 @@ local function IsAlive()
 	return hum and hum.Health > 0
 end
 
-local function TeleportTo(position, duration)
+local function TeleportTo(position)
 	local hrp = GetHRP()
 	if not hrp then return end
 
@@ -77,14 +77,35 @@ local function TeleportTo(position, duration)
 		return
 	end
 
-	local distance = (position - hrp.Position).Magnitude
-	local time = duration or (distance / 50)
+	local hum = GetHumanoid()
+	if not hum then return end
 
-	local tween = TweenService:Create(hrp, TweenInfo.new(time, Enum.EasingStyle.Linear), {
-		CFrame = CFrame.new(position + Vector3.new(0, 3, 0))
+	local path = PathfindingService:CreatePath({
+		AgentRadius = 2,
+		AgentHeight = 5,
+		AgentCanJump = true,
+		AgentCanClimb = false,
+		WaypointSpacing = 4,
 	})
-	tween:Play()
-	tween.Completed:Wait()
+
+	local success, err = pcall(function()
+		path:ComputeAsync(hrp.Position, position)
+	end)
+
+	if success and path.Status == Enum.PathStatus.Success then
+		local waypoints = path:GetWaypoints()
+		for i, waypoint in ipairs(waypoints) do
+			if not Config.AutoSteal and i > 1 then break end
+			hum:MoveTo(waypoint.Position)
+			if waypoint.Action == Enum.PathWaypointAction.Jump then
+				hum.Jump = true
+			end
+			local reached = hum.MoveToFinished:Wait()
+			if not reached then break end
+		end
+	else
+		hrp.CFrame = CFrame.new(position + Vector3.new(0, 3, 0))
+	end
 end
 
 local function GetStealPrompts()
@@ -1207,8 +1228,12 @@ local function Main()
 		if state then task.spawn(SpeedLoop) end
 	end)
 
-	autoSection:AddSlider("Walk Speed", 16, 200, 32, function(value)
+	autoSection:AddSlider("Walk Speed", 16, 500, 50, function(value)
 		Config.WalkSpeed = value
+		local hum = GetHumanoid()
+		if hum and Config.CustomSpeed then
+			hum.WalkSpeed = value
+		end
 	end)
 
 	local espSection = window:AddSection("ESP", "Egg ESP")
