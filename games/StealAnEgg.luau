@@ -97,21 +97,24 @@ local function TeleportTo(position)
 	local dist = (targetPos - startPos).Magnitude
 	if dist <= 0.5 then return true end
 
-	local speed = math.max(Config.WalkSpeed, 16)
-	local duration = dist / speed
-	local startTime = os.clock()
-
 	local diff = Vector3.new(targetPos.X - startPos.X, 0, targetPos.Z - startPos.Z)
 	local lookDir = (diff.Magnitude > 0.1) and diff.Unit or hrp.CFrame.LookVector
+
+	local maxSafeSpeed = 120
+	local speed = math.clamp(Config.WalkSpeed, 16, maxSafeSpeed)
+	local duration = dist / speed
+	local startTime = os.clock()
 
 	while true do
 		local curHRP = GetHRP()
 		if not curHRP then break end
 
-		local alpha = math.clamp((os.clock() - startTime) / duration, 0, 1)
+		local elapsed = os.clock() - startTime
+		local alpha = math.clamp(elapsed / duration, 0, 1)
 		local currentPos = startPos:Lerp(targetPos, alpha)
+
 		curHRP.CFrame = CFrame.lookAt(currentPos, currentPos + lookDir)
-		curHRP.AssemblyLinearVelocity = Vector3.zero
+		curHRP.AssemblyLinearVelocity = lookDir * speed
 		curHRP.AssemblyAngularVelocity = Vector3.zero
 
 		if alpha >= 1 then break end
@@ -1493,7 +1496,7 @@ local function Main()
 		if state then task.spawn(SpeedLoop) end
 	end)
 
-	autoSection:AddSlider("Walk Speed", 16, 500, 50, function(value)
+	autoSection:AddSlider("Walk Speed", 16, 120, 50, function(value)
 		Config.WalkSpeed = value
 		local hum = GetHumanoid()
 		if hum and Config.CustomSpeed then
