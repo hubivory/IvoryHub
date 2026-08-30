@@ -1145,7 +1145,6 @@ task.spawn(function() while true do
     if cfg.autoBuyMysteryBox then
         local mbCfg = MysteryBoxConfig and MysteryBoxConfig.Common
         local cost = mbCfg and mbCfg.Cost or 10000
-        local maxQty = mbCfg and mbCfg.MaxQuantity or 5
         local cash = getCash()
         if cash >= cost then
             setStatus("mysteryBox", "Buying...")
@@ -1154,10 +1153,11 @@ task.spawn(function() while true do
             if ok and result then
                 setStatus("mysteryBox", "Bought! (-$" .. cost .. ")")
                 logMoney("Mystery Box", -cost)
+                task.wait(3)
             else
-                setStatus("mysteryBox", "Failed (max reached?)")
+                setStatus("mysteryBox", "On cooldown, retrying...")
+                task.wait(10)
             end
-            task.wait(2)
         else
             setStatus("mysteryBox", "Need $" .. cost .. " (have $" .. cash .. ")")
         end
