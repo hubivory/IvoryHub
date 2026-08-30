@@ -1145,24 +1145,30 @@ task.spawn(function() while true do
     if cfg.autoBuyMysteryBox then
         local mbCfg = MysteryBoxConfig and MysteryBoxConfig.Common
         local cost = mbCfg and mbCfg.Cost or 10000
-        local cash = getCash()
-        if cash >= cost then
-            local ok, result = pcall(function() return BuyMysteryBox:InvokeServer("Common", 1) end)
-            if ok and result then
-                setStatus("mysteryBox", "Bought! (-$" .. cost .. ")")
-                logMoney("Mystery Box", -cost)
-                task.wait(3)
-            else
-                setStatus("mysteryBox", "Waiting for box...")
-                task.wait(5)
-            end
+        -- Check if a box is already being delivered
+        local stateOk, state = pcall(function() return GetMysteryBoxState:InvokeServer() end)
+        if stateOk and state and type(state) == "table" and state.RemainingTime and state.RemainingTime > 0 then
+            local mins = math.floor(state.RemainingTime / 60)
+            local secs = state.RemainingTime % 60
+            setStatus("mysteryBox", "Delivering " .. tostring(state.BoxType) .. " (" .. mins .. "m" .. secs .. "s)")
         else
-            setStatus("mysteryBox", "Need $" .. cost .. " (have $" .. cash .. ")")
+            local cash = getCash()
+            if cash >= cost then
+                local ok, result = pcall(function() return BuyMysteryBox:InvokeServer("Common", 1) end)
+                if ok and result then
+                    setStatus("mysteryBox", "Bought! (-$" .. cost .. ")")
+                    logMoney("Mystery Box", -cost)
+                else
+                    setStatus("mysteryBox", "Buy failed, retrying...")
+                end
+            else
+                setStatus("mysteryBox", "Need $" .. cost .. " (have $" .. cash .. ")")
+            end
         end
     else
         setStatus("mysteryBox", "Disabled")
     end
-    task.wait(3)
+    task.wait(5)
 end end)
 
 -- ═══ AUTO OPEN MYSTERY BOX ═══
