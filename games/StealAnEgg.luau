@@ -432,18 +432,9 @@ local function StealEgg(prompt)
 	TeleportTo(eggPos)
 	task.wait(Config.StealDelay)
 
-	local hrp = GetHRP()
-	if hrp and (hrp.Position - eggPos).Magnitude > 8 then
-		hrp.CFrame = CFrame.new(eggPos + Vector3.new(0, 2, 0))
-		task.wait(0.1)
-	end
-
-	for _ = 1, 3 do
-		pcall(function()
-			fireproximityprompt(prompt, 0)
-		end)
-		task.wait(0.15)
-	end
+	pcall(function()
+		fireproximityprompt(prompt)
+	end)
 
 	task.wait(0.2)
 
