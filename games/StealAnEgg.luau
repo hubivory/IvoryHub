@@ -92,38 +92,68 @@ local function TeleportTo(position)
 		return true
 	end
 
-	local startPos = hrp.Position
-	local targetPos = position + Vector3.new(0, 3, 0)
-	local dist = (targetPos - startPos).Magnitude
+	local target = position + Vector3.new(0, 3, 0)
+	local dist = (target - hrp.Position).Magnitude
 	if dist <= 0.5 then return true end
-
-	local diff = Vector3.new(targetPos.X - startPos.X, 0, targetPos.Z - startPos.Z)
-	local lookDir = (diff.Magnitude > 0.1) and diff.Unit or hrp.CFrame.LookVector
 
 	local maxSafeSpeed = 120
 	local speed = math.clamp(Config.WalkSpeed, 16, maxSafeSpeed)
-	local duration = dist / speed
-	local startTime = os.clock()
 
-	while true do
-		local curHRP = GetHRP()
-		if not curHRP then break end
+	local pathWaypoints = nil
+	pcall(function()
+		local path = PathfindingService:CreatePath({
+			AgentRadius = 2,
+			AgentHeight = 5,
+			AgentCanJump = true,
+			AgentCanClimb = false,
+			WaypointSpacing = 8,
+		})
+		path:ComputeAsync(hrp.Position, target)
+		if path.Status == Enum.PathStatus.Success then
+			pathWaypoints = path:GetWaypoints()
+		end
+	end)
 
-		local elapsed = os.clock() - startTime
-		local alpha = math.clamp(elapsed / duration, 0, 1)
-		local currentPos = startPos:Lerp(targetPos, alpha)
+	local points = {}
+	if pathWaypoints then
+		for i = 2, #pathWaypoints do
+			table.insert(points, pathWaypoints[i].Position + Vector3.new(0, 3, 0))
+		end
+	else
+		table.insert(points, target)
+	end
 
-		curHRP.CFrame = CFrame.lookAt(currentPos, currentPos + lookDir)
-		curHRP.AssemblyLinearVelocity = lookDir * speed
-		curHRP.AssemblyAngularVelocity = Vector3.zero
+	for _, pt in ipairs(points) do
+		local segStart = GetHRP()
+		if not segStart then break end
 
-		if alpha >= 1 then break end
-		RunService.Heartbeat:Wait()
+		local segStartPos = segStart.Position
+		local segDist = (pt - segStartPos).Magnitude
+		if segDist > 0.5 then
+			local diff = Vector3.new(pt.X - segStartPos.X, 0, pt.Z - segStartPos.Z)
+			local lookDir = (diff.Magnitude > 0.1) and diff.Unit or segStart.CFrame.LookVector
+			local duration = segDist / speed
+			local startTime = os.clock()
+
+			while true do
+				local curHRP = GetHRP()
+				if not curHRP then break end
+
+				local alpha = math.clamp((os.clock() - startTime) / duration, 0, 1)
+				local currentPos = segStartPos:Lerp(pt, alpha)
+				curHRP.CFrame = CFrame.lookAt(currentPos, currentPos + lookDir)
+				curHRP.AssemblyLinearVelocity = lookDir * speed
+				curHRP.AssemblyAngularVelocity = Vector3.zero
+
+				if alpha >= 1 then break end
+				RunService.Heartbeat:Wait()
+			end
+		end
 	end
 
 	hrp = GetHRP()
 	if hrp and hrp.Parent then
-		hrp.CFrame = (diff.Magnitude > 0.1) and CFrame.lookAt(targetPos, targetPos + lookDir) or CFrame.new(targetPos)
+		hrp.CFrame = CFrame.new(target)
 		hrp.AssemblyLinearVelocity = Vector3.zero
 		hrp.AssemblyAngularVelocity = Vector3.zero
 	end
