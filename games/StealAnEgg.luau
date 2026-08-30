@@ -40,9 +40,14 @@ local Config = {
 	CustomSpeed = false,
 	WalkSpeed = 50,
 	StealDelay = 0.5,
+	TweenSpeed = 5,
 	TargetRarities = {},
 	SelectedRarities = {},
+	SelectedArea = "All",
 }
+
+local AreaMap = {} -- [{name, center, prompts}]
+local AREA_NAMES_ORDER = {"Forest", "Desert", "Lake", "Jungle", "Snow", "Volcano", "Prehistoric", "Abyss Ocean", "Cherry Blossom", "Cosmic", "Titan Temple"}
 
 local RarityCache = {}
 local RarityNames = {
@@ -104,7 +109,8 @@ local function TeleportTo(position)
 				local startCF = hrp.CFrame
 				local endCF = CFrame.new(target)
 				local distance = (waypoint.Position - hrp.Position).Magnitude
-				local tweenTime = math.clamp(distance / 200, 0.03, 0.12)
+				local speedMult = Config.TweenSpeed / 5
+				local tweenTime = math.clamp(distance / (200 * math.max(speedMult, 0.1)), 0.01, 0.3)
 				local tween = TweenService:Create(hrp, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {
 					CFrame = endCF
 				})
@@ -117,14 +123,80 @@ local function TeleportTo(position)
 	end
 end
 
-local function GetStealPrompts()
-	local prompts = {}
+local function BuildAreaMap()
+	AreaMap = {}
+	local allPrompts = {}
 	for _, obj in ipairs(Workspace:GetDescendants()) do
 		if obj:IsA("ProximityPrompt") and obj.ActionText == "Steal" and obj.ObjectText == "Egg" then
-			table.insert(prompts, obj)
+			local part = obj.Parent
+			if part and part:IsA("BasePart") then
+				table.insert(allPrompts, {prompt = obj, part = part, x = part.Position.X})
+			end
 		end
 	end
-	return prompts
+
+	if #allPrompts == 0 then return end
+
+	table.sort(allPrompts, function(a, b) return a.x < b.x end)
+
+	local clusters = {}
+	local current = {allPrompts[1]}
+	for i = 2, #allPrompts do
+		if allPrompts[i].x - allPrompts[i - 1].x > 100 then
+			table.insert(clusters, current)
+			current = {allPrompts[i]}
+		else
+			table.insert(current, allPrompts[i])
+		end
+	end
+	table.insert(clusters, current)
+
+	for i, cluster in ipairs(clusters) do
+		local sumX, sumY, sumZ = 0, 0, 0
+		for _, entry in ipairs(cluster) do
+			sumX = sumX + entry.part.Position.X
+			sumY = sumY + entry.part.Position.Y
+			sumZ = sumZ + entry.part.Position.Z
+		end
+		local n = #cluster
+		local name = AREA_NAMES_ORDER[i] or ("Area " .. i)
+		table.insert(AreaMap, {
+			name = name,
+			center = Vector3.new(sumX / n, sumY / n, sumZ / n),
+			prompts = {},
+		})
+		for _, entry in ipairs(cluster) do
+			table.insert(AreaMap[#AreaMap].prompts, entry.prompt)
+		end
+	end
+end
+
+local function GetStealPrompts()
+	if Config.SelectedArea == "All" then
+		local prompts = {}
+		for _, area in ipairs(AreaMap) do
+			for _, p in ipairs(area.prompts) do
+				table.insert(prompts, p)
+			end
+		end
+		return prompts
+	end
+
+	for _, area in ipairs(AreaMap) do
+		if area.name == Config.SelectedArea then
+			return area.prompts
+		end
+	end
+	return {}
+end
+
+local function GetAreaCenter(areaName)
+	for _, area in ipairs(AreaMap) do
+		if area.name == areaName then
+			return area.center
+		end
+	end
+	return nil
 end
 
 local function GetNearestStealPrompt()
@@ -339,6 +411,17 @@ end
 local function AutoStealLoop()
 	while Config.AutoSteal do
 		if IsAlive() then
+			if Config.SelectedArea ~= "All" then
+				local center = GetAreaCenter(Config.SelectedArea)
+				if center then
+					local hrp = GetHRP()
+					if hrp and (center - hrp.Position).Magnitude > 100 then
+						TeleportTo(center)
+						task.wait(0.5)
+					end
+				end
+			end
+
 			local prompt = GetNearestStealPrompt()
 			if prompt and IsEggTargeted(prompt.Parent) then
 				StealEgg(prompt)
@@ -1269,9 +1352,19 @@ end
 
 local function Main()
 	InitRaritySystem()
+	BuildAreaMap()
 	local window = CreateWindow("Ivory")
 
 	local stealSection = window:AddSection("Steal", "Egg Stealing")
+
+	local areaOptions = {"All"}
+	for _, area in ipairs(AreaMap) do
+		table.insert(areaOptions, area.name)
+	end
+
+	stealSection:AddDropdown("Target Area", areaOptions, {"All"}, false, function(selected)
+		Config.SelectedArea = #selected > 0 and selected[1] or "All"
+	end)
 
 	stealSection:AddToggle("Auto Steal Eggs", false, function(state)
 		Config.AutoSteal = state
@@ -1282,6 +1375,10 @@ local function Main()
 
 	stealSection:AddSlider("Steal Delay (s)", 1, 50, 5, function(value)
 		Config.StealDelay = value / 10
+	end)
+
+	stealSection:AddSlider("Tween Speed", 1, 10, 5, function(value)
+		Config.TweenSpeed = value
 	end)
 
 	stealSection:AddToggle("Instant Steal", false, function(state)
@@ -1307,6 +1404,14 @@ local function Main()
 
 	stealSection:AddButton("Steal All Eggs", function()
 		task.spawn(function()
+			if Config.SelectedArea ~= "All" then
+				local center = GetAreaCenter(Config.SelectedArea)
+				if center then
+					TeleportTo(center)
+					task.wait(0.5)
+				end
+			end
+
 			local prompts = GetStealPrompts()
 			for _, prompt in ipairs(prompts) do
 				if IsAlive() and IsEggTargeted(prompt.Parent) then
@@ -1315,6 +1420,19 @@ local function Main()
 				end
 			end
 		end)
+	end)
+
+	stealSection:AddButton("Go to Area", function()
+		if Config.SelectedArea ~= "All" then
+			local center = GetAreaCenter(Config.SelectedArea)
+			if center then
+				TeleportTo(center)
+			end
+		end
+	end)
+
+	stealSection:AddButton("Refresh Areas", function()
+		BuildAreaMap()
 	end)
 
 	local autoSection = window:AddSection("Automation", "Automation")
