@@ -1178,20 +1178,20 @@ task.spawn(function() while true do
         local char = LocalPlayer.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         if hrp then
-            local bestPrompt, bestDist = nil, math.huge
-            for _, plot in ipairs(workspace:GetChildren()) do
-                if plot.Name:match("^Karenderya%d+$") then
-                    local mystery = plot:FindFirstChild("Mystery")
-                    if mystery then
+            local target = nil
+            local targetPrompt = nil
+            for _, nb in ipairs(workspace:GetDescendants()) do
+                if nb.Name == "NormalBox" and nb:IsA("Model") then
+                    local mystery = nb.Parent
+                    if mystery and mystery:IsA("Folder") then
                         local mp = mystery:FindFirstChild("MysteryPlace")
-                        local nb = mystery:FindFirstChild("NormalBox")
-                        if mp and mp:IsA("BasePart") and nb then
+                        if mp and mp:IsA("BasePart") then
                             local prompt = mp:FindFirstChildOfClass("ProximityPrompt")
                             if prompt then
                                 local dist = (mp.Position - hrp.Position).Magnitude
-                                if dist < 50 and dist < bestDist then
-                                    bestDist = dist
-                                    bestPrompt = prompt
+                                if not target or dist < (target.Position - hrp.Position).Magnitude then
+                                    target = mp
+                                    targetPrompt = prompt
                                 end
                             end
                         end
@@ -1199,16 +1199,26 @@ task.spawn(function() while true do
                 end
             end
 
-            if bestPrompt and bestPrompt.Parent and bestPrompt.Parent:IsA("BasePart") then
+            if target and targetPrompt then
                 local origPos = hrp.CFrame
                 setStatus("mysteryBox", "Teleporting to box...")
-                hrp.CFrame = bestPrompt.Parent.CFrame + Vector3.new(0, 3, 0)
+                hrp.CFrame = target.CFrame + Vector3.new(0, 3, 0)
                 task.wait(1)
+
                 setStatus("mysteryBox", "Opening box...")
                 pcall(function()
-                    bestPrompt:InputHoldBegin()
-                    task.wait(2)
-                    bestPrompt:InputHoldEnd()
+                    targetPrompt:InputHoldBegin()
+                    task.wait(3)
+                    targetPrompt:InputHoldEnd()
+                end)
+                task.wait(1)
+                pcall(function() firesignal(targetPrompt.Triggered, LocalPlayer) end)
+                task.wait(1)
+                pcall(function()
+                    local VIM = game:GetService("VirtualInputManager")
+                    VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                    task.wait(1.5)
+                    VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
                 end)
                 task.wait(2)
                 hrp.CFrame = origPos
