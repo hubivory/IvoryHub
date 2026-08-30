@@ -40,9 +40,6 @@ local Config = {
 	CustomSpeed = false,
 	WalkSpeed = 50,
 	StealDelay = 0.5,
-	TargetRarities = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Golden", "Shiny", "Rainbow", "Cosmic", "Eternal", "Secret"},
-	SelectedRarities = {},
-	SelectedMutations = {},
 }
 
 local ScreenGui = nil
@@ -78,9 +75,6 @@ local function TeleportTo(position)
 		return
 	end
 
-	local hum = GetHumanoid()
-	if not hum then return end
-
 	local path = PathfindingService:CreatePath({
 		AgentRadius = 2,
 		AgentHeight = 5,
@@ -89,20 +83,25 @@ local function TeleportTo(position)
 		WaypointSpacing = 4,
 	})
 
-	local success, err = pcall(function()
+	local success, _ = pcall(function()
 		path:ComputeAsync(hrp.Position, position)
 	end)
 
 	if success and path.Status == Enum.PathStatus.Success then
 		local waypoints = path:GetWaypoints()
 		for i, waypoint in ipairs(waypoints) do
-			if not Config.AutoSteal and i > 1 then break end
-			hum:MoveTo(waypoint.Position)
-			if waypoint.Action == Enum.PathWaypointAction.Jump then
-				hum.Jump = true
+			if i > 1 then
+				local target = waypoint.Position + Vector3.new(0, 3, 0)
+				local startCF = hrp.CFrame
+				local endCF = CFrame.new(target)
+				local distance = (waypoint.Position - hrp.Position).Magnitude
+				local tweenTime = math.clamp(distance / 200, 0.03, 0.12)
+				local tween = TweenService:Create(hrp, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {
+					CFrame = endCF
+				})
+				tween:Play()
+				tween.Completed:Wait()
 			end
-			local reached = hum.MoveToFinished:Wait()
-			if not reached then break end
 		end
 	else
 		hrp.CFrame = CFrame.new(position + Vector3.new(0, 3, 0))
@@ -172,10 +171,6 @@ local function GetHeldEgg()
 		or char:FindFirstChildWhichIsA("MeshPart")
 end
 
-local function IsEggTargeted(_prompt)
-	return true
-end
-
 local function StealEgg(prompt)
 	if not prompt or not IsAlive() then return false end
 
@@ -207,7 +202,7 @@ local function AutoStealLoop()
 	while Config.AutoSteal do
 		if IsAlive() then
 			local prompt = GetNearestStealPrompt()
-			if prompt and IsEggTargeted(prompt) then
+			if prompt then
 				StealEgg(prompt)
 			end
 		end
@@ -1156,14 +1151,10 @@ local function Main()
 		Config.AutoReturnToBase = state
 	end)
 
-	stealSection:AddDropdown("Rarity Filter", Config.TargetRarities, {}, true, function(selected)
-		Config.SelectedRarities = selected
-	end)
-
 	stealSection:AddButton("Steal Nearest Egg", function()
 		if IsAlive() then
 			local prompt = GetNearestStealPrompt()
-			if prompt and IsEggTargeted(prompt) then
+			if prompt then
 				StealEgg(prompt)
 			end
 		end
@@ -1173,7 +1164,7 @@ local function Main()
 		task.spawn(function()
 			local prompts = GetStealPrompts()
 			for _, prompt in ipairs(prompts) do
-				if IsEggTargeted(prompt) and IsAlive() then
+				if IsAlive() then
 					StealEgg(prompt)
 					task.wait(Config.StealDelay)
 				end
