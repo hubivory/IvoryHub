@@ -196,8 +196,34 @@ local MenuGroup = Tabs.Settings:AddLeftGroupbox("Menu", "wrench")
 MenuGroup:AddLabel("Menu bind")
 	:AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
 
-local CreditsGroup = Tabs.Settings:AddLeftGroupbox("Credits", "heart")
-CreditsGroup:AddLabel('<font size="18" color="#FF69B4"><b>Made by Mommy Veqxoo &lt; / 3</b></font>', true)
+local CreditGroup = Tabs.Settings:AddLeftGroupbox("Credits", "heart")
+local CreditLabel = CreditGroup:AddLabel({ Text = "", Size = 26, DoesWrap = true })
+local CreditTL = CreditLabel.TextLabel
+CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
+CreditTL.Font = Enum.Font.GothamBold
+CreditTL.TextSize = 26
+
+task.spawn(function()
+	local full = "Made by mommy Crow"
+	local cursor = "_"
+	while true do
+		local shown = ""
+		for i = 1, #full do
+			shown = shown .. full:sub(i, i)
+			CreditLabel:SetText(shown .. cursor)
+			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
+			task.wait(math.random(4, 9) / 100)
+		end
+		task.wait(2)
+		for i = #full, 1, -1 do
+			shown = full:sub(1, i - 1)
+			CreditLabel:SetText(shown .. cursor)
+			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
+			task.wait(math.random(2, 5) / 100)
+		end
+		task.wait(0.8)
+	end
+end)
 
 MenuGroup:AddButton("Unload", function()
 	pcall(function()

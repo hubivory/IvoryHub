@@ -8,6 +8,7 @@ local Workspace = game:GetService("Workspace")
 local MarketplaceService = game:GetService("MarketplaceService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
+local VirtualUser = game:GetService("VirtualUser")
 local Camera = Workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
@@ -596,9 +597,9 @@ UserInputService.InputBegan:Connect(function(input, gpe)
 	end
 end)
 
-spawn(function()
+task.spawn(function()
 	while true do
-		wait(60)
+		task.wait(60)
 		if State.AntiAFK then pcall(function() VirtualUser:ClickButton2(Vector2.new()) end) end
 	end
 end)
@@ -704,9 +705,9 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
-spawn(function()
+task.spawn(function()
 	while true do
-		wait(5)
+		task.wait(5)
 		if State.AutoRejoin then
 			pcall(function()
 				if not LocalPlayer then TeleportService:Teleport(PlaceId) end
