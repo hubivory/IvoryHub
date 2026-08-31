@@ -324,7 +324,7 @@ JumpGroup:AddToggle("JumpPower Enabled", { Text = "Enable Jump Power", Default =
 	if not v then pcall(function() Humanoid.JumpPower = 50 end) end
 end })
 JumpGroup:AddSlider("JumpPower Value", { Text = "Jump Power", Default = 50, Min = 50, Max = 350, Rounding = 0, Callback = function(v) State.JumpPower_Value = v end })
-JumpGroup:AddButton("Apply Jump Power", function() pcall(function() Humanoid.JumpPower = State.JumpPower_Value end) end })
+JumpGroup:AddButton("Apply Jump Power", function() pcall(function() Humanoid.JumpPower = State.JumpPower_Value end) end)
 JumpGroup:AddToggle("Infinite Jump", { Text = "Infinite Jump", Default = false, Callback = function(v) State.InfiniteJump = v end })
 
 -- ═══════════════════════════════════════════════════════
