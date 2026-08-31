@@ -1955,6 +1955,7 @@ local MiscTab = Window:AddTab({ Name = "Misc", Icon = "star", Description = "Gam
 local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings", Description = "UI settings" })
 
 -- ── Combat Tab ────────────────────────────────────────────────────────────────
+do
 local ParrySub = CombatTab:AddSubTab("Auto Parry")
 local ParryGroup = ParrySub:AddLeftGroupbox("Parry", "shield")
 local EvasiveGroup = ParrySub:AddRightGroupbox("Evasive", "shield")
@@ -2017,8 +2018,10 @@ EvasiveGroup:AddToggle("PauseM1ForParry", {
     Text = "Pause M1 for Parry", Default = false,
     Callback = function(v) pauseM1ForParry = v end,
 })
+end
 
 -- Combat Tweaks
+do
 local TweaksSub = CombatTab:AddSubTab("Combat Tweaks")
 local TweaksLeftGroup = TweaksSub:AddLeftGroupbox("Tweaks", "zap")
 local TweaksRightGroup = TweaksSub:AddRightGroupbox("Effects", "zap")
@@ -2082,8 +2085,10 @@ TweaksRightGroup:AddToggle("NoBlurWhenKnocked", {
         if v then StartMovementLoop() end
     end,
 })
+end
 
 -- Face Lock
+do
 local LockSub = CombatTab:AddSubTab("Face Lock")
 local LockGroup = LockSub:AddLeftGroupbox("Face Lock", "target")
 
@@ -2124,8 +2129,10 @@ LockGroup:AddMultiDropdown("WhitelistPlayers", {
         end
     end,
 })
+end
 
 -- Auto Green
+do
 local GreenSub = CombatTab:AddSubTab("Auto Green")
 local GreenGroup = GreenSub:AddLeftGroupbox("Green", "zap")
 
@@ -2140,8 +2147,10 @@ GreenGroup:AddDropdown("GreenAccuracy", {
     Text = "Accuracy", Values = { "Perfect", "Good", "Okay", "Bad", "Miss" }, Default = "Perfect",
     Callback = function(v) greenAccuracy = v end,
 })
+end
 
 -- Auto Rhythm
+do
 local RhythmSub = CombatTab:AddSubTab("Auto Rhythm")
 local RhythmLeftGroup = RhythmSub:AddLeftGroupbox("Rhythm", "music")
 local RhythmRightGroup = RhythmSub:AddRightGroupbox("Settings", "music")
@@ -2200,8 +2209,10 @@ RhythmRightGroup:AddSlider("AnimSpeed", {
         if v == 1 then RestoreAnimationSpeeds() end
     end,
 })
+end
 
 -- ── Visuals Tab ───────────────────────────────────────────────────────────────
+do
 local EspSub = VisualTab:AddSubTab("Player ESP")
 local EspGroup = EspSub:AddLeftGroupbox("ESP", "eye")
 local EspOptionsGroup = EspSub:AddRightGroupbox("Options", "eye")
@@ -2284,8 +2295,10 @@ EspOptionsGroup:AddSlider("EspFontSize", {
     Text = "Font Size", Default = 14, Min = 10, Max = 30, Rounding = 0,
     Callback = function(v) espFontSize = v end,
 })
+end
 
 -- World / Lighting
+do
 local WorldSub = VisualTab:AddSubTab("World / Lighting")
 local WorldLeftGroup = WorldSub:AddLeftGroupbox("Lighting", "sun")
 local WorldRightGroup = WorldSub:AddRightGroupbox("Ambient", "sun")
@@ -2320,8 +2333,10 @@ WorldRightGroup:AddSlider("AmbientB", {
     Callback = function(v) visualState.ambientB = v end,
 })
 WorldRightGroup:AddButton("Apply Ambient", safeCallback(ApplyAmbient))
+end
 
 -- ── Movement Tab ──────────────────────────────────────────────────────────────
+do
 local MoveSub = MoveTab:AddSubTab("Movement")
 local SpeedGroup = MoveSub:AddLeftGroupbox("Speed", "run")
 local FlyGroup = MoveSub:AddRightGroupbox("Fly", "run")
@@ -2383,8 +2398,10 @@ FlyGroup:AddSlider("FlySpeed", {
     Text = "Fly Speed", Default = 50, Min = 10, Max = 200, Rounding = 0,
     Callback = function(v) flySpeed = v end,
 })
+end
 
 -- Teleport
+do
 local TeleportSub = MoveTab:AddSubTab("Teleport")
 local TeleportGroup = TeleportSub:AddLeftGroupbox("Teleport", "map-pin")
 
@@ -2403,8 +2420,10 @@ end))
 TeleportGroup:AddButton("Teleport to Waypoint", safeCallback(function()
     if teleportState.waypoint then TeleportTo(teleportState.waypoint); Notify("Waypoint", "Teleported", "Success") end
 end))
+end
 
 -- ── Misc Tab ──────────────────────────────────────────────────────────────────
+do
 local BallSub = MiscTab:AddSubTab("Basketball")
 local BallGroup = BallSub:AddLeftGroupbox("Basketball", "zap")
 
@@ -2416,7 +2435,9 @@ BallGroup:AddToggle("BasketballNoDribble", {
         StartMovementLoop()
     end,
 })
+end
 
+do
 local RerollSub = MiscTab:AddSubTab("Reroll")
 local RerollLeftGroup = RerollSub:AddLeftGroupbox("Reroll", "zap")
 local RerollRightGroup = RerollSub:AddRightGroupbox("Hair", "zap")
@@ -2441,7 +2462,9 @@ RerollRightGroup:AddLabel("Hair Color"):AddColorPicker("HairColor", {
         HUB.lastHairOk, HUB.lastHairError = pcall(ApplyHairColor)
     end),
 })
+end
 
+do
 local FunSub = MiscTab:AddSubTab("Fun")
 local FunGroup = FunSub:AddLeftGroupbox("Fun", "zap")
 
@@ -2450,7 +2473,9 @@ FunGroup:AddButton("Kill Self", safeCallback(function()
     Notify("Fun", "RIP", "Info")
 end))
 FunGroup:AddButton("Instant Respawn", safeCallback(InstantRespawn))
+end
 
+do
 local ServerSub = MiscTab:AddSubTab("Server")
 local ServerLeftGroup = ServerSub:AddLeftGroupbox("Server", "server")
 local ServerRightGroup = ServerSub:AddRightGroupbox("Chat", "server")
@@ -2481,8 +2506,10 @@ ServerRightGroup:AddButton("Show Chat Log", safeCallback(function()
     local shown = table.concat(chatState.logs, "\n")
     Notify("Chat Log", #shown > 500 and shown:sub(1, 500) .. "..." or shown, "Info", 8)
 end))
+end
 
 -- ── Settings Tab ──────────────────────────────────────────────────────────────
+do
 local ConfigSub = SettingsTab:AddSubTab("Config")
 local ConfigGroup = ConfigSub:AddLeftGroupbox("Config", "cog")
 local InfoGroup = ConfigSub:AddRightGroupbox("Info", "cog")
@@ -2503,10 +2530,12 @@ InfoGroup:AddButton("Copy PlaceId", function()
     setclipboard(tostring(game.PlaceId))
     Notify("Config", "PlaceId copied!", "Success")
 end)
+end
 
 ThemeManager:ApplyToTab(SettingsTab)
 SaveManager:BuildConfigSection(SettingsTab)
 
+do
 local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "box-icon")
 MenuGroup:AddToggle("MenuToggle", { Text = "Toggle Menu", Default = true }):AddKeyPicker("MenuKeybind", {
     Default = "RightShift", Text = "Menu Keybind", Mode = "Toggle", SyncToggleState = false, NoUI = false,
@@ -2531,6 +2560,7 @@ MenuGroup:AddButton("Unload Script", function()
     task.wait(0.5)
     HUB.Unload()
 end)
+end
 
 -- ══════════════════════════════════════════════════════════════════════════════
 -- PERSISTENT LOOPS
