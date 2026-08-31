@@ -1481,11 +1481,15 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
+CombatRight:AddButton({ Text = "Join Discord For Dupe", Callback = function()
+	pcall(function() setclipboard("https://discord.gg/MCWYKBdB4E") end)
+	notify("Discord Copied To Clipboard", "Success")
+end })
+
 -- ==================== UTILITY TAB ====================
 local UtilityTab = Window:AddTab({ Name = "Utilities", Icon = "wrench" })
 local UtilSub = UtilityTab:AddSubTab("Utilities", "wrench")
 local UtilGrp = UtilSub:AddLeftGroupbox("Tools", "wrench")
-local DangerGrp = UtilSub:AddRightGroupbox("Danger Zone", "alert")
 
 UtilGrp:AddButton({ Text = "Check Account Ages", Callback = function()
 	local allPlayers = Players:GetPlayers()
@@ -1599,11 +1603,6 @@ task.spawn(function()
 	end
 end)
 
-SettingsLeft:AddLabel("UI Library: ObsidianUltra")
-SettingsLeft:AddLabel("Version: 1.0")
-
-SettingsLeft:AddLabel("")
-
 -- ==================== LEFT: THEMES ====================
 SettingsLeft:AddLabel("Theme Colors")
 
@@ -1683,8 +1682,6 @@ SettingsLeft:AddLabel("Font"):AddColorPicker("ThemeFont", {
 	end,
 })
 
-SettingsLeft:AddLabel("")
-
 SettingsLeft:AddDropdown("ThemeFontFace", {
 	Text = "Font Face", Values = {"Code", "Gotham", "GothamBold", "GothamMedium", "Legacy", "SourceSans", "SourceSansBold"}, Default = "Code",
 	Callback = function(Value)
@@ -1700,8 +1697,6 @@ SettingsLeft:AddDropdown("ThemeFontFace", {
 		end)
 	end,
 })
-
-SettingsLeft:AddLabel("")
 
 SettingsLeft:AddDropdown("ThemeList", {
 	Text = "Theme List", Values = {"Default", "Midnight", "Ocean", "Sunset", "Matrix"}, Default = "Default",
@@ -1772,8 +1767,6 @@ end })
 
 autoloadLabel = SettingsRight:AddLabel("Current autoload config: none")
 
-SettingsRight:AddLabel("")
-
 configJSONValue = ""
 SettingsRight:AddInput("ConfigJSON", {
 	Text = "Config JSON", Default = "", Placeholder = "paste config JSON here",
@@ -1816,8 +1809,7 @@ SettingsRight:AddButton({ Text = "Export Current Config", Callback = function()
 	end
 end })
 
--- ==================== UNLOAD ====================
-DangerGrp:AddButton({ Text = "Unload Cheat", Callback = function()
+SettingsRight:AddButton({ Text = "Unload Cheat", Callback = function()
 	notify("Unloading...", "Warning")
 	NoRecoilSettings.Enabled=false
 	pcall(function() RunService:UnbindFromRenderStep("DynamicZeroRecoil") end)
