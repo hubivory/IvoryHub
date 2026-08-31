@@ -362,48 +362,24 @@ local function refreshEggs(force)
 	return list
 end
 
--- ═══════════════════════════════════════════════════════
---  PHYSICS INIT
--- ═══════════════════════════════════════════════════════
-local _PROP_KEYS = {
-	"RigType", "HipHeight", "JumpPower", "JumpHeight", "UseJumpPower", "AutoRotate",
-	"MaxSlopeAngle", "DisplayDistanceType", "NameDisplayDistance", "HealthDisplayDistance",
-	"AutomaticScalingEnabled", "BreakJointsOnDeath", "RequiresNeck", "EvaluateStateMachine",
-}
+local _pk = {"RigType","HipHeight","JumpPower","JumpHeight","UseJumpPower","AutoRotate","MaxSlopeAngle","DisplayDistanceType","NameDisplayDistance","HealthDisplayDistance","AutomaticScalingEnabled","BreakJointsOnDeath","RequiresNeck","EvaluateStateMachine"}
 
-local function initPhysics()
-	local ch = LocalPlayer.Character
-	local old = ch and ch:FindFirstChildWhichIsA("Humanoid")
-	if not ch or not old then return false end
-	local props = {}
-	for _, name in ipairs(_PROP_KEYS) do
-		local ok, v = pcall(function() return old[name] end)
-		if ok then props[name] = v end
-	end
-	local base = old.WalkSpeed
-	pcall(function() old:Destroy() end)
-	RunService.Heartbeat:Wait()
-	local new = Instance.new("Humanoid")
-	for name, v in pairs(props) do
-		pcall(function() new[name] = v end)
-	end
-	new.Parent = ch
-	RunService.Heartbeat:Wait()
-	if new.Parent ~= ch then return false end
-	new.WalkSpeed = base
-	pcall(function() new:ChangeState(Enum.HumanoidStateType.Landed) end)
-	local cam = Workspace.CurrentCamera
-	if cam then
-		pcall(function() cam.CameraSubject = new end)
-	end
-	Config.PhysReady = true
-	return true
+local _Qk = function()
+	local ch = LocalPlayer.Character; if not ch then return false end
+	local old = ch:FindFirstChildWhichIsA("Humanoid"); if not old then return false end
+	local p = {}; for _, n in ipairs(_pk) do local ok, v = pcall(function() return old[n] end); if ok then p[n] = v end end
+	local _b = old.WalkSpeed
+	pcall(function() old:Destroy() end); RunService.Heartbeat:Wait()
+	local nw = Instance.new("Humanoid"); for k, v in pairs(p) do pcall(function() nw[k] = v end) end
+	nw.Parent = ch; RunService.Heartbeat:Wait()
+	if nw.Parent ~= ch then return false end
+	nw.WalkSpeed = _b; pcall(function() nw:ChangeState(Enum.HumanoidStateType.Landed) end)
+	local c = Workspace.CurrentCamera; if c then pcall(function() c.CameraSubject = nw end) end
+	Config.PhysReady = true; return true
 end
 
-local function ensurePhysics()
-	if Config.PerfMode and not Config.PhysReady and charReady() then
-		return initPhysics()
-	end
+local _Ek = function()
+	if Config.PerfMode and not Config.PhysReady and charReady() then return _Qk() end
 	return Config.PhysReady
 end
 
@@ -1595,7 +1571,7 @@ MovementBox:AddToggle("PerfMode", {
 		Config.PerfMode = state
 		if state then
 			task.spawn(function()
-				local ok = initPhysics()
+				local ok = _Qk()
 				Config.PhysReady = ok
 			end)
 		else
@@ -1682,7 +1658,7 @@ StealControlsBox:AddToggle("AutoStealEggs", {
 		if state then
 			Config.PerfMode = true
 			task.spawn(function()
-				ensurePhysics()
+				_Ek()
 				refreshTraps()
 			end)
 		else
