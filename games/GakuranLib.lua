@@ -208,9 +208,6 @@ function Library:CreateWindow(opts)
     sg.Parent = getGuiParent()
     self.ScreenGui = sg
 
-    makePetalField(sg, 3, 18, 8, 14, 20, 45)
-    makePetalField(sg, 30, 5, 12, 20, 45, 75)
-
     local main = Instance.new("Frame")
     main.Size = UDim2.new(0, 520, 0, 420)
     main.Position = UDim2.new(0.5, -260, 0.5, -210)
@@ -219,6 +216,7 @@ function Library:CreateWindow(opts)
     main.BorderSizePixel = 0
     main.Active = true
     main.Draggable = true
+    main.ZIndex = 1
     main.Parent = sg
     self.MainFrame = main
 
@@ -234,6 +232,7 @@ function Library:CreateWindow(opts)
     titleBar.BackgroundColor3 = Theme.GlassCardAlt
     titleBar.BackgroundTransparency = 0.1
     titleBar.BorderSizePixel = 0
+    titleBar.ZIndex = 2
     titleBar.Parent = main
 
     local titleCorner = Instance.new("UICorner", titleBar)
@@ -247,6 +246,7 @@ function Library:CreateWindow(opts)
     closeBtn.TextColor3 = Theme.TextTertiary
     closeBtn.Font = Enum.Font.GothamBold
     closeBtn.TextSize = 14
+    closeBtn.ZIndex = 3
     closeBtn.Parent = titleBar
     closeBtn.MouseButton1Click:Connect(function()
         tw(main, EASE_SPRING, {Size = UDim2.new(0, 0, 0, 0)})
@@ -265,6 +265,7 @@ function Library:CreateWindow(opts)
     titleLbl.Font = Enum.Font.GothamBold
     titleLbl.TextSize = 15
     titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+    titleLbl.ZIndex = 3
     titleLbl.Parent = titleBar
 
     local tabBar = Instance.new("Frame")
@@ -273,6 +274,7 @@ function Library:CreateWindow(opts)
     tabBar.BackgroundColor3 = Theme.GlassCardAlt
     tabBar.BackgroundTransparency = 0.15
     tabBar.BorderSizePixel = 0
+    tabBar.ZIndex = 2
     tabBar.Parent = main
     self.TabButtons = tabBar
     Instance.new("UICorner", tabBar).CornerRadius = UDim.new(0, 0)
@@ -286,6 +288,7 @@ function Library:CreateWindow(opts)
     tabContent.Position = UDim2.new(0, 125, 0, 36)
     tabContent.BackgroundTransparency = 1
     tabContent.BorderSizePixel = 0
+    tabContent.ZIndex = 2
     tabContent.Parent = main
     self.TabPages = tabContent
 
@@ -309,6 +312,9 @@ function Library:CreateWindow(opts)
     main.Size = UDim2.new(0, 0, 0, 0)
     main.Visible = true
     tw(main, EASE_SPRING, {Size = UDim2.new(0, 520, 0, 420)})
+
+    makePetalField(sg, 50, 18, 8, 14, 20, 45)
+    makePetalField(sg, 51, 5, 12, 20, 45, 75)
 
     Notify({Title = self.Name, Content = "Loaded!", Type = "Success", Duration = 3})
     return self
