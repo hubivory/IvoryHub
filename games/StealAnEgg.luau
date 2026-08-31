@@ -1649,7 +1649,15 @@ TargetingBox:AddDropdown("RarityFilter", {
 	Multi = true,
 	Tooltip = "Only steal eggs matching selected rarities (empty = all)",
 	Callback = function(state)
-		Config.SelectedRarities = state
+		local arr = {}
+		if type(state) == "table" then
+			for k, v in pairs(state) do
+				if v == true or v == 1 or v == "Selected" then
+					arr[#arr + 1] = k
+				end
+			end
+		end
+		Config.SelectedRarities = arr
 	end,
 })
 
