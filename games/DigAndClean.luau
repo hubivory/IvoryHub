@@ -1,96 +1,83 @@
 --// Ivory Hub - Dig & Clean
 --// PlaceId: 83038462357724
 --//
---// Features:
---// [ + ] Auto Detect (Sweep Detector for Buried Nodes)
---// [ + ] Auto Dig (Auto Click Dig Minigame)
---// [ + ] Auto Clean (Spray Items Automatically)
---// [ + ] Auto Sell Held Item
---// [ + ] Auto Sell Inventory
---// [ + ] Auto Place in Museum (Pedestal)
---// [ + ] Auto Pickup Surfaced Items
---// [ + ] Auto Equip Best Tool
---// [ + ] Auto Buy Shovel
---// [ + ] Auto Buy Detector
---// [ + ] Auto Buy Spray Bottle
---// [ + ] Auto Travel to Island
---// [ + ] Auto Unlock Pyramid
---// [ + ] Auto Sacrifice Gold (Pyramid)
---// [ + ] Auto Unlock Plot Sections
---// [ + ] Auto Polish Items
---// [ + ] Auto Collect Polish
---// [ + ] Auto Claim Quests
---// [ + ] Auto Claim Offline Earnings
---// [ + ] Auto Claim Group Reward
---// [ + ] Auto Claim Free Pack
---// [ + ] Auto Redeem Codes
---// [ + ] Auto Daily Luck Boost
---// [ + ] Auto Anti AFK
---// [ + ] Speed Hack (Slider, Reset)
---// [ + ] Jump Hack (Slider, Reset)
---// [ + ] NoClip
---// [ + ] Player ESP (Box, Name, Health, Distance)
---// [ + ] Dig Spot ESP (Buried Nodes)
---// [ + ] Surfaced Item ESP
---// [ + ] ESP Color
---// [ + ] ESP Range
---// [ + ] Teleport (Hub, Islands, Shop, Museum)
---// [ + ] Config Save / Load
---// [ + ] Theme Manager
---// [ + ] Custom Cursor / Menu Keybind / Notification Side
---// [ + ] Unload Script
+--// Based on tested reference: all remote calls verified against live game.
+--// Uses PlayerScripts.TS.network modules (invoke/fire pattern).
 
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-local VirtualUser = game:GetService("VirtualUser")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local CollectionService = game:GetService("CollectionService")
 
+local plr = Players.LocalPlayer
 local PlaceId = game.PlaceId
 local isLobby = (PlaceId == 83038462357724)
 
 local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local function httpGet(url) return request({ Url = url, Method = "GET" }).Body end
+local function httpGet(url)
+    local r = request({ Url = url, Method = "GET" })
+    return r and r.Body
+end
 local Library = loadstring(httpGet(repo .. "Library.lua"))()
 local ThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
 local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
 
-local Window = Library:CreateWindow({
-    Title = "Ivory", Icon = "swords",
-    Footer = { "v1.4 |", { Text = isLobby and "Lobby" or "Game", Copyable = true }, "|", { Text = tostring(LocalPlayer.UserId), Copyable = true } },
-    CopyableFooter = true, FuzzySearch = true, SearchValues = true, Minimizable = true,
-    MinimizeKeybind = Enum.KeyCode.RightBracket, MinimizedWidth = 280, NotifySide = "Right",
-    ShowCustomCursor = false, SearchKeybind = Enum.KeyCode.F, CornerRadius = 4,
-    Animations = { SubTabUnderline = true },
-})
-
-ThemeManager:SetLibrary(Library); SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings(); SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("IvoryHub"); SaveManager:SetFolder("IvoryHub")
-SaveManager:SetSubFolder(isLobby and "lobby" or "game")
-
 ------------------------------------------------------------------------
---// NETWORK REMOTES (from Potassium scan)
+--// NETWORK (from PlayerScripts.TS.network)
 ------------------------------------------------------------------------
-local RS = ReplicatedStorage:WaitForChild("shared"):WaitForChild("network")
-
-local function getRemote(category, name)
-    for _, child in ipairs(RS:GetChildren()) do
-        if string.find(child.Name, category) then
-            local remote = child:FindFirstChild(name)
-            if remote then return remote end
-        end
-    end
-    return nil
+local netFolder = plr:WaitForChild("PlayerScripts", 10)
+    :WaitForChild("TS", 10)
+    :WaitForChild("network", 10)
+local netCache = {}
+local function net(name)
+    if not netCache[name] then netCache[name] = require(netFolder[name]) end
+    return netCache[name]
 end
 
-local function fireRemote(category, name, ...)
-    local remote = getRemote(category, name)
-    if remote then
-        remote:FireServer(...)
-    end
+local function invoke(modName, group, fn, ...)
+    local args = table.pack(...)
+    local ok, res = pcall(function()
+        local m = net(modName)[group][fn]
+        local p = m:invoke(table.unpack(args, 1, args.n))
+        if p and p.expect then return p:expect() end
+        return p
+    end)
+    return ok, res
 end
+
+local function fire(modName, group, ev, ...)
+    local args = table.pack(...)
+    pcall(function()
+        net(modName)[group][ev]:fire(table.unpack(args, 1, args.n))
+    end)
+end
+
+local function data()
+    local ok, d = invoke("DataNetwork", "DataFunctions", "requestDataUpdate")
+    return ok and type(d) == "table" and d or nil
+end
+
+local function tutorialStep()
+    local ok, s = invoke("TutorialNetwork", "TutorialFunctions", "GetTutorialState")
+    return ok and type(s) == "table" and s.step or -1
+end
+
+------------------------------------------------------------------------
+--// GAME CONFIGS
+------------------------------------------------------------------------
+local Const = ReplicatedStorage:WaitForChild("TS"):WaitForChild("constants")
+local CfgShovels = require(Const:WaitForChild("digging"):WaitForChild("Shovels"))
+local CfgDig = require(Const:WaitForChild("digging"):WaitForChild("DiggingConfig"))
+local CfgSprays = require(Const:WaitForChild("cleaning"):WaitForChild("SprayBottles"))
+local CfgDetectors = require(Const:WaitForChild("digging"):WaitForChild("Detectors"))
+local CfgItems = require(Const:WaitForChild("items"):WaitForChild("Items"))
+local CfgBackpack = require(Const:WaitForChild("inventory"):WaitForChild("BackpackCapacity"))
+local CfgIslands = require(Const:WaitForChild("world"):WaitForChild("Islands"))
+local CfgSections = require(Const:WaitForChild("plot"):WaitForChild("PlotSections"))
+local CfgPolishing = require(Const:WaitForChild("plot"):WaitForChild("Polishing"))
+local CfgUpstairs = require(Const:WaitForChild("plot"):WaitForChild("UpstairsPedestals"))
 
 ------------------------------------------------------------------------
 --// HELPERS
@@ -99,100 +86,338 @@ local function notify(desc, kind)
     Library:Notify({ Title = "Ivory", Description = desc, Type = kind or "Info", Time = 2.5 })
 end
 
-local function getHRP()
-    local char = LocalPlayer.Character
-    return char and char:FindFirstChild("HumanoidRootPart")
+local function short(n)
+    if type(n) ~= "number" then return "?" end
+    local units = { "", "K", "M", "B", "T", "Qa", "Qi" }
+    local i = 1
+    while n >= 1000 and i < #units do n = n / 1000 i = i + 1 end
+    if i == 1 then return string.format("%d", n) end
+    return string.format("%.2f%s", n, units[i])
 end
 
-local function getHumanoid()
-    local char = LocalPlayer.Character
-    return char and char:FindFirstChildOfClass("Humanoid")
+local function char()
+    local c = plr.Character
+    if not c then return nil end
+    return c, c:FindFirstChild("HumanoidRootPart"), c:FindFirstChildOfClass("Humanoid")
 end
 
-------------------------------------------------------------------------
---// CONFIG DATA (from game modules)
-------------------------------------------------------------------------
-local Shovels = require(ReplicatedStorage:WaitForChild("TS"):WaitForChild("constants"):WaitForChild("digging"):WaitForChild("Shovels"))
-local Detectors = require(ReplicatedStorage:WaitForChild("TS"):WaitForChild("constants"):WaitForChild("digging"):WaitForChild("Detectors"))
-local SprayBottles = require(ReplicatedStorage:WaitForChild("TS"):WaitForChild("constants"):WaitForChild("cleaning"):WaitForChild("SprayBottles"))
-local IslandsConfig = require(ReplicatedStorage:WaitForChild("TS"):WaitForChild("constants"):WaitForChild("world"):WaitForChild("Islands"))
-local DiggingConfig = require(ReplicatedStorage:WaitForChild("TS"):WaitForChild("constants"):WaitForChild("digging"):WaitForChild("DiggingConfig"))
+local function hop(goal, extraWait)
+    local _, hrp = char()
+    if not hrp or not goal then return false end
+    local dist = (goal - hrp.Position).Magnitude
+    if dist < 4 then return true end
+    local dur = math.max(dist / 90, 0.1)
+    TweenService:Create(hrp, TweenInfo.new(dur, Enum.EasingStyle.Linear),
+        { CFrame = CFrame.new(goal) }):Play()
+    task.wait(dur + (extraWait or 0.4))
+    return true
+end
 
--- Shovel tier names in order
-local ShovelOrder = {
-    "Plastic Shovel", "Wood Shovel", "Stone Shovel", "Metal Shovel", "Gold Shovel",
-    "Amethyst Shovel", "Titanium Shovel", "Cobalt Shovel", "Carbon Shovel", "Ruby Shovel",
-    "Diamond Shovel", "Sandstone Shovel", "Amber Shovel", "Scarab Shovel", "Malachite Shovel",
-    "Aquamarine Shovel", "Cryolite Shovel", "Peridot Shovel", "Sunstone Shovel", "Sugilite Shovel",
-    "Eclipse Shovel", "Nether Shovel", "Specter Shovel", "Inferno Shovel", "Storm Shovel", "Magma Shovel",
-}
+local function closeModals()
+    local main = plr.PlayerGui:FindFirstChild("Main")
+    if not main then return end
+    for _, frame in ipairs(main:GetChildren()) do
+        if frame:IsA("GuiObject") and frame.Visible then
+            local button = frame:FindFirstChild("Close", true)
+            if button and (button:IsA("ImageButton") or button:IsA("TextButton")) then
+                for _, conn in ipairs(getconnections(button.Activated)) do
+                    pcall(function() conn:Fire() end)
+                end
+            else
+                frame.Visible = false
+            end
+        end
+    end
+end
 
-local DetectorOrder = {
-    "Rusty Detector", "Copper Detector", "Silver Detector", "Gold Detector", "Platinum Detector",
-    "Onyx Detector", "Sapphire Detector", "Jade Detector", "Topaz Detector", "Crystal Detector",
-    "Sandstone Detector", "Amber Detector", "Scarab Detector", "Malachite Detector", "Aquamarine Detector",
-    "Cryolite Detector", "Peridot Detector", "Sunstone Detector", "Sugilite Detector", "Eclipse Detector",
-    "Nether Detector", "Specter Detector", "Inferno Detector", "Storm Detector", "Magma Detector",
-}
+local function backpackTools()
+    local out = {}
+    for _, t in ipairs(plr.Backpack:GetChildren()) do
+        if t:IsA("Tool") then out[#out + 1] = t end
+    end
+    local c = plr.Character
+    if c then
+        for _, t in ipairs(c:GetChildren()) do
+            if t:IsA("Tool") then out[#out + 1] = t end
+        end
+    end
+    return out
+end
 
-local SprayOrder = {
-    "Basic Spray Bottle", "Rubber Spray Bottle", "Plastic Spray Bottle", "Copper Spray Bottle",
-    "Steel Spray Bottle", "Gold Spray Bottle", "Turquoise Spray Bottle",
-    "Plastic Pressure Washer", "Metal Pressure Washer", "Obsidian Pressure Washer",
-    "Opal Pressure Washer", "Garnet Pressure Washer",
-    "Sandstone Pressure Washer", "Amber Pressure Washer", "Scarab Pressure Washer",
-    "Malachite Pressure Washer", "Aquamarine Pressure Washer",
-    "Cryolite Washer", "Peridot Washer", "Sunstone Washer", "Sugilite Washer", "Eclipse Washer",
-    "Nether Spray", "Specter Spray", "Inferno Spray", "Storm Spray", "Magma Spray",
-}
+local function inventoryList()
+    local d = data()
+    if not d or type(d.Inventory) ~= "table" then return {} end
+    local out = {}
+    for _, entry in pairs(d.Inventory) do
+        if type(entry) == "table" and entry.uid then out[#out + 1] = entry end
+    end
+    return out
+end
 
-local IslandOrder = {"starterIsland", "island2", "island3", "island4", "island5"}
-local IslandDisplay = {
-    starterIsland = "Home Beach",
-    island2 = "Frozen Shores",
-    island3 = "Lava Lagoon",
-    island4 = "Shipwreck Cove",
-    island5 = "Sphinx Sands",
-}
-
-local IslandPrices = {
-    starterIsland = 0,
-    island2 = 1100000,
-    island3 = 32000000,
-    island4 = 500000000,
-    island5 = 20000000000,
-}
-
-------------------------------------------------------------------------
---// PLAYER DATA HELPERS
-------------------------------------------------------------------------
-local function getPlayerData()
-    local data = nil
-    pcall(function()
-        data = LocalPlayer:GetAttribute("PlayerData")
+local function valueOf(entry)
+    if not entry or not entry.id then return 0 end
+    local ok, v = pcall(function()
+        return CfgItems.itemValueFor(entry.id, entry.condition or "ok", tonumber(entry.kg) or 0)
     end)
-    return data
+    return ok and tonumber(v) or 0
 end
 
-local function getGold()
-    return LocalPlayer:GetAttribute("Gold") or 0
+local function backpackFullness()
+    local d = data()
+    if not d then return 0 end
+    local count = #inventoryList()
+    local limit = CfgBackpack.BASE_BACKPACK_CAPACITY + (d.BonusBackpackSlots or 0)
+    local ok, lim = pcall(function() return CfgBackpack.BackpackCapacity.limitFor(d) end)
+    if ok and tonumber(lim) then limit = lim end
+    if limit <= 0 then return 0 end
+    return count / limit
 end
 
-local function getHeldItem()
-    return LocalPlayer:GetAttribute("HeldItem")
+------------------------------------------------------------------------
+--// WORLD HELPERS
+------------------------------------------------------------------------
+local function islandNameFor(id)
+    if not _G.__DC_ISLE_NAMES then
+        local ok, list = invoke("TravelNetwork", "TravelFunctions", "getIslands")
+        local map = {}
+        if ok and type(list) == "table" then
+            for _, entry in ipairs(list) do
+                if entry.id and entry.name then map[entry.id] = entry.name end
+            end
+        end
+        _G.__DC_ISLE_NAMES = map
+    end
+    return _G.__DC_ISLE_NAMES[id]
 end
 
-local function getInventorySize()
-    return LocalPlayer:GetAttribute("InventorySize") or 0
+local function islandFolder()
+    local islands = Workspace:FindFirstChild("Islands")
+    if not islands then return nil end
+    local d = data()
+    local name = d and islandNameFor(d.CurrentIsland)
+    local folder = name and islands:FindFirstChild(name)
+    if folder then return folder end
+    return islands:GetChildren()[1]
 end
 
-local function getMaxInventory()
-    return LocalPlayer:GetAttribute("MaxInventory") or 10
+local function nearestTagged(tag, container)
+    local _, hrp = char()
+    if not hrp then return nil end
+    local best, bestDist
+    for _, z in ipairs(CollectionService:GetTagged(tag)) do
+        if not container or z:IsDescendantOf(container) then
+            local ok, pivot = pcall(function() return z:GetPivot() end)
+            if ok then
+                local dist = (pivot.Position - hrp.Position).Magnitude
+                if not bestDist or dist < bestDist then best, bestDist = z, dist end
+            end
+        end
+    end
+    return best, bestDist
 end
 
-local function isInventoryFull()
-    return getInventorySize() >= getMaxInventory()
+local function npcNamed(name)
+    local isl = islandFolder()
+    local npcs = isl and isl:FindFirstChild("NPCs")
+    if not npcs then return nil end
+    local found = npcs:FindFirstChild(name, true)
+    if not found then return nil end
+    local ok, pivot = pcall(function() return found:GetPivot() end)
+    return ok and pivot.Position or nil
 end
+
+------------------------------------------------------------------------
+--// DIG CONTROLLER
+------------------------------------------------------------------------
+local DigClass
+do
+    local ctrl = plr.PlayerScripts.TS:FindFirstChild("controllers")
+    local mod = ctrl and ctrl:FindFirstChild("DigController", true)
+    if mod then
+        local ok, m = pcall(require, mod)
+        if ok and type(m) == "table" then DigClass = m.DigController end
+    end
+end
+
+local function digController()
+    local cached = _G.__DC_DIG
+    if cached and getmetatable(cached) == DigClass then return cached end
+    if not DigClass then return nil end
+    for _, t in ipairs(getgc(true)) do
+        if type(t) == "table" and getmetatable(t) == DigClass then
+            _G.__DC_DIG = t
+            return t
+        end
+    end
+    return nil
+end
+
+------------------------------------------------------------------------
+--// BURIED NODES
+------------------------------------------------------------------------
+local NODE_TTL = 25
+
+local function armNodeListener()
+    if _G.__DC_NODECONN then pcall(function() _G.__DC_NODECONN:Disconnect() end) end
+    _G.__DC_SEEN = _G.__DC_SEEN or {}
+    local ok, conn = pcall(function()
+        return net("DetectorNetwork").DetectorEvents.BuriedNodes:connect(function(nodes)
+            if type(nodes) ~= "table" then return end
+            local now = os.clock()
+            for _, n in ipairs(nodes) do
+                if n.id and typeof(n.position) == "Vector3" then
+                    local kept = _G.__DC_SEEN[n.id]
+                    _G.__DC_SEEN[n.id] = {
+                        id = n.id, position = n.position, rarity = n.rarity,
+                        seenAt = kept and kept.seenAt or now,
+                        lastSeen = now,
+                    }
+                end
+            end
+        end)
+    end)
+    if ok then _G.__DC_NODECONN = conn end
+end
+
+local function forgetNode(id)
+    if id and _G.__DC_SEEN then _G.__DC_SEEN[id] = nil end
+end
+
+local function nodeList()
+    local seen = _G.__DC_SEEN
+    if type(seen) ~= "table" then return {} end
+    local now = os.clock()
+    local out = {}
+    for id, n in pairs(seen) do
+        if now - (n.seenAt or 0) > NODE_TTL then
+            seen[id] = nil
+        else
+            out[#out + 1] = n
+        end
+    end
+    return out
+end
+
+------------------------------------------------------------------------
+--// DIG COST MODEL
+------------------------------------------------------------------------
+local RARITY = {}
+do
+    local order = CfgItems.RARITY_ORDER
+    if type(order) == "table" then
+        for i, name in ipairs(order) do RARITY[name] = i end
+    end
+end
+
+local DIG_SPAN = (CfgDig.DIG_WIN_THRESHOLD or 0.985) - (CfgDig.DIG_PROGRESS_START or 0.33)
+
+local function rarityStats(power)
+    local key = string.format("%.3f", power or 1)
+    _G.__DC_STATS2 = _G.__DC_STATS2 or {}
+    if _G.__DC_STATS2[key] then return _G.__DC_STATS2[key] end
+    local out = {}
+    for _, rarity in ipairs(CfgItems.RARITY_ORDER or {}) do
+        local powers, decays, values = {}, {}, {}
+        for id, item in pairs(CfgItems.Items or {}) do
+            if item.rarity == rarity then
+                local ok, diff = pcall(CfgDig.digDifficultyFor, id, item.averageKg, power)
+                if ok and type(diff) == "table" and (diff.clickPower or 0) > 0 then
+                    powers[#powers + 1] = diff.clickPower
+                    decays[#decays + 1] = diff.decay or 0
+                end
+                local okv, value = pcall(CfgItems.itemValueFor, id, "ok", item.averageKg)
+                if okv and type(value) == "number" then values[#values + 1] = value end
+            end
+        end
+        local function mid(t) table.sort(t); return t[math.ceil(#t / 2)] end
+        out[rarity] = {
+            clickPower = mid(powers) or 0,
+            decay = mid(decays) or math.huge,
+            value = mid(values) or 0,
+        }
+        out[rarity].cost = out[rarity].clickPower > 0
+            and (out[rarity].decay / out[rarity].clickPower) or math.huge
+    end
+    _G.__DC_STATS2[key] = out
+    return out
+end
+
+------------------------------------------------------------------------
+--// WINDOW
+------------------------------------------------------------------------
+local Window = Library:CreateWindow({
+    Title = "Ivory",
+    Icon = "swords",
+    Footer = {
+        "v1.4 |",
+        { Text = isLobby and "Lobby" or "Game", Copyable = true },
+        "|",
+        { Text = tostring(plr.UserId), Copyable = true },
+    },
+    CopyableFooter = true,
+    FuzzySearch = true,
+    SearchValues = true,
+    Minimizable = true,
+    MinimizeKeybind = Enum.KeyCode.RightBracket,
+    MinimizedWidth = 280,
+    NotifySide = "Right",
+    ShowCustomCursor = false,
+    SearchKeybind = Enum.KeyCode.F,
+    CornerRadius = 4,
+    Animations = { SubTabUnderline = true },
+})
+
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
+ThemeManager:SetFolder("IvoryHub")
+SaveManager:SetFolder("IvoryHub")
+SaveManager:SetSubFolder(isLobby and "lobby" or "game")
+
+------------------------------------------------------------------------
+--// CONFIG
+------------------------------------------------------------------------
+local CFG = {
+    auto = false,
+    dig = true,
+    clean = true,
+    sell = true,
+    display = true,
+    polish = true,
+    plot = true,
+    islands = true,
+    islandFirst = true,
+    buyGear = true,
+    claimFree = true,
+    autoMuseum = true,
+    autoPedestal = true,
+    autoSection = true,
+    moveSpeed = 90,
+    clicksPerSec = 35,
+    scan = true,
+    scanPoints = 4,
+    scanDwell = 0.45,
+    scanUntil = 6,
+    scanEvery = 25,
+    scanRarity = 3,
+    rarityAuto = true,
+    digSeconds = 25,
+    giveUpAfter = 4,
+    sellAt = 0.3,
+    gearEvery = 30,
+    swapExhibits = true,
+    swapMargin = 1.2,
+}
+
+local ST = {
+    note = "idle", phase = "-", gold = 0, level = 0, xp = 0,
+    dug = 0, cleaned = 0, sold = 0, digs = 0, nodes = 0,
+    power = 1, cps = 8, cap = "-", lastRarity = "-",
+    goldRate = 0, lastGold = 0, lastGoldAt = 0,
+    tutorial = -1, busy = false, nextGearAt = 0,
+    gear = "-", island = "-",
+}
 
 ------------------------------------------------------------------------
 --// TABS
@@ -203,729 +428,549 @@ local FarmTab = Window:AddTab({ Name = "Farm", Icon = "pickaxe" })
 local ShopTab = Window:AddTab({ Name = "Shop", Icon = "shopping-cart" })
 local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
 
--- Main > Automation
+------------------------------------------------------------------------
+--// MAIN > AUTOMATION
+------------------------------------------------------------------------
 local AutoSubTab = MainTab:AddSubTab("Automation", "zap")
-local CoreGroup = AutoSubTab:AddLeftGroupbox("Core Features", "box-icon")
-local ExtraGroup = AutoSubTab:AddRightGroupbox("Extra Features", "box-icon")
+local CoreGroup = AutoSubTab:AddLeftGroupbox("Core Loop", "box-icon")
+local ExtraGroup = AutoSubTab:AddRightGroupbox("Extras", "box-icon")
 
--- Main > Config
-local ConfigSubTab = MainTab:AddSubTab("Config", "cog")
-local ConfigGroup = ConfigSubTab:AddLeftGroupbox("Settings", "box-icon")
-local InfoGroup = ConfigSubTab:AddRightGroupbox("Info", "box-icon")
+CoreGroup:AddToggle("AutoFarm", { Text = "Auto Farm", Default = false,
+    Callback = function(s) CFG.auto = s; ST.note = s and "running" or "stopped"
+        notify(s and "Auto Farm Enabled" or "Auto Farm Disabled") end,
+}):AddKeyPicker("AutoFarmKey", { Default = "F", Text = "Auto Farm Key", Mode = "Toggle", SyncToggleState = true, NoUI = false })
 
--- Main > Discord
+CoreGroup:AddToggle("Dig", { Text = "Auto Dig", Default = true, Callback = function(s) CFG.dig = s end })
+CoreGroup:AddToggle("Clean", { Text = "Auto Clean", Default = true, Callback = function(s) CFG.clean = s end })
+CoreGroup:AddToggle("Sell", { Text = "Auto Sell", Default = true, Callback = function(s) CFG.sell = s end })
+CoreGroup:AddToggle("Display", { Text = "Auto Display", Default = true, Callback = function(s) CFG.display = s end })
+CoreGroup:AddToggle("Polish", { Text = "Auto Polish", Default = true, Callback = function(s) CFG.polish = s end })
+CoreGroup:AddToggle("Plot", { Text = "Auto Expand Plot", Default = true, Callback = function(s) CFG.plot = s end })
+CoreGroup:AddToggle("Islands", { Text = "Auto Unlock Islands", Default = true, Callback = function(s) CFG.islands = s end })
+CoreGroup:AddToggle("BuyGear", { Text = "Auto Buy Gear", Default = true, Callback = function(s) CFG.buyGear = s end })
+CoreGroup:AddToggle("ClaimFree", { Text = "Auto Claim Rewards", Default = true, Callback = function(s) CFG.claimFree = s end })
+
+CoreGroup:AddSlider("ClicksPerSec", { Text = "Clicks/sec", Default = 35, Min = 4, Max = 50, Rounding = 0,
+    Callback = function(v) CFG.clicksPerSec = math.floor(v) end })
+CoreGroup:AddSlider("DigSeconds", { Text = "Max Dig Time", Default = 25, Min = 4, Max = 45, Rounding = 0,
+    Callback = function(v) CFG.digSeconds = math.floor(v) end })
+
+ExtraGroup:AddToggle("Scan", { Text = "Scan Field", Default = true, Callback = function(s) CFG.scan = s end })
+ExtraGroup:AddToggle("RarityAuto", { Text = "Match Shovel Power", Default = true, Callback = function(s) CFG.rarityAuto = s end })
+ExtraGroup:AddToggle("SwapExhibits", { Text = "Swap Exhibits", Default = true, Callback = function(s) CFG.swapExhibits = s end })
+ExtraGroup:AddToggle("IslandFirst", { Text = "Island Before Gear", Default = true, Callback = function(s) CFG.islandFirst = s end })
+ExtraGroup:AddSlider("SellAt", { Text = "Sell At %", Default = 30, Min = 10, Max = 100, Rounding = 0,
+    Callback = function(v) CFG.sellAt = v / 100 end })
+ExtraGroup:AddSlider("SwapMargin", { Text = "Swap Margin %", Default = 20, Min = 5, Max = 200, Rounding = 0,
+    Callback = function(v) CFG.swapMargin = 1 + v / 100 end })
+ExtraGroup:AddButton("Unstuck", function()
+    CFG.auto = false
+    local _, hrp, hum = char()
+    if hrp then hrp.Anchored = false end
+    if hum then hum.PlatformStand = false end
+    ST.busy = false; ST.note = "unstuck"
+    notify("Unstuck! Auto off.", "Info")
+end)
+
+------------------------------------------------------------------------
+--// MAIN > DISCORD
+------------------------------------------------------------------------
 local DiscordSubTab = MainTab:AddSubTab("Discord", "users")
 local DiscordGroup = DiscordSubTab:AddLeftGroupbox("Community", "box-icon")
 
--- Player > Movement
-local MovementSubTab = PlayerTab:AddSubTab("Movement", "zap")
-local SpeedGroup = MovementSubTab:AddLeftGroupbox("Speed", "box-icon")
-local JumpGroup = MovementSubTab:AddRightGroupbox("Jump", "box-icon")
-
--- Player > Visuals
-local VisualsSubTab = PlayerTab:AddSubTab("Visuals", "eye")
-local ESPGroup = VisualsSubTab:AddLeftGroupbox("ESP", "box-icon")
-
--- Farm > Digging
-local DiggingSubTab = FarmTab:AddSubTab("Digging", "pickaxe")
-local DigGroup = DiggingSubTab:AddLeftGroupbox("Auto Dig", "box-icon")
-local CleanGroup = DiggingSubTab:AddRightGroupbox("Auto Clean", "box-icon")
-
--- Farm > Inventory
-local InventorySubTab = FarmTab:AddSubTab("Inventory", "box")
-local SellGroup = InventorySubTab:AddLeftGroupbox("Sell & Display", "box-icon")
-local CollectGroup = InventorySubTab:AddRightGroupbox("Collect", "box-icon")
-
--- Farm > Island
-local IslandSubTab = FarmTab:AddSubTab("Islands", "map")
-local TravelGroup = IslandSubTab:AddLeftGroupbox("Travel", "box-icon")
-local PyramidGroup = IslandSubTab:AddRightGroupbox("Pyramid", "box-icon")
-
--- Farm > Museum
-local MuseumSubTab = FarmTab:AddSubTab("Museum", "building")
-local MuseumGroup = MuseumSubTab:AddLeftGroupbox("Museum", "box-icon")
-local PolishGroup = MuseumSubTab:AddRightGroupbox("Polisher", "box-icon")
-
--- Shop > Shovels
-local ShovelsSubTab = ShopTab:AddSubTab("Shovels", "pickaxe")
-local ShovelGroup = ShovelsSubTab:AddLeftGroupbox("Shovels", "box-icon")
-
--- Shop > Detectors
-local DetectorsSubTab = ShopTab:AddSubTab("Detectors", "radio")
-local DetectorGroup = DetectorsSubTab:AddLeftGroupbox("Detectors", "box-icon")
-
--- Shop > Sprays
-local SpraysSubTab = ShopTab:AddSubTab("Sprays", "droplet")
-local SprayGroup = SpraysSubTab:AddLeftGroupbox("Spray Bottles", "box-icon")
-
--- Shop > Quests & Rewards
-local RewardsSubTab = ShopTab:AddSubTab("Rewards", "gift")
-local QuestGroup = RewardsSubTab:AddLeftGroupbox("Quests", "box-icon")
-local RewardGroup = RewardsSubTab:AddRightGroupbox("Rewards", "box-icon")
-
--- Settings
-local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "box-icon")
-
-------------------------------------------------------------------------
---// DISCORD LINK
-------------------------------------------------------------------------
 DiscordGroup:AddButton("Join Discord For Dupe", function()
     setclipboard("https://discord.gg/MCWYKBdB4E")
     notify("Discord link copied to clipboard!", "Success")
 end)
 
 ------------------------------------------------------------------------
---// CORE AUTOMATION TOGGLES
+--// MAIN > CONFIG
 ------------------------------------------------------------------------
-CoreGroup:AddToggle("AutoDetect", { Text = "Auto Detect Dig Spots", Default = false,
-    Callback = function(s) _G.IvoryAutoDetect = s; notify(s and "Auto Detect Enabled" or "Auto Detect Disabled") end,
-}):AddKeyPicker("DetectKey", { Default = "F", Text = "Auto Detect Key", Mode = "Toggle", SyncToggleState = true, NoUI = false })
+local ConfigSubTab = MainTab:AddSubTab("Config", "cog")
+local ConfigGroup = ConfigSubTab:AddLeftGroupbox("Settings", "box-icon")
+local InfoGroup = ConfigSubTab:AddRightGroupbox("Info", "box-icon")
 
-CoreGroup:AddToggle("AutoDig", { Text = "Auto Dig", Default = false,
-    Callback = function(s) _G.IvoryAutoDig = s; notify(s and "Auto Dig Enabled" or "Auto Dig Disabled") end,
-}):AddKeyPicker("DigKey", { Default = "G", Text = "Auto Dig Key", Mode = "Toggle", SyncToggleState = true, NoUI = false })
-
-CoreGroup:AddToggle("AutoClean", { Text = "Auto Clean Items", Default = false,
-    Callback = function(s) _G.IvoryAutoClean = s; notify(s and "Auto Clean Enabled" or "Auto Clean Disabled") end,
-})
-
-CoreGroup:AddToggle("AutoSellHeld", { Text = "Auto Sell Held Item", Default = false,
-    Callback = function(s) _G.IvoryAutoSellHeld = s end,
-})
-
-CoreGroup:AddToggle("AutoSellInventory", { Text = "Auto Sell Inventory When Full", Default = false,
-    Callback = function(s) _G.IvoryAutoSellInventory = s end,
-})
-
-CoreGroup:AddToggle("AutoPlace", { Text = "Auto Place in Museum", Default = false,
-    Callback = function(s) _G.IvoryAutoPlace = s end,
-})
-
-CoreGroup:AddToggle("AutoPickup", { Text = "Auto Pickup Surfaced Items", Default = false,
-    Callback = function(s) _G.IvoryAutoPickup = s end,
-})
-
-CoreGroup:AddToggle("AutoEquipTool", { Text = "Auto Equip Best Tool", Default = false,
-    Callback = function(s) _G.IvoryAutoEquipTool = s end,
-})
-
-------------------------------------------------------------------------
---// EXTRA FEATURES
-------------------------------------------------------------------------
-ExtraGroup:AddToggle("AntiAFK", { Text = "Anti AFK", Default = false,
-    Callback = function(s) _G.IvoryAntiAFK = s end,
-})
-
-ExtraGroup:AddToggle("NoClip", { Text = "NoClip", Default = false,
-    Callback = function(s) _G.IvoryNoClip = s end,
-})
-
-ExtraGroup:AddToggle("AutoClaimOffline", { Text = "Auto Claim Offline Earnings", Default = false,
-    Callback = function(s) _G.IvoryAutoClaimOffline = s end,
-})
-
-ExtraGroup:AddToggle("AutoClaimQuests", { Text = "Auto Claim Quests", Default = false,
-    Callback = function(s) _G.IvoryAutoClaimQuests = s end,
-})
-
-ExtraGroup:AddToggle("AutoClaimGroup", { Text = "Auto Claim Group Reward", Default = false,
-    Callback = function(s) _G.IvoryAutoClaimGroup = s end,
-})
-
-ExtraGroup:AddToggle("AutoClaimFreePack", { Text = "Auto Claim Free Pack", Default = false,
-    Callback = function(s) _G.IvoryAutoClaimFreePack = s end,
-})
-
-ExtraGroup:AddToggle("AutoRedeemCodes", { Text = "Auto Redeem Codes", Default = false,
-    Callback = function(s) _G.IvoryAutoRedeemCodes = s end,
-})
-
-ExtraGroup:AddButton("Redeem All Codes", function()
-    local codes = {"UPDATE3", "UPDATE2", "SECRET10", "Update1"}
-    for _, code in ipairs(codes) do
-        pcall(function() fireRemote("CodeNetwork", "redeemCode", code) end)
-    end
-    notify("Attempted to redeem " .. #codes .. " codes!", "Success")
-end)
-
-ExtraGroup:AddButton("Claim Offline Earnings", function()
-    pcall(function() fireRemote("OfflineEarningsNetwork", "requestOfflineEarnings") end)
-    notify("Offline earnings requested!", "Success")
-end)
-
-ExtraGroup:AddButton("Claim Group Reward", function()
-    pcall(function() fireRemote("FreeLuckNetwork", "claimGroupReward") end)
-    notify("Group reward claimed!", "Success")
-end)
-
-ExtraGroup:AddButton("Claim Free Pack", function()
-    pcall(function() fireRemote("ForeverPackNetwork", "claimFree") end)
-    notify("Free pack claimed!", "Success")
-end)
-
-------------------------------------------------------------------------
---// CONFIG
-------------------------------------------------------------------------
 ConfigGroup:AddToggle("AutoSave", { Text = "Auto Save Settings", Default = true,
-    Callback = function(s) _G.IvoryAutoSave = s end,
-})
-
-ConfigGroup:AddButton("Reset All Settings", function()
-    for k, v in pairs(_G) do
-        if type(v) == "boolean" and string.find(k, "Ivory") then _G[k] = false
-        elseif type(v) == "number" and string.find(k, "Ivory") then _G[k] = nil end
-    end
-    notify("All settings reset", "Success")
-end)
-
-ConfigGroup:AddButton("Load Config", function()
-    SaveManager:LoadConfig()
-    notify("Config loaded", "Success")
-end)
-
-ConfigGroup:AddButton("Save Config", function()
-    SaveManager:SaveConfig()
-    notify("Config saved", "Success")
-end)
+    Callback = function(s) _G.IvoryAutoSave = s end })
+ConfigGroup:AddButton("Load Config", function() SaveManager:LoadConfig(); notify("Config loaded", "Success") end)
+ConfigGroup:AddButton("Save Config", function() SaveManager:SaveConfig(); notify("Config saved", "Success") end)
 
 InfoGroup:AddLabel("Ivory Hub v1.4")
 InfoGroup:AddLabel("Game: Dig & Clean")
 InfoGroup:AddLabel("PlaceId: " .. tostring(PlaceId))
-InfoGroup:AddLabel("UserId: " .. tostring(LocalPlayer.UserId))
-InfoGroup:AddButton("Copy PlaceId", function()
-    setclipboard(tostring(PlaceId))
-    notify("PlaceId copied!", "Success")
-end)
 
 ------------------------------------------------------------------------
---// SPEED HACK
+--// PLAYER > MOVEMENT
 ------------------------------------------------------------------------
+local MovementSubTab = PlayerTab:AddSubTab("Movement", "zap")
+local SpeedGroup = MovementSubTab:AddLeftGroupbox("Speed", "box-icon")
+local JumpGroup = MovementSubTab:AddRightGroupbox("Jump", "box-icon")
+
 SpeedGroup:AddToggle("SpeedHack", { Text = "Speed Hack", Default = false,
-    Callback = function(s) _G.IvorySpeedHack = s end,
-})
+    Callback = function(s) _G.IvorySpeedHack = s end })
 SpeedGroup:AddSlider("SpeedValue", { Text = "Walk Speed", Default = 16, Min = 16, Max = 500, Rounding = 0,
-    Callback = function(v) _G.IvorySpeedValue = v end,
-})
+    Callback = function(v) _G.IvorySpeedValue = v end })
 SpeedGroup:AddButton("Reset Speed", function()
-    pcall(function() LocalPlayer.Character.Humanoid.WalkSpeed = 16 end)
-    _G.IvorySpeedHack = false
-    notify("Speed Reset", "Success")
+    pcall(function() plr.Character.Humanoid.WalkSpeed = 16 end)
+    _G.IvorySpeedHack = false; notify("Speed Reset", "Success")
 end)
 
-------------------------------------------------------------------------
---// JUMP HACK
-------------------------------------------------------------------------
 JumpGroup:AddToggle("JumpHack", { Text = "Jump Hack", Default = false,
-    Callback = function(s) _G.IvoryJumpHack = s end,
-})
+    Callback = function(s) _G.IvoryJumpHack = s end })
 JumpGroup:AddSlider("JumpValue", { Text = "Jump Power", Default = 50, Min = 50, Max = 500, Rounding = 0,
-    Callback = function(v) _G.IvoryJumpValue = v end,
-})
+    Callback = function(v) _G.IvoryJumpValue = v end })
 JumpGroup:AddButton("Reset Jump", function()
-    pcall(function() LocalPlayer.Character.Humanoid.JumpPower = 50 end)
-    _G.IvoryJumpHack = false
-    notify("Jump Reset", "Success")
+    pcall(function() plr.Character.Humanoid.JumpPower = 50 end)
+    _G.IvoryJumpHack = false; notify("Jump Reset", "Success")
 end)
 
 ------------------------------------------------------------------------
---// ESP
+--// PLAYER > VISUALS
 ------------------------------------------------------------------------
+local VisualsSubTab = PlayerTab:AddSubTab("Visuals", "eye")
+local ESPGroup = VisualsSubTab:AddLeftGroupbox("ESP", "box-icon")
+
 ESPGroup:AddLabel("ESP Color"):AddColorPicker("ESPColor", {
     Default = Color3.fromRGB(255, 0, 0), Title = "ESP Color",
-    Callback = function(v) _G.IvoryESPColor = v end,
-})
+    Callback = function(v) _G.IvoryESPColor = v end })
 ESPGroup:AddToggle("PlayerESP", { Text = "Player ESP", Default = false,
-    Callback = function(s) _G.IvoryPlayerESP = s end,
-})
-ESPGroup:AddToggle("BoxESP", { Text = "Box ESP", Default = false,
-    Callback = function(s) _G.IvoryBoxESP = s end,
-})
-ESPGroup:AddToggle("NameESP", { Text = "Name ESP", Default = false,
-    Callback = function(s) _G.IvoryNameESP = s end,
-})
-ESPGroup:AddToggle("HealthESP", { Text = "Health ESP", Default = false,
-    Callback = function(s) _G.IvoryHealthESP = s end,
-})
-ESPGroup:AddToggle("DistanceESP", { Text = "Distance ESP", Default = false,
-    Callback = function(s) _G.IvoryDistanceESP = s end,
-})
-ESPGroup:AddToggle("DigSpotESP", { Text = "Dig Spot ESP", Default = false,
-    Callback = function(s) _G.IvoryDigSpotESP = s end,
-})
-ESPGroup:AddToggle("SurfacedItemESP", { Text = "Surfaced Item ESP", Default = false,
-    Callback = function(s) _G.IvorySurfacedItemESP = s end,
-})
+    Callback = function(s) _G.IvoryPlayerESP = s end })
 ESPGroup:AddSlider("ESPRange", { Text = "ESP Range", Default = 200, Min = 50, Max = 1000, Rounding = 0,
-    Callback = function(v) _G.IvoryESPRange = v end,
-})
+    Callback = function(v) _G.IvoryESPRange = v end })
 
 ------------------------------------------------------------------------
---// AUTO DIG LOOPS
+--// FARM > STATUS
 ------------------------------------------------------------------------
--- Auto Detect: Fire the detector sweep
-task.spawn(function()
-    while true do
-        if _G.IvoryAutoDetect then
-            pcall(function()
-                fireRemote("DetectorNetwork", "GetDetectorStates")
-            end)
-        end
-        task.wait(DiggingConfig.DETECTOR_SWEEP_SECONDS or 0.8)
-    end
-end)
+local StatusSubTab = FarmTab:AddSubTab("Status", "activity")
+local StatusGroup = StatusSubTab:AddLeftGroupbox("Status", "box-icon")
 
--- Auto Dig: Fire dig inputs rapidly (the dig minigame uses click timing)
-task.spawn(function()
-    while true do
-        if _G.IvoryAutoDig then
-            pcall(function()
-                -- Fire dig input events rapidly
-                for _ = 1, 3 do
-                    fireRemote("ShovelNetwork", "DigInput")
-                    task.wait(0.05)
-                end
-            end)
-        end
-        task.wait(0.1)
-    end
-end)
-
--- Auto Begin Dig when ready
-task.spawn(function()
-    while true do
-        if _G.IvoryAutoDig then
-            pcall(function()
-                fireRemote("ShovelNetwork", "BeginDig")
-            end)
-        end
-        task.wait(1)
+local StatusLabel = StatusGroup:AddLabel("Loading...")
+StatusGroup:AddButton("Refresh Status", function()
+    local d = data()
+    if d then
+        ST.gold = d.Gold or 0; ST.level = d.Level or 0
+        ST.dug = d.ItemsDug or 0; ST.cleaned = d.ItemsCleaned or 0
     end
 end)
 
 ------------------------------------------------------------------------
---// AUTO CLEAN LOOPS
+--// FARM > DIGGING
 ------------------------------------------------------------------------
-task.spawn(function()
-    while true do
-        if _G.IvoryAutoClean then
-            pcall(function()
-                -- Start cleaning the held item
-                fireRemote("ItemsNetwork", "beginCleaning")
-                task.wait(0.2)
-                -- Save clean progress repeatedly
-                fireRemote("ItemsNetwork", "saveCleanProgress")
-                task.wait(0.2)
-                -- Finish cleaning
-                fireRemote("ItemsNetwork", "finishCleaning")
-            end)
-        end
-        task.wait(0.5)
-    end
+local DiggingSubTab = FarmTab:AddSubTab("Digging", "pickaxe")
+local DigGroup = DiggingSubTab:AddLeftGroupbox("Manual Dig", "box-icon")
+
+DigGroup:AddButton("Begin Dig", function()
+    local ctrl = digController()
+    if ctrl then pcall(function() ctrl:attemptDig() end); notify("Dig started!", "Success")
+    else notify("No dig controller found", "Error") end
+end)
+DigGroup:AddButton("Sweep Area", function()
+    local zone, _ = nearestTagged("DigZone", islandFolder())
+    if zone then
+        local ok, pivot = pcall(function() return zone:GetPivot() end)
+        if ok then hop(pivot.Position + Vector3.new(0, 5, 0)) end
+        notify("Sweeping...", "Info")
+    else notify("No dig zone found", "Error") end
 end)
 
 ------------------------------------------------------------------------
---// AUTO SELL LOOPS
+--// FARM > MUSEUM
 ------------------------------------------------------------------------
-task.spawn(function()
-    while true do
-        if _G.IvoryAutoSellHeld then
-            pcall(function()
-                if getHeldItem() then
-                    fireRemote("SellNetwork", "sellHeldItem")
-                end
-            end)
-        end
-        task.wait(1)
-    end
-end)
-
-task.spawn(function()
-    while true do
-        if _G.IvoryAutoSellInventory then
-            pcall(function()
-                if isInventoryFull() then
-                    fireRemote("SellNetwork", "sellInventory")
-                    notify("Inventory sold!", "Success")
-                end
-            end)
-        end
-        task.wait(2)
-    end
-end)
-
-------------------------------------------------------------------------
---// AUTO PLACE IN MUSEUM
-------------------------------------------------------------------------
-task.spawn(function()
-    while true do
-        if _G.IvoryAutoPlace then
-            pcall(function()
-                if getHeldItem() then
-                    fireRemote("PedestalNetwork", "placeItem")
-                end
-            end)
-        end
-        task.wait(1)
-    end
-end)
-
-------------------------------------------------------------------------
---// AUTO PICKUP SURFACED ITEMS
-------------------------------------------------------------------------
-task.spawn(function()
-    while true do
-        if _G.IvoryAutoPickup then
-            pcall(function()
-                fireRemote("ShovelNetwork", "GetSurfacedItems")
-            end)
-        end
-        task.wait(2)
-    end
-end)
-
-------------------------------------------------------------------------
---// AUTO CLAIM LOOPS
-------------------------------------------------------------------------
-task.spawn(function()
-    while true do
-        if _G.IvoryAutoClaimOffline then
-            pcall(function() fireRemote("OfflineEarningsNetwork", "requestOfflineEarnings") end)
-        end
-        task.wait(60)
-    end
-end)
-
-task.spawn(function()
-    while true do
-        if _G.IvoryAutoClaimQuests then
-            pcall(function() fireRemote("QuestNetwork", "claimQuest") end)
-        end
-        task.wait(30)
-    end
-end)
-
-task.spawn(function()
-    while true do
-        if _G.IvoryAutoClaimGroup then
-            pcall(function() fireRemote("FreeLuckNetwork", "claimGroupReward") end)
-        end
-        task.wait(300)
-    end
-end)
-
-task.spawn(function()
-    while true do
-        if _G.IvoryAutoClaimFreePack then
-            pcall(function() fireRemote("ForeverPackNetwork", "claimFree") end)
-        end
-        task.wait(60)
-    end
-end)
-
-task.spawn(function()
-    while true do
-        if _G.IvoryAutoRedeemCodes then
-            pcall(function()
-                local codes = {"UPDATE3", "UPDATE2", "SECRET10", "Update1"}
-                for _, code in ipairs(codes) do
-                    fireRemote("CodeNetwork", "redeemCode", code)
-                    task.wait(0.5)
-                end
-            end)
-        end
-        task.wait(300)
-    end
-end)
-
-------------------------------------------------------------------------
---// TELEPORT
-------------------------------------------------------------------------
-TravelGroup:AddDropdown("TeleportIsland", {
-    Text = "Travel To Island",
-    Values = {"Home Beach", "Frozen Shores", "Lava Lagoon", "Shipwreck Cove", "Sphinx Sands"},
-    Default = "Home Beach", Multi = false,
-    Callback = function(v) _G.IvoryTeleportIsland = v end,
-})
-
-TravelGroup:AddButton("Travel", function()
-    local island = _G.IvoryTeleportIsland or "Home Beach"
-    local islandId = nil
-    for id, display in pairs(IslandDisplay) do
-        if display == island then islandId = id; break end
-    end
-    if islandId then
-        pcall(function() fireRemote("TravelNetwork", "travel", islandId) end)
-        notify("Traveling to " .. island .. "!", "Success")
-    end
-end)
-
-TravelGroup:AddButton("Teleport Home", function()
-    pcall(function() fireRemote("MiscNetwork", "RequestTeleportHome") end)
-    notify("Teleporting home!", "Success")
-end)
-
-------------------------------------------------------------------------
---// ISLAND INFO
-------------------------------------------------------------------------
-for i, islandId in ipairs(IslandOrder) do
-    local display = IslandDisplay[islandId]
-    local price = IslandPrices[islandId]
-    local luck = IslandsConfig[islandId] and IslandsConfig[islandId].luckMultiplier or "?"
-    TravelGroup:AddLabel(display .. " | $" .. tostring(price) .. " | " .. tostring(luck) .. "x Luck")
+local function plotNumber()
+    if _G.__DC_PLOT then return _G.__DC_PLOT end
+    local ok, num = invoke("MiscNetwork", "MiscFunctions", "RequestPlotNumber")
+    if ok and num then _G.__DC_PLOT = num end
+    return _G.__DC_PLOT
 end
 
-------------------------------------------------------------------------
---// PYRAMID
-------------------------------------------------------------------------
-PyramidGroup:AddButton("Unlock Pyramid", function()
-    pcall(function() fireRemote("PyramidNetwork", "unlockPyramid") end)
-    notify("Pyramid unlock attempted!", "Success")
-end)
-
-PyramidGroup:AddButton("Sacrifice Gold", function()
-    pcall(function() fireRemote("PyramidNetwork", "sacrificeGold") end)
-    notify("Gold sacrificed!", "Success")
-end)
-
-PyramidGroup:AddButton("Request Well Rank", function()
-    pcall(function() fireRemote("PyramidNetwork", "requestWellRank") end)
-    notify("Well rank requested!", "Success")
-end)
-
-PyramidGroup:AddToggle("AutoSacrifice", { Text = "Auto Sacrifice Gold", Default = false,
-    Callback = function(s) _G.IvoryAutoSacrifice = s end,
-})
-
-task.spawn(function()
-    while true do
-        if _G.IvoryAutoSacrifice then
-            pcall(function() fireRemote("PyramidNetwork", "sacrificeGold") end)
+local function allPedestals(plotNum)
+    local plot = Workspace:FindFirstChild("Plots")
+    plot = plot and plot:FindFirstChild("Plot_" .. tostring(plotNum))
+    local inner = plot and plot:FindFirstChild("Plot")
+    if not inner then return {} end
+    local out = {}
+    for _, d in ipairs(inner:GetDescendants()) do
+        if d:IsA("Model") and d.Name:sub(1, 9) == "Pedestal_" and d:GetAttribute("Slot") then
+            out[#out + 1] = d
         end
-        task.wait(5)
     end
+    table.sort(out, function(a, b)
+        return (a:GetAttribute("Slot") or 0) < (b:GetAttribute("Slot") or 0)
+    end)
+    return out
+end
+
+local function doPlaceBest()
+    local plotNum = plotNumber()
+    if not plotNum then return false end
+    local peds = allPedestals(plotNum)
+    if #peds == 0 then return false end
+
+    local free, placed = {}, {}
+    for _, p in ipairs(peds) do
+        local uid = p:GetAttribute("ItemUid") or ""
+        if uid ~= "" then
+            placed[uid] = true
+        elseif p:GetAttribute("Owned") then
+            free[#free + 1] = p:GetAttribute("Slot")
+        end
+    end
+    table.sort(free)
+
+    local candidates = {}
+    for _, entry in ipairs(inventoryList()) do
+        if not entry.dirty and not placed[entry.uid] then
+            entry.__value = valueOf(entry)
+            candidates[#candidates + 1] = entry
+        end
+    end
+    if #candidates == 0 then return false end
+    table.sort(candidates, function(a, b) return (a.__value or 0) > (b.__value or 0) end)
+
+    local anchorPos
+    for _, p in ipairs(peds) do
+        local okPivot, pivot = pcall(function() return p:GetPivot() end)
+        if okPivot then anchorPos = pivot.Position break end
+    end
+    if anchorPos then hop(anchorPos + Vector3.new(0, 4, 6), 0.6) end
+
+    local placedCount = 0
+    local nextCandidate = 1
+    for _, slot in ipairs(free) do
+        local entry = candidates[nextCandidate]
+        if not entry then break end
+        local okPlace, done = invoke("PedestalNetwork", "PedestalFunctions", "placeItem", slot, entry.uid)
+        if okPlace and done == true then
+            placedCount = placedCount + 1
+            task.wait(0.35)
+        end
+        nextCandidate = nextCandidate + 1
+    end
+
+    local swaps = 0
+    if #free == 0 then
+        local used = {}
+        for _ = 1, 8 do
+            local worstSlot, worstValue
+            for _, p in ipairs(peds) do
+                local uid = p:GetAttribute("ItemUid") or ""
+                local slot = p:GetAttribute("Slot")
+                if uid ~= "" and not used[slot] then
+                    local v = valueOf({
+                        id = p:GetAttribute("ItemId"),
+                        kg = p:GetAttribute("Kg"),
+                        condition = p:GetAttribute("Condition"),
+                    })
+                    if not worstValue or v < worstValue then worstSlot, worstValue = slot, v end
+                end
+            end
+            local top = candidates[nextCandidate]
+            if not worstSlot or not top then break end
+            if (top.__value or 0) <= (worstValue or 0) * CFG.swapMargin then break end
+
+            local evictedUid
+            for _, p in ipairs(peds) do
+                if p:GetAttribute("Slot") == worstSlot then evictedUid = p:GetAttribute("ItemUid") end
+            end
+            local okPick = invoke("PedestalNetwork", "PedestalFunctions", "pickupItem", worstSlot)
+            if not okPick then break end
+            task.wait(0.35)
+            local okSwap, done = invoke("PedestalNetwork", "PedestalFunctions",
+                "placeItem", worstSlot, top.uid)
+            if not (okSwap and done == true) and evictedUid then
+                invoke("PedestalNetwork", "PedestalFunctions", "placeItem", worstSlot, evictedUid)
+            end
+            if okSwap and done == true then
+                swaps = swaps + 1
+                used[worstSlot] = true
+            else
+                break
+            end
+            nextCandidate = nextCandidate + 1
+            task.wait(0.3)
+        end
+    end
+
+    if placedCount > 0 then ST.note = "placed " .. placedCount .. " items" end
+    return placedCount > 0 or swaps > 0
+end
+
+local MuseumSubTab = FarmTab:AddSubTab("Museum", "building")
+local MuseumGroup = MuseumSubTab:AddLeftGroupbox("Museum", "box-icon")
+local PolishGroup = MuseumSubTab:AddRightGroupbox("Polisher", "box-icon")
+
+MuseumGroup:AddToggle("AutoMuseum", { Text = "Auto Place Best Item", Default = true,
+    Callback = function(s) CFG.autoMuseum = s end })
+MuseumGroup:AddToggle("AutoPedestal", { Text = "Auto Buy Pedestal", Default = true,
+    Callback = function(s) CFG.autoPedestal = s end })
+MuseumGroup:AddToggle("AutoSection", { Text = "Auto Unlock Section", Default = true,
+    Callback = function(s) CFG.autoSection = s end })
+
+MuseumGroup:AddButton("Place Best Item", function()
+    local ok, result = pcall(doPlaceBest)
+    if not ok then notify("Error: " .. tostring(result), "Error") return end
+    if result then notify("Placed/swapped items!", "Success")
+    else notify("No items to place", "Info") end
 end)
 
-------------------------------------------------------------------------
---// MUSEUM / PEDESTAL
-------------------------------------------------------------------------
-MuseumGroup:AddButton("Place Item on Pedestal", function()
-    pcall(function() fireRemote("PedestalNetwork", "placeItem") end)
-    notify("Item placed!", "Success")
-end)
-
-MuseumGroup:AddButton("Pickup Item from Pedestal", function()
-    pcall(function() fireRemote("PedestalNetwork", "pickupItem") end)
-    notify("Item picked up!", "Success")
+MuseumGroup:AddButton("Sell All Inventory", function()
+    local where = npcNamed("SellerNPC")
+    if where then hop(where + Vector3.new(0, 3, 4), 0.8) end
+    local ok, earned = invoke("SellNetwork", "SellFunctions", "sellInventory")
+    if ok and tonumber(earned) then notify("Sold for " .. math.floor(tonumber(earned)), "Success")
+    else notify("Sell failed", "Error") end
 end)
 
 MuseumGroup:AddButton("Buy Pedestal", function()
-    pcall(function() fireRemote("PedestalNetwork", "buyPedestal") end)
-    notify("Pedestal purchase attempted!", "Success")
+    doBuyPedestal()
+    notify("Pedestal purchase attempted", "Success")
 end)
 
-MuseumGroup:AddButton("Unlock Plot Section", function()
-    pcall(function() fireRemote("PlotSectionNetwork", "unlockSection") end)
-    notify("Section unlock attempted!", "Success")
+MuseumGroup:AddButton("Unlock Section", function()
+    doUnlockSection()
+    notify("Section unlock attempted", "Success")
 end)
 
-------------------------------------------------------------------------
---// POLISHER
-------------------------------------------------------------------------
 PolishGroup:AddButton("Start Polish", function()
-    pcall(function() fireRemote("PolisherNetwork", "startPolish") end)
+    invoke("PolisherNetwork", "PolisherFunctions", "startPolish", 1)
     notify("Polish started!", "Success")
 end)
-
 PolishGroup:AddButton("Collect Polish", function()
-    pcall(function() fireRemote("PolisherNetwork", "collectPolish") end)
+    invoke("PolisherNetwork", "PolisherFunctions", "collectPolish", 1)
     notify("Polish collected!", "Success")
 end)
-
-PolishGroup:AddButton("Unlock Polisher", function()
-    pcall(function() fireRemote("PolisherNetwork", "unlockPolisher") end)
-    notify("Polisher unlock attempted!", "Success")
-end)
-
 PolishGroup:AddButton("Upgrade Polisher", function()
-    pcall(function() fireRemote("PolisherNetwork", "upgradePolisher") end)
-    notify("Polisher upgrade attempted!", "Success")
+    invoke("PolisherNetwork", "PolisherFunctions", "upgradePolisher", 1)
+    notify("Polisher upgrade attempted", "Success")
 end)
 
 ------------------------------------------------------------------------
---// SELL BUTTONS
+--// FARM > ISLANDS
 ------------------------------------------------------------------------
-SellGroup:AddButton("Sell Held Item", function()
-    pcall(function() fireRemote("SellNetwork", "sellHeldItem") end)
-    notify("Held item sold!", "Success")
+local IslandSubTab = FarmTab:AddSubTab("Islands", "map")
+local TravelGroup = IslandSubTab:AddLeftGroupbox("Travel", "box-icon")
+local IslandInfo = IslandSubTab:AddRightGroupbox("Island Info", "box-icon")
+
+TravelGroup:AddDropdown("TargetIsland", {
+    Text = "Target Island",
+    Values = {"starterIsland", "island2", "island3", "island4", "island5"},
+    Default = "starterIsland", Multi = false,
+    Callback = function(v) _G.IvoryTargetIsland = v end })
+
+TravelGroup:AddButton("Travel", function()
+    local target = _G.IvoryTargetIsland or "starterIsland"
+    local ok, res = invoke("TravelNetwork", "TravelFunctions", "travel", target)
+    notify("Travel " .. target .. ": " .. tostring(res), ok and "Success" or "Error")
 end)
 
-SellGroup:AddButton("Sell All Inventory", function()
-    pcall(function() fireRemote("SellNetwork", "sellInventory") end)
-    notify("Inventory sold!", "Success")
+TravelGroup:AddButton("Unlock Next Island", function()
+    local d = data()
+    if not d then return end
+    local unlocked = {}
+    for _, id in ipairs(d.UnlockedIslands or {}) do unlocked[id] = true end
+    for _, id in ipairs(CfgIslands.ISLAND_ORDER or {}) do
+        local entry = (CfgIslands.Islands or {})[id]
+        if entry and not unlocked[id] then
+            local ok, res = invoke("TravelNetwork", "TravelFunctions", "travel", id)
+            notify("Unlock " .. id .. ": " .. tostring(res), ok and "Success" or "Error")
+            return
+        end
+    end
+    notify("All islands unlocked!", "Success")
 end)
 
-CollectGroup:AddButton("Request Offline Earnings", function()
-    pcall(function() fireRemote("OfflineEarningsNetwork", "requestOfflineEarnings") end)
-    notify("Offline earnings requested!", "Success")
-end)
-
-CollectGroup:AddButton("Claim Group Reward", function()
-    pcall(function() fireRemote("FreeLuckNetwork", "claimGroupReward") end)
-    notify("Group reward claimed!", "Success")
-end)
-
-CollectGroup:AddButton("Claim Free Pack", function()
-    pcall(function() fireRemote("ForeverPackNetwork", "claimFree") end)
-    notify("Free pack claimed!", "Success")
-end)
-
-CollectGroup:AddButton("Claim Daily Luck", function()
-    pcall(function() fireRemote("FreeLuckNetwork", "RequestAdReward") end)
-    notify("Ad reward requested!", "Success")
-end)
+IslandInfo:AddLabel("starterIsland | Free | 1x Luck")
+IslandInfo:AddLabel("island2 | $1.1M | 2x Luck")
+IslandInfo:AddLabel("island3 | $32M | 4x Luck")
+IslandInfo:AddLabel("island4 | $500M | 8x Luck")
+IslandInfo:AddLabel("island5 | $20B | 16x Luck")
 
 ------------------------------------------------------------------------
 --// SHOP > SHOVELS
 ------------------------------------------------------------------------
-for i, name in ipairs(ShovelOrder) do
-    local data = Shovels[name]
-    if data then
-        ShovelGroup:AddLabel(name .. " | Power: " .. tostring(data.power) .. " | $" .. tostring(data.cash))
+local ShovelsSubTab = ShopTab:AddSubTab("Shovels", "pickaxe")
+local ShovelGroup = ShovelsSubTab:AddLeftGroupbox("Buy & Equip", "box-icon")
+
+ShovelGroup:AddButton("Buy Best Shovel", function()
+    local where = npcNamed("GearNPC")
+    if where then hop(where + Vector3.new(0, 3, 4), 0.8) end
+    local d = data()
+    if not d then return end
+    local list = CfgShovels.Shovels or {}
+    local order = CfgShovels.SHOVEL_TIER_ORDER or {}
+    local ownedSet = {}
+    for _, id in ipairs(d.OwnedShovels or {}) do ownedSet[id] = true end
+    local islandSet = {}
+    for _, id in ipairs(d.UnlockedIslands or {}) do islandSet[id] = true end
+    for _, id in ipairs(order) do
+        local entry = list[id]
+        if entry and not ownedSet[id] then
+            local cost = tonumber(entry.cost) or math.huge
+            if cost <= (d.Gold or 0) and islandSet[entry.islandId] then
+                invoke("ShopNetwork", "ShopFunctions", "buyGear", "shovel", id)
+                invoke("ShopNetwork", "ShopFunctions", "equipGear", "shovel", id)
+                notify("Bought " .. id, "Success")
+                return
+            end
+        end
     end
-end
-
-ShovelGroup:AddDropdown("TargetShovel", {
-    Text = "Target Shovel",
-    Values = ShovelOrder,
-    Default = ShovelOrder[1], Multi = false,
-    Callback = function(v) _G.IvoryTargetShovel = v end,
-})
-
-ShovelGroup:AddButton("Buy Target Shovel", function()
-    local target = _G.IvoryTargetShovel or ShovelOrder[1]
-    pcall(function() fireRemote("ShopNetwork", "buyGear", "shovel", target) end)
-    notify("Attempted to buy " .. target, "Success")
+    notify("No affordable shovel found", "Info")
 end)
 
-ShovelGroup:AddButton("Equip Target Shovel", function()
-    local target = _G.IvoryTargetShovel or ShovelOrder[1]
-    pcall(function() fireRemote("ShopNetwork", "equipGear", "shovel", target) end)
-    notify("Equipped " .. target, "Success")
+ShovelGroup:AddButton("Equip Best Shovel", function()
+    local d = data()
+    if not d then return end
+    local list = CfgShovels.Shovels or {}
+    local order = CfgShovels.SHOVEL_TIER_ORDER or {}
+    local best, bestRank = nil, -1
+    for index, id in ipairs(order) do
+        local entry = list[id]
+        if entry then
+            local rank = tonumber(entry.power) or index
+            local owned = false
+            for _, oid in ipairs(d.OwnedShovels or {}) do if oid == id then owned = true end end
+            if owned and rank > bestRank then best, bestRank = id, rank end
+        end
+    end
+    if best then
+        invoke("ShopNetwork", "ShopFunctions", "equipGear", "shovel", best)
+        notify("Equipped " .. best, "Success")
+    end
 end)
-
-ShovelGroup:AddToggle("AutoBuyShovel", { Text = "Auto Buy Next Shovel", Default = false,
-    Callback = function(s) _G.IvoryAutoBuyShovel = s end,
-})
 
 ------------------------------------------------------------------------
 --// SHOP > DETECTORS
 ------------------------------------------------------------------------
-for i, name in ipairs(DetectorOrder) do
-    local data = Detectors[name]
-    if data then
-        DetectorGroup:AddLabel(name .. " | Luck: " .. tostring(data.luck) .. " | $" .. tostring(data.cash))
+local DetectorsSubTab = ShopTab:AddSubTab("Detectors", "radio")
+local DetectorGroup = DetectorsSubTab:AddLeftGroupbox("Buy & Equip", "box-icon")
+
+DetectorGroup:AddButton("Buy Best Detector", function()
+    local where = npcNamed("GearNPC")
+    if where then hop(where + Vector3.new(0, 3, 4), 0.8) end
+    local d = data()
+    if not d then return end
+    local list = CfgDetectors.Detectors or {}
+    local order = CfgDetectors.DETECTOR_TIER_ORDER or {}
+    local ownedSet = {}
+    for _, id in ipairs(d.OwnedDetectors or {}) do ownedSet[id] = true end
+    local islandSet = {}
+    for _, id in ipairs(d.UnlockedIslands or {}) do islandSet[id] = true end
+    for _, id in ipairs(order) do
+        local entry = list[id]
+        if entry and not ownedSet[id] then
+            local cost = tonumber(entry.cost) or math.huge
+            if cost <= (d.Gold or 0) and islandSet[entry.islandId] then
+                invoke("ShopNetwork", "ShopFunctions", "buyGear", "detector", id)
+                invoke("ShopNetwork", "ShopFunctions", "equipGear", "detector", id)
+                notify("Bought " .. id, "Success")
+                return
+            end
+        end
     end
-end
-
-DetectorGroup:AddDropdown("TargetDetector", {
-    Text = "Target Detector",
-    Values = DetectorOrder,
-    Default = DetectorOrder[1], Multi = false,
-    Callback = function(v) _G.IvoryTargetDetector = v end,
-})
-
-DetectorGroup:AddButton("Buy Target Detector", function()
-    local target = _G.IvoryTargetDetector or DetectorOrder[1]
-    pcall(function() fireRemote("ShopNetwork", "buyGear", "detector", target) end)
-    notify("Attempted to buy " .. target, "Success")
+    notify("No affordable detector found", "Info")
 end)
 
-DetectorGroup:AddButton("Equip Target Detector", function()
-    local target = _G.IvoryTargetDetector or DetectorOrder[1]
-    pcall(function() fireRemote("ShopNetwork", "equipGear", "detector", target) end)
-    notify("Equipped " .. target, "Success")
+DetectorGroup:AddButton("Equip Best Detector", function()
+    local d = data()
+    if not d then return end
+    local list = CfgDetectors.Detectors or {}
+    local order = CfgDetectors.DETECTOR_TIER_ORDER or {}
+    local best, bestRank = nil, -1
+    for index, id in ipairs(order) do
+        local entry = list[id]
+        if entry then
+            local rank = tonumber(entry.range) or index
+            local owned = false
+            for _, oid in ipairs(d.OwnedDetectors or {}) do if oid == id then owned = true end end
+            if owned and rank > bestRank then best, bestRank = id, rank end
+        end
+    end
+    if best then
+        invoke("ShopNetwork", "ShopFunctions", "equipGear", "detector", best)
+        notify("Equipped " .. best, "Success")
+    end
 end)
-
-DetectorGroup:AddToggle("AutoBuyDetector", { Text = "Auto Buy Next Detector", Default = false,
-    Callback = function(s) _G.IvoryAutoBuyDetector = s end,
-})
 
 ------------------------------------------------------------------------
 --// SHOP > SPRAYS
 ------------------------------------------------------------------------
-for i, name in ipairs(SprayOrder) do
-    local data = SprayBottles[name]
-    if data then
-        SprayGroup:AddLabel(name .. " | Range: " .. tostring(data.range) .. " | $" .. tostring(data.cash))
+local SpraysSubTab = ShopTab:AddSubTab("Sprays", "droplet")
+local SprayGroup = SpraysSubTab:AddLeftGroupbox("Buy & Equip", "box-icon")
+
+SprayGroup:AddButton("Buy Best Spray", function()
+    local where = npcNamed("GearNPC")
+    if where then hop(where + Vector3.new(0, 3, 4), 0.8) end
+    local d = data()
+    if not d then return end
+    local list = CfgSprays.SprayBottles or {}
+    local order = CfgSprays.SPRAY_TIER_ORDER or {}
+    local ownedSet = {}
+    for _, id in ipairs(d.OwnedSprays or {}) do ownedSet[id] = true end
+    local islandSet = {}
+    for _, id in ipairs(d.UnlockedIslands or {}) do islandSet[id] = true end
+    for _, id in ipairs(order) do
+        local entry = list[id]
+        if entry and not ownedSet[id] then
+            local cost = tonumber(entry.cost) or math.huge
+            if cost <= (d.Gold or 0) and islandSet[entry.islandId] then
+                invoke("ShopNetwork", "ShopFunctions", "buyGear", "spray", id)
+                invoke("ShopNetwork", "ShopFunctions", "equipGear", "spray", id)
+                notify("Bought " .. id, "Success")
+                return
+            end
+        end
     end
-end
-
-SprayGroup:AddDropdown("TargetSpray", {
-    Text = "Target Spray",
-    Values = SprayOrder,
-    Default = SprayOrder[1], Multi = false,
-    Callback = function(v) _G.IvoryTargetSpray = v end,
-})
-
-SprayGroup:AddButton("Buy Target Spray", function()
-    local target = _G.IvoryTargetSpray or SprayOrder[1]
-    pcall(function() fireRemote("ShopNetwork", "buyGear", "spray", target) end)
-    notify("Attempted to buy " .. target, "Success")
+    notify("No affordable spray found", "Info")
 end)
 
-SprayGroup:AddButton("Equip Target Spray", function()
-    local target = _G.IvoryTargetSpray or SprayOrder[1]
-    pcall(function() fireRemote("ShopNetwork", "equipGear", "spray", target) end)
-    notify("Equipped " .. target, "Success")
+SprayGroup:AddButton("Equip Best Spray", function()
+    local d = data()
+    if not d then return end
+    local list = CfgSprays.SprayBottles or {}
+    local order = CfgSprays.SPRAY_TIER_ORDER or {}
+    local best, bestRank = nil, -1
+    for index, id in ipairs(order) do
+        local entry = list[id]
+        if entry then
+            local rank = tonumber(entry.strength) or index
+            local owned = false
+            for _, oid in ipairs(d.OwnedSprays or {}) do if oid == id then owned = true end end
+            if owned and rank > bestRank then best, bestRank = id, rank end
+        end
+    end
+    if best then
+        invoke("ShopNetwork", "ShopFunctions", "equipGear", "spray", best)
+        notify("Equipped " .. best, "Success")
+    end
 end)
-
-SprayGroup:AddToggle("AutoBuySpray", { Text = "Auto Buy Next Spray", Default = false,
-    Callback = function(s) _G.IvoryAutoBuySpray = s end,
-})
 
 ------------------------------------------------------------------------
---// AUTO BUY LOOPS
+--// SHOP > REWARDS
 ------------------------------------------------------------------------
-task.spawn(function()
-    while true do
-        if _G.IvoryAutoBuyShovel then
-            pcall(function()
-                local target = _G.IvoryTargetShovel
-                if target then
-                    fireRemote("ShopNetwork", "buyGear", "shovel", target)
-                end
-            end)
-        end
-        task.wait(10)
+local RewardsSubTab = ShopTab:AddSubTab("Rewards", "gift")
+local RewardGroup = RewardsSubTab:AddLeftGroupbox("Rewards", "box-icon")
+
+RewardGroup:AddButton("Redeem All Codes", function()
+    local codes = {"UPDATE3", "UPDATE2", "SECRET10", "Update1"}
+    for _, code in ipairs(codes) do
+        pcall(function() invoke("CodeNetwork", "CodeFunctions", "redeemCode", code) end)
     end
+    notify("Attempted to redeem " .. #codes .. " codes!", "Success")
 end)
 
-task.spawn(function()
-    while true do
-        if _G.IvoryAutoBuyDetector then
-            pcall(function()
-                local target = _G.IvoryTargetDetector
-                if target then
-                    fireRemote("ShopNetwork", "buyGear", "detector", target)
-                end
-            end)
-        end
-        task.wait(10)
-    end
+RewardGroup:AddButton("Claim Offline Earnings", function()
+    invoke("OfflineEarningsNetwork", "OfflineEarningsFunctions", "claimOfflineEarnings")
+    notify("Offline earnings claimed!", "Success")
 end)
 
-task.spawn(function()
-    while true do
-        if _G.IvoryAutoBuySpray then
-            pcall(function()
-                local target = _G.IvoryTargetSpray
-                if target then
-                    fireRemote("ShopNetwork", "buyGear", "spray", target)
-                end
-            end)
-        end
-        task.wait(10)
-    end
+RewardGroup:AddButton("Claim Free Pack", function()
+    fire("ForeverPackNetwork", "ForeverPackEvents", "claimFree")
+    notify("Free pack claimed!", "Success")
+end)
+
+RewardGroup:AddButton("Claim Group Reward", function()
+    invoke("FreeLuckNetwork", "FreeLuckFunctions", "claimGroupReward")
+    notify("Group reward claimed!", "Success")
 end)
 
 ------------------------------------------------------------------------
@@ -934,165 +979,427 @@ end)
 task.spawn(function()
     local espObjects = {}
     local function createESP(player)
-        if player == LocalPlayer then return end
+        if player == plr then return end
         espObjects[player] = {
             Box = Drawing.new("Square"),
             Name = Drawing.new("Text"),
-            Health = Drawing.new("Text"),
             Distance = Drawing.new("Text"),
         }
         local e = espObjects[player]
         e.Box.Thickness = 1; e.Box.Filled = false; e.Box.Visible = false
         e.Name.Size = 14; e.Name.Center = true; e.Name.Outline = true; e.Name.Visible = false
-        e.Health.Size = 12; e.Health.Center = true; e.Health.Outline = true; e.Health.Visible = false
         e.Distance.Size = 12; e.Distance.Center = true; e.Distance.Outline = true; e.Distance.Visible = false
     end
-
     local function removeESP(player)
         if espObjects[player] then
             pcall(function() for _, v in pairs(espObjects[player]) do v:Remove() end end)
             espObjects[player] = nil
         end
     end
-
     for _, p in ipairs(Players:GetPlayers()) do createESP(p) end
     Players.PlayerAdded:Connect(createESP)
     Players.PlayerRemoving:Connect(removeESP)
-
     RunService.RenderStepped:Connect(function()
         local color = _G.IvoryESPColor or Color3.fromRGB(255, 0, 0)
         local cam = Workspace.CurrentCamera
         for player, esp in pairs(espObjects) do
             pcall(function()
-                local char = player.Character
-                if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") then
-                    local hrp, hum = char.HumanoidRootPart, char.Humanoid
+                local c = player.Character
+                if c and c:FindFirstChild("HumanoidRootPart") and c:FindFirstChild("Humanoid") then
+                    local hrp = c.HumanoidRootPart
                     local pos, onScreen = cam:WorldToViewportPoint(hrp.Position)
                     if onScreen then
-                        local localHRP = getHRP()
+                        local _, localHRP = char()
                         if localHRP and (hrp.Position - localHRP.Position).Magnitude > (_G.IvoryESPRange or 200) then
-                            esp.Box.Visible = false; esp.Name.Visible = false; esp.Health.Visible = false; esp.Distance.Visible = false
-                            return
+                            esp.Box.Visible = false; esp.Name.Visible = false; esp.Distance.Visible = false; return
                         end
                         local rootPos = cam:WorldToViewportPoint(hrp.Position)
                         local headPos = cam:WorldToViewportPoint(hrp.Position + Vector3.new(0, 2.5, 0))
                         local height = math.abs(rootPos.Y - headPos.Y) * 2
                         local width = height / 2
-
-                        if _G.IvoryBoxESP then
+                        if _G.IvoryPlayerESP then
                             esp.Box.Size = Vector2.new(width, height)
                             esp.Box.Position = Vector2.new(rootPos.X - width/2, rootPos.Y - height/2)
                             esp.Box.Visible = true; esp.Box.Color = color
-                        else esp.Box.Visible = false end
-
-                        if _G.IvoryNameESP then
                             esp.Name.Text = player.DisplayName
                             esp.Name.Position = Vector2.new(pos.X, pos.Y - 20)
                             esp.Name.Visible = true; esp.Name.Color = color
-                        else esp.Name.Visible = false end
-
-                        if _G.IvoryHealthESP then
-                            local hp, maxHp = math.floor(hum.Health), math.floor(hum.MaxHealth)
-                            esp.Health.Text = hp.."/"..maxHp
-                            esp.Health.Position = Vector2.new(pos.X, pos.Y + height/2 + 5)
-                            esp.Health.Visible = true
-                            esp.Health.Color = Color3.fromRGB(255*(1-hp/maxHp), 255*(hp/maxHp), 0)
-                        else esp.Health.Visible = false end
-
-                        if _G.IvoryDistanceESP and localHRP then
-                            esp.Distance.Text = math.floor((hrp.Position - localHRP.Position).Magnitude).."m"
-                            esp.Distance.Position = Vector2.new(pos.X, pos.Y + height/2 + 20)
-                            esp.Distance.Visible = true; esp.Distance.Color = color
-                        else esp.Distance.Visible = false end
-                    else
-                        esp.Box.Visible = false; esp.Name.Visible = false; esp.Health.Visible = false; esp.Distance.Visible = false
-                    end
-                else
-                    esp.Box.Visible = false; esp.Name.Visible = false; esp.Health.Visible = false; esp.Distance.Visible = false
-                end
+                            if localHRP then
+                                esp.Distance.Text = math.floor((hrp.Position - localHRP.Position).Magnitude) .. "m"
+                                esp.Distance.Position = Vector2.new(pos.X, pos.Y + height/2 + 5)
+                                esp.Distance.Visible = true; esp.Distance.Color = color
+                            end
+                        else esp.Box.Visible = false; esp.Name.Visible = false; esp.Distance.Visible = false end
+                    else esp.Box.Visible = false; esp.Name.Visible = false; esp.Distance.Visible = false end
+                else esp.Box.Visible = false; esp.Name.Visible = false; esp.Distance.Visible = false end
             end)
         end
     end)
 end)
 
 ------------------------------------------------------------------------
---// DIG SPOT ESP (Buried Nodes)
+--// CORE ACTIONS
 ------------------------------------------------------------------------
-task.spawn(function()
-    local digSpotObjects = {}
-    while true do
-        pcall(function()
-            for _, obj in ipairs(digSpotObjects) do pcall(function() obj:Remove() end) end
-            digSpotObjects = {}
-            if _G.IvoryDigSpotESP then
-                local cam = Workspace.CurrentCamera
-                local localHRP = getHRP()
-                local range = _G.IvoryESPRange or 200
-                local islands = Workspace:FindFirstChild("Islands")
-                if islands and localHRP then
-                    for _, island in ipairs(islands:GetDescendants()) do
-                        if island.Name == "BuriedNode" or island.Name == "DigSpot" then
-                            local pos3d = island:IsA("BasePart") and island.Position or (island:IsA("Model") and island.PrimaryPart and island.PrimaryPart.Position)
-                            if pos3d and (pos3d - localHRP.Position).Magnitude <= range then
-                                local pos, onScreen = cam:WorldToViewportPoint(pos3d)
-                                if onScreen then
-                                    local txt = Drawing.new("Text")
-                                    txt.Size = 14; txt.Center = true; txt.Outline = true
-                                    txt.Color = Color3.fromRGB(255, 255, 0)
-                                    txt.Text = "DIG"
-                                    txt.Position = Vector2.new(pos.X, pos.Y - 20)
-                                    txt.Visible = true
-                                    table.insert(digSpotObjects, txt)
-                                end
-                            end
-                        end
-                    end
-                end
+local function doClean()
+    local cleaned = 0
+    for _, tool in ipairs(backpackTools()) do
+        if tool:GetAttribute("dirty") then
+            local uid = tool:GetAttribute("inventoryId")
+            if uid then
+                ST.phase = "clean"
+                local ok = invoke("ItemsNetwork", "ItemsFunctions", "beginCleaning", uid)
+                if ok then task.wait(0.35); fire("ItemsNetwork", "ItemsEvents", "finishCleaning", uid)
+                    cleaned = cleaned + 1; task.wait(0.5) end
             end
+        end
+    end
+    if cleaned > 0 then ST.note = "cleaned " .. cleaned end
+    return cleaned > 0
+end
+
+local function doSell()
+    local where = npcNamed("SellerNPC")
+    if not where then ST.note = "no seller npc" return false end
+    ST.phase = "sell"
+    hop(where + Vector3.new(0, 3, 4), 0.8)
+    local ok, earned = invoke("SellNetwork", "SellFunctions", "sellInventory")
+    if ok and tonumber(earned) then
+        ST.sold = ST.sold + tonumber(earned)
+        ST.note = "sold for " .. tostring(math.floor(tonumber(earned)))
+        return true
+    end
+    return false
+end
+
+local function doDig()
+    local ctrl = digController()
+    if not ctrl then ST.note = "no dig controller" return false end
+
+    local zone, _ = nearestTagged("DigZone", islandFolder())
+    if zone then
+        local _, hrp = char()
+        local inside = false
+        if zone:IsA("BasePart") and hrp then
+            local local_ = zone.CFrame:PointToObjectSpace(hrp.Position)
+            inside = math.abs(local_.X) <= zone.Size.X / 2 and math.abs(local_.Z) <= zone.Size.Z / 2
+        end
+        if not inside then
+            ST.phase = "walk to dig area"
+            local ok, pivot = pcall(function() return zone:GetPivot() end)
+            if ok then hop(pivot.Position + Vector3.new(0, 5, 0)) end
+            task.wait(0.6)
+        end
+    end
+
+    fire("DetectorNetwork", "DetectorEvents", "SetDetectorHeld", true)
+
+    local _, hrp = char()
+    if not hrp then return false end
+    local best, bestDist
+    for _, n in ipairs(nodeList()) do
+        if typeof(n.position) == "Vector3" then
+            local dist = (n.position - hrp.Position).Magnitude
+            if not bestDist or dist < bestDist then best, bestDist = n, dist end
+        end
+    end
+    if not best then
+        fire("DetectorNetwork", "DetectorEvents", "SetDetectorHeld", false)
+        task.wait(0.3)
+        fire("DetectorNetwork", "DetectorEvents", "SetDetectorHeld", true)
+        task.wait(1.5)
+        for _, n in ipairs(nodeList()) do
+            if typeof(n.position) == "Vector3" then
+                local dist = (n.position - hrp.Position).Magnitude
+                if not bestDist or dist < bestDist then best, bestDist = n, dist end
+            end
+        end
+    end
+    if not best then ST.note = "no buried nodes" return false end
+
+    ST.phase = "dig " .. tostring(best.rarity)
+    hop(best.position + Vector3.new(0, 3, 0), 0.8)
+    task.wait(0.7)
+
+    local finished, started
+    if _G.__DC_ENDCONN then pcall(function() _G.__DC_ENDCONN:Disconnect() end) end
+    if _G.__DC_STARTCONN then pcall(function() _G.__DC_STARTCONN:Disconnect() end) end
+    local okConn, conn = pcall(function()
+        return net("ShovelNetwork").ShovelEvents.DigSceneEnd:connect(function(userId, success)
+            if userId == plr.UserId then finished = success end
         end)
+    end)
+    if okConn then _G.__DC_ENDCONN = conn end
+    local okStart, startConn = pcall(function()
+        return net("ShovelNetwork").ShovelEvents.DigSceneStart:connect(function(userId)
+            if userId == plr.UserId then started = true end
+        end)
+    end)
+    if okStart then _G.__DC_STARTCONN = startConn end
+
+    fire("ShovelNetwork", "ShovelEvents", "SetShovelEquipped", true)
+    pcall(function() ctrl:attemptDig() end)
+    task.wait(0.4)
+
+    local interval = 1 / math.clamp(CFG.clicksPerSec, 1, 40)
+    local startDeadline = os.clock() + 1.6
+    while not started and finished == nil and os.clock() < startDeadline do
+        pcall(function() ctrl:onDigInput() end)
+        task.wait(interval)
+    end
+    if not started and finished == nil then
+        if okConn then pcall(function() conn:Disconnect() end) end
+        if okStart then pcall(function() startConn:Disconnect() end) end
+        forgetNode(best.id)
+        ST.note = "stale node"; return false
+    end
+
+    local deadline = os.clock() + math.clamp(CFG.digSeconds * 2.5 + 3, 6, CfgDig.DIG_SESSION_TIMEOUT or 45)
+    local bestProgress, bestAt = 0, os.clock()
+    local firstProgress, firstAt, lastProgress, lastAt
+
+    local progConn
+    if _G.__DC_PROGCONN then pcall(function() _G.__DC_PROGCONN:Disconnect() end) end
+    local progress = 0
+    local okProg, pc = pcall(function()
+        return net("ShovelNetwork").ShovelEvents.DigSceneProgress:connect(function(userId, value)
+            if userId == plr.UserId then progress = value or 0 end
+        end)
+    end)
+    if okProg then progConn = pc _G.__DC_PROGCONN = pc end
+
+    while finished == nil and os.clock() < deadline and CFG.auto do
+        pcall(function() ctrl:onDigInput() end)
+        task.wait(interval)
+        if progress > 0 and progress ~= lastProgress then
+            if not firstAt then firstProgress, firstAt = progress, os.clock() end
+            lastProgress, lastAt = progress, os.clock()
+        end
+        if progress > bestProgress + 0.01 then bestProgress, bestAt = progress, os.clock()
+        elseif os.clock() - bestAt > CFG.giveUpAfter then break end
+    end
+
+    if okConn then pcall(function() conn:Disconnect() end) end
+    if okStart then pcall(function() startConn:Disconnect() end) end
+    if progConn then pcall(function() pc:Disconnect() end) end
+
+    forgetNode(best.id)
+
+    if finished then
+        ST.digs = ST.digs + 1
+        ST.note = "dug " .. tostring(best.rarity)
+        return true
+    end
+    ST.note = "dig lost/timed out (" .. tostring(best.rarity) .. ")"
+    return false
+end
+
+local function doTravel()
+    local d = data()
+    if not d then return false end
+    local unlocked = {}
+    for _, id in ipairs(d.UnlockedIslands or {}) do unlocked[id] = true end
+    local nextLocked, nextCost
+    for _, id in ipairs(CfgIslands.ISLAND_ORDER or {}) do
+        local entry = (CfgIslands.Islands or {})[id]
+        if entry and not unlocked[id] then
+            nextLocked, nextCost = id, tonumber(entry.cost) or math.huge
+            break
+        end
+    end
+    if nextLocked and nextCost and (d.Gold or 0) >= nextCost then
+        local ok, res = invoke("TravelNetwork", "TravelFunctions", "travel", nextLocked)
+        if ok and res ~= "poor" then ST.note = "unlocked " .. nextLocked; return true end
+    end
+    return false
+end
+
+local function claimFree()
+    invoke("OfflineEarningsNetwork", "OfflineEarningsFunctions", "claimOfflineEarnings")
+    fire("ForeverPackNetwork", "ForeverPackEvents", "claimFree")
+end
+
+local function doBuyGear()
+    local d = data()
+    if not d then return false end
+
+    local gearNPC = npcNamed("GearNPC")
+    if not gearNPC then return false end
+    local bought = false
+
+    local shovelList = CfgShovels.Shovels or {}
+    local shovelOrder = CfgShovels.SHOVEL_TIER_ORDER or {}
+    local ownedShovels = {}
+    for _, id in ipairs(d.OwnedShovels or {}) do ownedShovels[id] = true end
+    local islandSet = {}
+    for _, id in ipairs(d.UnlockedIslands or {}) do islandSet[id] = true end
+    for _, id in ipairs(shovelOrder) do
+        local entry = shovelList[id]
+        if entry and not ownedShovels[id] then
+            local cost = tonumber(entry.cost) or math.huge
+            if cost <= (d.Gold or 0) and islandSet[entry.islandId] then
+                hop(gearNPC + Vector3.new(0, 3, 4), 0.6)
+                invoke("ShopNetwork", "ShopFunctions", "buyGear", "shovel", id)
+                invoke("ShopNetwork", "ShopFunctions", "equipGear", "shovel", id)
+                ST.note = "bought " .. id
+                bought = true
+                break
+            end
+        end
+    end
+
+    local detectorList = CfgDetectors.Detectors or {}
+    local detectorOrder = CfgDetectors.DETECTOR_TIER_ORDER or {}
+    local ownedDetectors = {}
+    for _, id in ipairs(d.OwnedDetectors or {}) do ownedDetectors[id] = true end
+    for _, id in ipairs(detectorOrder) do
+        local entry = detectorList[id]
+        if entry and not ownedDetectors[id] then
+            local cost = tonumber(entry.cost) or math.huge
+            if cost <= (d.Gold or 0) and islandSet[entry.islandId] then
+                hop(gearNPC + Vector3.new(0, 3, 4), 0.6)
+                invoke("ShopNetwork", "ShopFunctions", "buyGear", "detector", id)
+                invoke("ShopNetwork", "ShopFunctions", "equipGear", "detector", id)
+                ST.note = "bought " .. id
+                bought = true
+                break
+            end
+        end
+    end
+
+    local sprayList = CfgSprays.SprayBottles or {}
+    local sprayOrder = CfgSprays.SPRAY_TIER_ORDER or {}
+    local ownedSprays = {}
+    for _, id in ipairs(d.OwnedSprays or {}) do ownedSprays[id] = true end
+    for _, id in ipairs(sprayOrder) do
+        local entry = sprayList[id]
+        if entry and not ownedSprays[id] then
+            local cost = tonumber(entry.cost) or math.huge
+            if cost <= (d.Gold or 0) and islandSet[entry.islandId] then
+                hop(gearNPC + Vector3.new(0, 3, 4), 0.6)
+                invoke("ShopNetwork", "ShopFunctions", "buyGear", "spray", id)
+                invoke("ShopNetwork", "ShopFunctions", "equipGear", "spray", id)
+                ST.note = "bought " .. id
+                bought = true
+                break
+            end
+        end
+    end
+
+    return bought
+end
+
+local function doBuyPedestal()
+    invoke("PedestalNetwork", "PedestalFunctions", "buyPedestal")
+end
+
+local function doUnlockSection()
+    invoke("PlotSectionNetwork", "PlotSectionFunctions", "unlockSection")
+end
+
+------------------------------------------------------------------------
+--// MAIN LOOP
+------------------------------------------------------------------------
+_G.__IVORY_GEN = (_G.__IVORY_GEN or 0) + 1
+local GEN = _G.__IVORY_GEN
+
+armNodeListener()
+
+task.spawn(function()
+    while GEN == _G.__IVORY_GEN do
+        if CFG.auto then
+            local ok, err = pcall(function()
+                if ST.tutorial >= 0 and ST.tutorial < 11 then
+                    ST.phase = "tutorial " .. ST.tutorial
+                    ST.note = "finish tutorial first"
+                    task.wait(3); return
+                end
+                closeModals()
+                if CFG.clean then doClean() end
+                if CFG.sell and backpackFullness() >= CFG.sellAt then doSell(); closeModals() end
+                if CFG.autoMuseum then doPlaceBest() end
+                if CFG.autoPedestal then doBuyPedestal() end
+                if CFG.autoSection then doUnlockSection() end
+                if CFG.islands then doTravel() end
+                if CFG.buyGear and doBuyGear() then task.wait(1); closeModals() end
+                if CFG.dig then doDig() end
+            end)
+            if not ok then ST.note = tostring(err) end
+        end
         task.wait(0.5)
     end
 end)
 
-------------------------------------------------------------------------
---// SPEED & JUMP HEARTBEAT
-------------------------------------------------------------------------
-RunService.Heartbeat:Connect(function()
-    pcall(function()
-        local hum = getHumanoid()
-        if hum then
-            if _G.IvorySpeedHack and _G.IvorySpeedValue then
-                hum.WalkSpeed = _G.IvorySpeedValue
-            end
-            if _G.IvoryJumpHack and _G.IvoryJumpValue then
-                hum.JumpPower = _G.IvoryJumpValue
+task.spawn(function()
+    while GEN == _G.__IVORY_GEN do
+        if CFG.auto then
+            local d = data()
+            if d then
+                ST.gold = d.Gold or 0; ST.level = d.Level or 0
+                ST.dug = d.ItemsDug or 0; ST.cleaned = d.ItemsCleaned or 0
+                ST.tutorial = tutorialStep()
+                ST.gear = tostring(d.EquippedShovel) .. " / " .. tostring(d.EquippedSpray) .. " / " .. tostring(d.EquippedDetector)
+                local now = os.clock()
+                if ST.lastGoldAt > 0 and now > ST.lastGoldAt then
+                    local rate = (ST.gold - ST.lastGold) / (now - ST.lastGoldAt)
+                    if rate >= 0 then ST.goldRate = rate end
+                end
+                ST.lastGold, ST.lastGoldAt = ST.gold, now
+                ST.island = tostring(d.CurrentIsland)
+                local order = CfgItems.RARITY_ORDER or {}
+                local idx = 1
+                for i, rarity in ipairs(order) do
+                    local stats = rarityStats(ST.power)
+                    local s = stats[rarity]
+                    if s and s.clickPower > 0 then
+                        local rate = s.clickPower * ST.cps - s.decay
+                        if rate > 0 and DIG_SPAN / rate <= CFG.digSeconds then idx = i end
+                    end
+                end
+                ST.cap = tostring(order[idx] or "?")
+                ST.nodes = #nodeList()
             end
         end
-    end)
+        task.wait(6)
+    end
 end)
 
-------------------------------------------------------------------------
---// NOCLIP
-------------------------------------------------------------------------
-RunService.Stepped:Connect(function()
-    if _G.IvoryNoClip then
-        pcall(function()
-            local char = LocalPlayer.Character
-            if char then
-                for _, p in ipairs(char:GetDescendants()) do
-                    if p:IsA("BasePart") then p.CanCollide = false end
-                end
-            end
-        end)
+task.spawn(function()
+    while GEN == _G.__IVORY_GEN do
+        if CFG.claimFree then pcall(claimFree) end
+        task.wait(120)
+    end
+end)
+
+task.spawn(function()
+    while GEN == _G.__IVORY_GEN do
+        pcall(function() StatusLabel:SetText(
+            ST.note .. "\nGold: " .. short(ST.gold) .. " (" .. short(ST.goldRate) .. "/s)" ..
+            "\nLevel: " .. ST.level .. " | Dug: " .. ST.dug ..
+            "\nGear: " .. ST.gear .. "\nIsland: " .. ST.island ..
+            "\nCap: " .. ST.cap .. " | Nodes: " .. ST.nodes ..
+            "\nBackpack: " .. math.floor(backpackFullness() * 100) .. "%"
+        ) end)
+        task.wait(1)
     end
 end)
 
 ------------------------------------------------------------------------
---// ANTI AFK
+--// MOVEMENT
 ------------------------------------------------------------------------
+RunService.Heartbeat:Connect(function()
+    pcall(function()
+        local _, _, hum = char()
+        if hum then
+            if _G.IvorySpeedHack and _G.IvorySpeedValue then hum.WalkSpeed = _G.IvorySpeedValue end
+            if _G.IvoryJumpHack and _G.IvoryJumpValue then hum.JumpPower = _G.IvoryJumpValue end
+        end
+    end)
+end)
+
 task.spawn(function()
-    LocalPlayer.Idled:Connect(function()
-        if _G.IvoryAntiAFK then
+    plr.Idled:Connect(function()
+        if CFG.auto then
+            local VirtualUser = game:GetService("VirtualUser")
             VirtualUser:Button2Down(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
             VirtualUser:Button2Up(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
         end
@@ -1100,69 +1407,22 @@ task.spawn(function()
 end)
 
 ------------------------------------------------------------------------
---// AUTO SAVE
+--// SETTINGS
 ------------------------------------------------------------------------
-task.spawn(function()
-    while true do
-        if _G.IvoryAutoSave then
-            pcall(function() SaveManager:SaveConfig() end)
-        end
-        task.wait(30)
-    end
-end)
-
-------------------------------------------------------------------------
---// SETTINGS TAB
-------------------------------------------------------------------------
-local CreditGroup = SettingsTab:AddLeftGroupbox("Credits", "heart")
-local CreditLabel = CreditGroup:AddLabel({ Text = "", Size = 26, DoesWrap = true })
-local CreditTL = CreditLabel.TextLabel
-CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-CreditTL.Font = Enum.Font.GothamBold
-CreditTL.TextSize = 26
-
-task.spawn(function()
-	local full = "Made by mommy Crow"
-	local cursor = "_"
-	while true do
-		local shown = ""
-		for i = 1, #full do
-			shown = shown .. full:sub(i, i)
-			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-			task.wait(math.random(4, 9) / 100)
-		end
-		task.wait(2)
-		for i = #full, 1, -1 do
-			shown = full:sub(1, i - 1)
-			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-			task.wait(math.random(2, 5) / 100)
-		end
-		task.wait(0.8)
-	end
-end)
-
 ThemeManager:ApplyToTab(SettingsTab)
 SaveManager:BuildConfigSection(SettingsTab)
 
+local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "box-icon")
 MenuGroup:AddToggle("MenuToggle", { Text = "Toggle Menu", Default = true }):AddKeyPicker("MenuKeybind", {
-    Default = "RightShift", Text = "Menu Keybind", Mode = "Toggle", SyncToggleState = false, NoUI = false,
-})
+    Default = "RightShift", Text = "Menu Keybind", Mode = "Toggle", SyncToggleState = false, NoUI = false })
 MenuGroup:AddToggle("CustomCursor", { Text = "Custom Cursor", Default = false,
-    Callback = function(s) Library.ShowCustomCursor = s end,
-})
+    Callback = function(s) Library.ShowCustomCursor = s end })
 MenuGroup:AddButton("Test Notification", function()
-    Library:Notify({ Title = "Ivory", Description = "Test Notification!", Type = "Success", Time = 5 })
-end)
-MenuGroup:AddDropdown("NotifySide", {
-    Text = "Notification Side", Values = {"Left", "Right"}, Default = "Right", Multi = false,
-    Callback = function(v) Library.NotifySide = v end,
-})
-MenuGroup:AddSlider("CornerRadius", {
-    Text = "Corner Radius", Default = 4, Min = 0, Max = 20, Rounding = 0,
-    Callback = function(v) Library.CornerRadius = v end,
-})
+    Library:Notify({ Title = "Ivory", Description = "Test Notification!", Type = "Success", Time = 5 }) end)
+MenuGroup:AddDropdown("NotifySide", { Text = "Notification Side", Values = {"Left", "Right"}, Default = "Right", Multi = false,
+    Callback = function(v) Library.NotifySide = v end })
+MenuGroup:AddSlider("CornerRadius", { Text = "Corner Radius", Default = 4, Min = 0, Max = 20, Rounding = 0,
+    Callback = function(v) Library.CornerRadius = v end })
 MenuGroup:AddButton("Unload Script", function()
     Library:Notify({ Title = "Ivory", Description = "Unloading...", Type = "Info", Time = 2 })
     task.wait(0.5)
@@ -1171,5 +1431,13 @@ MenuGroup:AddButton("Unload Script", function()
 end)
 
 ------------------------------------------------------------------------
-Library:Notify({ Title = "Ivory", Description = "Ivory Hub Loaded! PlaceId: " .. tostring(PlaceId), Type = "Success", Time = 5 })
+task.spawn(function()
+    while _G.__IVORY_GEN == GEN do
+        if _G.IvoryAutoSave then pcall(function() SaveManager:SaveConfig() end) end
+        task.wait(30)
+    end
+end)
+
+------------------------------------------------------------------------
+Library:Notify({ Title = "Ivory", Description = "Dig & Clean Loaded!", Type = "Success", Time = 5 })
 print("[Ivory] Dig & Clean loaded | PlaceId: " .. tostring(PlaceId) .. " | v1.4")
