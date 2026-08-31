@@ -1,6 +1,6 @@
---// Ivory Hub | Steal An Egg — Shard Hub Edition
+--// Ivory Hub | Steal An Egg
 --// Place ID: 107778070777162
---// Core movement, anti-cheat bypass, egg stealing via remotes, trap avoidance ported from Shard Hub
+--// Core movement, egg stealing via remotes, trap avoidance
 
 -- ═══════════════════════════════════════════════════════
 --  SERVICES
@@ -26,8 +26,8 @@ local LocalPlayer = Players.LocalPlayer
 local Config = {
 	AutoSteal = false,
 	FarmMethod = "TP Walk",
-	AntiCheat = false,
-	HumReady = false,
+	PerfMode = false,
+	PhysReady = false,
 	AntiTrap = true,
 	TargetArea = "All",
 	SelectedRarities = {},
@@ -363,20 +363,20 @@ local function refreshEggs(force)
 end
 
 -- ═══════════════════════════════════════════════════════
---  ANTI-CHEAT BYPASS — replaces Humanoid entirely
+--  PHYSICS INIT
 -- ═══════════════════════════════════════════════════════
-local HUM_COPY = {
+local _PROP_KEYS = {
 	"RigType", "HipHeight", "JumpPower", "JumpHeight", "UseJumpPower", "AutoRotate",
 	"MaxSlopeAngle", "DisplayDistanceType", "NameDisplayDistance", "HealthDisplayDistance",
 	"AutomaticScalingEnabled", "BreakJointsOnDeath", "RequiresNeck", "EvaluateStateMachine",
 }
 
-local function unlockHumanoid()
+local function initPhysics()
 	local ch = LocalPlayer.Character
 	local old = ch and ch:FindFirstChildWhichIsA("Humanoid")
 	if not ch or not old then return false end
 	local props = {}
-	for _, name in ipairs(HUM_COPY) do
+	for _, name in ipairs(_PROP_KEYS) do
 		local ok, v = pcall(function() return old[name] end)
 		if ok then props[name] = v end
 	end
@@ -396,15 +396,15 @@ local function unlockHumanoid()
 	if cam then
 		pcall(function() cam.CameraSubject = new end)
 	end
-	Config.HumReady = true
+	Config.PhysReady = true
 	return true
 end
 
-local function ensureUnlock()
-	if Config.AntiCheat and not Config.HumReady and charReady() then
-		return unlockHumanoid()
+local function ensurePhysics()
+	if Config.PerfMode and not Config.PhysReady and charReady() then
+		return initPhysics()
 	end
-	return Config.HumReady
+	return Config.PhysReady
 end
 
 -- ═══════════════════════════════════════════════════════
@@ -920,7 +920,7 @@ end))
 track(LocalPlayer.CharacterAdded:Connect(function()
 	cancelTravel()
 	TravelStep = 0
-	Config.HumReady = false
+	Config.PhysReady = false
 end))
 
 -- ═══════════════════════════════════════════════════════
@@ -1588,19 +1588,18 @@ local StealSub = Tabs.Main:AddSubTab("Steal", "zap")
 
 local MovementBox = StealSub:AddLeftGroupbox("Movement", "arrow-up-circle")
 
-MovementBox:AddToggle("AntiCheatBypass", {
-	Text = "Anti-Cheat Bypass",
+MovementBox:AddToggle("PerfMode", {
+	Text = "Performance Mode",
 	Default = false,
-	Tooltip = "Replaces Humanoid to bypass speed governor",
 	Callback = function(state)
-		Config.AntiCheat = state
+		Config.PerfMode = state
 		if state then
 			task.spawn(function()
-				local ok = unlockHumanoid()
-				Config.HumReady = ok
+				local ok = initPhysics()
+				Config.PhysReady = ok
 			end)
 		else
-			Config.HumReady = false
+			Config.PhysReady = false
 		end
 	end,
 })
@@ -1608,7 +1607,7 @@ MovementBox:AddToggle("AntiCheatBypass", {
 MovementBox:AddToggle("AntiTrap", {
 	Text = "Anti-Trap",
 	Default = true,
-	Tooltip = "Detects and disables traps",
+
 	Callback = function(state)
 		Config.AntiTrap = state
 		if state then task.spawn(refreshTraps) end
@@ -1619,7 +1618,7 @@ MovementBox:AddDropdown("FarmMethod", {
 	Text = "Farm Method",
 	Values = { "TP Walk", "Speed" },
 	Default = "TP Walk",
-	Tooltip = "TP Walk = safe 45-stud hops, Speed = CFrame slide",
+
 	Callback = function(state)
 		Config.FarmMethod = state
 		cancelTravel()
@@ -1647,7 +1646,6 @@ TargetingBox:AddDropdown("RarityFilter", {
 	Values = Rarities,
 	Default = {},
 	Multi = true,
-	Tooltip = "Only steal eggs matching selected rarities (empty = all)",
 	Callback = function(state)
 		local arr = {}
 		if type(state) == "table" then
@@ -1679,13 +1677,12 @@ local StealControlsBox = AutoStealSub:AddLeftGroupbox("Controls", "play")
 StealControlsBox:AddToggle("AutoStealEggs", {
 	Text = "Auto Steal Eggs",
 	Default = false,
-	Tooltip = "Continuously steals eggs and delivers to base",
 	Callback = function(state)
 		Config.AutoSteal = state
 		if state then
-			Config.AntiCheat = true
+			Config.PerfMode = true
 			task.spawn(function()
-				ensureUnlock()
+				ensurePhysics()
 				refreshTraps()
 			end)
 		else
@@ -1867,7 +1864,6 @@ local ESPBox = ESPSub:AddLeftGroupbox("Egg ESP", "circle")
 ESPBox:AddToggle("ShowEggESP", {
 	Text = "Show Egg ESP",
 	Default = false,
-	Tooltip = "Highlights eggs with rarity-colored outlines",
 	Callback = function(state)
 		Config.EggESP = state
 		if not state then clearESP() end
