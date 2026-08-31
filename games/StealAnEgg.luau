@@ -1526,704 +1526,73 @@ spawnLoop(function()
 end)
 
 -- ═══════════════════════════════════════════════════════
---  OBSIDIAN UI SYSTEM — kept exactly as-is
+--  OBSIDIANULTRA UI
 -- ═══════════════════════════════════════════════════════
-local ScreenGui = nil
-local MainFrame = nil
-local CurrentTab = "Steal"
-local Tabs = {}
-
-local function CreateWindow(title)
-	if ScreenGui then ScreenGui:Destroy() end
-
-	ScreenGui = Instance.new("ScreenGui")
-	ScreenGui.Name = "IvoryHub"
-	ScreenGui.ResetOnSpawn = false
-	ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	ScreenGui.DisplayOrder = 999
-	ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-
-	MainFrame = Instance.new("Frame")
-	MainFrame.Size = UDim2.new(0, 380, 0, 520)
-	MainFrame.Position = UDim2.new(0.5, -190, 0.5, -260)
-	MainFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 30)
-	MainFrame.BorderSizePixel = 0
-	MainFrame.Active = true
-	MainFrame.Draggable = true
-	MainFrame.ClipsDescendants = false
-	MainFrame.Parent = ScreenGui
-
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 10)
-	corner.Parent = MainFrame
-
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = Color3.fromRGB(90, 80, 220)
-	stroke.Thickness = 1.5
-	stroke.Transparency = 0.3
-	stroke.Parent = MainFrame
-
-	local shadow = Instance.new("ImageLabel")
-	shadow.Size = UDim2.new(1, 30, 1, 30)
-	shadow.Position = UDim2.new(0, -15, 0, -15)
-	shadow.BackgroundTransparency = 1
-	shadow.Image = "rbxassetid://6015897843"
-	shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-	shadow.ImageTransparency = 0.6
-	shadow.ScaleType = Enum.ScaleType.Slice
-	shadow.SliceCenter = Rect.new(49, 49, 450, 450)
-	shadow.ZIndex = -1
-	shadow.Parent = MainFrame
-
-	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(1, 0, 0, 44)
-	titleLabel.Position = UDim2.new(0, 0, 0, 0)
-	titleLabel.BackgroundColor3 = Color3.fromRGB(30, 28, 50)
-	titleLabel.BackgroundTransparency = 0
-	titleLabel.Text = "  " .. (title or "Ivory")
-	titleLabel.TextColor3 = Color3.fromRGB(220, 215, 255)
-	titleLabel.TextSize = 16
-	titleLabel.Font = Enum.Font.GothamBold
-	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-	titleLabel.Parent = MainFrame
-
-	local titleGradient = Instance.new("UIGradient")
-	titleGradient.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 28, 50)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 35, 70)),
-	})
-	titleGradient.Rotation = 90
-	titleGradient.Parent = titleLabel
-
-	local titleCorner = Instance.new("UICorner")
-	titleCorner.CornerRadius = UDim.new(0, 10)
-	titleCorner.Parent = titleLabel
-
-	local closeBtn = Instance.new("TextButton")
-	closeBtn.Size = UDim2.new(0, 26, 0, 26)
-	closeBtn.Position = UDim2.new(1, -34, 0, 9)
-	closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-	closeBtn.Text = ""
-	closeBtn.TextColor3 = Color3.new(1, 1, 1)
-	closeBtn.TextSize = 12
-	closeBtn.Font = Enum.Font.GothamBold
-	closeBtn.Parent = titleLabel
-
-	local closeCorner = Instance.new("UICorner")
-	closeCorner.CornerRadius = UDim.new(0, 6)
-	closeCorner.Parent = closeBtn
-
-	local closeX = Instance.new("TextLabel")
-	closeX.Size = UDim2.new(1, 0, 1, 0)
-	closeX.BackgroundTransparency = 1
-	closeX.Text = "X"
-	closeX.TextColor3 = Color3.new(1, 1, 1)
-	closeX.TextSize = 12
-	closeX.Font = Enum.Font.GothamBold
-	closeX.Parent = closeBtn
-
-	closeBtn.MouseEnter:Connect(function()
-		closeBtn.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
-	end)
-	closeBtn.MouseLeave:Connect(function()
-		closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-	end)
-	closeBtn.MouseButton1Click:Connect(function()
-		ScreenGui:Destroy()
-	end)
-
-	local divider = Instance.new("Frame")
-	divider.Size = UDim2.new(1, 0, 0, 1)
-	divider.Position = UDim2.new(0, 0, 0, 44)
-	divider.BackgroundColor3 = Color3.fromRGB(90, 80, 220)
-	divider.BackgroundTransparency = 0.5
-	divider.BorderSizePixel = 0
-	divider.Parent = MainFrame
-
-	local tabContainer = Instance.new("Frame")
-	tabContainer.Size = UDim2.new(1, -16, 0, 32)
-	tabContainer.Position = UDim2.new(0, 8, 0, 50)
-	tabContainer.BackgroundTransparency = 1
-	tabContainer.Parent = MainFrame
-
-	local tabList = Instance.new("UIListLayout")
-	tabList.FillDirection = Enum.FillDirection.Horizontal
-	tabList.Padding = UDim.new(0, 4)
-	tabList.Parent = tabContainer
-
-	local contentFrame = Instance.new("Frame")
-	contentFrame.Size = UDim2.new(1, -16, 1, -100)
-	contentFrame.Position = UDim2.new(0, 8, 0, 88)
-	contentFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
-	contentFrame.BorderSizePixel = 0
-	contentFrame.ClipsDescendants = true
-	contentFrame.Parent = MainFrame
-
-	local contentCorner = Instance.new("UICorner")
-	contentCorner.CornerRadius = UDim.new(0, 6)
-	contentCorner.Parent = contentFrame
-
-	local scrollingFrame = Instance.new("ScrollingFrame")
-	scrollingFrame.Size = UDim2.new(1, -4, 1, -4)
-	scrollingFrame.Position = UDim2.new(0, 2, 0, 2)
-	scrollingFrame.BackgroundTransparency = 1
-	scrollingFrame.ScrollBarThickness = 3
-	scrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(90, 80, 220)
-	scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-	scrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	scrollingFrame.BorderSizePixel = 0
-	scrollingFrame.Parent = contentFrame
-
-	local contentList = Instance.new("UIListLayout")
-	contentList.Padding = UDim.new(0, 4)
-	contentList.Parent = scrollingFrame
-
-	local footer = Instance.new("TextLabel")
-	footer.Size = UDim2.new(1, 0, 0, 18)
-	footer.Position = UDim2.new(0, 0, 1, -20)
-	footer.BackgroundTransparency = 1
-	footer.Text = "v1.4 | Lobby/Game | " .. LocalPlayer.UserId
-	footer.TextColor3 = Color3.fromRGB(80, 80, 100)
-	footer.TextSize = 9
-	footer.Font = Enum.Font.Gotham
-	footer.Parent = MainFrame
-
-	footer.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			pcall(function()
-				if setclipboard then setclipboard(footer.Text) end
-			end)
-			footer.TextColor3 = Color3.fromRGB(150, 140, 255)
-			task.delay(0.5, function()
-				footer.TextColor3 = Color3.fromRGB(80, 80, 100)
-			end)
-		end
-	end)
-
-	Tabs = {}
-	local tabNames = {"Steal", "Automation", "ESP", "Settings"}
-
-	for _, tabName in ipairs(tabNames) do
-		local tabBtn = Instance.new("TextButton")
-		tabBtn.Size = UDim2.new(0, 82, 0, 28)
-		tabBtn.BackgroundColor3 = Color3.fromRGB(38, 36, 55)
-		tabBtn.Text = tabName
-		tabBtn.TextColor3 = Color3.fromRGB(140, 135, 180)
-		tabBtn.TextSize = 11
-		tabBtn.Font = Enum.Font.GothamMedium
-		tabBtn.Parent = tabContainer
-
-		local tabCorner = Instance.new("UICorner")
-		tabCorner.CornerRadius = UDim.new(0, 6)
-		tabCorner.Parent = tabBtn
-
-		Tabs[tabName] = {
-			Button = tabBtn,
-			Content = scrollingFrame,
-			Sections = {}
-		}
-
-		tabBtn.MouseEnter:Connect(function()
-			if CurrentTab ~= tabName then
-				tabBtn.BackgroundColor3 = Color3.fromRGB(48, 45, 70)
-			end
-		end)
-		tabBtn.MouseLeave:Connect(function()
-			if CurrentTab ~= tabName then
-				tabBtn.BackgroundColor3 = Color3.fromRGB(38, 36, 55)
-			end
-		end)
-		tabBtn.MouseButton1Click:Connect(function()
-			CurrentTab = tabName
-			for name, tab in pairs(Tabs) do
-				if name == tabName then
-					tabBtn.BackgroundColor3 = Color3.fromRGB(90, 80, 220)
-					tabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-				else
-					tabBtn.BackgroundColor3 = Color3.fromRGB(38, 36, 55)
-					tabBtn.TextColor3 = Color3.fromRGB(140, 135, 180)
-				end
-			end
-			for name, tab in pairs(Tabs) do
-				for _, section in ipairs(tab.Sections) do
-					section.Frame.Visible = (name == tabName)
-				end
-			end
-		end)
-	end
-
-	Tabs["Steal"].Button.BackgroundColor3 = Color3.fromRGB(90, 80, 220)
-	Tabs["Steal"].Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-	UserInputService.InputBegan:Connect(function(input, gameProcessed)
-		if gameProcessed then return end
-		if input.KeyCode == Enum.KeyCode.RightShift then
-			MainFrame.Visible = not MainFrame.Visible
-		end
-	end)
-
-	return {
-		Frame = MainFrame,
-		Content = scrollingFrame,
-		Tabs = Tabs,
-		AddSection = function(self, tabName, sectionName)
-			local tab = Tabs[tabName]
-			if not tab then return nil end
-
-			local section = Instance.new("Frame")
-			section.Size = UDim2.new(1, 0, 0, 0)
-			section.AutomaticSize = Enum.AutomaticSize.Y
-			section.BackgroundColor3 = Color3.fromRGB(32, 30, 48)
-			section.BackgroundTransparency = 0
-			section.BorderSizePixel = 0
-			section.Visible = (tabName == CurrentTab)
-			section.Parent = tab.Content
-
-			local sectionCorner = Instance.new("UICorner")
-			sectionCorner.CornerRadius = UDim.new(0, 6)
-			sectionCorner.Parent = section
-
-			local sectionPadding = Instance.new("UIPadding")
-			sectionPadding.PaddingTop = UDim.new(0, 6)
-			sectionPadding.PaddingBottom = UDim.new(0, 6)
-			sectionPadding.PaddingLeft = UDim.new(0, 8)
-			sectionPadding.PaddingRight = UDim.new(0, 8)
-			sectionPadding.Parent = section
-
-			local sectionList = Instance.new("UIListLayout")
-			sectionList.Padding = UDim.new(0, 2)
-			sectionList.Parent = section
-
-			local sectionLabel = Instance.new("TextLabel")
-			sectionLabel.Size = UDim2.new(1, 0, 0, 18)
-			sectionLabel.BackgroundTransparency = 1
-			sectionLabel.Text = string.upper(sectionName)
-			sectionLabel.TextColor3 = Color3.fromRGB(120, 110, 200)
-			sectionLabel.TextSize = 10
-			sectionLabel.Font = Enum.Font.GothamBold
-			sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
-			sectionLabel.LayoutOrder = 0
-			sectionLabel.Parent = section
-
-			table.insert(tab.Sections, {Frame = section, Name = sectionName})
-
-			return {
-				Frame = section,
-				AddToggle = function(self, text, default, callback)
-					local toggle = Instance.new("Frame")
-					toggle.Size = UDim2.new(1, 0, 0, 28)
-					toggle.BackgroundColor3 = Color3.fromRGB(36, 34, 52)
-					toggle.BackgroundTransparency = 0
-					toggle.BorderSizePixel = 0
-					toggle.Parent = section
-
-					local togglePadding = Instance.new("UIPadding")
-					togglePadding.PaddingLeft = UDim.new(0, 4)
-					togglePadding.PaddingRight = UDim.new(0, 4)
-					togglePadding.Parent = toggle
-
-					local toggleInnerCorner = Instance.new("UICorner")
-					toggleInnerCorner.CornerRadius = UDim.new(0, 4)
-					toggleInnerCorner.Parent = toggle
-
-					local label = Instance.new("TextLabel")
-					label.Size = UDim2.new(0.65, 0, 1, 0)
-					label.BackgroundTransparency = 1
-					label.Text = text
-					label.TextColor3 = Color3.fromRGB(200, 195, 230)
-					label.TextSize = 11
-					label.Font = Enum.Font.Gotham
-					label.TextXAlignment = Enum.TextXAlignment.Left
-					label.Parent = toggle
-
-					local toggleBtn = Instance.new("TextButton")
-					toggleBtn.Size = UDim2.new(0, 38, 0, 18)
-					toggleBtn.Position = UDim2.new(0.78, 0, 0.5, -9)
-					toggleBtn.BackgroundColor3 = default and Color3.fromRGB(80, 180, 80) or Color3.fromRGB(60, 58, 80)
-					toggleBtn.Text = ""
-					toggleBtn.TextColor3 = Color3.new(1, 1, 1)
-					toggleBtn.TextSize = 9
-					toggleBtn.Font = Enum.Font.GothamBold
-					toggleBtn.Parent = toggle
-
-					local toggleCorner = Instance.new("UICorner")
-					toggleCorner.CornerRadius = UDim.new(0, 9)
-					toggleCorner.Parent = toggleBtn
-
-					local toggleLabel = Instance.new("TextLabel")
-					toggleLabel.Size = UDim2.new(1, 0, 1, 0)
-					toggleLabel.BackgroundTransparency = 1
-					toggleLabel.Text = default and "ON" or "OFF"
-					toggleLabel.TextColor3 = Color3.new(1, 1, 1)
-					toggleLabel.TextSize = 9
-					toggleLabel.Font = Enum.Font.GothamBold
-					toggleLabel.Parent = toggleBtn
-
-					local indicator = Instance.new("Frame")
-					indicator.Size = UDim2.new(0, 14, 0, 14)
-					indicator.Position = default and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
-					indicator.BackgroundColor3 = Color3.new(1, 1, 1)
-					indicator.BorderSizePixel = 0
-					indicator.Parent = toggleBtn
-
-					local indicatorCorner = Instance.new("UICorner")
-					indicatorCorner.CornerRadius = UDim.new(1, 0)
-					indicatorCorner.Parent = indicator
-
-					local state = default or false
-
-					local function updateToggle()
-						if state then
-							toggleBtn.BackgroundColor3 = Color3.fromRGB(80, 180, 80)
-							toggleLabel.Text = "ON"
-							indicator.Position = UDim2.new(1, -16, 0.5, -7)
-						else
-							toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 58, 80)
-							toggleLabel.Text = "OFF"
-							indicator.Position = UDim2.new(0, 2, 0.5, -7)
-						end
-					end
-
-					toggleBtn.MouseButton1Click:Connect(function()
-						state = not state
-						updateToggle()
-						if callback then callback(state) end
-					end)
-
-					return {
-						Set = function(self, value)
-							state = value
-							updateToggle()
-							if callback then callback(state) end
-						end,
-						Get = function(self) return state end
-					}
-				end,
-				AddSlider = function(self, text, min, max, default, callback)
-					local slider = Instance.new("Frame")
-					slider.Size = UDim2.new(1, 0, 0, 38)
-					slider.BackgroundColor3 = Color3.fromRGB(36, 34, 52)
-					slider.BackgroundTransparency = 0
-					slider.BorderSizePixel = 0
-					slider.Parent = section
-
-					local sliderInnerCorner = Instance.new("UICorner")
-					sliderInnerCorner.CornerRadius = UDim.new(0, 4)
-					sliderInnerCorner.Parent = slider
-
-					local sLabel = Instance.new("TextLabel")
-					sLabel.Size = UDim2.new(0.55, 0, 0, 16)
-					sLabel.Position = UDim2.new(0, 8, 0, 4)
-					sLabel.BackgroundTransparency = 1
-					sLabel.Text = text
-					sLabel.TextColor3 = Color3.fromRGB(200, 195, 230)
-					sLabel.TextSize = 11
-					sLabel.Font = Enum.Font.Gotham
-					sLabel.TextXAlignment = Enum.TextXAlignment.Left
-					sLabel.Parent = slider
-
-					local valueLabel = Instance.new("TextLabel")
-					valueLabel.Size = UDim2.new(0.35, -8, 0, 16)
-					valueLabel.Position = UDim2.new(0.6, 0, 0, 4)
-					valueLabel.BackgroundTransparency = 1
-					valueLabel.Text = tostring(default)
-					valueLabel.TextColor3 = Color3.fromRGB(140, 130, 255)
-					valueLabel.TextSize = 11
-					valueLabel.Font = Enum.Font.GothamBold
-					valueLabel.TextXAlignment = Enum.TextXAlignment.Right
-					valueLabel.Parent = slider
-
-					local sliderBg = Instance.new("Frame")
-					sliderBg.Size = UDim2.new(1, -16, 0, 4)
-					sliderBg.Position = UDim2.new(0, 8, 0, 28)
-					sliderBg.BackgroundColor3 = Color3.fromRGB(45, 42, 65)
-					sliderBg.Parent = slider
-
-					local sliderCorner = Instance.new("UICorner")
-					sliderCorner.CornerRadius = UDim.new(0, 2)
-					sliderCorner.Parent = sliderBg
-
-					local fill = Instance.new("Frame")
-					fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-					fill.BackgroundColor3 = Color3.fromRGB(90, 80, 220)
-					fill.Parent = sliderBg
-
-					local fillCorner = Instance.new("UICorner")
-					fillCorner.CornerRadius = UDim.new(0, 2)
-					fillCorner.Parent = fill
-
-					local knob = Instance.new("TextButton")
-					knob.Size = UDim2.new(0, 14, 0, 14)
-					knob.Position = UDim2.new((default - min) / (max - min), -7, 0.5, -7)
-					knob.BackgroundColor3 = Color3.new(1, 1, 1)
-					knob.Text = ""
-					knob.Parent = sliderBg
-
-					local knobCorner = Instance.new("UICorner")
-					knobCorner.CornerRadius = UDim.new(1, 0)
-					knobCorner.Parent = knob
-
-					local knobShadow = Instance.new("Frame")
-					knobShadow.Size = UDim2.new(1, 4, 1, 4)
-					knobShadow.Position = UDim2.new(0, -2, 0, -2)
-					knobShadow.BackgroundColor3 = Color3.fromRGB(90, 80, 220)
-					knobShadow.BackgroundTransparency = 0.6
-					knobShadow.BorderSizePixel = 0
-					knobShadow.ZIndex = -1
-					knobShadow.Parent = knob
-
-					local knobShadowCorner = Instance.new("UICorner")
-					knobShadowCorner.CornerRadius = UDim.new(1, 0)
-					knobShadowCorner.Parent = knobShadow
-
-					local dragging = false
-					local currentValue = default
-
-					knob.MouseButton1Down:Connect(function()
-						dragging = true
-					end)
-
-					UserInputService.InputEnded:Connect(function(input)
-						if input.UserInputType == Enum.UserInputType.MouseButton1 then
-							dragging = false
-						end
-					end)
-
-					UserInputService.InputChanged:Connect(function(input)
-						if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-							local mousePos = UserInputService:GetMouseLocation()
-							local sPos = sliderBg.AbsolutePosition.X
-							local sSize = sliderBg.AbsoluteSize.X
-
-							local percent = math.clamp((mousePos.X - sPos) / sSize, 0, 1)
-							currentValue = math.floor(min + (max - min) * percent)
-
-							fill.Size = UDim2.new(percent, 0, 1, 0)
-							knob.Position = UDim2.new(percent, -7, 0.5, -7)
-							valueLabel.Text = tostring(currentValue)
-
-							if callback then callback(currentValue) end
-						end
-					end)
-
-					return {
-						Set = function(self, value)
-							currentValue = math.clamp(value, min, max)
-							local percent = (currentValue - min) / (max - min)
-							fill.Size = UDim2.new(percent, 0, 1, 0)
-							knob.Position = UDim2.new(percent, -7, 0.5, -7)
-							valueLabel.Text = tostring(currentValue)
-							if callback then callback(currentValue) end
-						end,
-						Get = function(self) return currentValue end
-					}
-				end,
-				AddButton = function(self, text, callback)
-					local btn = Instance.new("TextButton")
-					btn.Size = UDim2.new(1, 0, 0, 28)
-					btn.BackgroundColor3 = Color3.fromRGB(45, 42, 70)
-					btn.Text = text
-					btn.TextColor3 = Color3.fromRGB(200, 195, 230)
-					btn.TextSize = 11
-					btn.Font = Enum.Font.GothamMedium
-					btn.Parent = section
-
-					local btnCorner = Instance.new("UICorner")
-					btnCorner.CornerRadius = UDim.new(0, 4)
-					btnCorner.Parent = btn
-
-					btn.MouseEnter:Connect(function()
-						btn.BackgroundColor3 = Color3.fromRGB(55, 52, 85)
-					end)
-					btn.MouseLeave:Connect(function()
-						btn.BackgroundColor3 = Color3.fromRGB(45, 42, 70)
-					end)
-					btn.MouseButton1Click:Connect(function()
-						btn.BackgroundColor3 = Color3.fromRGB(90, 80, 220)
-						task.delay(0.15, function()
-							btn.BackgroundColor3 = Color3.fromRGB(45, 42, 70)
-						end)
-						if callback then callback() end
-					end)
-
-					return {Button = btn}
-				end,
-				AddDropdown = function(self, text, options, default, multiSelect, callback)
-					local dropdown = Instance.new("Frame")
-					dropdown.Size = UDim2.new(1, 0, 0, 28)
-					dropdown.BackgroundColor3 = Color3.fromRGB(36, 34, 52)
-					dropdown.BackgroundTransparency = 0
-					dropdown.BorderSizePixel = 0
-					dropdown.Parent = section
-
-					local dropInnerCorner = Instance.new("UICorner")
-					dropInnerCorner.CornerRadius = UDim.new(0, 4)
-					dropInnerCorner.Parent = dropdown
-
-					local dLabel = Instance.new("TextLabel")
-					dLabel.Size = UDim2.new(0.5, 0, 1, 0)
-					dLabel.Position = UDim2.new(0, 8, 0, 0)
-					dLabel.BackgroundTransparency = 1
-					dLabel.Text = text
-					dLabel.TextColor3 = Color3.fromRGB(200, 195, 230)
-					dLabel.TextSize = 11
-					dLabel.Font = Enum.Font.Gotham
-					dLabel.TextXAlignment = Enum.TextXAlignment.Left
-					dLabel.Parent = dropdown
-
-					local dropBtn = Instance.new("TextButton")
-					dropBtn.Size = UDim2.new(0.42, -4, 0, 20)
-					dropBtn.Position = UDim2.new(0.58, 0, 0.5, -10)
-					dropBtn.BackgroundColor3 = Color3.fromRGB(45, 42, 65)
-					dropBtn.Text = "  Select..."
-					dropBtn.TextColor3 = Color3.fromRGB(160, 155, 200)
-					dropBtn.TextSize = 10
-					dropBtn.Font = Enum.Font.Gotham
-					dropBtn.TextXAlignment = Enum.TextXAlignment.Left
-					dropBtn.Parent = dropdown
-
-					local dropCorner = Instance.new("UICorner")
-					dropCorner.CornerRadius = UDim.new(0, 4)
-					dropCorner.Parent = dropBtn
-
-					local arrow = Instance.new("TextLabel")
-					arrow.Size = UDim2.new(0, 16, 0, 20)
-					arrow.Position = UDim2.new(1, -16, 0, 0)
-					arrow.BackgroundTransparency = 1
-					arrow.Text = ">"
-					arrow.TextColor3 = Color3.fromRGB(120, 110, 200)
-					arrow.TextSize = 10
-					arrow.Font = Enum.Font.GothamBold
-					arrow.Parent = dropBtn
-
-					local selected = default or {}
-					local isOpen = false
-					local maxVisible = 5
-					local optionHeight = 24
-					local visibleHeight = math.min(#options, maxVisible) * optionHeight
-
-					local optionsFrame = Instance.new("Frame")
-					optionsFrame.Size = UDim2.new(0.42, 0, 0, visibleHeight)
-					optionsFrame.Position = UDim2.new(0.58, 0, 0, 28)
-					optionsFrame.BackgroundColor3 = Color3.fromRGB(38, 36, 55)
-					optionsFrame.BorderSizePixel = 0
-					optionsFrame.Visible = false
-					optionsFrame.ZIndex = 50
-					optionsFrame.ClipsDescendants = true
-					optionsFrame.Parent = MainFrame
-
-					local optionsFrameCorner = Instance.new("UICorner")
-					optionsFrameCorner.CornerRadius = UDim.new(0, 4)
-					optionsFrameCorner.Parent = optionsFrame
-
-					local optionsFrameStroke = Instance.new("UIStroke")
-					optionsFrameStroke.Color = Color3.fromRGB(90, 80, 220)
-					optionsFrameStroke.Thickness = 1
-					optionsFrameStroke.Transparency = 0.5
-					optionsFrameStroke.Parent = optionsFrame
-
-					local optionsScroll = Instance.new("ScrollingFrame")
-					optionsScroll.Size = UDim2.new(1, 0, 1, 0)
-					optionsScroll.BackgroundTransparency = 1
-					optionsScroll.ScrollBarThickness = 2
-					optionsScroll.ScrollBarImageColor3 = Color3.fromRGB(90, 80, 220)
-					optionsScroll.CanvasSize = UDim2.new(0, 0, 0, #options * optionHeight)
-					optionsScroll.BorderSizePixel = 0
-					optionsScroll.ZIndex = 51
-					optionsScroll.Parent = optionsFrame
-
-					local optionsList = Instance.new("UIListLayout")
-					optionsList.Padding = UDim.new(0, 2)
-					optionsList.Parent = optionsScroll
-
-					for _, option in ipairs(options) do
-						local optBtn = Instance.new("TextButton")
-						optBtn.Size = UDim2.new(1, -4, 0, optionHeight - 2)
-						optBtn.Position = UDim2.new(0, 2, 0, 0)
-						optBtn.BackgroundColor3 = Color3.fromRGB(42, 40, 62)
-						optBtn.Text = "  " .. option
-						optBtn.TextColor3 = Color3.fromRGB(180, 175, 210)
-						optBtn.TextSize = 10
-						optBtn.Font = Enum.Font.Gotham
-						optBtn.TextXAlignment = Enum.TextXAlignment.Left
-						optBtn.ZIndex = 52
-						optBtn.Parent = optionsScroll
-
-						local optCorner = Instance.new("UICorner")
-						optCorner.CornerRadius = UDim.new(0, 3)
-						optCorner.Parent = optBtn
-
-						optBtn.MouseEnter:Connect(function()
-							optBtn.BackgroundColor3 = Color3.fromRGB(55, 52, 80)
-						end)
-						optBtn.MouseLeave:Connect(function()
-							optBtn.BackgroundColor3 = Color3.fromRGB(42, 40, 62)
-						end)
-
-						optBtn.MouseButton1Click:Connect(function()
-							if multiSelect then
-								local found = false
-								for i, s in ipairs(selected) do
-									if s == option then
-										table.remove(selected, i)
-										found = true
-										break
-									end
-								end
-								if not found then
-									table.insert(selected, option)
-								end
-								dropBtn.Text = #selected > 0 and "  " .. table.concat(selected, ", ") or "  Select..."
-							else
-								selected = {option}
-								dropBtn.Text = "  " .. option
-								optionsFrame.Visible = false
-								isOpen = false
-							end
-							if callback then callback(selected) end
-						end)
-					end
-
-					local function updateArrow()
-						arrow.Text = isOpen and "v" or ">"
-					end
-
-					dropBtn.MouseButton1Click:Connect(function()
-						isOpen = not isOpen
-						optionsFrame.Visible = isOpen
-						updateArrow()
-					end)
-
-					return {
-						Set = function(self, value)
-							if type(value) == "table" then
-								selected = value
-								dropBtn.Text = #selected > 0 and "  " .. table.concat(selected, ", ") or "  Select..."
-							else
-								selected = {value}
-								dropBtn.Text = "  " .. value
-							end
-							if callback then callback(selected) end
-						end,
-						Get = function(self) return selected end
-					}
-				end
-			}
-		end
-	}
+local genv = getgenv()
+local Library = nil
+local ThemeManager = nil
+local SaveManager = nil
+
+local libSrc = genv._IvoryLibSrc
+local tmSrc = genv._IvoryTMSrc
+local smSrc = genv._IvorySMSrc
+
+if libSrc then
+	Library = loadstring(libSrc)()
+	ThemeManager = loadstring(tmSrc)()
+	SaveManager = loadstring(smSrc)()
+else
+	local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
+	pcall(function() Library = loadstring(game:HttpGet(repo .. "Library.lua"))() end)
+	pcall(function() ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))() end)
+	pcall(function() SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))() end)
 end
 
--- ═══════════════════════════════════════════════════════
---  UI WIRING
--- ═══════════════════════════════════════════════════════
-local function Main()
-	InitRaritySystem()
-	local window = CreateWindow("Ivory")
+if not Library then warn("[Ivory] ObsidianUltra failed to load") return end
 
-	-- ── STEAL TAB ──────────────────────────────────────
-	local stealSection = window:AddSection("Steal", "Anti-Cheat & Movement")
+local Toggles = Library.Toggles
+local Options = Library.Options
 
-	stealSection:AddToggle("Anti-Cheat Bypass", false, function(state)
+local Window = Library:CreateWindow({
+	Title = "Ivory",
+	Footer = {
+		"v1.4 |",
+		{ Text = "Lobby/Game", Copyable = true },
+		"|",
+		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
+	},
+	CopyableFooter = true,
+	FuzzySearch = true,
+	SearchValues = true,
+	Minimizable = true,
+	MinimizeKeybind = Enum.KeyCode.RightBracket,
+	MinimizedWidth = 280,
+	NotifySide = "Right",
+	ShowCustomCursor = false,
+	CornerRadius = 4,
+	Animations = {
+		SubTabUnderline = true,
+	},
+})
+
+local Tabs = {
+	Main = Window:AddTab({ Name = "Main", Icon = "home", Description = "Steal & Automate" }),
+	Visuals = Window:AddTab({ Name = "Visuals", Icon = "eye", Description = "ESP" }),
+	Settings = Window:AddTab({ Name = "Settings", Icon = "settings", Description = "Themes & UI" }),
+}
+
+-- ═══════════════════════════════════════════════════════════
+--  MAIN TAB — STEAL SUBTAB
+-- ═══════════════════════════════════════════════════════════
+local StealSub = Tabs.Main:AddSubTab("Steal", "zap")
+
+local MovementBox = StealSub:AddLeftGroupbox("Movement", "arrow-up-circle")
+
+MovementBox:AddToggle("AntiCheatBypass", {
+	Text = "Anti-Cheat Bypass",
+	Default = false,
+	Tooltip = "Replaces Humanoid to bypass speed governor",
+	Callback = function(state)
 		Config.AntiCheat = state
 		if state then
 			task.spawn(function()
@@ -2233,38 +1602,77 @@ local function Main()
 		else
 			Config.HumReady = false
 		end
-	end)
+	end,
+})
 
-	stealSection:AddToggle("Anti-Trap", true, function(state)
+MovementBox:AddToggle("AntiTrap", {
+	Text = "Anti-Trap",
+	Default = true,
+	Tooltip = "Detects and disables traps",
+	Callback = function(state)
 		Config.AntiTrap = state
 		if state then task.spawn(refreshTraps) end
-	end)
+	end,
+})
 
-	stealSection:AddDropdown("Farm Method", {"TP Walk", "Speed"}, {"TP Walk"}, false, function(selected)
-		Config.FarmMethod = #selected > 0 and selected[1] or "TP Walk"
+MovementBox:AddDropdown("FarmMethod", {
+	Text = "Farm Method",
+	Values = { "TP Walk", "Speed" },
+	Default = "TP Walk",
+	Tooltip = "TP Walk = safe 45-stud hops, Speed = CFrame slide",
+	Callback = function(state)
+		Config.FarmMethod = state
 		cancelTravel()
-	end)
+	end,
+})
 
-	local areaOptions = {"All"}
-	for _, area in ipairs(AreaData.areaOrder) do
-		table.insert(areaOptions, AreaData.areaLabel[area])
-	end
+local TargetingBox = StealSub:AddRightGroupbox("Targeting", "crosshair")
 
-	stealSection:AddDropdown("Target Area", areaOptions, {"All"}, false, function(selected)
-		Config.TargetArea = #selected > 0 and selected[1] or "All"
-	end)
+local areaOptions = { "All" }
+for _, area in ipairs(AreaData.areaOrder) do
+	table.insert(areaOptions, AreaData.areaLabel[area])
+end
 
-	stealSection:AddDropdown("Rarity Filter", Rarities, {}, true, function(selected)
-		Config.SelectedRarities = selected
-	end)
+TargetingBox:AddDropdown("TargetArea", {
+	Text = "Target Area",
+	Values = areaOptions,
+	Default = "All",
+	Callback = function(state)
+		Config.TargetArea = state
+	end,
+})
 
-	stealSection:AddToggle("Secret Egg Priority", true, function(state)
+TargetingBox:AddDropdown("RarityFilter", {
+	Text = "Rarity Filter",
+	Values = Rarities,
+	Default = {},
+	Multi = true,
+	Tooltip = "Only steal eggs matching selected rarities (empty = all)",
+	Callback = function(state)
+		Config.SelectedRarities = state
+	end,
+})
+
+TargetingBox:AddToggle("SecretPriority", {
+	Text = "Secret Egg Priority",
+	Default = true,
+	Callback = function(state)
 		Config.SecretPriority = state
-	end)
+	end,
+})
 
-	local stealSection2 = window:AddSection("Steal", "Auto Steal")
+-- ═══════════════════════════════════════════════════════════
+--  MAIN TAB — AUTO STEAL SUBTAB
+-- ═══════════════════════════════════════════════════════════
+local AutoStealSub = Tabs.Main:AddSubTab("Auto Steal", "download")
 
-	stealSection2:AddToggle("Auto Steal Eggs", false, function(state)
+local StealControlsBox = AutoStealSub:AddLeftGroupbox("Controls", "play")
+
+StealControlsBox:AddToggle("AutoStealEggs", {
+	Text = "Auto Steal Eggs",
+	Default = false,
+	Tooltip = "Continuously steals eggs and delivers to base",
+	Callback = function(state)
 		Config.AutoSteal = state
 		if state then
 			Config.AntiCheat = true
@@ -2276,105 +1684,123 @@ local function Main()
 			cancelTravel()
 			releaseRoot()
 		end
-	end)
+	end,
+})
 
-	stealSection2:AddButton("Set Base Here", function()
-		local r = root()
-		if r then
-			Config.ManualBase = r.Position
-		end
-	end)
+StealControlsBox:AddButton("Set Base Here", function()
+	local r = root()
+	if r then Config.ManualBase = r.Position end
+end)
 
-	stealSection2:AddButton("Clear Base Pin", function()
-		Config.ManualBase = nil
-	end)
+StealControlsBox:AddButton("Clear Base Pin", function()
+	Config.ManualBase = nil
+end)
 
-	stealSection2:AddButton("Steal Nearest Egg", function()
-		if not charReady() then return end
-		local hrp = root()
-		if not hrp then return end
-		refreshEggs(false)
-		local best, bestDist
-		for _, e in ipairs(EggList) do
-			if Config.TargetArea == "All" or e.label == Config.TargetArea then
-				local rarityOk = #Config.SelectedRarities == 0
-				if not rarityOk then
-					for _, r in ipairs(Config.SelectedRarities) do
-						if r == e.rarity then rarityOk = true; break end
-					end
+StealControlsBox:AddButton("Steal Nearest Egg", function()
+	if not charReady() then return end
+	local hrp = root()
+	if not hrp then return end
+	refreshEggs(false)
+	local best, bestDist
+	for _, e in ipairs(EggList) do
+		if Config.TargetArea == "All" or e.label == Config.TargetArea then
+			local rarityOk = #Config.SelectedRarities == 0
+			if not rarityOk then
+				for _, r in ipairs(Config.SelectedRarities) do
+					if r == e.rarity then rarityOk = true; break end
 				end
-				if rarityOk then
-					local d = (e.pos - hrp.Position).Magnitude
-					if not bestDist or d < bestDist then
-						best, bestDist = e, d
-					end
+			end
+			if rarityOk then
+				local d = (e.pos - hrp.Position).Magnitude
+				if not bestDist or d < bestDist then
+					best, bestDist = e, d
 				end
 			end
 		end
-		if best then
-			local reach = math.max(9, best.size * 0.6 + 7)
-			if not inRange(best.pos, reach) then
-				travelTo(best.pos, reach)
-			end
-			grabEgg(best.uid)
-			task.wait(0.2)
-			local basePos = Config.ManualBase or (plotPivot() and plotPivot().Position)
-			if basePos then
-				travelTo(basePos, 12)
-				askUid(Remotes.DoffTool, best.uid)
-			end
+	end
+	if best then
+		local reach = math.max(9, best.size * 0.6 + 7)
+		if not inRange(best.pos, reach) then
+			travelTo(best.pos, reach)
 		end
-	end)
+		grabEgg(best.uid)
+		task.wait(0.2)
+		local basePos = Config.ManualBase or (plotPivot() and plotPivot().Position)
+		if basePos then
+			travelTo(basePos, 12)
+			askUid(Remotes.DoffTool, best.uid)
+		end
+	end
+end)
 
-	stealSection2:AddButton("Refresh Areas", function()
-		table.clear(AreaData.areaLabel)
-		table.clear(AreaData.areaRarity)
-		table.clear(AreaData.areaTierName)
-		table.clear(AreaData.areaByLabel)
-		table.clear(AreaData.areaOrder)
-		local Data = ReplicatedStorage:FindFirstChild("Data")
-		local m = Data and Data:FindFirstChild("Areas")
-		local ok, mod = pcall(function() return m and require(m) end)
-		local dir = ok and type(mod) == "table" and (mod.Directory or mod) or nil
-		if type(dir) == "table" then
-			for id, info in pairs(dir) do
-				if type(id) == "string" and type(info) == "table" then
-					local rank, tierName = 0, nil
-					if type(info.Rarity) == "table" then
-						rank = tonumber(info.Rarity.RarityNumber) or 0
-						tierName = info.Rarity.DisplayName or info.Rarity._id
-					end
-					addArea(id, info.DisplayName or info.Name or id, rank, tierName)
+local StealAreasBox = AutoStealSub:AddRightGroupbox("Areas", "map")
+
+StealAreasBox:AddButton("Refresh Areas", function()
+	table.clear(AreaData.areaLabel)
+	table.clear(AreaData.areaRarity)
+	table.clear(AreaData.areaTierName)
+	table.clear(AreaData.areaByLabel)
+	table.clear(AreaData.areaOrder)
+	local Data = ReplicatedStorage:FindFirstChild("Data")
+	local m = Data and Data:FindFirstChild("Areas")
+	local ok, mod = pcall(function() return m and require(m) end)
+	local dir = ok and type(mod) == "table" and (mod.Directory or mod) or nil
+	if type(dir) == "table" then
+		for id, info in pairs(dir) do
+			if type(id) == "string" and type(info) == "table" then
+				local rank, tierName = 0, nil
+				if type(info.Rarity) == "table" then
+					rank = tonumber(info.Rarity.RarityNumber) or 0
+					tierName = info.Rarity.DisplayName or info.Rarity._id
 				end
+				addArea(id, info.DisplayName or info.Name or id, rank, tierName)
 			end
 		end
-		table.sort(AreaData.areaOrder, function(a, b)
-			local ra, rb = AreaData.areaRarity[a] or 0, AreaData.areaRarity[b] or 0
-			if ra == rb then return tostring(AreaData.areaLabel[a]) < tostring(AreaData.areaLabel[b]) end
-			return ra < rb
-		end)
+	end
+	table.sort(AreaData.areaOrder, function(a, b)
+		local ra, rb = AreaData.areaRarity[a] or 0, AreaData.areaRarity[b] or 0
+		if ra == rb then return tostring(AreaData.areaLabel[a]) < tostring(AreaData.areaLabel[b]) end
+		return ra < rb
 	end)
+	Library:Notify({ Title = "Ivory", Description = "Areas refreshed (" .. #AreaData.areaOrder .. " found)", Type = "Success", Time = 2 })
+end)
 
-	-- ── AUTOMATION TAB ──────────────────────────────────
-	local autoSection = window:AddSection("Automation", "Hatch & Pets")
-
-	autoSection:AddToggle("Auto Hatch Eggs", false, function(state)
-		Config.AutoHatch = state
+StealAreasBox:AddButton("Join Discord For Dupe", function()
+	pcall(function()
+		if setclipboard then setclipboard("https://discord.gg/MCWYKBdB4E") end
 	end)
+	Library:Notify({ Title = "Ivory", Description = "Discord link copied to clipboard!", Type = "Info", Time = 2 })
+end)
 
-	autoSection:AddButton("Hatch Once", function()
-		task.spawn(function()
-			pcall(hatchAll)
-		end)
-	end)
+-- ═══════════════════════════════════════════════════════════
+--  MAIN TAB — AUTOMATION SUBTAB
+-- ═══════════════════════════════════════════════════════════
+local AutoSub = Tabs.Main:AddSubTab("Automation", "settings")
 
-	autoSection:AddToggle("Auto Equip Best Pet", false, function(state)
-		Config.AutoEquipBest = state
-	end)
+local HatchBox = AutoSub:AddLeftGroupbox("Hatch & Pets", "box")
 
-	local autoSection2 = window:AddSection("Automation", "Claim & Upgrade")
+HatchBox:AddToggle("AutoHatch", {
+	Text = "Auto Hatch Eggs",
+	Default = false,
+	Callback = function(state) Config.AutoHatch = state end,
+})
 
-	autoSection2:AddToggle("Auto Claim", false, function(state)
+HatchBox:AddButton("Hatch Once", function()
+	task.spawn(function() pcall(hatchAll) end)
+end)
+
+HatchBox:AddToggle("AutoEquipBest", {
+	Text = "Auto Equip Best Pet",
+	Default = false,
+	Callback = function(state) Config.AutoEquipBest = state end,
+})
+
+local ClaimBox = AutoSub:AddRightGroupbox("Claim & Upgrade", "arrow-up")
+
+ClaimBox:AddToggle("AutoClaim", {
+	Text = "Auto Claim",
+	Default = false,
+	Callback = function(state)
 		Config.AutoClaim = state
 		if state then
 			spawnLoop(function()
@@ -2391,9 +1817,13 @@ local function Main()
 				end
 			end)
 		end
-	end)
+	end,
+})
 
-	autoSection2:AddToggle("Auto Upgrade", false, function(state)
+ClaimBox:AddToggle("AutoUpgrade", {
+	Text = "Auto Upgrade",
+	Default = false,
+	Callback = function(state)
 		Config.AutoUpgrade = state
 		if state then
 			spawnLoop(function()
@@ -2410,64 +1840,120 @@ local function Main()
 				end
 			end)
 		end
-	end)
+	end,
+})
 
-	autoSection2:AddToggle("Anti AFK", false, function(state)
-		Config.AntiAFK = state
-	end)
+ClaimBox:AddToggle("AntiAFK", {
+	Text = "Anti AFK",
+	Default = false,
+	Callback = function(state) Config.AntiAFK = state end,
+})
 
-	-- ── ESP TAB ─────────────────────────────────────────
-	local espSection = window:AddSection("ESP", "Egg ESP")
+-- ═══════════════════════════════════════════════════════════
+--  VISUALS TAB — EGG ESP
+-- ═══════════════════════════════════════════════════════════
+local ESPSub = Tabs.Visuals:AddSubTab("Egg ESP", "eye")
 
-	espSection:AddToggle("Show Egg ESP", false, function(state)
+local ESPBox = ESPSub:AddLeftGroupbox("Egg ESP", "circle")
+
+ESPBox:AddToggle("ShowEggESP", {
+	Text = "Show Egg ESP",
+	Default = false,
+	Tooltip = "Highlights eggs with rarity-colored outlines",
+	Callback = function(state)
 		Config.EggESP = state
 		if not state then clearESP() end
-	end)
+	end,
+})
 
-	espSection:AddButton("Refresh ESP", function()
-		clearESP()
-		refreshEggs(true)
-	end)
+ESPBox:AddButton("Refresh ESP", function()
+	clearESP()
+	refreshEggs(true)
+end)
 
-	-- ── SETTINGS TAB ────────────────────────────────────
-	local settingsSection = window:AddSection("Settings", "Server")
+-- ═══════════════════════════════════════════════════════════
+--  SETTINGS TAB
+-- ═══════════════════════════════════════════════════════════
+local ThemesSub = Tabs.Settings:AddSubTab("Themes & UI", "palette")
+local ConfigSub = Tabs.Settings:AddSubTab("Config", "file-text")
+local ServerSub = Tabs.Settings:AddSubTab("Server", "server")
 
-	settingsSection:AddSlider("Server Hop Delay (s)", 10, 300, 30, function(value)
-		Config.ServerHopDelay = value
-	end)
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
+ThemeManager:SetFolder("IvoryHub")
+SaveManager:SetFolder("IvoryHub")
+SaveManager:SetSubFolder("stealanegg")
 
-	settingsSection:AddToggle("Auto Server Hop", false, function(state)
-		Config.ServerHop = state
-	end)
+local MenuGroup = ThemesSub:AddLeftGroupbox("Menu", "wrench")
+MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", {
+	Default = "RightShift",
+	NoUI = true,
+	Text = "Menu keybind",
+})
+MenuGroup:AddToggle("ShowCustomCursor", {
+	Text = "Custom Cursor",
+	Default = Library.ShowCustomCursor,
+	Callback = function(v) Library.ShowCustomCursor = v end,
+})
+MenuGroup:AddDropdown("NotificationSide", {
+	Values = { "Left", "Right" },
+	Default = "Right",
+	Text = "Notification Side",
+	Callback = function(v) Library:SetNotifySide(v) end,
+})
+MenuGroup:AddButton("Unload", function()
+	Config.Unloaded = true
+	Config.AutoSteal = false
+	cancelTravel()
+	releaseRoot()
+	clearESP()
+	for _, c in ipairs(Conns) do
+		pcall(function() c:Disconnect() end)
+	end
+	for _, th in ipairs(Threads) do
+		pcall(task.cancel, th)
+	end
+	Library:Unload()
+end)
 
-	settingsSection:AddButton("Hop Now", function()
-		task.spawn(serverHop)
-	end)
+ThemeManager:ApplyToTab(ThemesSub)
+SaveManager:BuildConfigSection(ConfigSub)
 
-	settingsSection:AddButton("Rejoin Server", function()
-		TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
-	end)
+local ServerGroup = ServerSub:AddLeftGroupbox("Server Hop", "globe")
 
-	settingsSection:AddButton("Join Discord", function()
-		pcall(function()
-			if setclipboard then setclipboard("https://discord.gg/MCWYKBdB4E") end
-		end)
-	end)
+ServerGroup:AddSlider("ServerHopDelay", {
+	Text = "Hop Delay (s)",
+	Default = 30,
+	Min = 10,
+	Max = 300,
+	Rounding = 0,
+	Callback = function(v) Config.ServerHopDelay = v end,
+})
 
-	settingsSection:AddButton("Destroy GUI", function()
-		Config.Unloaded = true
-		Config.AutoSteal = false
-		cancelTravel()
-		releaseRoot()
-		clearESP()
-		for _, c in ipairs(Conns) do
-			pcall(function() c:Disconnect() end)
-		end
-		for _, th in ipairs(Threads) do
-			pcall(task.cancel, th)
-		end
-		ScreenGui:Destroy()
-	end)
-end
+ServerGroup:AddToggle("AutoServerHop", {
+	Text = "Auto Server Hop",
+	Default = false,
+	Callback = function(state) Config.ServerHop = state end,
+})
 
-Main()
+ServerGroup:AddButton("Hop Now", function()
+	task.spawn(serverHop)
+end)
+
+ServerGroup:AddButton("Rejoin Server", function()
+	TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+end)
+
+Library.ToggleKeybind = Options.MenuKeybind
+SaveManager:LoadAutoloadConfig()
+
+InitRaritySystem()
+
+Library:Notify({
+	Title = "Ivory",
+	Description = "Steal An Egg loaded. RightBracket to toggle menu.",
+	Type = "Success",
+	Time = 3,
+})
