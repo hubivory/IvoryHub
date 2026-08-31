@@ -313,8 +313,16 @@ function Library:CreateWindow(opts)
     main.Visible = true
     tw(main, EASE_SPRING, {Size = UDim2.new(0, 520, 0, 420)})
 
-    makePetalField(sg, 50, 18, 8, 14, 20, 45)
-    makePetalField(sg, 51, 5, 12, 20, 45, 75)
+    local petalClip = Instance.new("Frame")
+    petalClip.Name = "PetalClip"
+    petalClip.Size = UDim2.new(1, 0, 1, 0)
+    petalClip.BackgroundTransparency = 1
+    petalClip.ClipsDescendants = true
+    petalClip.ZIndex = 100
+    petalClip.Parent = main
+
+    makePetalField(petalClip, 101, 18, 8, 14, 20, 45)
+    makePetalField(petalClip, 102, 5, 12, 20, 45, 75)
 
     Notify({Title = self.Name, Content = "Loaded!", Type = "Success", Duration = 3})
     return self
