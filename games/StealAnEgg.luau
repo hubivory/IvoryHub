@@ -2462,9 +2462,18 @@ ClaimBox:AddButton("Recall to Spawn", function()
 	if sp then travelTo(sp, 8) end
 end)
 
+-- Forward declarations for feature exports
+local fpsOn_fn, fpsOff_fn
+local PAR = {}
+local findParasites_fn
+local startAutoFireProx_fn, stopAutoFireProx_fn
+local VP = {}
+local scanPets_fn, clonePet_fn, removeAllPets_fn
+
 -- ═══════════════════════════════════════════════════════════
 --  FPS BOOST
 -- ═══════════════════════════════════════════════════════════
+do
 local FpsSaved = nil
 local HiddenParts = {}
 local HiddenGuis = {}
@@ -2610,17 +2619,19 @@ spawnLoop(function()
 		end
 	end
 end)
+fpsOn_fn = fpsOn
+fpsOff_fn = fpsOff
+end -- end FPS Boost do block
 
 -- ═══════════════════════════════════════════════════════
 --  PARASITE FARM
 -- ═══════════════════════════════════════════════════════
-local PAR = {
-	Active = false,
-	ScanInterval = 1.5,
-	Range = 60,
-	lastScan = 0,
-	tried = {},
-}
+do
+PAR.Active = false
+PAR.ScanInterval = 1.5
+PAR.Range = 60
+PAR.lastScan = 0
+PAR.tried = {}
 local PAR_REMOTES = {
 	"RF/Bloomery/AskGatherPetal",
 	"RF/Bloomery/AskEjectEgg",
@@ -2790,7 +2801,7 @@ spawnLoop(function()
 					pcall(function() hrp.CFrame = CFrame.new(overshootPos) end)
 					task.wait(0.1)
 					local wasProxOn = Config.AutoFireProx
-					if not wasProxOn then Config.AutoFireProx = true; startAutoFireProx() end
+					if not wasProxOn then Config.AutoFireProx = true; if startAutoFireProx_fn then startAutoFireProx_fn() end end
 					for attempt = 1, 5 do
 						if not PAR.Active then break end
 						interactParasite(p)
@@ -2810,7 +2821,7 @@ spawnLoop(function()
 						end)
 						task.wait(0.12)
 					end
-					if not wasProxOn then Config.AutoFireProx = false; stopAutoFireProx() end
+					if not wasProxOn then Config.AutoFireProx = false; if stopAutoFireProx_fn then stopAutoFireProx_fn() end end
 					local basePos = Config.ManualBase or (plotPivot() and plotPivot().Position)
 					if basePos then travelTo(basePos, 12, autoStealOn) end
 					task.wait(0.2)
@@ -2823,10 +2834,13 @@ spawnLoop(function()
 		end
 	end
 end)
+findParasites_fn = findParasites
+end -- end Parasite Farm do block
 
 -- ═══════════════════════════════════════════════════════
 --  TREADMILL
 -- ═══════════════════════════════════════════════════════
+do
 local TREAD_AVOID = { "upgrade", "tier", "level", "board", "sign", "billboard", "gui", "shop", "buy", "display", "screen", "label", "text", "icon", "price", "cost", "info", "menu" }
 local BELT_HINTS = { "belt", "tread", "walk", "run", "platform", "floor", "deck", "pad" }
 local TreadCache = nil
@@ -2986,10 +3000,12 @@ spawnLoop(function()
 		end
 	end
 end)
+end -- end Treadmill do block
 
 -- ═══════════════════════════════════════════════════════════
 --  AUTO FIRE PROXIMITY PROMPTS
 -- ═══════════════════════════════════════════════════════════
+do
 local ProxConn = nil
 local ProxScanConn = nil
 local ProxRange = 50
@@ -3047,11 +3063,20 @@ local function stopAutoFireProx()
 	Config.AutoFireProx = false
 	if ProxConn then ProxConn:Disconnect(); ProxConn = nil end
 end
+startAutoFireProx_fn = startAutoFireProx
+stopAutoFireProx_fn = stopAutoFireProx
+end -- end Auto Fire Prox do block
 
 -- ═══════════════════════════════════════════════════════
 --  VISUAL PETS
 -- ═══════════════════════════════════════════════════════
-local VP = { spawned = {}, orbitRadius = 4, orbitSpeed = 0.8, conn = nil, petNames = {}, inputName = "" }
+do
+VP.spawned = {}
+VP.orbitRadius = 4
+VP.orbitSpeed = 0.8
+VP.conn = nil
+VP.petNames = {}
+VP.inputName = ""
 local vpFolder = Instance.new("Folder")
 vpFolder.Name = "IvoryVisualPets"
 vpFolder.Parent = Workspace
@@ -3134,6 +3159,10 @@ VP.conn = RunService.Heartbeat:Connect(function()
 	end
 end)
 track(VP.conn)
+scanPets_fn = scanPets
+clonePet_fn = clonePet
+removeAllPets_fn = removeAllPets
+end -- end Visual Pets do block
 
 -- ═══════════════════════════════════════════════════════════
 --  MAIN TAB — EXTRAS SUBTAB
@@ -3147,7 +3176,7 @@ PerfBox:AddToggle("FpsBoost", {
 	Default = false,
 	Callback = function(state)
 		Config.FpsBoost = state
-		if state then fpsOn() else fpsOff() end
+		if state then fpsOn_fn() else fpsOff_fn() end
 	end,
 })
 
@@ -3166,7 +3195,7 @@ ProxBox:AddToggle("AutoFireProx", {
 	Default = false,
 	Callback = function(state)
 		Config.AutoFireProx = state
-		if state then startAutoFireProx() else stopAutoFireProx() end
+		if state then startAutoFireProx_fn() else stopAutoFireProx_fn() end
 	end,
 })
 
@@ -3207,7 +3236,7 @@ ParasiteBox:AddSlider("ParasiteScanInterval", {
 })
 
 ParasiteBox:AddButton("Scan Now", function()
-	local list = findParasites()
+	local list = findParasites_fn()
 	Library:Notify({Title="Ivory", Description="Found " .. #list .. " parasite(s)", Type="Info", Time=3})
 end)
 
@@ -3237,7 +3266,7 @@ PetBox:AddDropdown("VisualPetSelect", {
 })
 
 PetBox:AddButton("Refresh Pet List", function()
-	local names = scanPets()
+	local names = scanPets_fn()
 	if #names > 0 then
 		pcall(function() Options.VisualPetSelect:SetValues(names) end)
 		Library:Notify({Title="Ivory", Description=#names .. " pets found", Type="Info", Time=2})
@@ -3263,10 +3292,10 @@ PetBox:AddSlider("OrbitSpeed", {
 })
 
 PetBox:AddButton("Spawn Pet", function()
-	if VP.inputName ~= "" and VP.inputName ~= "Click Refresh" then clonePet(VP.inputName) end
+	if VP.inputName ~= "" and VP.inputName ~= "Click Refresh" then clonePet_fn(VP.inputName) end
 end)
 
-PetBox:AddButton("Remove All Pets", function() removeAllPets() end)
+PetBox:AddButton("Remove All Pets", function() removeAllPets_fn() end)
 
 -- Sell Pets UI
 local SellBox = ExtrasSub:AddRightGroupbox("Sell Pets", "dollar-sign")
@@ -3333,13 +3362,13 @@ MenuGroup:AddButton("Unload", function()
 	Config.AutoTreadmill = false
 	Config.AutoUpgradeTreadmill = false
 	PAR.Active = false
+	Config.AutoFireProx = false
 	cancelTravel()
 	releaseRoot()
 	clearESP()
-	fpsOff()
-	stopAutoFireProx()
-	removeAllPets()
-	if vpFolder then pcall(function() vpFolder:Destroy() end) end
+	if fpsOff_fn then pcall(fpsOff_fn) end
+	if stopAutoFireProx_fn then pcall(stopAutoFireProx_fn) end
+	if removeAllPets_fn then pcall(removeAllPets_fn) end
 	if warnLayer then pcall(function() warnLayer:Destroy() end) end
 	for _, c in ipairs(Conns) do
 		pcall(function() c:Disconnect() end)
