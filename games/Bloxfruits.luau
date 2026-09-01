@@ -12,6 +12,7 @@ local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local VirtualUser = game:GetService("VirtualUser")
 local VIM = game:GetService("VirtualInputManager")
+local CollectionService = game:GetService("CollectionService")
 
 local LocalPlayer = Players.LocalPlayer
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -26,6 +27,7 @@ end)
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes", 10)
 local CommF = Remotes and Remotes:WaitForChild("CommF_", 10)
+local CommE = Remotes and Remotes:WaitForChild("CommE", 10)
 local Modules = ReplicatedStorage:WaitForChild("Modules", 10)
 local Net = Modules and Modules:WaitForChild("Net", 10)
 
@@ -100,6 +102,83 @@ local STATE = {
 	SkillC = true,
 	SkillV = true,
 }
+
+-- New STATE variables (merged from FourHub)
+STATE.AutoKen = false
+STATE.AutoTeam = "Pirates"
+STATE.SelectedBoss = "All"
+STATE.SelectedMaterial = "Leather + Scrap Metal"
+STATE.AutoBone = false
+STATE.AutoCakePrince = false
+STATE.AutoFactory = false
+STATE.AutoPirateRaid = false
+STATE.AutoMastery = false
+STATE.MasteryType = "Fruit"
+STATE.AutoKillNearest = false
+STATE.BringRange = 235
+STATE.MaxBringMobs = 3
+STATE.FarmHeight = 20
+STATE.MobHealthThreshold = 0
+STATE.SeaEvents = false
+STATE.SeaEventMode = "Shark"
+STATE.AutoFrozen = false
+STATE.AutoKitsune = false
+STATE.AutoPrehistoric = false
+STATE.AutoMirage = false
+STATE.AutoEliteHunter = false
+STATE.AutoYama = false
+STATE.AutoTushita = false
+STATE.AutoCDK = false
+STATE.AutoSwan = false
+STATE.AutoCanvendish = false
+STATE.AutoBigmom = false
+STATE.AutoRengoku = false
+STATE.AutoPoleV2 = false
+STATE.AutoSoulGuitar = false
+STATE.AutoSaber = false
+STATE.RaceV4Temple = false
+STATE.RaceV4PullLever = false
+STATE.RaceV4Train = false
+STATE.RaceV4Trials = false
+STATE.RaceV4Moon = false
+STATE.AutoFruitSniper = false
+STATE.SniperFruit = "Dragon"
+STATE.AutoRandomFruit = false
+STATE.AutoDropFruit = false
+STATE.FruitStockCheck = false
+STATE.ADVStockCheck = false
+STATE.Autofish = false
+STATE.ESPIsland = false
+STATE.ESPFlower = false
+STATE.ESPGear = false
+STATE.ESPAdvDealer = false
+STATE.ESPHakiColor = false
+STATE.ESPBerry = false
+STATE.AutoClick = false
+STATE.ToggleCombat = false
+STATE.KillAura = false
+STATE.AimMethod = "AimBot Skill"
+STATE.InfiniteEnergy = false
+STATE.InfiniteSoru = false
+STATE.InfiniteObservation = false
+STATE.AutoBuso = false
+STATE.AutoV3 = false
+STATE.AutoV4 = false
+STATE.BuyMelee = "None"
+STATE.BuySword = "None"
+STATE.BuyAccessory = "None"
+STATE.BuyHaki = "None"
+STATE.ChangeRace = "None"
+STATE.CraftItem = "None"
+STATE.AdminHop = false
+STATE.FastAttackMode = "Fast Attack"
+STATE.LowCPU = false
+STATE.FruitSkills = { Z = false, X = false, C = false, V = false, F = false }
+STATE.TweenSpeedFar = 300
+STATE.TweenSpeedNear = 900
+STATE.ClickDelay = 0.1
+STATE.GunAuraRange = 500
+STATE.GunAuraEnabled = false
 
 local LOCAL_AFK_CONN = nil
 
@@ -676,6 +755,62 @@ local function updateESP()
 			end
 		end
 	end
+	if STATE.ESPIsland then
+		local map = Workspace:FindFirstChild("Map")
+		if map then
+			for _, island in ipairs(map:GetChildren()) do
+				if island:IsA("Model") then
+					local part = island:FindFirstChildWhichIsA("BasePart")
+					if part then
+						createBillboardESP(part, "Island: " .. island.Name, Color3.fromRGB(100, 255, 100))
+					end
+				end
+			end
+		end
+	end
+	if STATE.ESPFlower then
+		local map = Workspace:FindFirstChild("Map")
+		if map then
+			for _, flower in ipairs(map:GetDescendants()) do
+				if flower:IsA("Part") and flower.Name:find("Flower") then
+					createBillboardESP(flower, "Flower", Color3.fromRGB(255, 100, 255))
+				end
+			end
+		end
+	end
+	if STATE.ESPGear then
+		local map = Workspace:FindFirstChild("Map")
+		if map then
+			for _, gear in ipairs(map:GetDescendants()) do
+				if gear:IsA("Part") and gear.Name:find("Gear") then
+					createBillboardESP(gear, "Gear", Color3.fromRGB(200, 200, 100))
+				end
+			end
+		end
+	end
+	if STATE.ESPAdvDealer then
+		local map = Workspace:FindFirstChild("Map")
+		if map then
+			for _, npc in ipairs(map:GetDescendants()) do
+				if npc:IsA("Model") and npc.Name:find("Advanced Fruit Dealer") then
+					local part = npc:FindFirstChildWhichIsA("BasePart")
+					if part then
+						createBillboardESP(part, "Adv Dealer", Color3.fromRGB(255, 50, 50))
+					end
+				end
+			end
+		end
+	end
+	if STATE.ESPBerry then
+		local map = Workspace:FindFirstChild("Map")
+		if map then
+			for _, berry in ipairs(map:GetDescendants()) do
+				if berry:IsA("Part") and berry.Name:find("Berry") then
+					createBillboardESP(berry, "Berry", Color3.fromRGB(200, 100, 50))
+				end
+			end
+		end
+	end
 end
 
 local noclipConn = nil
@@ -745,11 +880,194 @@ local function setInfiniteJump(on)
 	end
 end
 
+-- ========================================
+-- DATA TABLES (from FourHub + expanded)
+-- ========================================
+
+local BossList = {
+	World1 = {
+		"The Gorilla King", "Bobby", "The Saw", "Yeti", "Mob Leader",
+		"Vice Admiral", "Saber Expert", "Warden", "Chief Warden", "Swan",
+		"Magma Admiral", "Fishman Lord", "Wysper", "Thunder God", "Cyborg",
+		"Ice Admiral", "Greybeard",
+	},
+	World2 = {
+		"Diamond", "Jeremy", "Fajita", "Don Swan", "Smoke Admiral",
+		"Awakened Ice Admiral", "Tide Keeper", "Darkbeard", "Cursed Captain", "Order",
+	},
+	World3 = {
+		"Stone", "Hydra Leader", "Kilo Admiral", "Captain Elephant",
+		"Beautiful Pirate", "Cake Queen", "Longma", "Soul Reaper",
+	},
+}
+
+local MaterialList = {
+	World1 = { "Leather + Scrap Metal", "Angel Wings", "Magma Ore", "Fish Tail" },
+	World2 = { "Leather + Scrap Metal", "Radioactive Material", "Ectoplasm", "Mystic Droplet", "Magma Ore", "Vampire Fang" },
+	World3 = { "Scrap Metal", "Demonic Wisp", "Conjured Cocoa", "Dragon Scale", "Gunpowder", "Fish Tail", "Mini Tusk" },
+}
+
+local MaterialMobs = {
+	["Leather + Scrap Metal"] = { World1 = {"Brute","Pirate"}, World2 = {"Marine Captain"}, World3 = {"Jungle Pirate","Forest Pirate"} },
+	["Angel Wings"] = { World1 = {"Shanda","Royal Squad","Royal Soldier","Wysper","Thunder God"} },
+	["Magma Ore"] = { World1 = {"Military Soldier","Military Spy","Magma Admiral"}, World2 = {"Magma Ninja","Lava Pirate"} },
+	["Fish Tail"] = { World1 = {"Fishman Warrior","Fishman Commando","Fishman Lord"}, World3 = {"Fishman Raider","Fishman Captain"} },
+	["Radioactive Material"] = { World2 = {"Factory Staff"} },
+	["Ectoplasm"] = { World2 = {"Ship Deckhand","Ship Engineer","Ship Steward","Ship Officer"} },
+	["Mystic Droplet"] = { World2 = {"Water Fighter"} },
+	["Vampire Fang"] = { World2 = {"Vampire"} },
+	["Scrap Metal"] = { World3 = {"Jungle Pirate","Forest Pirate"} },
+	["Demonic Wisp"] = { World3 = {"Demonic Soul"} },
+	["Conjured Cocoa"] = { World3 = {"Chocolate Bar Battler","Cocoa Warrior"} },
+	["Dragon Scale"] = { World3 = {"Dragon Crew Archer","Dragon Crew Warrior"} },
+	["Gunpowder"] = { World3 = {"Pistol Billionaire"} },
+	["Mini Tusk"] = { World3 = {"Mythological Pirate"} },
+}
+
+local MaterialPos = {
+	["Leather + Scrap Metal"] = { World1 = CFrame.new(-1145,15,4350), World2 = CFrame.new(-2010,73,-3326), World3 = CFrame.new(-11975,331,-10620) },
+	["Angel Wings"] = { World1 = CFrame.new(-4698,845,-1912) },
+	["Magma Ore"] = { World1 = CFrame.new(-5815,84,8820), World2 = CFrame.new(-5428,78,-5959) },
+	["Fish Tail"] = { World1 = CFrame.new(61123,19,1569), World3 = CFrame.new(-10993,332,-8940) },
+	["Radioactive Material"] = { World2 = CFrame.new(295,73,-56) },
+	["Ectoplasm"] = { World2 = CFrame.new(911,125,33159) },
+	["Mystic Droplet"] = { World2 = CFrame.new(-3385,239,-10542) },
+	["Vampire Fang"] = { World2 = CFrame.new(-6033,7,-1317) },
+	["Scrap Metal"] = { World3 = CFrame.new(-11975,331,-10620) },
+	["Demonic Wisp"] = { World3 = CFrame.new(-9495,453,5977) },
+	["Conjured Cocoa"] = { World3 = CFrame.new(620,78,-12581) },
+	["Dragon Scale"] = { World3 = CFrame.new(6594,383,139) },
+	["Gunpowder"] = { World3 = CFrame.new(-84,85,6132) },
+	["Mini Tusk"] = { World3 = CFrame.new(-13545,470,-6917) },
+}
+
+local MaterialEntrance = {
+	["Angel Wings"] = Vector3.new(-4607.82275, 872.54248, -1667.55688),
+	["Fish Tail"] = { World1 = Vector3.new(61163.85, 11.68, 1819.78) },
+	["Ectoplasm"] = Vector3.new(923.21, 126.98, 32852.83),
+}
+
+local BossQuestData = {
+	-- World 1
+	["The Gorilla King"] = { quest = "JungleQuest", data = 3, posQ = CFrame.new(-1601,37,153), posB = CFrame.new(-1088,8,-488) },
+	["Bobby"] = { quest = "BuggyQuest1", data = 3, posQ = CFrame.new(-1140,5,3828), posB = CFrame.new(-1087,47,4040) },
+	["The Saw"] = { quest = nil, data = nil, posQ = nil, posB = CFrame.new(-785,72,1603) },
+	["Yeti"] = { quest = "SnowQuest", data = 3, posQ = CFrame.new(1386,87,-1297), posB = CFrame.new(1218,138,-1488) },
+	["Mob Leader"] = { quest = nil, data = nil, posQ = nil, posB = CFrame.new(-2845,7,5357) },
+	["Vice Admiral"] = { quest = "MarineQuest2", data = 2, posQ = CFrame.new(-5036,29,4325), posB = CFrame.new(-5007,88,4353) },
+	["Saber Expert"] = { quest = nil, data = nil, posQ = nil, posB = CFrame.new(-1459,30,-51) },
+	["Warden"] = { quest = "ImpelQuest", data = 1, posQ = CFrame.new(5192,3,686), posB = CFrame.new(5278,2,944) },
+	["Chief Warden"] = { quest = "ImpelQuest", data = 2, posQ = CFrame.new(5192,3,686), posB = CFrame.new(5207,1,815) },
+	["Swan"] = { quest = "ImpelQuest", data = 3, posQ = CFrame.new(5192,3,686), posB = CFrame.new(5325,7,720) },
+	["Magma Admiral"] = { quest = "MagmaQuest", data = 3, posQ = CFrame.new(-5316,12,8517), posB = CFrame.new(-5766,83,8718) },
+	["Fishman Lord"] = { quest = "FishmanQuest", data = 3, posQ = CFrame.new(61123,19,1569), posB = CFrame.new(61260,31,1193) },
+	["Wysper"] = { quest = "SkyExp1Quest", data = 3, posQ = CFrame.new(-7862,5546,-380), posB = CFrame.new(-7866,5576,-547) },
+	["Thunder God"] = { quest = "SkyExp2Quest", data = 3, posQ = CFrame.new(-7904,5636,-1412), posB = CFrame.new(-7995,5761,-2089) },
+	["Cyborg"] = { quest = "FountainQuest", data = 3, posQ = CFrame.new(5258,39,4050), posB = CFrame.new(6094,74,3826) },
+	["Ice Admiral"] = { quest = nil, data = nil, posQ = nil, posB = CFrame.new(1266,26,-1400) },
+	["Greybeard"] = { quest = nil, data = nil, posQ = nil, posB = CFrame.new(-5081,85,4257) },
+	-- World 2
+	["Diamond"] = { quest = "Area1Quest", data = 3, posQ = CFrame.new(-428,74,1835), posB = CFrame.new(-1577,199,14) },
+	["Jeremy"] = { quest = "Area2Quest", data = 3, posQ = CFrame.new(637,73,918), posB = CFrame.new(2007,449,854) },
+	["Fajita"] = { quest = "MarineQuest3", data = 3, posQ = CFrame.new(-2442,73,-3218), posB = CFrame.new(-2173,103,-4015) },
+	["Don Swan"] = { quest = nil, data = nil, posQ = nil, posB = CFrame.new(2286,15,864) },
+	["Smoke Admiral"] = { quest = "IceSideQuest", data = 3, posQ = CFrame.new(-5429,16,-5298), posB = CFrame.new(-5275,21,-5261) },
+	["Awakened Ice Admiral"] = { quest = "FrostQuest", data = 3, posQ = CFrame.new(5669,29,-6483), posB = CFrame.new(6404,340,-6895) },
+	["Tide Keeper"] = { quest = "ForgottenQuest", data = 3, posQ = CFrame.new(-3054,238,-10145), posB = CFrame.new(-3796,106,-11421) },
+	["Darkbeard"] = { quest = nil, data = nil, posQ = nil, posB = CFrame.new(3677,63,-3145) },
+	["Cursed Captain"] = { quest = nil, data = nil, posQ = nil, posB = CFrame.new(917,181,33422) },
+	["Order"] = { quest = nil, data = nil, posQ = nil, posB = CFrame.new(-6217,28,-5053) },
+	-- World 3
+	["Stone"] = { quest = "PiratePortQuest", data = 3, posQ = CFrame.new(-290,44,5580), posB = CFrame.new(-1028,92,6579) },
+	["Hydra Leader"] = { quest = "AmazonQuest2", data = 3, posQ = CFrame.new(5822,1019,-74), posB = CFrame.new(5822,1019,-74) },
+	["Kilo Admiral"] = { quest = "MarineTreeIsland", data = 3, posQ = CFrame.new(2179,29,-6740), posB = CFrame.new(2764,432,-7144) },
+	["Captain Elephant"] = { quest = "DeepForestIsland", data = 3, posQ = CFrame.new(-13232,332,-7626), posB = CFrame.new(-13377,433,-8071) },
+	["Beautiful Pirate"] = { quest = "DeepForestIsland2", data = 3, posQ = CFrame.new(-12682,391,-9902), posB = CFrame.new(5284,23,-111) },
+	["Cake Queen"] = { quest = "IceCreamIslandQuest", data = 3, posQ = CFrame.new(-819,65,-10967), posB = CFrame.new(-679,381,-11114) },
+	["Longma"] = { quest = nil, data = nil, posQ = nil, posB = CFrame.new(-10239,390,-9550) },
+	["Soul Reaper"] = { quest = nil, data = nil, posQ = nil, posB = CFrame.new(-9525,316,6656) },
+}
+
+local SeaEventNames = {
+	"Shark", "Piranha", "Terror Shark", "Fish Crew", "Haunted Crew",
+	"Fish Boat", "Sea Beast", "Pirate Brigade", "Pirate Grand Brigade",
+}
+
+local RaceUpgradeCosts = {
+	MinkV3 = { ["Ectoplasm"] = 20, ["Demon Fragment"] = 10 },
+	HumanV3 = { ["Bones"] = 20, ["Frog"] = 1 },
+	AngelV3 = { ["Bones"] = 25, ["Feather"] = 1 },
+	FishmanV3 = { ["Bones"] = 20, ["Shark Anchor"] = 1 },
+	GhoulV3 = { ["Bones"] = 20, ["Ectoplasm"] = 10 },
+	CyborgV3 = { ["Bones"] = 20, ["Core Brain"] = 1 },
+	SkypieaV3 = { ["Bones"] = 25, ["Rainbow Saviour"] = 1 },
+}
+
+local SeaEventShopItems = {
+	"Shark Anchor", "Mysterious Fragment", "Leviathan Crown", "Kitsune Ribbon",
+	"God's Chalice", "Fool's Gold", "Dragon Heart", "Dragon Storm",
+	"Shark Tooth Necklace", "Terror Jaw",
+}
+
+local FruitShopList = {
+	"Dragon", "Leopard", "Dough", "Spirit", "Venom", "Control", "Kitsune",
+	"Blizzard", "T-Rex", "Mammoth", "Sound", "Spider", "Phoenix", "Rumble",
+	"Light", "Magma", "Quake", "Buddha", "Shadow", "Gravity", "Ice",
+	"Flame", "Dark", "Diamond", "Love", "Rubber", "String", "Bomb",
+	"Smoke", "Spike", "Chop", "Spring", "Bird: Falcon", "Hand: Soul",
+	"Paw", "Revive", "Human: Buddha", "Kilo", "Barrier", "Ghost",
+	"Sand", "Bird: Phoenix", "Alpha"
+}
+
+local FightingStyleShop = {
+	"Black Leg", "Electro", "Fishman Karate", "Dragon Claw",
+	"Super Human", "Death Step", "Sharkman Karate", "Electric Claw",
+	"Dragon Talon", "God Human",
+}
+
+local SwordShop = {
+	"Cutlass", "Katana", "Iron Mace", "Dual Katana", "Triple Katana",
+	"Pipe", "Saber", "Bisento", "Pole", "Shisui", "Saddi", "Wando",
+	"True Triple Katana", "Gravity Blade", "Dragon Trident", "Yama",
+	"Tushita", "Canvendish", "Dark Blade",
+}
+
+local AccessoryShop = {
+	"Black Cape", "Swordsman Hat", "Travel Quest", "Marine Coat",
+	"Swan Wing", "Usoap's Hat", "Pirate Cape", "Black Spikey Coat",
+	"Tomoe Ring", "Choppa Cape", "Zebra Cap", "Dragon Hunter",
+	"Leather Coat", "Gentleman Cape",
+}
+
+local AdminNames = {
+	"Roblox", "Builderman", "Shedletsky", "Matt Dusek",
+	"Donis Drones", "Telamon", "Merely", "Builder_Boy",
+}
+
+-- World detection helper
+local function getWorld()
+	if game.PlaceId == 2753915549 or game.PlaceId == 85211729168715 then return "World1"
+	elseif game.PlaceId == 4442272183 or game.PlaceId == 79091703265657 then return "World2"
+	elseif game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then return "World3"
+	end
+	return "World1"
+end
+
+local currentWorld = getWorld()
+
+local function getBossList()
+	return BossList[currentWorld] or {}
+end
+
+local function getMaterialList()
+	return MaterialList[currentWorld] or {}
+end
+
 local Window = Library:CreateWindow({
 	Title = "Ivory",
 	Icon = "swords",
 	Footer = {
-		"v1.4 |",
+		"v2.0 |",
 		{ Text = "Game", Copyable = true },
 		"|",
 		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
@@ -1204,6 +1522,701 @@ task.spawn(function()
 	end
 end)
 
+-- ========================================
+-- EXTENDED FARMING (Phase 1)
+-- ========================================
+local ExtFarmSub = MainTab:AddSubTab("Extended", "plus-circle")
+
+-- Boss Farm
+local BossFarmGroup = ExtFarmSub:AddLeftGroupbox("Boss Farm", "skull")
+BossFarmGroup:AddDropdown("SelectedBoss", {
+	Values = (function() local t = {"All"}; for _, b in ipairs(getBossList()) do table.insert(t, b) end; return t end)(),
+	Default = "All", Text = "Select Boss",
+	Callback = function(v) STATE.SelectedBoss = v end,
+})
+BossFarmGroup:AddToggle("AutoBossFarm", {
+	Text = "Auto Farm Boss",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoBossFarm = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoBossFarm do
+					pcall(function()
+						if STATE.CollectingFruit then task.wait(0.5) return end
+						local hrp = getHRP()
+						if not hrp then return end
+
+						local targetBoss = nil
+						if STATE.SelectedBoss == "All" then
+							for _, bossName in ipairs(getBossList()) do
+								local boss = workspace.Enemies:FindFirstChild(bossName)
+								if boss and boss:FindFirstChild("HumanoidRootPart") and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
+									targetBoss = boss
+									break
+								end
+							end
+							-- check ReplicatedStorage too
+							if not targetBoss then
+								for _, bossName in ipairs(getBossList()) do
+									for _, model in ipairs(ReplicatedStorage:GetChildren()) do
+										if model:IsA("Model") and model.Name == bossName and model:FindFirstChild("Humanoid") and model.Humanoid.Health > 0 then
+											targetBoss = model
+											break
+										end
+									end
+									if targetBoss then break end
+								end
+							end
+						else
+							targetBoss = workspace.Enemies:FindFirstChild(STATE.SelectedBoss)
+							if not targetBoss then
+								for _, model in ipairs(ReplicatedStorage:GetChildren()) do
+									if model:IsA("Model") and model.Name == STATE.SelectedBoss and model:FindFirstChild("Humanoid") and model.Humanoid.Health > 0 then
+										targetBoss = model
+										break
+									end
+								end
+							end
+						end
+
+						if targetBoss then
+							local bossData = BossQuestData[targetBoss.Name]
+							if bossData and bossData.quest and bossData.data then
+								local quest = LocalPlayer.PlayerGui.Main.Quest
+								if not quest.Visible or not string.find(quest.Container.QuestTitle.Title.Text, targetBoss.Name) then
+									CommF:InvokeServer("AbandonQuest")
+									if bossData.posQ then
+										if (bossData.posQ.Position - hrp.Position).Magnitude >= 3000 then
+											BTP(bossData.posQ)
+										else
+											toTarget(bossData.posQ)
+										end
+										if (hrp.Position - bossData.posQ.Position).Magnitude <= 20 then
+											CommF:InvokeServer("StartQuest", bossData.quest, bossData.data)
+											task.wait(0.5)
+										end
+									end
+								end
+							end
+
+							local bossHRP = targetBoss:FindFirstChild("HumanoidRootPart")
+							if bossHRP then
+								repeat task.wait()
+									hrp = getHRP()
+									if not hrp then break end
+									EquipWeapon(STATE.SelectedWeapon)
+									bossHRP = targetBoss:FindFirstChild("HumanoidRootPart")
+									if not bossHRP then break end
+									bossHRP.CanCollide = false
+									targetBoss:FindFirstChild("Head").CanCollide = false
+									toTarget(bossHRP.CFrame * CFrame.new(0, STATE.FarmHeight, 5))
+									checkAndFixStuck(bossHRP.Position)
+									hrp = getHRP()
+									if hrp and bossHRP and (hrp.Position - bossHRP.Position).Magnitude <= 150 then
+										Attack(targetBoss)
+										useSkills(bossHRP.Position)
+									end
+								until not STATE.AutoBossFarm or not targetBoss.Parent or not targetBoss:FindFirstChild("Humanoid") or targetBoss.Humanoid.Health <= 0
+							end
+						else
+							task.wait(1)
+						end
+					end)
+					task.wait()
+				end
+				detachFloat()
+			end)
+		else
+			detachFloat()
+		end
+	end,
+}):AddKeyPicker("BossFarmKey", {
+	Default = "None", Text = "Boss Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
+})
+
+-- Material Farm
+local MatFarmGroup = ExtFarmSub:AddRightGroupbox("Material Farm", "layers")
+MatFarmGroup:AddDropdown("SelectedMaterial", {
+	Values = getMaterialList(),
+	Default = (function() local ml = getMaterialList(); return ml[1] or "Leather + Scrap Metal" end)(),
+	Text = "Select Material",
+	Callback = function(v) STATE.SelectedMaterial = v end,
+})
+MatFarmGroup:AddToggle("AutoMaterialFarm", {
+	Text = "Auto Farm Material",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoMaterial = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoMaterial do
+					pcall(function()
+						if STATE.CollectingFruit then task.wait(0.5) return end
+						local hrp = getHRP()
+						if not hrp then return end
+
+						local matData = MaterialMobs[STATE.SelectedMaterial]
+						if not matData then return end
+						local mobs = matData[currentWorld]
+						if not mobs then return end
+
+						-- Check quest
+						local quest = LocalPlayer.PlayerGui.Main.Quest
+						local hasQuest = quest.Visible
+						if hasQuest then
+							for _, mobName in ipairs(mobs) do
+								if string.find(quest.Container.QuestTitle.Title.Text, mobName) then
+									hasQuest = true
+									break
+								end
+							end
+						end
+
+						if not hasQuest then
+							-- Find a mob to get quest
+							for _, mobName in ipairs(mobs) do
+								if workspace.Enemies:FindFirstChild(mobName) then
+									-- Start quest for this mob
+									CommF:InvokeServer("AbandonQuest")
+									break
+								end
+							end
+						end
+
+						-- Kill nearest material mob
+						local closest, closestDist = nil, math.huge
+						for _, mobName in ipairs(mobs) do
+							for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+								if mob.Name == mobName and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+									local mobDist = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+									if mobDist < closestDist then
+										closest = mob
+										closestDist = mobDist
+									end
+								end
+							end
+						end
+
+						if closest then
+							EquipWeapon(STATE.SelectedWeapon)
+							local mobHRP = closest.HumanoidRootPart
+							closest.Humanoid.WalkSpeed = 0
+							closest.HumanoidRootPart.CanCollide = false
+							closest.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+							closest.HumanoidRootPart.Transparency = 1
+							closest.Humanoid:ChangeState(11)
+
+							local targets = BringMob(closest)
+							toTarget(mobHRP.CFrame * CFrame.new(0, STATE.FarmHeight, 5))
+							checkAndFixStuck(mobHRP.Position)
+
+							hrp = getHRP()
+							if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
+								if #targets >= 2 then
+									Attack({targets[1], targets[2]})
+								else
+									Attack(closest)
+								end
+								useSkills(mobHRP.Position)
+							end
+
+							-- Check entrance for special areas
+							local matEntrance = MaterialEntrance[STATE.SelectedMaterial]
+							if matEntrance and (hrp.Position - (typeof(matEntrance) == "Vector3" and matEntrance or matEntrance[currentWorld] or hrp.Position)).Magnitude > 10000 then
+								pcall(function() CommF:InvokeServer("requestEntrance", typeof(matEntrance) == "Vector3" and matEntrance or matEntrance[currentWorld]) end)
+								task.wait(1)
+							end
+						else
+							-- Move to material position
+							local matPos = MaterialPos[STATE.SelectedMaterial]
+							if matPos and matPos[currentWorld] then
+								toTarget(matPos[currentWorld])
+							end
+						end
+					end)
+					task.wait()
+				end
+				detachFloat()
+			end)
+		else
+			detachFloat()
+		end
+	end,
+}):AddKeyPicker("MaterialKey", {
+	Default = "None", Text = "Material Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
+})
+
+-- Bone / Cake Prince / Factory / Pirate Raid
+local SpecialFarmGroup = ExtFarmSub:AddLeftGroupbox("Special Farms", "star")
+
+SpecialFarmGroup:AddToggle("AutoBone", {
+	Text = "Auto Farm Bone",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoBone = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoBone do
+					pcall(function()
+						if STATE.CollectingFruit then task.wait(0.5) return end
+						local hrp = getHRP()
+						if not hrp then return end
+
+						-- Quest for bones
+						local quest = LocalPlayer.PlayerGui.Main.Quest
+						if not quest.Visible or not string.find(quest.Container.QuestTitle.Title.Text, "Reborn Skeleton") then
+							CommF:InvokeServer("StartQuest", "HauntedQuest1", 1)
+							task.wait(0.5)
+						end
+
+						local closest, closestDist = nil, math.huge
+						local boneMobs = {"Reborn Skeleton", "Living Zombie", "Demonic Soul", "Posessed Mummy"}
+						for _, mobName in ipairs(boneMobs) do
+							for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+								if mob.Name == mobName and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+									local mobDist = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+									if mobDist < closestDist then
+										closest = mob
+										closestDist = mobDist
+									end
+								end
+							end
+						end
+
+						if closest then
+							EquipWeapon(STATE.SelectedWeapon)
+							local mobHRP = closest.HumanoidRootPart
+							closest.Humanoid.WalkSpeed = 0
+							closest.HumanoidRootPart.CanCollide = false
+							closest.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+							closest.HumanoidRootPart.Transparency = 1
+							closest.Humanoid:ChangeState(11)
+
+							local targets = BringMob(closest)
+							toTarget(mobHRP.CFrame * CFrame.new(0, STATE.FarmHeight, 5))
+							checkAndFixStuck(mobHRP.Position)
+
+							hrp = getHRP()
+							if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
+								if #targets >= 2 then
+									Attack({targets[1], targets[2]})
+								else
+									Attack(closest)
+								end
+								useSkills(mobHRP.Position)
+							end
+						end
+					end)
+					task.wait()
+				end
+				detachFloat()
+			end)
+		else
+			detachFloat()
+		end
+	end,
+}):AddKeyPicker("BoneKey", {
+	Default = "None", Text = "Bone Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
+})
+
+SpecialFarmGroup:AddToggle("AutoCakePrince", {
+	Text = "Auto Cake Prince",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoCakePrince = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoCakePrince do
+					pcall(function()
+						if STATE.CollectingFruit then task.wait(0.5) return end
+						local hrp = getHRP()
+						if not hrp then return end
+
+						local cakeMobs = {"Cookie Crafter", "Cake Guard", "Baking Staff", "Head Baker"}
+						local closest, closestDist = nil, math.huge
+						for _, mobName in ipairs(cakeMobs) do
+							for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+								if mob.Name == mobName and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+									local mobDist = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+									if mobDist < closestDist then
+										closest = mob
+										closestDist = mobDist
+									end
+								end
+							end
+						end
+
+						-- If Cake Prince spawned, target it
+						if workspace.Enemies:FindFirstChild("Cake Prince") then
+							closest = workspace.Enemies:FindFirstChild("Cake Prince")
+						end
+
+						if closest then
+							EquipWeapon(STATE.SelectedWeapon)
+							local mobHRP = closest.HumanoidRootPart
+							closest.Humanoid.WalkSpeed = 0
+							closest.HumanoidRootPart.CanCollide = false
+							closest.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+							closest.HumanoidRootPart.Transparency = 1
+							closest.Humanoid:ChangeState(11)
+
+							local targets = BringMob(closest)
+							toTarget(mobHRP.CFrame * CFrame.new(0, STATE.FarmHeight, 5))
+							checkAndFixStuck(mobHRP.Position)
+
+							hrp = getHRP()
+							if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
+								if #targets >= 2 then
+									Attack({targets[1], targets[2]})
+								else
+									Attack(closest)
+								end
+								useSkills(mobHRP.Position)
+							end
+						end
+					end)
+					task.wait()
+				end
+				detachFloat()
+			end)
+		else
+			detachFloat()
+		end
+	end,
+}):AddKeyPicker("CakePrinceKey", {
+	Default = "None", Text = "Cake Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
+})
+
+SpecialFarmGroup:AddToggle("AutoFactory", {
+	Text = "Auto Factory Raid",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoFactory = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoFactory do
+					pcall(function()
+						if STATE.CollectingFruit then task.wait(0.5) return end
+						local hrp = getHRP()
+						if not hrp then return end
+
+						-- Find Factory Core
+						local core = workspace:FindFirstChild("Factory") and workspace.Factory:FindFirstChild("Core")
+						if core then
+							EquipWeapon(STATE.SelectedWeapon)
+							toTarget(core.CFrame * CFrame.new(0, 30, 5))
+							hrp = getHRP()
+							if hrp and (hrp.Position - core.Position).Magnitude <= 150 then
+								Attack(core)
+							end
+						else
+							-- Kill Factory Staff
+							local closest, closestDist = nil, math.huge
+							for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+								if mob.Name == "Factory Staff" and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+									local mobDist = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+									if mobDist < closestDist then
+										closest = mob
+										closestDist = mobDist
+									end
+								end
+							end
+							if closest then
+								EquipWeapon(STATE.SelectedWeapon)
+								toTarget(closest.HumanoidRootPart.CFrame * CFrame.new(0, STATE.FarmHeight, 5))
+								Attack(closest)
+								useSkills(closest.HumanoidRootPart.Position)
+							end
+						end
+					end)
+					task.wait()
+				end
+				detachFloat()
+			end)
+		else
+			detachFloat()
+		end
+	end,
+})
+
+SpecialFarmGroup:AddToggle("AutoPirateRaid", {
+	Text = "Auto Pirate Raid",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoPirateRaid = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoPirateRaid do
+					pcall(function()
+						if STATE.CollectingFruit then task.wait(0.5) return end
+						local hrp = getHRP()
+						if not hrp then return end
+
+						local closest, closestDist = nil, math.huge
+						for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+							if (mob.Name == "Pirate Grand Brigade" or mob.Name == "Pirate Brigade") and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+								local mobDist = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+								if mobDist < closestDist then
+									closest = mob
+									closestDist = mobDist
+								end
+							end
+						end
+						if closest then
+							EquipWeapon(STATE.SelectedWeapon)
+							toTarget(closest.HumanoidRootPart.CFrame * CFrame.new(0, STATE.FarmHeight, 5))
+							Attack(closest)
+							useSkills(closest.HumanoidRootPart.Position)
+						end
+					end)
+					task.wait()
+				end
+				detachFloat()
+			end)
+		else
+			detachFloat()
+		end
+	end,
+})
+
+-- Mastery Farm & Kill Nearest
+local MasteryGroup = ExtFarmSub:AddRightGroupbox("Mastery / Kill", "target")
+
+MasteryGroup:AddDropdown("MasteryType", {
+	Values = { "Fruit", "Gun", "Sword" }, Default = "Fruit", Text = "Mastery Type",
+	Callback = function(v) STATE.MasteryType = v end,
+})
+
+MasteryGroup:AddToggle("AutoMastery", {
+	Text = "Auto Mastery Farm",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoMastery = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoMastery do
+					pcall(function()
+						if STATE.CollectingFruit then task.wait(0.5) return end
+						local hrp = getHRP()
+						if not hrp then return end
+
+						local quest = LocalPlayer.PlayerGui.Main.Quest
+						if not quest.Visible then
+							CheckQuest()
+							if CFrameQ then
+								if (CFrameQ.Position - hrp.Position).Magnitude >= 3000 then
+									if EntranceCF then
+										pcall(function() CommF:InvokeServer("requestEntrance", EntranceCF) end)
+										task.wait(1)
+									else
+										BTP(CFrameQ)
+									end
+								else
+									toTarget(CFrameQ)
+								end
+								if (hrp.Position - CFrameQ.Position).Magnitude <= 20 then
+									CommF:InvokeServer("StartQuest", NameQuest, LevelQuest)
+									task.wait(0.5)
+								end
+							end
+							return
+						end
+
+						-- Find mob
+						local closest, closestDist = nil, math.huge
+						if Monster and workspace.Enemies:FindFirstChild(Monster) then
+							for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+								if mob.Name == Monster and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+									local mobDist = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+									if mobDist < closestDist then
+										closest = mob
+										closestDist = mobDist
+									end
+								end
+							end
+						end
+
+						if closest then
+							local mobHRP = closest.HumanoidRootPart
+							closest.Humanoid.WalkSpeed = 0
+							closest.HumanoidRootPart.CanCollide = false
+							closest.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+							closest.HumanoidRootPart.Transparency = 1
+							closest.Humanoid:ChangeState(11)
+
+							BringMob(closest)
+
+							-- Use selected weapon type for mastery
+							if STATE.MasteryType == "Fruit" then
+								if closest.Humanoid.Health <= closest.Humanoid.MaxHealth * 0.3 then
+									toTarget(mobHRP.CFrame * CFrame.new(0, STATE.FarmHeight, 0))
+									-- Use fruit skills
+									local keys = {}
+									if STATE.FruitSkills.Z then table.insert(keys, "Z") end
+									if STATE.FruitSkills.X then table.insert(keys, "X") end
+									if STATE.FruitSkills.C then table.insert(keys, "C") end
+									if STATE.FruitSkills.V then table.insert(keys, "V") end
+									for _, key in ipairs(keys) do
+										VIM:SendKeyEvent(true, key, false, game)
+										task.wait(0.1)
+										VIM:SendKeyEvent(false, key, false, game)
+										task.wait(0.15)
+									end
+								else
+									equipWeapon("Melee")
+									toTarget(mobHRP.CFrame * CFrame.new(0, STATE.FarmHeight, 0))
+									Attack(closest)
+								end
+							elseif STATE.MasteryType == "Gun" then
+								if closest.Humanoid.Health <= closest.Humanoid.MaxHealth * 0.3 then
+									equipWeapon("Gun")
+									toTarget(mobHRP.CFrame * CFrame.new(0, STATE.FarmHeight, 8))
+									VIM:SendKeyEvent(true, "Z", false, game)
+									task.wait(0.1)
+									VIM:SendKeyEvent(false, "Z", false, game)
+									task.wait(0.2)
+									VIM:SendKeyEvent(true, "X", false, game)
+									task.wait(0.1)
+									VIM:SendKeyEvent(false, "X", false, game)
+								else
+									equipWeapon("Melee")
+									toTarget(mobHRP.CFrame * CFrame.new(0, STATE.FarmHeight, 0))
+									Attack(closest)
+								end
+							elseif STATE.MasteryType == "Sword" then
+								equipWeapon("Sword")
+								toTarget(mobHRP.CFrame * CFrame.new(0, STATE.FarmHeight, 0))
+								Attack(closest)
+							end
+						end
+					end)
+					task.wait()
+				end
+				detachFloat()
+			end)
+		else
+			detachFloat()
+		end
+	end,
+}):AddKeyPicker("MasteryKey", {
+	Default = "None", Text = "Mastery Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
+})
+
+MasteryGroup:AddToggle("AutoKillNearest", {
+	Text = "Kill Nearest Mob",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoKillNearest = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoKillNearest do
+					pcall(function()
+						if STATE.CollectingFruit then task.wait(0.5) return end
+						local hrp = getHRP()
+						if not hrp then return end
+
+						local closest, closestDist = nil, math.huge
+						for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+							if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+								local mobDist = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+								if mobDist < closestDist then
+									closest = mob
+									closestDist = mobDist
+								end
+							end
+						end
+
+						if closest then
+							EquipWeapon(STATE.SelectedWeapon)
+							local mobHRP = closest.HumanoidRootPart
+							closest.Humanoid.WalkSpeed = 0
+							closest.HumanoidRootPart.CanCollide = false
+							closest.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+							closest.HumanoidRootPart.Transparency = 1
+							closest.Humanoid:ChangeState(11)
+
+							local targets = BringMob(closest)
+							toTarget(mobHRP.CFrame * CFrame.new(0, STATE.FarmHeight, 5))
+							checkAndFixStuck(mobHRP.Position)
+
+							hrp = getHRP()
+							if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
+								if #targets >= 2 then
+									Attack({targets[1], targets[2]})
+								else
+									Attack(closest)
+								end
+								useSkills(mobHRP.Position)
+							end
+						end
+					end)
+					task.wait()
+				end
+				detachFloat()
+			end)
+		else
+			detachFloat()
+		end
+	end,
+}):AddKeyPicker("KillNearestKey", {
+	Default = "None", Text = "Kill Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
+})
+
+-- Auto Ken (Observation Haki)
+local KenGroup = ExtFarmSub:AddLeftGroupbox("Auto Haki", "shield")
+KenGroup:AddToggle("AutoKen", {
+	Text = "Auto Ken (Observation)",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoKen = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoKen do
+					pcall(function()
+						local char = LocalPlayer.Character
+						if char and not CollectionService:HasTag(char, "Ken") then
+							if CommE then CommE:FireServer("Ken", true) end
+						end
+					end)
+					task.wait(0.2)
+				end
+			end)
+		end
+	end,
+})
+
+KenGroup:AddToggle("AutoBuso", {
+	Text = "Auto Buso Haki",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoBuso = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoBuso do
+					pcall(function()
+						local char = LocalPlayer.Character
+						if char and not char:FindFirstChild("HasBuso") then
+							CommF:InvokeServer("Buso")
+						end
+					end)
+					task.wait(1)
+				end
+			end)
+		end
+	end,
+})
+
+-- Auto Team Selection
+KenGroup:AddDropdown("AutoTeam", {
+	Values = { "Pirates", "Marines" }, Default = "Pirates", Text = "Auto Team",
+	Callback = function(v) STATE.AutoTeam = v end,
+})
+KenGroup:AddButton("Join Team", function()
+	pcall(function() CommF:InvokeServer("SetTeam", STATE.AutoTeam) end)
+	Library:Notify({ Title = "Ivory", Description = "Joined " .. STATE.AutoTeam, Type = "Success", Time = 3 })
+end)
+
 local RaidSub = MainTab:AddSubTab("Raids", "shield")
 local RaidGroup = RaidSub:AddLeftGroupbox("Raid Control", "zap")
 local RaidSet = RaidSub:AddRightGroupbox("Raid Settings", "settings")
@@ -1311,6 +2324,458 @@ RaidSet:AddDropdown("RaidType", {
 	Callback = function(v) STATE.RaidType = v end,
 })
 
+-- ========================================
+-- SEA EVENTS (Phase 2)
+-- ========================================
+local SeaEventSub = MainTab:AddSubTab("Sea Events", "anchor")
+local SeaEventGroup = SeaEventSub:AddLeftGroupbox("Event Farm", "ship")
+local SeaEventSettings = SeaEventSub:AddRightGroupbox("Settings", "sliders")
+
+SeaEventGroup:AddDropdown("SeaEventMode", {
+	Values = SeaEventNames,
+	Default = "Shark", Text = "Event Type",
+	Callback = function(v) STATE.SeaEventMode = v end,
+})
+
+SeaEventGroup:AddToggle("AutoSeaEvent", {
+	Text = "Auto Sea Event",
+	Default = false,
+	Callback = function(v)
+		STATE.SeaEvents = v
+		if v then
+			task.spawn(function()
+				while STATE.SeaEvents do
+					pcall(function()
+						if STATE.CollectingFruit then task.wait(0.5) return end
+						local hrp = getHRP()
+						if not hrp then return end
+
+						local targetName = STATE.SeaEventMode
+						local closest, closestDist = nil, math.huge
+
+						for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+							if mob.Name == targetName and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+								local mobDist = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+								if mobDist < closestDist then
+									closest = mob
+									closestDist = mobDist
+								end
+							end
+						end
+
+						if closest then
+							EquipWeapon(STATE.SelectedWeapon)
+							local mobHRP = closest.HumanoidRootPart
+							toTarget(mobHRP.CFrame * CFrame.new(0, 50, 8))
+							hrp = getHRP()
+							if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
+								Attack(closest)
+								useSkills(mobHRP.Position)
+							end
+						else
+							task.wait(1)
+						end
+					end)
+					task.wait()
+				end
+			end)
+		end
+	end,
+}):AddKeyPicker("SeaEventKey", {
+	Default = "None", Text = "Sea Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
+})
+
+SeaEventGroup:AddToggle("AutoFrozen", {
+	Text = "Auto Frozen Dimension",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoFrozen = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoFrozen do
+					pcall(function()
+						local hrp = getHRP()
+						if not hrp then return end
+						-- Try to find Frozen Dimension portal
+						local frozen = Workspace:FindFirstChild("FrozenDimension")
+						if frozen then
+							local part = frozen:FindFirstChildWhichIsA("BasePart")
+							if part then toTarget(part.Position + Vector3.new(0, 50, 0)) end
+						end
+						-- Kill FrozenDimension mobs
+						for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+							if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+								local dist = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+								if dist <= 1000 then
+									EquipWeapon(STATE.SelectedWeapon)
+									Attack(mob)
+									useSkills(mob.HumanoidRootPart.Position)
+								end
+							end
+						end
+					end)
+					task.wait()
+				end
+			end)
+		end
+	end,
+})
+
+SeaEventGroup:AddToggle("AutoKitsune", {
+	Text = "Auto Kitsune Island",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoKitsune = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoKitsune do
+					pcall(function()
+						local hrp = getHRP()
+						if not hrp then return end
+						-- Find Kitsune shrine NPCs
+						local map = Workspace:FindFirstChild("Map")
+						if map then
+							for _, part in ipairs(map:GetDescendants()) do
+								if part:IsA("Model") and (part.Name:find("Kitsune") or part.Name:find("Shrine")) then
+									local p = part:FindFirstChildWhichIsA("BasePart")
+									if p then toTarget(p.Position + Vector3.new(0, 10, 0)); break end
+								end
+							end
+						end
+						-- Kill Kitsune mobs
+						for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+							if mob.Name:find("Kitsune") and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+								EquipWeapon(STATE.SelectedWeapon)
+								toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(0, 30, 5))
+								Attack(mob)
+								useSkills(mob.HumanoidRootPart.Position)
+							end
+						end
+					end)
+					task.wait()
+				end
+			end)
+		end
+	end,
+})
+
+SeaEventGroup:AddToggle("AutoPrehistoric", {
+	Text = "Auto Prehistoric Island",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoPrehistoric = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoPrehistoric do
+					pcall(function()
+						local hrp = getHRP()
+						if not hrp then return end
+						-- Find and kill lava golems / dino mobs
+						for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+							if (mob.Name:find("Lava Golem") or mob.Name:find("Dino") or mob.Name:find("Pterodactyl")) and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+								EquipWeapon(STATE.SelectedWeapon)
+								toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(0, 30, 5))
+								Attack(mob)
+								useSkills(mob.HumanoidRootPart.Position)
+							end
+						end
+					end)
+					task.wait()
+				end
+			end)
+		end
+	end,
+})
+
+SeaEventGroup:AddToggle("AutoMirage", {
+	Text = "Auto Mirage Island",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoMirage = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoMirage do
+					pcall(function()
+						local hrp = getHRP()
+						if not hrp then return end
+						local map = Workspace:FindFirstChild("Map")
+						if map then
+							for _, part in ipairs(map:GetDescendants()) do
+								if part:IsA("Model") and part.Name:find("Mirage") then
+									local p = part:FindFirstChildWhichIsA("BasePart")
+									if p then toTarget(p.Position + Vector3.new(0, 10, 0)); break end
+								end
+							end
+						end
+						-- Collect gears
+						if map then
+							for _, gear in ipairs(map:GetDescendants()) do
+								if gear:IsA("Part") and gear.Name:find("Gear") then
+									toTarget(gear.Position)
+								end
+							end
+						end
+					end)
+					task.wait()
+				end
+			end)
+		end
+	end,
+})
+
+SeaEventSettings:AddSlider("BringRange", {
+	Text = "Bring Range", Default = 235, Min = 50, Max = 500, Rounding = 0,
+	Callback = function(v) STATE.BringRange = v end,
+})
+SeaEventSettings:AddSlider("MaxBring", {
+	Text = "Max Bring Mobs", Default = 3, Min = 1, Max = 10, Rounding = 0,
+	Callback = function(v) STATE.MaxBringMobs = v end,
+})
+SeaEventSettings:AddSlider("FarmHeight", {
+	Text = "Farm Height", Default = 20, Min = 5, Max = 50, Rounding = 0,
+	Callback = function(v) STATE.FarmHeight = v end,
+})
+
+-- ========================================
+-- FRUIT SYSTEM (Phase 5)
+-- ========================================
+local FruitSystemSub = MainTab:AddSubTab("Fruits+", "apple")
+local FruitSniperGroup = FruitSystemSub:AddLeftGroupbox("Fruit Sniper", "crosshair")
+local FruitStockGroup = FruitSystemSub:AddRightGroupbox("Stock Checker", "package")
+
+FruitSniperGroup:AddDropdown("SniperFruit", {
+	Values = FruitShopList,
+	Default = "Dragon", Text = "Sniper Target",
+	Callback = function(v) STATE.SniperFruit = v end,
+})
+FruitSniperGroup:AddToggle("AutoFruitSniper", {
+	Text = "Auto Buy Sniper Fruit",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoFruitSniper = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoFruitSniper do
+					pcall(function()
+						local stock = CommF:InvokeServer("getStock")
+						if stock then
+							for _, item in ipairs(stock) do
+								if item[1] == STATE.SniperFruit then
+									CommF:InvokeServer("BuyFruit", item[1])
+									Library:Notify({ Title = "Ivory", Description = "Bought " .. item[1] .. "!", Type = "Success", Time = 5 })
+									STATE.AutoFruitSniper = false
+									return
+								end
+							end
+						end
+					end)
+					task.wait(3)
+				end
+			end)
+		end
+	end,
+})
+
+FruitSniperGroup:AddToggle("AutoRandomFruit", {
+	Text = "Auto Random Fruit",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoRandomFruit = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoRandomFruit do
+					pcall(function() CommF:InvokeServer("Cousin", "Buy") end)
+					task.wait(5)
+				end
+			end)
+		end
+	end,
+})
+
+FruitSniperGroup:AddButton("Drop All Fruits", function()
+	pcall(function()
+		for _, tool in ipairs(LocalPlayer.Backpack:GetChildren()) do
+			if tool:IsA("Tool") and tool.Name:find("Fruit") then
+				tool.Parent = LocalPlayer.Character
+				task.wait(0.1)
+				if tool:FindFirstChild("EatRemote") then
+					tool.EatRemote:InvokeServer("Drop")
+				end
+			end
+		end
+		for _, tool in ipairs(LocalPlayer.Character:GetChildren()) do
+			if tool:IsA("Tool") and tool.Name:find("Fruit") then
+				if tool:FindFirstChild("EatRemote") then
+					tool.EatRemote:InvokeServer("Drop")
+				end
+			end
+		end
+		Library:Notify({ Title = "Ivory", Description = "Dropped all fruits!", Type = "Success", Time = 3 })
+	end)
+end)
+
+FruitStockGroup:AddButton("Check Fruit Stock", function()
+	pcall(function()
+		local stock = CommF:InvokeServer("getStock")
+		if stock then
+			local msg = "Fruit Stock:\n"
+			for _, item in ipairs(stock) do
+				msg = msg .. item[1] .. " - $" .. tostring(item[2]) .. "\n"
+			end
+			Library:Notify({ Title = "Ivory", Description = msg, Type = "Info", Time = 10 })
+		end
+	end)
+end)
+
+FruitStockGroup:AddButton("Check ADV Stock", function()
+	pcall(function()
+		local stock = CommF:InvokeServer("getStock")
+		-- Also check Advanced Dealer
+		local advStock = CommF:InvokeServer("Adv_Cousin", "getStock")
+		if advStock then
+			local msg = "ADV Stock:\n"
+			for _, item in ipairs(advStock) do
+				msg = msg .. item[1] .. " - $" .. tostring(item[2]) .. "\n"
+			end
+			Library:Notify({ Title = "Ivory", Description = msg, Type = "Info", Time = 10 })
+		end
+	end)
+end)
+
+FruitStockGroup:AddToggle("AutoBerry", {
+	Text = "Auto Collect Berry",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoBerry = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoBerry do
+					pcall(function()
+						local hrp = getHRP()
+						if not hrp then return end
+						local map = Workspace:FindFirstChild("Map")
+						if map then
+							for _, part in ipairs(map:GetDescendants()) do
+								if part:IsA("Part") and part.Name:find("Berry") then
+									toTarget(part.Position)
+								end
+							end
+						end
+					end)
+					task.wait()
+				end
+			end)
+		end
+	end,
+})
+
+-- ========================================
+-- RACE V4 (Phase 4)
+-- ========================================
+local RaceV4Sub = TeleportTab:AddSubTab("Race V4", "users")
+local TempleGroup = RaceV4Sub:AddLeftGroupbox("Temple of Time", "landmark")
+local TrialsGroup = RaceV4Sub:AddRightGroupbox("Trials & Training", "target")
+
+TempleGroup:AddButton("Teleport to Temple", function()
+	-- Teleport to Temple of Time
+	local map = Workspace:FindFirstChild("Map")
+	if map then
+		local temple = map:FindFirstChild("TempleOfTime") or map:FindFirstChild("Temple") or map:FindFirstChild("AncientClock")
+		if temple then
+			local part = temple:FindFirstChildWhichIsA("BasePart")
+			if part then toTarget(part.Position + Vector3.new(0, 50, 0)) end
+		end
+	end
+	-- Try CommF teleport
+	pcall(function() CommF:InvokeServer("requestEntrance", Vector3.new(-12462, 378, -7543)) end)
+end)
+
+TempleGroup:AddButton("Pull Lever", function()
+	pcall(function()
+		for _, obj in ipairs(workspace:GetDescendants()) do
+			if obj:IsA("ProximityPrompt") and obj.ActionText == "Pull" then
+				fireproximityprompt(obj)
+			end
+		end
+	end)
+end)
+
+TempleGroup:AddToggle("RaceV4Train", {
+	Text = "Auto Train V4",
+	Default = false,
+	Callback = function(v)
+		STATE.RaceV4Train = v
+		if v then
+			task.spawn(function()
+				while STATE.RaceV4Train do
+					pcall(function()
+						local hrp = getHRP()
+						if not hrp then return end
+						-- Find and kill bone mobs for training
+						for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+							if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+								local dist = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+								if dist <= 500 then
+									EquipWeapon(STATE.SelectedWeapon)
+									Attack(mob)
+									useSkills(mob.HumanoidRootPart.Position)
+								end
+							end
+						end
+						-- Activate RaceEnergy
+						pcall(function()
+							local char = LocalPlayer.Character
+							if char and char:FindFirstChild("RaceEnergy") then
+								char.RaceEnergy.Value = 0
+							end
+						end)
+					end)
+					task.wait()
+				end
+			end)
+		end
+	end,
+})
+
+TrialsGroup:AddButton("Auto Complete Trials", function()
+	-- Auto attempt race trials
+	pcall(function()
+		CommF:InvokeServer("RaceV4Progress", "Check")
+		task.wait(1)
+		CommF:InvokeServer("RaceV4Progress", "Begin")
+	end)
+end)
+
+TrialsGroup:AddToggle("AutoLookAtMoon", {
+	Text = "Auto Look At Moon",
+	Default = false,
+	Callback = function(v)
+		STATE.RaceV4Moon = v
+		if v then
+			task.spawn(function()
+				while STATE.RaceV4Moon do
+					pcall(function()
+						local char = LocalPlayer.Character
+						local hrp = char and char:FindFirstChild("HumanoidRootPart")
+						if hrp then
+							-- Find moon direction
+							local moonDir = Vector3.new(0, 1, 0) -- simplified
+							hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + moonDir)
+						end
+					end)
+					task.wait(0.5)
+				end
+			end)
+		end
+	end,
+})
+
+TrialsGroup:AddButton("Teleport to Ancient One", function()
+	pcall(function()
+		CommF:InvokeServer("requestEntrance", Vector3.new(-12462, 378, -7543))
+	end)
+end)
+
 local CombatSub = CombatTab:AddSubTab("Bounty", "crosshair")
 local BountyGroup = CombatSub:AddLeftGroupbox("Bounty Farm", "target")
 local BountySet = CombatSub:AddRightGroupbox("Settings", "sliders")
@@ -1333,6 +2798,7 @@ SkillsSet:AddToggle("SkillZ", { Text = "Skill Z", Default = true, Callback = fun
 SkillsSet:AddToggle("SkillX", { Text = "Skill X", Default = true, Callback = function(v) STATE.SkillX = v end })
 SkillsSet:AddToggle("SkillC", { Text = "Skill C", Default = true, Callback = function(v) STATE.SkillC = v end })
 SkillsSet:AddToggle("SkillV", { Text = "Skill V", Default = true, Callback = function(v) STATE.SkillV = v end })
+SkillsSet:AddToggle("SkillF", { Text = "Skill F", Default = false, Callback = function(v) STATE.FruitSkills.F = v end })
 
 SkillsGroup:AddLabel("Uses fruit skills automatically during combat")
 
@@ -1414,6 +2880,148 @@ end)
 BountySet:AddSlider("BountyDist", {
 	Text = "Follow Distance", Default = 20, Min = 5, Max = 50, Rounding = 0,
 	Callback = function(v) STATE.BountyDistance = v end,
+})
+
+-- ========================================
+-- PVP SECTION (Phase 8)
+-- ========================================
+local PvPSub = CombatTab:AddSubTab("PvP", "swords")
+local PvPGroup = PvPSub:AddLeftGroupbox("Combat", "crosshair")
+local PvPSettings = PvPSub:AddRightGroupbox("Settings", "sliders")
+
+PvPGroup:AddToggle("AutoClick", {
+	Text = "Auto Click",
+	Default = false,
+	Callback = function(v)
+		STATE.AutoClick = v
+		if v then
+			task.spawn(function()
+				while STATE.AutoClick do
+					pcall(function()
+						local char = LocalPlayer.Character
+						if char and char:FindFirstChildOfClass("Tool") then
+							VirtualUser:CaptureController()
+							VirtualUser:Button1Down(Vector2.new(1280, 672))
+						end
+					end)
+					task.wait(STATE.ClickDelay)
+				end
+			end)
+		end
+	end,
+})
+
+PvPGroup:AddToggle("ToggleCombat", {
+	Text = "Toggle Combat (Mob)",
+	Default = false,
+	Callback = function(v)
+		STATE.ToggleCombat = v
+		if v then
+			task.spawn(function()
+				while STATE.ToggleCombat do
+					pcall(function()
+						local hrp = getHRP()
+						if not hrp then return end
+						local closest, closestDist = nil, math.huge
+						for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+							if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+								local dist = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+								if dist < closestDist then
+									closest = mob
+									closestDist = dist
+								end
+							end
+						end
+						if closest and closestDist <= 500 then
+							EquipWeapon(STATE.SelectedWeapon)
+							Attack(closest)
+						end
+					end)
+					task.wait(0.1)
+				end
+			end)
+		end
+	end,
+})
+
+PvPGroup:AddToggle("KillAura", {
+	Text = "Kill Aura (All Nearby)",
+	Default = false,
+	Risky = true,
+	Callback = function(v)
+		STATE.KillAura = v
+		if v then
+			task.spawn(function()
+				while STATE.KillAura do
+					pcall(function()
+						local hrp = getHRP()
+						if not hrp then return end
+						for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+							if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+								local dist = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+								if dist <= 100 then
+									EquipWeapon(STATE.SelectedWeapon)
+									Attack(mob)
+								end
+							end
+						end
+					end)
+					task.wait(0.1)
+				end
+			end)
+		end
+	end,
+})
+
+PvPGroup:AddToggle("GunAura", {
+	Text = "Gun Aura",
+	Default = false,
+	Risky = true,
+	Callback = function(v)
+		STATE.GunAuraEnabled = v
+		if v then
+			task.spawn(function()
+				while STATE.GunAuraEnabled do
+					pcall(function()
+						local hrp = getHRP()
+						if not hrp then return end
+						local closest, closestDist = nil, math.huge
+						for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+							if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+								local dist = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+								if dist < closestDist and dist <= STATE.GunAuraRange then
+									closest = mob
+									closestDist = dist
+								end
+							end
+						end
+						if closest then
+							equipWeapon("Gun")
+							local net = Modules and Modules:FindFirstChild("Net")
+							local shoot = net and net:FindFirstChild("RE/ShootGunEvent")
+							if shoot then
+								pcall(function() shoot:FireServer(closest.HumanoidRootPart.Position, {closest.HumanoidRootPart}) end)
+							end
+						end
+					end)
+					task.wait(0.1)
+				end
+			end)
+		end
+	end,
+})
+
+PvPSettings:AddDropdown("AimMethod", {
+	Values = { "AimBot Skill", "Auto Aimbots" }, Default = "AimBot Skill", Text = "Aim Method",
+	Callback = function(v) STATE.AimMethod = v end,
+})
+PvPSettings:AddSlider("GunAuraRange", {
+	Text = "Gun Range", Default = 500, Min = 100, Max = 2000, Rounding = 0,
+	Callback = function(v) STATE.GunAuraRange = v end,
+})
+PvPSettings:AddSlider("ClickDelay", {
+	Text = "Click Delay", Default = 0.1, Min = 0.01, Max = 1, Rounding = 2,
+	Callback = function(v) STATE.ClickDelay = v end,
 })
 
 local StatsSub = CombatTab:AddSubTab("Stats", "bar-chart")
@@ -1518,6 +3126,36 @@ WorldESP:AddToggle("ESPFruits", {
 WorldESP:AddToggle("ESPChests", {
 	Text = "Chest ESP", Default = false,
 	Callback = function(v) STATE.ESPChests = v end,
+})
+
+WorldESP:AddToggle("ESPIsland", {
+	Text = "Island ESP", Default = false,
+	Callback = function(v) STATE.ESPIsland = v end,
+})
+
+WorldESP:AddToggle("ESPFlower", {
+	Text = "Flower ESP", Default = false,
+	Callback = function(v) STATE.ESPFlower = v end,
+})
+
+WorldESP:AddToggle("ESPGear", {
+	Text = "Gear ESP", Default = false,
+	Callback = function(v) STATE.ESPGear = v end,
+})
+
+WorldESP:AddToggle("ESPAdvDealer", {
+	Text = "Adv Dealer ESP", Default = false,
+	Callback = function(v) STATE.ESPAdvDealer = v end,
+})
+
+WorldESP:AddToggle("ESPHakiColor", {
+	Text = "Haki Color ESP", Default = false,
+	Callback = function(v) STATE.ESPHakiColor = v end,
+})
+
+WorldESP:AddToggle("ESPBerry", {
+	Text = "Berry ESP", Default = false,
+	Callback = function(v) STATE.ESPBerry = v end,
 })
 
 ESPGroup:AddLabel("ESP Color"):AddColorPicker("ESPColor", {
@@ -1726,6 +3364,210 @@ MiscGroup:AddButton("Server Hop", function()
 	end)
 end)
 
+MiscGroup:AddButton("Admin Detection Hop", function()
+	task.spawn(function()
+		while true do
+			task.wait(10)
+			pcall(function()
+				for _, plr in ipairs(Players:GetPlayers()) do
+					for _, adminName in ipairs(AdminNames) do
+						if plr.Name:lower():find(adminName:lower()) then
+							Library:Notify({ Title = "Ivory", Description = "Admin detected: " .. plr.Name .. " - Hopping!", Type = "Warning", Time = 5 })
+							task.wait(1)
+							-- hop to new server
+							local servers = {}
+							local cursor = nil
+							repeat
+								local url = ("https://games.roblox.com/v1/games/%s/servers/Public?limit=100%s"):format(
+									game.PlaceId, cursor and "&cursor=" .. HttpService:UrlEncode(cursor) or ""
+								)
+								local ok, res = pcall(function() return HttpService:GetAsync(url) end)
+								if not ok then break end
+								local data = HttpService:JSONDecode(res)
+								for _, s in ipairs(data.data) do
+									if s.id ~= game.JobId and s.playing < s.maxPlayers then
+										table.insert(servers, s.id)
+									end
+								end
+								cursor = data.nextPageCursor
+							until not cursor
+							if #servers > 0 then
+								TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(#servers)], LocalPlayer)
+							end
+							return
+						end
+					end
+				end
+			end)
+		end
+	end)
+end)
+
+MiscGroup:AddButton("Low CPU Mode", function()
+	pcall(function()
+		Lighting.GlobalShadows = false
+		Lighting.FogEnd = 9e9
+		local Terrain = workspace:FindFirstChildOfClass("Terrain")
+		if Terrain then
+			Terrain.WaterWaveSize = 0
+			Terrain.WaterWaveSpeed = 0
+			Terrain.WaterReflectance = 0
+			Terrain.WaterTransparency = 0
+		end
+		settings().Rendering.QualityLevel = "Level01"
+		for _, obj in ipairs(workspace:GetDescendants()) do
+			if obj:IsA("BasePart") then
+				obj.Material = Enum.Material.SmoothPlastic
+				obj.Reflectance = 0
+			elseif obj:IsA("Decal") or obj:IsA("Texture") then
+				obj.Transparency = 1
+			elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
+				obj.Lifetime = NumberRange.new(0)
+			elseif obj:IsA("Fire") or obj:IsA("SpotLight") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
+				obj.Enabled = false
+			elseif obj:IsA("MeshPart") then
+				obj.Material = Enum.Material.SmoothPlastic
+				obj.Reflectance = 0
+			end
+		end
+		Library:Notify({ Title = "Ivory", Description = "Low CPU mode enabled", Type = "Info", Time = 3 })
+	end)
+end)
+
+-- ========================================
+-- PLAYER SUBTABS: Infinite Abilities, Buy, Craft
+-- ========================================
+local PlayerMiscSub = PlayerTab:AddSubTab("Abilities", "star")
+
+local AbilityGroup = PlayerMiscSub:AddLeftGroupbox("Infinite Abilities", "zap")
+AbilityGroup:AddToggle("InfiniteEnergy", {
+	Text = "Infinite Energy", Default = false,
+	Callback = function(v)
+		STATE.InfiniteEnergy = v
+		if v then
+			task.spawn(function()
+				while STATE.InfiniteEnergy do
+					pcall(function()
+						local char = LocalPlayer.Character
+						if char and char:FindFirstChild("Energy") then
+							char.Energy.Value = char.Energy.MaxValue
+						end
+					end)
+					task.wait(0.1)
+				end
+			end)
+		end
+	end,
+})
+
+AbilityGroup:AddToggle("InfiniteSoru", {
+	Text = "Infinite Soru", Default = false,
+	Callback = function(v)
+		STATE.InfiniteSoru = v
+		if v then
+			task.spawn(function()
+				while STATE.InfiniteSoru do
+					pcall(function()
+						local char = LocalPlayer.Character
+						if char and char:FindFirstChild("Soru") then
+							for _, func in ipairs(getgc()) do
+								if typeof(func) == "function" and getfenv(func).script == char.Soru then
+									for _, upval in ipairs(getupvalues(func)) do
+										if typeof(upval) == "table" then
+											upval.LastUse = 0
+										end
+									end
+								end
+							end
+						end
+					end)
+					task.wait(0.5)
+				end
+			end)
+		end
+	end,
+})
+
+AbilityGroup:AddToggle("InfiniteObservation", {
+	Text = "Infinite Observation", Default = false,
+	Callback = function(v)
+		STATE.InfiniteObservation = v
+		if v then
+			pcall(function()
+				LocalPlayer.VisionRadius.Value = math.huge
+			end)
+		end
+	end,
+})
+
+local BuyGroup = PlayerMiscSub:AddRightGroupbox("Shop", "shopping-cart")
+
+BuyGroup:AddDropdown("BuyMelee", {
+	Values = FightingStyleShop, Default = "None", Text = "Buy Melee",
+	Callback = function(v) STATE.BuyMelee = v end,
+})
+BuyGroup:AddButton("Buy Selected Melee", function()
+	if STATE.BuyMelee ~= "None" then
+		pcall(function() CommF:InvokeServer("Buy" .. STATE.BuyMelee:gsub("%s+", "")) end)
+		Library:Notify({ Title = "Ivory", Description = "Buying " .. STATE.BuyMelee, Type = "Info", Time = 3 })
+	end
+end)
+
+BuyGroup:AddDropdown("BuySword", {
+	Values = SwordShop, Default = "None", Text = "Buy Sword",
+	Callback = function(v) STATE.BuySword = v end,
+})
+BuyGroup:AddButton("Buy Selected Sword", function()
+	if STATE.BuySword ~= "None" then
+		pcall(function() CommF:InvokeServer("Buy" .. STATE.BuySword:gsub("%s+", "")) end)
+		Library:Notify({ Title = "Ivory", Description = "Buying " .. STATE.BuySword, Type = "Info", Time = 3 })
+	end
+end)
+
+BuyGroup:AddDropdown("BuyAccessory", {
+	Values = AccessoryShop, Default = "None", Text = "Buy Accessory",
+	Callback = function(v) STATE.BuyAccessory = v end,
+})
+BuyGroup:AddButton("Buy Selected Accessory", function()
+	if STATE.BuyAccessory ~= "None" then
+		pcall(function() CommF:InvokeServer("Buy" .. STATE.BuyAccessory:gsub("%s+", "")) end)
+		Library:Notify({ Title = "Ivory", Description = "Buying " .. STATE.BuyAccessory, Type = "Info", Time = 3 })
+	end
+end)
+
+local CraftGroup = PlayerMiscSub:AddLeftGroupbox("Craft / Race", "hammer")
+CraftGroup:AddDropdown("CraftItem", {
+	Values = SeaEventShopItems, Default = "None", Text = "Craft Sea Item",
+	Callback = function(v) STATE.CraftItem = v end,
+})
+CraftGroup:AddButton("Craft Selected Item", function()
+	if STATE.CraftItem ~= "None" then
+		pcall(function() CommF:InvokeServer("CraftItem", STATE.CraftItem) end)
+		Library:Notify({ Title = "Ivory", Description = "Crafting " .. STATE.CraftItem, Type = "Info", Time = 3 })
+	end
+end)
+
+CraftGroup:AddDropdown("ChangeRace", {
+	Values = { "Ghoul", "Cyborg" }, Default = "None", Text = "Change Race",
+	Callback = function(v) STATE.ChangeRace = v end,
+})
+CraftGroup:AddButton("Buy Race Change", function()
+	if STATE.ChangeRace ~= "None" then
+		pcall(function() CommF:InvokeServer("Buy" .. STATE.ChangeRace) end)
+		Library:Notify({ Title = "Ivory", Description = "Buying " .. STATE.ChangeRace .. " race", Type = "Info", Time = 3 })
+	end
+end)
+
+CraftGroup:AddButton("Buy Haki (Flowing)", function()
+	pcall(function() CommF:InvokeServer("Buso", 1) end)
+end)
+CraftGroup:AddButton("Buy Soru", function()
+	pcall(function() CommF:InvokeServer("BuyHaki", "Soru") end)
+end)
+CraftGroup:AddButton("Buy Geppo", function()
+	pcall(function() CommF:InvokeServer("BuyHaki", "Geppo") end)
+end)
+
 ThemeManager:SetLibrary(Library)
 SaveManager:SetLibrary(Library)
 SaveManager:IgnoreThemeSettings()
@@ -1818,7 +3660,7 @@ end)
 
 Library:Notify({
 	Title = "Ivory",
-	Description = "v1.4 loaded successfully",
+	Description = "v2.0 loaded successfully",
 	Type = "Success",
 	Time = 5,
 })
