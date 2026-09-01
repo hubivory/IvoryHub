@@ -2414,57 +2414,60 @@ local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
 -- ═══════════════════════════════════════════════════════
 --  STEAL SUB-TAB
 -- ═══════════════════════════════════════════════════════
-local StealSub = MainTab:AddSubTab("Steal", "crosshair")
-local SG1 = StealSub:AddLeftGroupbox("Egg Steal", "crosshair")
+do
+	local Sub = MainTab:AddSubTab("Steal", "crosshair")
+	local L = Sub:AddLeftGroupbox("Egg Steal", "crosshair")
+	local R = Sub:AddRightGroupbox("Base & Utility", "home")
 
-SG1:AddToggle("AutoSteal", { Text = "Auto Steal", Default = false, Callback = function(v) Config.AutoSteal = v end })
-SG1:AddDropdown("FarmMethod", { Text = "Farm Method", Values = { "Teleport", "TP Walk" }, Default = "TP Walk", Callback = function(v) Config.FarmMethod = v end })
-SG1:AddDropdown("AreaFocus", { Text = "Area Focus", Values = pickList(areaLabels), Multi = true, Callback = function(v) table.clear(Config.AreaFocus); for _, item in ipairs(v) do Config.AreaFocus[item] = true end end })
-SG1:AddDropdown("RarityFilter", { Text = "Rarity Filter", Values = pickList(sortAreas(Rarities)), Multi = true, Callback = function(v) table.clear(Config.RarityFilter); for _, item in ipairs(v) do Config.RarityFilter[item] = true end end })
-SG1:AddToggle("SecretPriority", { Text = "Secret Priority", Default = true, Callback = function(v) Config.SecretPriority = v end })
-SG1:AddToggle("AntiTrap", { Text = "Anti Trap", Default = true, Callback = function(v) Config.AntiTrap = v end })
+	L:AddToggle("AutoSteal", { Text = "Auto Steal", Default = false, Callback = function(v) Config.AutoSteal = v end })
+	L:AddDropdown("FarmMethod", { Text = "Farm Method", Values = { "Teleport", "TP Walk" }, Default = "TP Walk", Callback = function(v) Config.FarmMethod = v end })
+	L:AddDropdown("AreaFocus", { Text = "Area Focus", Values = pickList(areaLabels), Multi = true, Callback = function(v) table.clear(Config.AreaFocus); for _, item in ipairs(v) do Config.AreaFocus[item] = true end end })
+	L:AddDropdown("RarityFilter", { Text = "Rarity Filter", Values = pickList(sortAreas(Rarities)), Multi = true, Callback = function(v) table.clear(Config.RarityFilter); for _, item in ipairs(v) do Config.RarityFilter[item] = true end end })
+	L:AddToggle("SecretPriority", { Text = "Secret Priority", Default = true, Callback = function(v) Config.SecretPriority = v end })
+	L:AddToggle("AntiTrap", { Text = "Anti Trap", Default = true, Callback = function(v) Config.AntiTrap = v end })
 
-local SG2 = StealSub:AddRightGroupbox("Base & Utility", "home")
-SG2:AddButton("Set Base Here", function() Config.ManualBase = (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) and LocalPlayer.Character.HumanoidRootPart.Position or nil; warnToast(Config.ManualBase and "Base set!" or "No character.", 3) end)
-SG2:AddButton("Go Home", function() goHome(20) end)
-SG2:AddButton("Void Drop", function() voidDrop() end)
-SG2:AddButton("Sell Pets", function() sellPets(false) end)
+	R:AddButton("Set Base Here", function() Config.ManualBase = (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) and LocalPlayer.Character.HumanoidRootPart.Position or nil; warnToast(Config.ManualBase and "Base set!" or "No character.", 3) end)
+	R:AddButton("Go Home", function() goHome(20) end)
+	R:AddButton("Void Drop", function() voidDrop() end)
+	R:AddButton("Sell Pets", function() sellPets(false) end)
+end
 
 -- ═══════════════════════════════════════════════════════
 --  HATCH & ESP SUB-TAB
 -- ═══════════════════════════════════════════════════════
-local HatchSub = MainTab:AddSubTab("Hatch & ESP", "egg")
-local HG1 = HatchSub:AddLeftGroupbox("Hatching", "egg")
-HG1:AddToggle("AutoHatch", { Text = "Auto Hatch", Default = false, Callback = function(v) Config.AutoHatch = v end })
-HG1:AddButton("Hatch All (Walk)", function() _hatchAll(true) end)
-HG1:AddButton("Hatch All (TP)", function() _hatchAll(false) end)
+do
+	local Sub = MainTab:AddSubTab("Hatch & ESP", "egg")
+	local L = Sub:AddLeftGroupbox("Hatching", "egg")
+	local R = Sub:AddRightGroupbox("Visuals", "eye")
 
-local HG2 = HatchSub:AddRightGroupbox("Visuals", "eye")
-HG2:AddToggle("EggESP", { Text = "Egg ESP", Default = false, Callback = function(v) Config.EggESP = v end })
+	L:AddToggle("AutoHatch", { Text = "Auto Hatch", Default = false, Callback = function(v) Config.AutoHatch = v end })
+	L:AddButton("Hatch All (Walk)", function() _hatchAll(true) end)
+	L:AddButton("Hatch All (TP)", function() _hatchAll(false) end)
+
+	R:AddToggle("EggESP", { Text = "Egg ESP", Default = false, Callback = function(v) Config.EggESP = v end })
+end
 
 -- ═══════════════════════════════════════════════════════
 --  AUTOMATION SUB-TAB
 -- ═══════════════════════════════════════════════════════
-local AutoSub = MainTab:AddSubTab("Automation", "zap")
-local AG1 = AutoSub:AddLeftGroupbox("Farming", "sprout")
-AG1:AddToggle("AutoEquipBest", { Text = "Auto Equip Best", Default = false, Callback = function(v) Config.AutoEquipBest = v end })
-AG1:AddToggle("ParasiteFarm", { Text = "Parasite Farm", Default = false, Callback = function(v) Config.ParasiteFarm = v end })
-AG1:AddToggle("AutoTreadmill", { Text = "Auto Treadmill", Default = false, Callback = function(v) Config.AutoTreadmill = v end })
-AG1:AddToggle("AutoFireProx", { Text = "Auto Fire Prox", Default = false, Callback = function(v) Config.AutoFireProx = v end })
-AG1:AddToggle("AntiAFK", { Text = "Anti AFK", Default = false, Callback = function(v) Config.AntiAFK = v end })
+do
+	local Sub = MainTab:AddSubTab("Automation", "zap")
+	local L = Sub:AddLeftGroupbox("Farming", "sprout")
+	local R = Sub:AddRightGroupbox("Performance", "zap")
 
-local AG2 = AutoSub:AddRightGroupbox("Performance", "zap")
-AG2:AddToggle("FpsBoost", { Text = "FPS Boost", Default = false, Callback = function(v) if v then fpsOn() else fpsOff() end end })
-AG2:AddButton("Server Hop", function() serverHop() end)
+	L:AddToggle("AutoEquipBest", { Text = "Auto Equip Best", Default = false, Callback = function(v) Config.AutoEquipBest = v end })
+	L:AddToggle("ParasiteFarm", { Text = "Parasite Farm", Default = false, Callback = function(v) Config.ParasiteFarm = v end })
+	L:AddToggle("AutoTreadmill", { Text = "Auto Treadmill", Default = false, Callback = function(v) Config.AutoTreadmill = v end })
+	L:AddToggle("AutoFireProx", { Text = "Auto Fire Prox", Default = false, Callback = function(v) Config.AutoFireProx = v end })
+	L:AddToggle("AntiAFK", { Text = "Anti AFK", Default = false, Callback = function(v) Config.AntiAFK = v end })
 
--- ═══════════════════════════════════════════════════════
---  DISCORD
--- ═══════════════════════════════════════════════════════
-local DG1 = AutoSub:AddRightGroupbox("Community", "users")
-DG1:AddButton("Join Discord For Dupe", function()
-	if setclipboard then setclipboard("https://discord.gg/MCWYKBdB4E") end
-	warnToast("Discord link copied!", 3)
-end)
+	R:AddToggle("FpsBoost", { Text = "FPS Boost", Default = false, Callback = function(v) if v then fpsOn() else fpsOff() end end })
+	R:AddButton("Server Hop", function() serverHop() end)
+	R:AddButton("Join Discord For Dupe", function()
+		if setclipboard then setclipboard("https://discord.gg/MCWYKBdB4E") end
+		warnToast("Discord link copied!", 3)
+	end)
+end
 
 -- ═══════════════════════════════════════════════════════
 --  SETTINGS TAB
