@@ -1179,6 +1179,13 @@ end)
 local CachedPlot = nil
 local CachedSlot = nil
 local PlotTried = 0
+local OriginCache = nil
+local OriginCacheAt = 0
+local ClaimedCells = {}
+local PlaceOK = nil
+local PlaceWhy = ""
+local PlaceLog = {}
+local PlaceFails = 0
 
 local function myPlot()
 	if CachedPlot and CachedPlot.Parent then return CachedPlot end
@@ -1247,6 +1254,7 @@ local function penPivot()
 end
 
 local function baseOrigins()
+	if OriginCache and tick() - OriginCacheAt < 15 then return OriginCache end
 	local list = {}
 	local p = myPlot()
 	if p then
@@ -1268,7 +1276,266 @@ local function baseOrigins()
 		if ok2 and pv then list[#list + 1] = pv end
 	end
 	if #list == 0 then list[1] = CFrame.new() end
-	return list
+	local dedup = {}
+	for _, cf in ipairs(list) do
+		local keep = true
+		for _, e in ipairs(dedup) do
+			if (e.Position - cf.Position).Magnitude < 0.5 then keep = false; break end
+		end
+		if keep then dedup[#dedup + 1] = cf end
+	end
+	OriginCache = dedup
+	OriginCacheAt = tick()
+	return dedup
+end
+
+-- ═══════════════════════════════════════════════════════
+--  EGG PLACEMENT GRID SYSTEM
+-- ═══════════════════════════════════════════════════════
+local PLACE_HALF = 24
+local EGG_CLEAR = 7
+local ZONE_HALF = 20
+local GRID_STEP = 4
+local SHAPE_FILE = "IvoryPlaceShape.txt"
+
+local function ownerId(t)
+	local id = t.OwnerUserId or t.UserId or t.PlayerId or t.Owner
+	if type(id) == "table" then id = id.UserId or id.userId or id.Id end
+	return id
+end
+
+local function ownedBy(t)
+	local id = ownerId(t)
+	if type(id) == "number" then return id == LocalPlayer.UserId end
+	if type(id) == "string" then return id == tostring(LocalPlayer.UserId) or id == LocalPlayer.Name end
+	return nil
+end
+
+local function myRecords()
+	local out, seen = {}, {}
+	local live = callNet(Remotes.EggLive)
+	if type(live) ~= "table" then return out end
+	local function take(t)
+		for key, rec in pairs(t) do
+			if type(rec) == "table" then
+				local uid = rec.Uid or (type(key) == "string" and key) or nil
+				if uid and not seen[uid] and ownedBy(rec) ~= false then
+					seen[uid] = true
+					if rec.Uid == nil then rec.Uid = uid end
+					out[#out + 1] = rec
+				end
+			end
+		end
+	end
+	for _, entry in pairs(live) do
+		if type(entry) == "table" and ownedBy(entry) == true and type(entry.Records) == "table" then
+			take(entry.Records)
+		end
+	end
+	if #out == 0 then
+		for _, entry in pairs(live) do
+			if type(entry) == "table" and type(entry.Records) == "table" then take(entry.Records) end
+		end
+	end
+	if #out == 0 and type(live.Records) == "table" then take(live.Records) end
+	return out
+end
+
+local function usedSpots()
+	local used = {}
+	for _, rec in ipairs(myRecords()) do
+		local pl = rec.Placement
+		local cf = pl and (pl.LocalCFrame or pl.CFrame or pl.WorldCFrame)
+		if typeof(cf) == "CFrame" then used[#used + 1] = cf.Position
+		elseif typeof(cf) == "Vector3" then used[#used + 1] = cf end
+	end
+	for _, c in ipairs(Workspace:GetChildren()) do
+		if c.Name == "PlacedEggRenders" then
+			for _, m in ipairs(c:GetChildren()) do
+				local ok, p = pcall(function()
+					if m:IsA("BasePart") then return m.Position end
+					if m:IsA("Model") then return m:GetPivot().Position end
+					return nil
+				end)
+				if ok and p then used[#used + 1] = p end
+			end
+		end
+	end
+	return used
+end
+
+local function logShape(tag, msg)
+	PlaceLog[#PlaceLog + 1] = tostring(tag) .. " " .. tostring(msg)
+	if #PlaceLog > 12 then table.remove(PlaceLog, 1) end
+end
+
+local function savePlaceOK()
+	if PlaceOK and type(writefile) == "function" then
+		pcall(function() writefile(SHAPE_FILE, tostring(PlaceOK.origin)) end)
+	end
+end
+
+do
+	local ok, s = pcall(function()
+		if type(isfile) == "function" and type(readfile) == "function" then
+			if isfile(SHAPE_FILE) then return readfile(SHAPE_FILE) end
+		end
+		return nil
+	end)
+	local n = ok and tonumber(s) or nil
+	if n and n >= 1 then PlaceOK = { origin = math.floor(n) } end
+end
+
+local function placeTargets()
+	local origins = baseOrigins()
+	local o = origins[1]
+	if not o then return {} end
+	local used = usedSpots()
+	local out, seen = {}, {}
+	local clear2 = EGG_CLEAR * EGG_CLEAR
+	local function nearestEgg(wx, wz)
+		local best = math.huge
+		for _, w in ipairs(used) do
+			local dx, dz = w.X - wx, w.Z - wz
+			local d2 = dx * dx + dz * dz
+			if d2 < best then best = d2 end
+		end
+		return best
+	end
+	local function add(lx, lz)
+		local wp = o * CFrame.new(lx, 0, lz)
+		local key = math.floor(wp.X / 3) .. ":" .. math.floor(wp.Z / 3)
+		if seen[key] then return end
+		local at = ClaimedCells[key]
+		if at and tick() - at < 20 then return end
+		local near = nearestEgg(wp.X, wp.Z)
+		if near < clear2 then return end
+		local gy = floorY(wp.X, wp.Z, o.Position.Y)
+		if not gy then return end
+		seen[key] = true
+		out[#out + 1] = { key = key, w = Vector3.new(wp.X, gy, wp.Z), lx = lx, lz = lz, clr = math.sqrt(near) }
+	end
+	local z = -ZONE_HALF
+	while z <= ZONE_HALF do
+		local x = -ZONE_HALF
+		while x <= PLACE_HALF do
+			add(x, z)
+			x = x + GRID_STEP
+		end
+		z = z + GRID_STEP
+	end
+	return out
+end
+
+local function placeShot(uid, oi, wcf)
+	local origins = baseOrigins()
+	local o = origins[oi]
+	if not o then return false end
+	local r = net(Remotes.EggPlace)
+	if not r or not r:IsA("RemoteFunction") then return false end
+	if not holdingEgg() then return false end
+	local lp = (o:Inverse() * wcf).Position
+	local lcf = CFrame.new(lp)
+	local ok, res = pcall(function()
+		return r:InvokeServer({ Uid = uid, LocalCFrame = lcf })
+	end)
+	if not ok then
+		if type(res) == "string" and #res > 0 then PlaceWhy = res:sub(1, 140) end
+		logShape("O" .. oi, res)
+		return false
+	end
+	if type(res) == "string" and #res > 0 then
+		PlaceWhy = res:sub(1, 140)
+		logShape("O" .. oi, res)
+	elseif type(res) == "table" then
+		local why = res.Error or res.Reason or res.Message or res.Why
+		if type(why) == "string" and #why > 0 then PlaceWhy = why:sub(1, 140) end
+		logShape("O" .. oi, why or "table reply")
+	else
+		PlaceWhy = "server returned " .. tostring(res)
+		logShape("O" .. oi, "returned " .. tostring(res))
+	end
+	for _ = 1, 16 do
+		if not holdingEgg() then return true end
+		RunService.Heartbeat:Wait()
+	end
+	return false
+end
+
+local function tryAt(uid, target)
+	local wcf = CFrame.new(target.w)
+	local origins = baseOrigins()
+	if PlaceOK and origins[PlaceOK.origin] then
+		return placeShot(uid, PlaceOK.origin, wcf)
+	end
+	for oi = 1, #origins do
+		if placeShot(uid, oi, wcf) then
+			PlaceOK = { origin = oi }
+			savePlaceOK()
+			return true
+		end
+		task.wait(0.04)
+	end
+	return false
+end
+
+local function placeEggGrid(uid, maxTries)
+	maxTries = maxTries or 18
+	if not ensureHeld(uid) then
+		PlaceWhy = "egg never reached the hand"
+		return false, false
+	end
+	local htool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildWhichIsA("Tool")
+	if htool then
+		local u = htool:GetAttribute("UID")
+		if u == nil then
+			for _, ch in ipairs(htool:GetChildren()) do
+				if ch:IsA("Model") then
+					u = ch.Name:match("_(%w+)$")
+					if u then break end
+				end
+			end
+		end
+		if u ~= nil then uid = tostring(u) end
+	end
+	if not PlaceOK then
+		PlaceLog = {}
+		PlaceWhy = ""
+	end
+	local targets = placeTargets()
+	local origins = baseOrigins()
+	local center = origins[1] and origins[1].Position or (root() and root().Position) or Vector3.zero
+	table.sort(targets, function(a, b) return (a.w - center).Magnitude < (b.w - center).Magnitude end)
+	local mine = #myRecords()
+	local tries = 0
+	for _, t in ipairs(targets) do
+		tries = tries + 1
+		if tryAt(uid, t) then
+			ClaimedCells[t.key] = tick()
+			PlaceFails = 0
+			return true
+		end
+		if not holdingEgg() then
+			PlaceFails = 0
+			return true
+		end
+		if tries >= maxTries then break end
+		task.wait(0.04)
+	end
+	if not holdingEgg() then
+		PlaceFails = 0
+		return true
+	end
+	if #myRecords() > mine then
+		PlaceFails = 0
+		return true
+	end
+	PlaceFails = PlaceFails + 1
+	if PlaceOK and PlaceFails >= 3 then
+		PlaceOK = nil
+		PlaceFails = 0
+	end
+	return false, #targets == 0
 end
 
 local function inRange(pos, reach)
@@ -1386,25 +1653,9 @@ local function placeEggOnBase(uid)
 	if not inRange(basePos, 20) then
 		travelTo(basePos, 12, autoStealOn)
 	end
-	-- Try AskPlaceEgg remote
-	local r = net(Remotes.EggPlace)
-	if r and r:IsA("RemoteFunction") then
-		local origins = baseOrigins()
-		local o = origins[1]
-		if o and holdingEgg() then
-			local lp = (o:Inverse() * CFrame.new(basePos)).Position
-			local lcf = CFrame.new(lp)
-			local ok, res = pcall(function()
-				return r:InvokeServer({ Uid = uid, LocalCFrame = lcf })
-			end)
-			if ok and (res == true or res == nil) then
-				for _ = 1, 16 do
-					if not holdingEgg() then return true end
-					RunService.Heartbeat:Wait()
-				end
-			end
-		end
-	end
+	-- Try grid-based placement
+	local ok = placeEggGrid(uid)
+	if ok then return true end
 	-- Fallback: smart place prompt
 	for _, pp in ipairs({ smartPlacePrompt() }) do
 		if promptInRange(pp) and firePrompt(pp) then
@@ -1428,13 +1679,13 @@ local function deliver(uid)
 		askUid(Remotes.DoffTool, uid)
 		return true
 	end
-	-- Try placeEgg first
-	local ok = placeEggOnBase(uid)
+	-- Try grid-based placement
+	local ok, full = placeEggGrid(uid)
 	if ok then return true end
-	-- If failed, try hatch-clear and retry
-	if Config.AutoHatch then
+	-- If no targets (base full), try hatch-clear and retry
+	if full and Config.AutoHatch then
 		pcall(function() hatchAll() end)
-		if placeEggOnBase(uid) then return true end
+		if placeEggGrid(uid) then return true end
 	end
 	-- Fallback: smart place prompt
 	for _, pp in ipairs({ smartPlacePrompt() }) do
@@ -1445,6 +1696,8 @@ local function deliver(uid)
 			end
 		end
 	end
+	-- Last resort: doff
+	askUid(Remotes.DoffTool, uid)
 	return not holdingEgg()
 end
 
@@ -1843,7 +2096,7 @@ local Options = Library.Options
 local Window = Library:CreateWindow({
 	Title = "Ivory",
 	Footer = {
-		"v1.5 |",
+		"v1.6 |",
 		{ Text = "Lobby/Game", Copyable = true },
 		"|",
 		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
