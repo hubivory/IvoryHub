@@ -2462,13 +2462,10 @@ ClaimBox:AddButton("Recall to Spawn", function()
 	if sp then travelTo(sp, 8) end
 end)
 
--- Forward declarations for feature exports
-local fpsOn_fn, fpsOff_fn
-local PAR = {}
-local findParasites_fn
-local startAutoFireProx_fn, stopAutoFireProx_fn
-local VP = {}
-local scanPets_fn, clonePet_fn, removeAllPets_fn
+-- Forward declarations for feature exports (single table to save registers)
+local FX = {}
+local PAR = FX
+local VP = FX
 
 -- ═══════════════════════════════════════════════════════════
 --  FPS BOOST
@@ -2619,8 +2616,8 @@ spawnLoop(function()
 		end
 	end
 end)
-fpsOn_fn = fpsOn
-fpsOff_fn = fpsOff
+FX.fpsOn = fpsOn
+FX.fpsOff = fpsOff
 end -- end FPS Boost do block
 
 -- ═══════════════════════════════════════════════════════
@@ -2801,7 +2798,7 @@ spawnLoop(function()
 					pcall(function() hrp.CFrame = CFrame.new(overshootPos) end)
 					task.wait(0.1)
 					local wasProxOn = Config.AutoFireProx
-					if not wasProxOn then Config.AutoFireProx = true; if startAutoFireProx_fn then startAutoFireProx_fn() end end
+					if not wasProxOn then Config.AutoFireProx = true; if FX.startAutoFireProx then FX.startAutoFireProx() end end
 					for attempt = 1, 5 do
 						if not PAR.Active then break end
 						interactParasite(p)
@@ -2821,7 +2818,7 @@ spawnLoop(function()
 						end)
 						task.wait(0.12)
 					end
-					if not wasProxOn then Config.AutoFireProx = false; if stopAutoFireProx_fn then stopAutoFireProx_fn() end end
+					if not wasProxOn then Config.AutoFireProx = false; if FX.stopAutoFireProx then FX.stopAutoFireProx() end end
 					local basePos = Config.ManualBase or (plotPivot() and plotPivot().Position)
 					if basePos then travelTo(basePos, 12, autoStealOn) end
 					task.wait(0.2)
@@ -2834,7 +2831,7 @@ spawnLoop(function()
 		end
 	end
 end)
-findParasites_fn = findParasites
+FX.findParasites = findParasites
 end -- end Parasite Farm do block
 
 -- ═══════════════════════════════════════════════════════
@@ -3063,8 +3060,8 @@ local function stopAutoFireProx()
 	Config.AutoFireProx = false
 	if ProxConn then ProxConn:Disconnect(); ProxConn = nil end
 end
-startAutoFireProx_fn = startAutoFireProx
-stopAutoFireProx_fn = stopAutoFireProx
+FX.startAutoFireProx = startAutoFireProx
+FX.stopAutoFireProx = stopAutoFireProx
 end -- end Auto Fire Prox do block
 
 -- ═══════════════════════════════════════════════════════
@@ -3159,9 +3156,9 @@ VP.conn = RunService.Heartbeat:Connect(function()
 	end
 end)
 track(VP.conn)
-scanPets_fn = scanPets
-clonePet_fn = clonePet
-removeAllPets_fn = removeAllPets
+FX.scanPets = scanPets
+FX.clonePet = clonePet
+FX.removeAllPets = removeAllPets
 end -- end Visual Pets do block
 
 -- ═══════════════════════════════════════════════════════════
@@ -3176,7 +3173,7 @@ PerfBox:AddToggle("FpsBoost", {
 	Default = false,
 	Callback = function(state)
 		Config.FpsBoost = state
-		if state then fpsOn_fn() else fpsOff_fn() end
+		if state then FX.fpsOn() else FX.fpsOff() end
 	end,
 })
 
@@ -3195,7 +3192,7 @@ ProxBox:AddToggle("AutoFireProx", {
 	Default = false,
 	Callback = function(state)
 		Config.AutoFireProx = state
-		if state then startAutoFireProx_fn() else stopAutoFireProx_fn() end
+		if state then FX.startAutoFireProx() else FX.stopAutoFireProx() end
 	end,
 })
 
@@ -3236,7 +3233,7 @@ ParasiteBox:AddSlider("ParasiteScanInterval", {
 })
 
 ParasiteBox:AddButton("Scan Now", function()
-	local list = findParasites_fn()
+	local list = FX.findParasites()
 	Library:Notify({Title="Ivory", Description="Found " .. #list .. " parasite(s)", Type="Info", Time=3})
 end)
 
@@ -3266,7 +3263,7 @@ PetBox:AddDropdown("VisualPetSelect", {
 })
 
 PetBox:AddButton("Refresh Pet List", function()
-	local names = scanPets_fn()
+	local names = FX.scanPets()
 	if #names > 0 then
 		pcall(function() Options.VisualPetSelect:SetValues(names) end)
 		Library:Notify({Title="Ivory", Description=#names .. " pets found", Type="Info", Time=2})
@@ -3292,10 +3289,10 @@ PetBox:AddSlider("OrbitSpeed", {
 })
 
 PetBox:AddButton("Spawn Pet", function()
-	if VP.inputName ~= "" and VP.inputName ~= "Click Refresh" then clonePet_fn(VP.inputName) end
+	if VP.inputName ~= "" and VP.inputName ~= "Click Refresh" then FX.clonePet(VP.inputName) end
 end)
 
-PetBox:AddButton("Remove All Pets", function() removeAllPets_fn() end)
+PetBox:AddButton("Remove All Pets", function() FX.removeAllPets() end)
 
 -- Sell Pets UI
 local SellBox = ExtrasSub:AddRightGroupbox("Sell Pets", "dollar-sign")
@@ -3366,9 +3363,9 @@ MenuGroup:AddButton("Unload", function()
 	cancelTravel()
 	releaseRoot()
 	clearESP()
-	if fpsOff_fn then pcall(fpsOff_fn) end
-	if stopAutoFireProx_fn then pcall(stopAutoFireProx_fn) end
-	if removeAllPets_fn then pcall(removeAllPets_fn) end
+	if FX.fpsOff then pcall(FX.fpsOff) end
+	if FX.stopAutoFireProx then pcall(FX.stopAutoFireProx) end
+	if FX.removeAllPets then pcall(FX.removeAllPets) end
 	if warnLayer then pcall(function() warnLayer:Destroy() end) end
 	for _, c in ipairs(Conns) do
 		pcall(function() c:Disconnect() end)
