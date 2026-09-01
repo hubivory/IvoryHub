@@ -1,6 +1,6 @@
 --// Ivory Hub | Steal An Egg
 --// Place ID: 107778070777162
---// Core movement, egg stealing via remotes, trap avoidance
+--// Core movement, trap avoidance, automation
 
 -- ═══════════════════════════════════════════════════════
 --  SERVICES
@@ -24,21 +24,14 @@ local LocalPlayer = Players.LocalPlayer
 --  CONFIG / STATE
 -- ═══════════════════════════════════════════════════════
 local Config = {
-	AutoSteal = false,
-	FarmMethod = "TP Walk",
 	PerfMode = false,
 	PhysReady = false,
 	AntiTrap = true,
-	AreaFocus = {},
-	RarityFilter = {},
 	ManualBase = nil,
-	SecretPriority = true,
-	AutoHatch = false,
 	AutoEquipBest = false,
 	AutoClaim = false,
 	AutoUpgrade = false,
 	AntiAFK = false,
-	EggESP = false,
 	FpsBoost = false,
 	AutoFireProx = false,
 	ServerHop = false,
@@ -62,15 +55,6 @@ local NET = ReplicatedStorage:FindFirstChild("Packages")
 NET = NET and NET:FindFirstChild("Networking") or nil
 
 local Remotes = {
-	EggSnapshot   = "RF/EggWorld/AskFieldEggSnapshot",
-	EggCarry      = "RF/EggWorld/AskFieldEggCarry",
-	EggPlace      = "RF/EggWorld/AskPlaceEgg",
-	EggDrop       = "RF/EggWorld/AskFieldEggDrop",
-	EggLive       = "RF/EggWorld/AskLiveSnapshot",
-	EggRarityShow = "RF/EggWorld/AskFieldEggRarityShows",
-	Hatch         = "RF/EggWorld/AskHatch",
-	HatchFinish   = "RF/EggWorld/AskFinishHatch",
-	SkipGrowth    = "RF/EggWorld/AskSkipGrowth",
 	PlotState     = "RF/Homestead/AskState",
 	BaseTierRaise = "RE/Homestead/AskBaseTierRaise",
 	NearbyBuy     = "RE/Homestead/AskNearbyPurchase",
@@ -87,8 +71,6 @@ local Remotes = {
 	PetDoff       = "RF/PenRoster/AskDoff",
 	TreadRaise    = "RF/Treadmill/AskTierRaise",
 	TreadRender   = "RF/Treadmill/AskRenderSnapshot",
-	WearTool      = "RF/EggWorld/AskWearTool",
-	DoffTool      = "RF/EggWorld/AskDoffTool",
 	RigWipe       = "RE/RigSync/AskRigWipe",
 }
 
@@ -190,38 +172,6 @@ local function promptInRange(pp)
 	return (hrp.Position - pos).Magnitude <= max + 4
 end
 
-local function asSet(list)
-	local set, n = {}, 0
-	if type(list) == "table" then
-		for _, v in ipairs(list) do
-			if type(v) == "string" and v ~= "" then
-				set[v] = true
-				n = n + 1
-			end
-		end
-	end
-	return set, n
-end
-
-local RarityWanted = {}
-local RarityWantedCount = 0
-local AreaWanted = {}
-local AreaWantedCount = 0
-
-local function rebuildRaritySet()
-	RarityWanted, RarityWantedCount = asSet(Config.RarityFilter)
-end
-
-local function rebuildAreaSet()
-	local labels = asSet(Config.AreaFocus)
-	local ids, n = {}, 0
-	for label in pairs(labels) do
-		local id = AreaData.areaByLabel[label] or label
-		ids[id] = true
-		n = n + 1
-	end
-	AreaWanted, AreaWantedCount = ids, n
-end
 
 local function promptsUnder(inst, words)
 	local out = {}
@@ -242,232 +192,6 @@ local function promptsUnder(inst, words)
 end
 
 -- ═══════════════════════════════════════════════════════
---  RARITY SYSTEM
--- ═══════════════════════════════════════════════════════
-local Rarities = {
-	"Common", "Uncommon", "Rare", "Epic", "Legendary",
-	"Mythic", "Cosmic", "Secret", "Divine", "Eternal",
-	"Exotic", "Limited", "Exclusive", "Superior", "Titan",
-}
-
-local RarityCache = {}
-local rarityLadder = {}
-for i, name in ipairs(Rarities) do
-	rarityLadder[name] = i
-end
-
-local function ladderOf(name)
-	if type(name) ~= "string" then return 0 end
-	if rarityLadder[name] then return rarityLadder[name] end
-	local best = 0
-	for _, r in ipairs(Rarities) do
-		if name:find(r, 1, true) then
-			local rank = rarityLadder[r]
-			if rank and rank > best then best = rank end
-		end
-	end
-	return best
-end
-
-local function resolveRarityName(name)
-	if type(name) ~= "string" then return name end
-	if rarityLadder[name] then return name end
-	local bestName, bestRank = name, 0
-	for _, r in ipairs(Rarities) do
-		if name:find(r, 1, true) then
-			local rank = rarityLadder[r]
-			if rank and rank > bestRank then bestName, bestRank = r, rank end
-		end
-	end
-	return bestName
-end
-
-local function rarityOf(rec)
-	local v = rec.Rarity or rec.RarityName or rec.Tier or rec.RarityId
-	if type(v) == "table" then
-		v = v.DisplayName or v._id or v.Name or v.Id
-	end
-	return type(v) == "string" and v or nil
-end
-
-local function InitRaritySystem()
-	pcall(function()
-		local rarityData = require(ReplicatedStorage:WaitForChild("Data"):WaitForChild("Rarity"))
-		if rarityData and rarityData.Configs then
-			for name, config in pairs(rarityData.Configs) do
-				if config.DisplayName then
-					RarityCache[name] = config.DisplayName
-				end
-			end
-		end
-	end)
-end
-
--- ═══════════════════════════════════════════════════════
---  AREA SYSTEM
--- ═══════════════════════════════════════════════════════
-local AreaData = {
-	areaLabel = {},
-	areaRarity = {},
-	areaTierName = {},
-	areaByLabel = {},
-	areaOrder = {},
-}
-
-local function addArea(id, label, rank, tierName)
-	if not id or AreaData.areaLabel[id] then return end
-	label = label or id
-	AreaData.areaLabel[id] = label
-	AreaData.areaRarity[id] = rank or 0
-	AreaData.areaTierName[id] = tierName
-	AreaData.areaByLabel[label] = id
-	AreaData.areaOrder[#AreaData.areaOrder + 1] = id
-end
-
-local function areaLabels()
-	local out = {}
-	for _, id in ipairs(AreaData.areaOrder) do
-		out[#out + 1] = AreaData.areaLabel[id]
-	end
-	return out
-end
-
-do
-	local Data = ReplicatedStorage:FindFirstChild("Data")
-	local m = Data and Data:FindFirstChild("Areas")
-	local ok, mod = pcall(function() return m and require(m) end)
-	local dir = ok and type(mod) == "table" and (mod.Directory or mod) or nil
-	if type(dir) == "table" then
-		for id, info in pairs(dir) do
-			if type(id) == "string" and type(info) == "table" then
-				local rank, tierName = 0, nil
-				if type(info.Rarity) == "table" then
-					rank = tonumber(info.Rarity.RarityNumber) or 0
-					tierName = info.Rarity.DisplayName or info.Rarity._id
-				end
-				addArea(id, info.DisplayName or info.Name or id, rank, tierName)
-			end
-		end
-	end
-	if #AreaData.areaOrder == 0 then
-		local AREA_NAMES_ORDER = {"Forest", "Desert", "Lake", "Jungle", "Snow", "Volcano", "Prehistoric", "Abyss Ocean", "Cherry Blossom", "Cosmic", "Titan Temple"}
-		for i, name in ipairs(AREA_NAMES_ORDER) do
-			addArea(name, name, i, nil)
-		end
-	end
-	table.sort(AreaData.areaOrder, function(a, b)
-		local ra, rb = AreaData.areaRarity[a] or 0, AreaData.areaRarity[b] or 0
-		if ra == rb then return tostring(AreaData.areaLabel[a]) < tostring(AreaData.areaLabel[b]) end
-		return ra < rb
-	end)
-end
-
--- ═══════════════════════════════════════════════════════
---  EGG SNAPSHOT / FIELD EGG SYSTEM
--- ═══════════════════════════════════════════════════════
-local EggList = {}
-local EggListAt = 0
-local TriedUids = {}
-local FailUids = {}
-local SlotsCache = nil
-
-local function slots()
-	if SlotsCache and SlotsCache.Parent then return SlotsCache end
-	SlotsCache = Workspace:FindFirstChild("AreaEggSlotsClient")
-	return SlotsCache
-end
-
-local function eggModel(uid)
-	local folder = slots()
-	return folder and folder:FindFirstChild(uid) or nil
-end
-
-local function eggPart(uid)
-	local mdl = eggModel(uid)
-	if not mdl then return nil end
-	return mdl.PrimaryPart or mdl:FindFirstChild("Hitbox") or mdl:FindFirstChildWhichIsA("BasePart")
-end
-
-local function eggPos(rec)
-	local part = eggPart(rec.Uid)
-	if part then return part.Position end
-	local cf = rec.BoundsCFrame or rec.BottomCFrame
-	return cf and cf.Position or nil
-end
-
-local function isMutated(rec)
-	if rec.BaseMutation then return true end
-	return type(rec.Mutations) == "table" and next(rec.Mutations) ~= nil
-end
-
-local function eggAlive(uid)
-	local folder = slots()
-	if not folder then return true end
-	return folder:FindFirstChild(uid) ~= nil
-end
-
-local function refreshEggs(force)
-	if not force and tick() - EggListAt < 1.5 then return EggList end
-	local snap = callNet(Remotes.EggSnapshot)
-	local recs = snap and snap.Records
-	if type(recs) ~= "table" then return EggList end
-	local list = {}
-	for _, rec in pairs(recs) do
-		if rec.State == "Slot" and rec.Uid then
-			local pos = eggPos(rec)
-			if pos then
-				local id = rec.AreaId
-				if id and not AreaData.areaLabel[id] then
-					addArea(id, id, #AreaData.areaOrder + 1, rarityOf(rec))
-				end
-				local rawName = (id and AreaData.areaTierName[id]) or rarityOf(rec)
-				if not rawName then
-					local mdl = eggModel(rec.Uid)
-					if mdl then
-						for _, d in ipairs(mdl:GetDescendants()) do
-							if (d:IsA("TextLabel") or d:IsA("SurfaceGui")) then
-								local t = d:IsA("TextLabel") and d.Text or ""
-								if not d:IsA("TextLabel") then
-									for _, c in ipairs(d:GetDescendants()) do
-										if c:IsA("TextLabel") then t = c.Text; break end
-									end
-								end
-								local resolved = resolveRarityName(t)
-								if ladderOf(resolved) > 0 then rawName = resolved; break end
-							end
-						end
-					end
-				end
-				local name = resolveRarityName(rawName)
-				list[#list + 1] = {
-					uid = rec.Uid,
-					area = id,
-					label = id and AreaData.areaLabel[id] or "Unknown",
-					pos = pos,
-					tier = id and AreaData.areaRarity[id] or 0,
-					rarity = name,
-					rank = ladderOf(name),
-					mutated = isMutated(rec),
-					size = rec.BoundsSize and rec.BoundsSize.Magnitude or 3,
-				}
-			end
-		end
-	end
-	EggList = list
-	EggListAt = tick()
-	-- stale triedUids cleanup
-	local live = {}
-	for i = 1, #list do live[list[i].uid] = true end
-	local now = tick()
-	for uid, at in pairs(TriedUids) do
-		if not live[uid] and now - at > 300 then
-			TriedUids[uid] = nil
-			FailUids[uid] = nil
-		end
-	end
-	return list
-end
-
 local _pk = {"RigType","HipHeight","JumpPower","JumpHeight","UseJumpPower","AutoRotate","MaxSlopeAngle","DisplayDistanceType","NameDisplayDistance","HealthDisplayDistance","AutomaticScalingEnabled","BreakJointsOnDeath","RequiresNeck","EvaluateStateMachine"}
 
 local _Qk = function()
@@ -972,7 +696,7 @@ local function travelTo(targetPos, reachDist, keepGoing)
 	local token = TravelToken
 	TravelStep = tick()
 	Travelling = true
-	local leg = Config.FarmMethod == "TP Walk" and tpLeg or travelLeg
+	local leg = tpLeg
 	local legs = routeTo(hrp.Position, targetPos)
 	local ok = true
 	for i = 1, #legs do
@@ -1149,11 +873,10 @@ end
 -- Reset state on respawn
 track(LocalPlayer.CharacterAdded:Connect(function(ch)
 	Config.PhysReady = false
-	CarryingUid = nil
 	cancelTravel()
 	pcall(function() ch:WaitForChild("HumanoidRootPart", 10) end)
 	task.wait(0.7)
-	if Config.AutoSteal then
+	if Config.PerfMode then
 		_Ek()
 	end
 end))
@@ -1222,11 +945,6 @@ local CachedSlot = nil
 local PlotTried = 0
 local OriginCache = nil
 local OriginCacheAt = 0
-local ClaimedCells = {}
-local PlaceOK = nil
-local PlaceWhy = ""
-local PlaceLog = {}
-local PlaceFails = 0
 
 local function myPlot()
 	if CachedPlot and CachedPlot.Parent then return CachedPlot end
@@ -1364,258 +1082,6 @@ end
 -- ═══════════════════════════════════════════════════════
 local FX = {}
 
--- ═══════════════════════════════════════════════════════
---  EGG PLACEMENT GRID SYSTEM
--- ═══════════════════════════════════════════════════════
-do
-local PLACE_HALF = 24
-local EGG_CLEAR = 7
-local ZONE_HALF = 20
-local GRID_STEP = 4
-local SHAPE_FILE = "IvoryPlaceShape.txt"
-
-local function ownerId(t)
-	local id = t.OwnerUserId or t.UserId or t.PlayerId or t.Owner
-	if type(id) == "table" then id = id.UserId or id.userId or id.Id end
-	return id
-end
-
-local function ownedBy(t)
-	local id = ownerId(t)
-	if type(id) == "number" then return id == LocalPlayer.UserId end
-	if type(id) == "string" then return id == tostring(LocalPlayer.UserId) or id == LocalPlayer.Name end
-	return nil
-end
-
-local function myRecords()
-	local out, seen = {}, {}
-	local live = callNet(Remotes.EggLive)
-	if type(live) ~= "table" then return out end
-	local function take(t)
-		for key, rec in pairs(t) do
-			if type(rec) == "table" then
-				local uid = rec.Uid or (type(key) == "string" and key) or nil
-				if uid and not seen[uid] and ownedBy(rec) ~= false then
-					seen[uid] = true
-					if rec.Uid == nil then rec.Uid = uid end
-					out[#out + 1] = rec
-				end
-			end
-		end
-	end
-	for _, entry in pairs(live) do
-		if type(entry) == "table" and ownedBy(entry) == true and type(entry.Records) == "table" then
-			take(entry.Records)
-		end
-	end
-	if #out == 0 then
-		for _, entry in pairs(live) do
-			if type(entry) == "table" and type(entry.Records) == "table" then take(entry.Records) end
-		end
-	end
-	if #out == 0 and type(live.Records) == "table" then take(live.Records) end
-	return out
-end
-
-local function usedSpots()
-	local used = {}
-	for _, rec in ipairs(myRecords()) do
-		local pl = rec.Placement
-		local cf = pl and (pl.LocalCFrame or pl.CFrame or pl.WorldCFrame)
-		if typeof(cf) == "CFrame" then used[#used + 1] = cf.Position
-		elseif typeof(cf) == "Vector3" then used[#used + 1] = cf end
-	end
-	for _, c in ipairs(Workspace:GetChildren()) do
-		if c.Name == "PlacedEggRenders" then
-			for _, m in ipairs(c:GetChildren()) do
-				local ok, p = pcall(function()
-					if m:IsA("BasePart") then return m.Position end
-					if m:IsA("Model") then return m:GetPivot().Position end
-					return nil
-				end)
-				if ok and p then used[#used + 1] = p end
-			end
-		end
-	end
-	return used
-end
-
-local function logShape(tag, msg)
-	PlaceLog[#PlaceLog + 1] = tostring(tag) .. " " .. tostring(msg)
-	if #PlaceLog > 12 then table.remove(PlaceLog, 1) end
-end
-
-local function savePlaceOK()
-	if PlaceOK and type(writefile) == "function" then
-		pcall(function() writefile(SHAPE_FILE, tostring(PlaceOK.origin)) end)
-	end
-end
-
-do
-	local ok, s = pcall(function()
-		if type(isfile) == "function" and type(readfile) == "function" then
-			if isfile(SHAPE_FILE) then return readfile(SHAPE_FILE) end
-		end
-		return nil
-	end)
-	local n = ok and tonumber(s) or nil
-	if n and n >= 1 then PlaceOK = { origin = math.floor(n) } end
-end
-
-local function placeTargets()
-	local origins = baseOrigins()
-	local o = origins[1]
-	if not o then return {} end
-	local used = usedSpots()
-	local out, seen = {}, {}
-	local clear2 = EGG_CLEAR * EGG_CLEAR
-	local function nearestEgg(wx, wz)
-		local best = math.huge
-		for _, w in ipairs(used) do
-			local dx, dz = w.X - wx, w.Z - wz
-			local d2 = dx * dx + dz * dz
-			if d2 < best then best = d2 end
-		end
-		return best
-	end
-	local function add(lx, lz)
-		local wp = o * CFrame.new(lx, 0, lz)
-		local key = math.floor(wp.X / 3) .. ":" .. math.floor(wp.Z / 3)
-		if seen[key] then return end
-		local at = ClaimedCells[key]
-		if at and tick() - at < 20 then return end
-		local near = nearestEgg(wp.X, wp.Z)
-		if near < clear2 then return end
-		local gy = floorY(wp.X, wp.Z, o.Position.Y)
-		if not gy then return end
-		seen[key] = true
-		out[#out + 1] = { key = key, w = Vector3.new(wp.X, gy, wp.Z), lx = lx, lz = lz, clr = math.sqrt(near) }
-	end
-	local z = -ZONE_HALF
-	while z <= ZONE_HALF do
-		local x = -ZONE_HALF
-		while x <= PLACE_HALF do
-			add(x, z)
-			x = x + GRID_STEP
-		end
-		z = z + GRID_STEP
-	end
-	return out
-end
-
-local function placeShot(uid, oi, wcf)
-	local origins = baseOrigins()
-	local o = origins[oi]
-	if not o then return false end
-	local r = net(Remotes.EggPlace)
-	if not r or not r:IsA("RemoteFunction") then return false end
-	if not holdingEgg() then return false end
-	local lp = (o:Inverse() * wcf).Position
-	local lcf = CFrame.new(lp)
-	local ok, res = pcall(function()
-		return r:InvokeServer({ Uid = uid, LocalCFrame = lcf })
-	end)
-	if not ok then
-		if type(res) == "string" and #res > 0 then PlaceWhy = res:sub(1, 140) end
-		logShape("O" .. oi, res)
-		return false
-	end
-	if type(res) == "string" and #res > 0 then
-		PlaceWhy = res:sub(1, 140)
-		logShape("O" .. oi, res)
-	elseif type(res) == "table" then
-		local why = res.Error or res.Reason or res.Message or res.Why
-		if type(why) == "string" and #why > 0 then PlaceWhy = why:sub(1, 140) end
-		logShape("O" .. oi, why or "table reply")
-	else
-		PlaceWhy = "server returned " .. tostring(res)
-		logShape("O" .. oi, "returned " .. tostring(res))
-	end
-	for _ = 1, 16 do
-		if not holdingEgg() then return true end
-		RunService.Heartbeat:Wait()
-	end
-	return false
-end
-
-local function tryAt(uid, target)
-	local wcf = CFrame.new(target.w)
-	local origins = baseOrigins()
-	if PlaceOK and origins[PlaceOK.origin] then
-		return placeShot(uid, PlaceOK.origin, wcf)
-	end
-	for oi = 1, #origins do
-		if placeShot(uid, oi, wcf) then
-			PlaceOK = { origin = oi }
-			savePlaceOK()
-			return true
-		end
-		task.wait(0.04)
-	end
-	return false
-end
-
-local function placeEggGrid(uid, maxTries)
-	maxTries = maxTries or 18
-	if not ensureHeld(uid) then
-		PlaceWhy = "egg never reached the hand"
-		return false, false
-	end
-	local htool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildWhichIsA("Tool")
-	if htool then
-		local u = htool:GetAttribute("UID")
-		if u == nil then
-			for _, ch in ipairs(htool:GetChildren()) do
-				if ch:IsA("Model") then
-					u = ch.Name:match("_(%w+)$")
-					if u then break end
-				end
-			end
-		end
-		if u ~= nil then uid = tostring(u) end
-	end
-	if not PlaceOK then
-		PlaceLog = {}
-		PlaceWhy = ""
-	end
-	local targets = placeTargets()
-	local origins = baseOrigins()
-	local center = origins[1] and origins[1].Position or (root() and root().Position) or Vector3.zero
-	table.sort(targets, function(a, b) return (a.w - center).Magnitude < (b.w - center).Magnitude end)
-	local mine = #myRecords()
-	local tries = 0
-	for _, t in ipairs(targets) do
-		tries = tries + 1
-		if tryAt(uid, t) then
-			ClaimedCells[t.key] = tick()
-			PlaceFails = 0
-			return true
-		end
-		if not holdingEgg() then
-			PlaceFails = 0
-			return true
-		end
-		if tries >= maxTries then break end
-		task.wait(0.04)
-	end
-	if not holdingEgg() then
-		PlaceFails = 0
-		return true
-	end
-	if #myRecords() > mine then
-		PlaceFails = 0
-		return true
-	end
-	PlaceFails = PlaceFails + 1
-	if PlaceOK and PlaceFails >= 3 then
-		PlaceOK = nil
-		PlaceFails = 0
-	end
-	return false, #targets == 0
-end
-FX.placeEggGrid = placeEggGrid
-end -- end grid do block
-
 local function inRange(pos, reach)
 	local hrp = root()
 	if not hrp or not pos then return false end
@@ -1623,292 +1089,6 @@ local function inRange(pos, reach)
 	local b = Vector3.new(pos.X, 0, pos.Z)
 	return (a - b).Magnitude <= (reach or 12) + 8
 end
-
--- ═══════════════════════════════════════════════════════
---  EGG STEALING — grab, hold, deliver
--- ═══════════════════════════════════════════════════════
-local function holdingEgg()
-	local ch = LocalPlayer.Character
-	return ch ~= nil and ch:FindFirstChildWhichIsA("Tool") ~= nil
-end
-
-local function ensureHeld(uid)
-	if holdingEgg() then return true end
-	for _ = 1, 8 do
-		askUid(Remotes.WearTool, uid)
-		for _ = 1, 4 do
-			RunService.Heartbeat:Wait()
-			if holdingEgg() then return true end
-		end
-	end
-	return false
-end
-
-local function grabEgg(uid)
-	if callNet(Remotes.EggCarry, { Uid = uid }) ~= true then return false end
-	task.spawn(function()
-		for _ = 1, 3 do
-			if holdingEgg() then return end
-			askUid(Remotes.WearTool, uid)
-			task.wait(0.15)
-		end
-	end)
-	return true
-end
-
-local CarryingUid = nil
-local DeliverFails = 0
-local DryRuns = 0
-local DeliverAt = 0
-local WarnPlantAt = 0
-
-local function autoStealOn()
-	return alive() and Config.AutoSteal
-end
-
-local function pickEgg()
-	local hrp = root()
-	if not hrp then return nil end
-	refreshEggs(false)
-	local origin = hrp.Position
-	local secretRank = Config.SecretPriority and (rarityLadder.Secret or 8) or nil
-	local best, bestScore
-	for i = 1, #EggList do
-		local e = EggList[i]
-		if secretRank and e.rank < secretRank then
-			-- Secret Priority: skip anything below Secret
-		elseif AreaWantedCount > 0 and not AreaWanted[e.area] then
-			-- skip
-		elseif RarityWantedCount > 0 and not RarityWanted[e.rarity] then
-			-- skip
-		else
-			-- cooldown check
-			local at = TriedUids[e.uid]
-			if at then
-				local f = FailUids[e.uid] or 0
-				local hold = 6
-				if f >= 4 then hold = 600
-				elseif f == 3 then hold = 120
-				elseif f == 2 then hold = 45
-				elseif f == 1 then hold = 18 end
-				if tick() - at >= hold then
-					local d = (e.pos - origin).Magnitude
-					local tier = e.tier > 0 and e.tier or e.rank
-					local score = e.rank * 1e12 + tier * 1e8 + (e.mutated and 1e6 or 0) - math.min(d, 1e5)
-					if not bestScore or score > bestScore then
-						best, bestScore = e, score
-					end
-				end
-			else
-				local d = (e.pos - origin).Magnitude
-				local tier = e.tier > 0 and e.tier or e.rank
-				local score = e.rank * 1e12 + tier * 1e8 + (e.mutated and 1e6 or 0) - math.min(d, 1e5)
-				if not bestScore or score > bestScore then
-					best, bestScore = e, score
-				end
-			end
-		end
-	end
-	return best
-end
-
-local function smartPlacePrompt()
-	for _, c in ipairs(Workspace:GetChildren()) do
-		if c.Name == "SmartPromptPart" then
-			for _, pp in ipairs(c:GetChildren()) do
-				if pp:IsA("ProximityPrompt") and pp.Enabled then
-					local t = (pp.Name .. " " .. tostring(pp.ActionText) .. " " .. tostring(pp.ObjectText)):lower()
-					if t:find("place", 1, true) or t:find("plant", 1, true) or t:find("drop", 1, true) then
-						return pp
-					end
-				end
-			end
-		end
-	end
-	return nil
-end
-
-local function placeEggOnBase(uid)
-	local basePos = Config.ManualBase or (plotPivot() and plotPivot().Position)
-	if not basePos then return false end
-	if not inRange(basePos, 20) then
-		travelTo(basePos, 12, autoStealOn)
-	end
-	-- Try grid-based placement
-	local ok = FX.placeEggGrid(uid)
-	if ok then return true end
-	-- Fallback: smart place prompt
-	for _, pp in ipairs({ smartPlacePrompt() }) do
-		if promptInRange(pp) and firePrompt(pp) then
-			for _ = 1, 12 do
-				if not holdingEgg() then return true end
-				RunService.Heartbeat:Wait()
-			end
-		end
-	end
-	-- Last resort: doff
-	askUid(Remotes.DoffTool, uid)
-	return not holdingEgg()
-end
-
-local function deliver(uid)
-	local basePos = Config.ManualBase or (plotPivot() and plotPivot().Position)
-	if basePos and not inRange(basePos, 26) then
-		travelTo(basePos, 14, autoStealOn)
-	end
-	if Config.FarmMethod == "TP Walk" then
-		askUid(Remotes.DoffTool, uid)
-		return true
-	end
-	-- Try grid-based placement
-	local ok, full = FX.placeEggGrid(uid)
-	if ok then return true end
-	-- If no targets (base full), try hatch-clear and retry
-	if full and Config.AutoHatch then
-		pcall(function() hatchAll() end)
-		if FX.placeEggGrid(uid) then return true end
-	end
-	-- Fallback: smart place prompt
-	for _, pp in ipairs({ smartPlacePrompt() }) do
-		if promptInRange(pp) and firePrompt(pp) then
-			for _ = 1, 12 do
-				if not holdingEgg() then return true end
-				RunService.Heartbeat:Wait()
-			end
-		end
-	end
-	-- Last resort: doff
-	askUid(Remotes.DoffTool, uid)
-	return not holdingEgg()
-end
-
--- ═══════════════════════════════════════════════════════
---  MAIN AUTO STEAL LOOP
--- ═══════════════════════════════════════════════════════
-spawnLoop(function()
-	while alive() do
-		local idle = 0.1
-		if Config.AutoSteal and charReady() then
-			local ok, err = pcall(function()
-				if CarryingUid then
-					if not holdingEgg() and not eggAlive(CarryingUid) then
-						CarryingUid = nil
-						DeliverFails = 0
-						return
-					end
-					if Config.FarmMethod == "TP Walk" then
-						local basePos = Config.ManualBase or (plotPivot() and plotPivot().Position)
-						if basePos and not inRange(basePos, 20) then
-							travelTo(basePos, 12, autoStealOn)
-						end
-						askUid(Remotes.DoffTool, CarryingUid)
-						CarryingUid = nil
-						DeliverFails = 0
-						return
-					end
-					if tick() - DeliverAt < 1 then return end
-					DeliverAt = tick()
-					if deliver(CarryingUid) then
-						CarryingUid = nil
-						DeliverFails = 0
-					else
-						DeliverFails = DeliverFails + 1
-						if DeliverFails >= 4 then
-							DeliverFails = 0
-							askUid(Remotes.DoffTool, CarryingUid)
-							CarryingUid = nil
-							if tick() - WarnPlantAt > 60 then
-								WarnPlantAt = tick()
-								warnToast("Could not plant that egg. Moving on.", 6)
-							end
-						end
-					end
-					return
-				end
-				-- Secret Priority
-				if Config.SecretPriority and CarryingUid then
-					refreshEggs(false)
-					for i = 1, #EggList do
-						local e = EggList[i]
-						if e.rank >= (rarityLadder.Secret or 8) then
-							local carrying = nil
-							for j = 1, #EggList do
-								if EggList[j].uid == CarryingUid then
-									carrying = EggList[j]; break
-								end
-							end
-							local carryRank = carrying and carrying.rank or 0
-							if e.rank > carryRank then
-								pcall(function() askUid(Remotes.DoffTool, CarryingUid) end)
-								CarryingUid = nil
-								DeliverFails = 0
-								cancelTravel()
-								warnToast("Secret egg spotted — switching targets!", 4)
-							end
-							break
-						end
-					end
-				end
-				local e = pickEgg()
-				if not e then
-					DryRuns = DryRuns + 1
-					refreshEggs(true)
-					idle = math.min(0.6 + DryRuns * 0.4, 3)
-					return
-				end
-				DryRuns = 0
-				TriedUids[e.uid] = tick()
-				local reach = math.max(9, e.size * 0.6 + 7)
-				local keep = function()
-					return autoStealOn() and eggAlive(e.uid)
-				end
-				local target = e.pos
-				local part = eggPart(e.uid)
-				if part then target = part.Position end
-				if not inRange(target, reach) then
-					travelTo(target, reach, keep)
-					if not autoStealOn() then return end
-				end
-				local got = grabEgg(e.uid)
-				if not got then
-					task.wait(0.1)
-					got = grabEgg(e.uid)
-				end
-				if got then
-					FailUids[e.uid] = nil
-					CarryingUid = e.uid
-					DeliverFails = 0
-					if Config.FarmMethod == "TP Walk" then
-						local basePos = Config.ManualBase or (plotPivot() and plotPivot().Position)
-						if basePos and not inRange(basePos, 20) then
-							travelTo(basePos, 12, autoStealOn)
-						end
-						askUid(Remotes.DoffTool, e.uid)
-						CarryingUid = nil
-					elseif deliver(e.uid) then
-						CarryingUid = nil
-					else
-						DeliverFails = 1
-					end
-					idle = 0
-				else
-					FailUids[e.uid] = (FailUids[e.uid] or 0) + 1
-				end
-			end)
-			if not ok then
-				warn("[Ivory] steal: " .. tostring(err))
-				task.wait(0.5)
-			end
-		else
-			idle = 0.3
-		end
-		if idle > 0 then
-			task.wait(idle)
-		else
-			RunService.Heartbeat:Wait()
-		end
-	end
-end)
 
 -- ═══════════════════════════════════════════════════════
 --  ANTI TRAP LOOP
@@ -1932,145 +1112,8 @@ do
 end
 
 -- ═══════════════════════════════════════════════════════
---  ESP
--- ═══════════════════════════════════════════════════════
-local ESPTags = {}
-local ESPFolder = nil
-
-local rarityColor = {
-	Common = Color3.fromRGB(190, 190, 190),
-	Uncommon = Color3.fromRGB(120, 220, 120),
-	Rare = Color3.fromRGB(90, 160, 255),
-	Epic = Color3.fromRGB(180, 110, 255),
-	Legendary = Color3.fromRGB(255, 200, 70),
-	Mythic = Color3.fromRGB(255, 110, 190),
-	Cosmic = Color3.fromRGB(130, 240, 255),
-	Secret = Color3.fromRGB(60, 60, 70),
-	Divine = Color3.fromRGB(255, 250, 200),
-	Eternal = Color3.fromRGB(255, 90, 90),
-}
-
-local function espParent()
-	if ESPFolder and ESPFolder.Parent then return ESPFolder end
-	ESPFolder = Instance.new("Folder")
-	ESPFolder.Name = "IvoryEggESP"
-	ESPFolder.Parent = LocalPlayer:WaitForChild("PlayerGui")
-	return ESPFolder
-end
-
-local function clearESP()
-	for uid, tag in pairs(ESPTags) do
-		pcall(function() tag:Destroy() end)
-		ESPTags[uid] = nil
-	end
-	if ESPFolder then
-		pcall(function() ESPFolder:Destroy() end)
-		ESPFolder = nil
-	end
-end
-
-local function makeTag(e)
-	local mdl = eggModel(e.uid)
-	local part = eggPart(e.uid)
-	if not mdl or not part then return nil end
-	local colour = rarityColor[e.rarity] or Color3.fromRGB(255, 255, 255)
-	local box = Instance.new("Folder")
-	box.Name = e.uid
-
-	local hl = Instance.new("Highlight")
-	hl.Adornee = mdl
-	hl.FillColor = colour
-	hl.OutlineColor = e.mutated and Color3.fromRGB(255, 150, 60) or colour
-	hl.FillTransparency = 0.62
-	hl.OutlineTransparency = 0
-	hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-	hl.Parent = box
-
-	local bb = Instance.new("BillboardGui")
-	bb.Adornee = part
-	bb.Size = UDim2.fromOffset(190, 26)
-	bb.StudsOffsetWorldSpace = Vector3.new(0, 3.2, 0)
-	bb.AlwaysOnTop = true
-	bb.MaxDistance = 100000
-	bb.Parent = box
-
-	local lbl = Instance.new("TextLabel")
-	lbl.Size = UDim2.fromScale(1, 1)
-	lbl.BackgroundTransparency = 1
-	lbl.Font = Enum.Font.GothamBold
-	lbl.TextSize = 13
-	lbl.TextColor3 = colour
-	lbl.TextStrokeTransparency = 0.35
-	lbl.Text = (e.rarity or e.label or "Egg") .. (e.mutated and "  MUT" or "")
-	lbl.Parent = bb
-
-	box.Parent = espParent()
-	return box
-end
-
-spawnLoop(function()
-	while alive() do
-		if Config.EggESP then
-			pcall(function()
-				local list = refreshEggs(false)
-				local seen = {}
-				for _, e in ipairs(list) do
-					seen[e.uid] = true
-					local tag = ESPTags[e.uid]
-					if not tag or not tag.Parent or not eggModel(e.uid) then
-						if tag then pcall(function() tag:Destroy() end) end
-						ESPTags[e.uid] = makeTag(e)
-					end
-				end
-				for uid, tag in pairs(ESPTags) do
-					if not seen[uid] then
-						pcall(function() tag:Destroy() end)
-						ESPTags[uid] = nil
-					end
-				end
-			end)
-		elseif next(ESPTags) then
-			clearESP()
-		end
-		task.wait(1.2)
-	end
-end)
-
--- ═══════════════════════════════════════════════════════
 --  AUTOMATION LOOPS
 -- ═══════════════════════════════════════════════════════
-local function hatchAll()
-	local records = {}
-	local live = callNet(Remotes.EggSnapshot)
-	local recs = live and live.Records
-	if type(recs) == "table" then
-		for _, rec in pairs(recs) do
-			if type(rec) == "table" and rec.Uid then records[#records + 1] = rec end
-		end
-	end
-	local n = 0
-	for _, rec in ipairs(records) do
-		local uid = rec.Uid
-		if uid then
-			askUid(Remotes.SkipGrowth, uid)
-			askUid(Remotes.Hatch, uid)
-			askUid(Remotes.HatchFinish, uid)
-			task.wait(0.06)
-			n = n + 1
-		end
-	end
-	return n
-end
-
-spawnLoop(function()
-	while alive() do
-		if Config.AutoHatch and charReady() and not Travelling then
-			pcall(hatchAll)
-		end
-		task.wait(2)
-	end
-end)
-
 spawnLoop(function()
 	while alive() do
 		if Config.AutoEquipBest and charReady() then
@@ -2177,7 +1220,7 @@ local Options = Library.Options
 local Window = Library:CreateWindow({
 	Title = "Ivory",
 	Footer = {
-		"v1.8 |",
+		"v2.0 |",
 		{ Text = "Lobby/Game", Copyable = true },
 		"|",
 		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
@@ -2197,8 +1240,7 @@ local Window = Library:CreateWindow({
 })
 
 local Tabs = {
-	Main = Window:AddTab({ Name = "Main", Icon = "home", Description = "Steal & Automate" }),
-	Visuals = Window:AddTab({ Name = "Visuals", Icon = "eye", Description = "ESP" }),
+	Main = Window:AddTab({ Name = "Main", Icon = "home", Description = "Automate" }),
 	Settings = Window:AddTab({ Name = "Settings", Icon = "settings", Description = "Themes & UI" }),
 }
 
@@ -2235,194 +1277,14 @@ MovementBox:AddToggle("AntiTrap", {
 	end,
 })
 
-MovementBox:AddDropdown("FarmMethod", {
-	Text = "Farm Method",
-	Values = { "TP Walk", "Speed" },
-	Default = "TP Walk",
-
-	Callback = function(state)
-		Config.FarmMethod = state
-		cancelTravel()
-	end,
-})
-
-local TargetingBox = StealSub:AddRightGroupbox("Targeting", "crosshair")
-
-local areaOptions = {}
-for _, area in ipairs(AreaData.areaOrder) do
-	table.insert(areaOptions, AreaData.areaLabel[area])
-end
-
-TargetingBox:AddDropdown("AreaFocus", {
-	Text = "Area Focus",
-	Values = areaOptions,
-	Default = {},
-	Multi = true,
-	Callback = function(state)
-		local out = {}
-		if type(state) == "table" then
-			for k, v in pairs(state) do
-				if v == true then out[#out+1] = k
-				elseif type(v) == "string" then out[#out+1] = v end
-			end
-		elseif type(state) == "string" then
-			out[1] = state
-		end
-		Config.AreaFocus = out
-		rebuildAreaSet()
-	end,
-})
-
-TargetingBox:AddDropdown("RarityFilter", {
-	Text = "Rarity Filter",
-	Values = Rarities,
-	Default = {},
-	Multi = true,
-	Callback = function(state)
-		local out = {}
-		if type(state) == "table" then
-			for k, v in pairs(state) do
-				if v == true then out[#out+1] = k
-				elseif type(v) == "string" then out[#out+1] = v end
-			end
-		elseif type(state) == "string" then
-			out[1] = state
-		end
-		Config.RarityFilter = out
-		rebuildRaritySet()
-	end,
-})
-
-TargetingBox:AddToggle("SecretPriority", {
-	Text = "Secret Egg Priority",
-	Default = true,
-	Callback = function(state)
-		Config.SecretPriority = state
-	end,
-})
-
--- ═══════════════════════════════════════════════════════════
---  MAIN TAB — AUTO STEAL SUBTAB
--- ═══════════════════════════════════════════════════════════
-local AutoStealSub = Tabs.Main:AddSubTab("Auto Steal", "download")
-
-local StealControlsBox = AutoStealSub:AddLeftGroupbox("Controls", "play")
-
-StealControlsBox:AddToggle("AutoStealEggs", {
-	Text = "Auto Steal Eggs",
-	Default = false,
-	Callback = function(state)
-		Config.AutoSteal = state
-		if state then
-			Config.PerfMode = true
-			task.spawn(function()
-				_Ek()
-				refreshTraps()
-			end)
-		else
-			cancelTravel()
-			releaseRoot()
-		end
-	end,
-})
-
-StealControlsBox:AddButton("Set Base Here", function()
-	local r = root()
-	if r then Config.ManualBase = r.Position end
-end)
-
-StealControlsBox:AddButton("Clear Base Pin", function()
-	Config.ManualBase = nil
-end)
-
-StealControlsBox:AddButton("Steal Nearest Egg", function()
-	if not charReady() then return end
-	local hrp = root()
-	if not hrp then return end
-	refreshEggs(false)
-	local best, bestDist
-	for _, e in ipairs(EggList) do
-		if AreaWantedCount == 0 or AreaWanted[e.area] then
-			if RarityWantedCount == 0 or RarityWanted[e.rarity] then
-				local d = (e.pos - hrp.Position).Magnitude
-				if not bestDist or d < bestDist then
-					best, bestDist = e, d
-				end
-			end
-		end
-	end
-	if best then
-		local reach = math.max(9, best.size * 0.6 + 7)
-		if not inRange(best.pos, reach) then
-			travelTo(best.pos, reach)
-		end
-		grabEgg(best.uid)
-		task.wait(0.2)
-		local basePos = Config.ManualBase or (plotPivot() and plotPivot().Position)
-		if basePos then
-			travelTo(basePos, 12)
-			askUid(Remotes.DoffTool, best.uid)
-		end
-	end
-end)
-
-local StealAreasBox = AutoStealSub:AddRightGroupbox("Areas", "map")
-
-StealAreasBox:AddButton("Refresh Areas", function()
-	table.clear(AreaData.areaLabel)
-	table.clear(AreaData.areaRarity)
-	table.clear(AreaData.areaTierName)
-	table.clear(AreaData.areaByLabel)
-	table.clear(AreaData.areaOrder)
-	local Data = ReplicatedStorage:FindFirstChild("Data")
-	local m = Data and Data:FindFirstChild("Areas")
-	local ok, mod = pcall(function() return m and require(m) end)
-	local dir = ok and type(mod) == "table" and (mod.Directory or mod) or nil
-	if type(dir) == "table" then
-		for id, info in pairs(dir) do
-			if type(id) == "string" and type(info) == "table" then
-				local rank, tierName = 0, nil
-				if type(info.Rarity) == "table" then
-					rank = tonumber(info.Rarity.RarityNumber) or 0
-					tierName = info.Rarity.DisplayName or info.Rarity._id
-				end
-				addArea(id, info.DisplayName or info.Name or id, rank, tierName)
-			end
-		end
-	end
-	table.sort(AreaData.areaOrder, function(a, b)
-		local ra, rb = AreaData.areaRarity[a] or 0, AreaData.areaRarity[b] or 0
-		if ra == rb then return tostring(AreaData.areaLabel[a]) < tostring(AreaData.areaLabel[b]) end
-		return ra < rb
-	end)
-	Library:Notify({ Title = "Ivory", Description = "Areas refreshed (" .. #AreaData.areaOrder .. " found)", Type = "Success", Time = 2 })
-end)
-
-StealAreasBox:AddButton("Join Discord For Dupe", function()
-	pcall(function()
-		if setclipboard then setclipboard("https://discord.gg/MCWYKBdB4E") end
-	end)
-	Library:Notify({ Title = "Ivory", Description = "Discord link copied to clipboard!", Type = "Info", Time = 2 })
-end)
-
 -- ═══════════════════════════════════════════════════════════
 --  MAIN TAB — AUTOMATION SUBTAB
 -- ═══════════════════════════════════════════════════════════
 local AutoSub = Tabs.Main:AddSubTab("Automation", "settings")
 
-local HatchBox = AutoSub:AddLeftGroupbox("Hatch & Pets", "box")
+local PetsBox = AutoSub:AddLeftGroupbox("Pets", "box")
 
-HatchBox:AddToggle("AutoHatch", {
-	Text = "Auto Hatch Eggs",
-	Default = false,
-	Callback = function(state) Config.AutoHatch = state end,
-})
-
-HatchBox:AddButton("Hatch Once", function()
-	task.spawn(function() pcall(hatchAll) end)
-end)
-
-HatchBox:AddToggle("AutoEquipBest", {
+PetsBox:AddToggle("AutoEquipBest", {
 	Text = "Auto Equip Best Pet",
 	Default = false,
 	Callback = function(state) Config.AutoEquipBest = state end,
@@ -2484,30 +1346,6 @@ ClaimBox:AddToggle("AntiAFK", {
 
 ClaimBox:AddButton("Void Drop", function()
 	task.spawn(voidDrop)
-end)
-
-ClaimBox:AddButton("Recall to Spawn", function()
-	local function spawnPoint()
-		local ch = LocalPlayer.Character
-		if ch then
-			local rl = ch:FindFirstChild("HumanoidRootPart")
-			if rl then
-				local ok, v = pcall(function() return ch:FindFirstChild("Humanoid") end)
-				if ok and v then
-					local sp = v.SpawnPoint
-					if sp and sp.Position then return sp.Position end
-				end
-			end
-		end
-		for _, v in ipairs(Workspace:GetDescendants()) do
-			if v:IsA("SpawnLocation") then
-				return v.Position
-			end
-		end
-		return nil
-	end
-	local sp = spawnPoint()
-	if sp then travelTo(sp, 8) end
 end)
 
 -- Aliases for cross-scope feature exports
@@ -2813,7 +1651,6 @@ local function interactParasite(p)
 			end
 		end
 	end
-	if p.eggUid then callNet(Remotes.EggCarry, { Uid = p.eggUid }) end
 end
 
 local function parKey(p)
@@ -2840,7 +1677,7 @@ spawnLoop(function()
 					local flatApproach = Vector3.new(approachDir.X, 0, approachDir.Z)
 					local overshootDir = flatApproach.Magnitude > 0.1 and flatApproach.Unit or Vector3.new(1, 0, 0)
 					local overshootPos = targetPos + overshootDir * 2 + Vector3.new(0, 3, 0)
-					travelTo(targetPos + Vector3.new(0, 3, 0), 3, autoStealOn)
+					travelTo(targetPos + Vector3.new(0, 3, 0), 3, function() return alive() end)
 					task.wait(0.05)
 					pcall(function() hrp.CFrame = CFrame.new(overshootPos) end)
 					task.wait(0.1)
@@ -2867,7 +1704,7 @@ spawnLoop(function()
 					end
 					if not wasProxOn then Config.AutoFireProx = false; if FX.stopAutoFireProx then FX.stopAutoFireProx() end end
 					local basePos = Config.ManualBase or (plotPivot() and plotPivot().Position)
-					if basePos then travelTo(basePos, 12, autoStealOn) end
+					if basePos then travelTo(basePos, 12, function() return alive() end) end
 					task.wait(0.2)
 				end
 				local now = tick()
@@ -3348,25 +2185,6 @@ SellBox:AddButton("Sell All Pets", function()
 	task.spawn(function() sellPets(true) end)
 end)
 
-local ESPSub = Tabs.Visuals:AddSubTab("Egg ESP", "eye")
-
-local ESPBox = ESPSub:AddLeftGroupbox("Egg ESP", "circle")
-
-ESPBox:AddToggle("ShowEggESP", {
-	Text = "Show Egg ESP",
-	Default = false,
-	Callback = function(state)
-		Config.EggESP = state
-		if not state then clearESP() end
-	end,
-})
-
-ESPBox:AddButton("Refresh ESP", function()
-	clearESP()
-	refreshEggs(true)
-end)
-
--- ═══════════════════════════════════════════════════════════
 --  SETTINGS TAB
 -- ═══════════════════════════════════════════════════════════
 local ThemesSub = Tabs.Settings:AddSubTab("Themes & UI", "palette")
@@ -3400,7 +2218,6 @@ MenuGroup:AddDropdown("NotificationSide", {
 })
 MenuGroup:AddButton("Unload", function()
 	Config.Unloaded = true
-	Config.AutoSteal = false
 	Config.FpsBoost = false
 	Config.AutoFireProx = false
 	Config.AutoTreadmill = false
@@ -3409,7 +2226,6 @@ MenuGroup:AddButton("Unload", function()
 	Config.AutoFireProx = false
 	cancelTravel()
 	releaseRoot()
-	clearESP()
 	if FX.fpsOff then pcall(FX.fpsOff) end
 	if FX.stopAutoFireProx then pcall(FX.stopAutoFireProx) end
 	if FX.removeAllPets then pcall(FX.removeAllPets) end
@@ -3454,7 +2270,6 @@ end)
 Library.ToggleKeybind = Options.MenuKeybind
 SaveManager:LoadAutoloadConfig()
 
-InitRaritySystem()
 
 Library:Notify({
 	Title = "Ivory",
