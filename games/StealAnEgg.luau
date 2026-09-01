@@ -2165,6 +2165,7 @@ spawnLoop(function()
 		if Config.AutoSellEggs and charReady() then
 			pcall(function()
 				callNet(Remotes.WriteAutoSell, Config.SellEggRarities)
+				callNet(Remotes.SatchelSale)
 			end)
 		end
 		task.wait(4)
@@ -2517,6 +2518,7 @@ do
 			local rarities = {}
 			for _, name in ipairs(Rarities) do rarities[name] = true end
 			callNet(Remotes.WriteAutoSell, rarities)
+			callNet(Remotes.SatchelSale)
 			FX.warnToast("Eggs sold!", 3)
 		end)
 		R:AddToggle("AutoSellEggs", { Text = "Auto Sell Eggs", Default = false, Callback = function(v)
