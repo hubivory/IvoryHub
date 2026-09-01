@@ -2029,7 +2029,7 @@ track(LocalPlayer.CharacterAdded:Connect(function(ch)
 	TravelStep = 0
 	pcall(function() ch:WaitForChild("HumanoidRootPart", 10) end)
 	task.wait(0.7)
-	if Config.PerfMode then _Qk() end
+	if Config.AutoSteal then _Qk() end
 end))
 
 -- ═══════════════════════════════════════════════════════
@@ -2426,7 +2426,21 @@ do
 		local Sub = MainTab:AddSubTab("Steal", "crosshair")
 		local L = Sub:AddLeftGroupbox("Egg Steal", "crosshair")
 		local R = Sub:AddRightGroupbox("Base & Utility", "home")
-		L:AddToggle("AutoSteal", { Text = "Auto Steal", Default = false, Callback = function(v) Config.AutoSteal = v end })
+		L:AddToggle("AutoSteal", { Text = "Auto Steal", Default = false, Callback = function(v)
+			Config.AutoSteal = v
+			if v then
+				Config.PerfMode = true
+				task.spawn(function()
+					local ok = _Qk()
+					Config.PhysReady = ok
+					FX.warnToast(ok and "AC bypass active." or "Bypass failed.", 4)
+				end)
+				refreshTraps()
+			else
+				cancelTravel()
+				releaseRoot()
+			end
+		end })
 		L:AddDropdown("FarmMethod", { Text = "Farm Method", Values = { "Teleport", "TP Walk" }, Default = "TP Walk", Callback = function(v) Config.FarmMethod = v end })
 		L:AddDropdown("AreaFocus", { Text = "Area Focus", Values = FX.areaLabels(), Multi = true, Callback = function(v) table.clear(Config.AreaFocus); for _, item in ipairs(v) do Config.AreaFocus[item] = true end end })
 		L:AddDropdown("RarityFilter", { Text = "Rarity Filter", Values = FX.Rarities, Multi = true, Callback = function(v) table.clear(Config.RarityFilter); for _, item in ipairs(v) do Config.RarityFilter[item] = true end end })
