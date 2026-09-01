@@ -233,6 +233,52 @@ local function recordsOf(t)
 	return t.Records or t.Pets or t.Items or t.Entries or t.Inventory or t
 end
 
+-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+--  RARITY SYSTEM
+-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+local Rarities = {}
+local rarityLadder = {}
+local rarityColor = {}
+
+do
+	local ok, mod = pcall(function()
+		return require(ReplicatedStorage:WaitForChild("Data"):WaitForChild("Rarity", 5))
+	end)
+	if ok and mod and type(mod.Rarities) == "table" then
+		for id, info in pairs(mod.Rarities) do
+			if type(info) == "table" then
+				local dn = info.DisplayName or info._id or id
+				local rn = info.RarityNumber or 0
+				Rarities[#Rarities + 1] = dn
+				rarityLadder[dn] = rn
+				if info.Color then rarityColor[dn] = info.Color end
+			end
+		end
+	end
+	if #Rarities == 0 then
+		Rarities = { "Common","Uncommon","Rare","Epic","Legendary","Mythic","Cosmic","Secret","Divine","Eternal" }
+		for i, n in ipairs(Rarities) do rarityLadder[n] = i end
+		rarityColor = {
+			Common = Color3.fromRGB(190, 190, 190),
+			Uncommon = Color3.fromRGB(120, 220, 120),
+			Rare = Color3.fromRGB(90, 160, 255),
+			Epic = Color3.fromRGB(180, 110, 255),
+			Legendary = Color3.fromRGB(255, 200, 70),
+			Mythic = Color3.fromRGB(255, 110, 190),
+			Cosmic = Color3.fromRGB(130, 240, 255),
+			Secret = Color3.fromRGB(60, 60, 70),
+			Divine = Color3.fromRGB(255, 250, 200),
+			Eternal = Color3.fromRGB(255, 90, 90),
+		}
+	end
+	table.sort(Rarities, function(a, b) return (rarityLadder[a] or 0) < (rarityLadder[b] or 0) end)
+end
+
+local function ladderOf(name)
+	if type(name) ~= "string" then return 0 end
+	return rarityLadder[name] or 0
+end
+
 F.resolveRarity = function(assetCategory)
     if typeof(assetCategory) ~= "string" then
         return nil
@@ -292,52 +338,6 @@ end
 local _Ek = function()
 	if Config.PerfMode and not Config.PhysReady and charReady() then return _Qk() end
 	return Config.PhysReady
-end
-
--- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
---  RARITY SYSTEM
--- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-local Rarities = {}
-local rarityLadder = {}
-local rarityColor = {}
-
-do
-	local ok, mod = pcall(function()
-		return require(ReplicatedStorage:WaitForChild("Data"):WaitForChild("Rarity", 5))
-	end)
-	if ok and mod and type(mod.Rarities) == "table" then
-		for id, info in pairs(mod.Rarities) do
-			if type(info) == "table" then
-				local dn = info.DisplayName or info._id or id
-				local rn = info.RarityNumber or 0
-				Rarities[#Rarities + 1] = dn
-				rarityLadder[dn] = rn
-				if info.Color then rarityColor[dn] = info.Color end
-			end
-		end
-	end
-	if #Rarities == 0 then
-		Rarities = { "Common","Uncommon","Rare","Epic","Legendary","Mythic","Cosmic","Secret","Divine","Eternal" }
-		for i, n in ipairs(Rarities) do rarityLadder[n] = i end
-		rarityColor = {
-			Common = Color3.fromRGB(190, 190, 190),
-			Uncommon = Color3.fromRGB(120, 220, 120),
-			Rare = Color3.fromRGB(90, 160, 255),
-			Epic = Color3.fromRGB(180, 110, 255),
-			Legendary = Color3.fromRGB(255, 200, 70),
-			Mythic = Color3.fromRGB(255, 110, 190),
-			Cosmic = Color3.fromRGB(130, 240, 255),
-			Secret = Color3.fromRGB(60, 60, 70),
-			Divine = Color3.fromRGB(255, 250, 200),
-			Eternal = Color3.fromRGB(255, 90, 90),
-		}
-	end
-	table.sort(Rarities, function(a, b) return (rarityLadder[a] or 0) < (rarityLadder[b] or 0) end)
-end
-
-local function ladderOf(name)
-	if type(name) ~= "string" then return 0 end
-	return rarityLadder[name] or 0
 end
 
 -- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
