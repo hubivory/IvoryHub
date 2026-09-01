@@ -46,6 +46,10 @@ local Config = {
 	ServerHopCount = 0,
 	ServerHopMax = 15,
 	Unloaded = false,
+	AutoTreadmill = false,
+	AutoUpgradeTreadmill = false,
+	SellPets = false,
+	ParasiteFarm = false,
 }
 
 local Threads = {}
@@ -1290,6 +1294,35 @@ local function baseOrigins()
 end
 
 -- ═══════════════════════════════════════════════════════
+--  SELL PETS
+-- ═══════════════════════════════════════════════════════
+local function sellStandPrompt()
+	local stands = Workspace:FindFirstChild("Stands")
+	local prompts = stands and stands:FindFirstChild("Prompts")
+	local holder = prompts and (prompts:FindFirstChild("SellAll") or prompts:FindFirstChild("Sell"))
+	return holder and holder:FindFirstChildWhichIsA("ProximityPrompt") or nil
+end
+
+local function goSellStand()
+	local pp = sellStandPrompt()
+	local part = pp and pp.Parent
+	if part and part:IsA("BasePart") then
+		local cf = part.CFrame * CFrame.new(0, 0, 3)
+		if inRange(cf.Position, 14) then return true end
+		return travelTo(cf.Position, 8)
+	end
+	return false
+end
+
+local function sellPets(walk)
+	if walk then goSellStand() end
+	local pp = sellStandPrompt()
+	if pp and promptInRange(pp) then firePrompt(pp) end
+	callNet(Remotes.SellEveryPet)
+	callNet(Remotes.SatchelSale)
+end
+
+-- ═══════════════════════════════════════════════════════
 --  EGG PLACEMENT GRID SYSTEM
 -- ═══════════════════════════════════════════════════════
 local PLACE_HALF = 24
@@ -2096,7 +2129,7 @@ local Options = Library.Options
 local Window = Library:CreateWindow({
 	Title = "Ivory",
 	Footer = {
-		"v1.6 |",
+		"v1.7 |",
 		{ Text = "Lobby/Game", Copyable = true },
 		"|",
 		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
@@ -2578,6 +2611,382 @@ spawnLoop(function()
 	end
 end)
 
+-- ═══════════════════════════════════════════════════════
+--  PARASITE FARM
+-- ═══════════════════════════════════════════════════════
+local PAR = {
+	Active = false,
+	ScanInterval = 1.5,
+	Range = 60,
+	lastScan = 0,
+	tried = {},
+}
+local PAR_REMOTES = {
+	"RF/Bloomery/AskGatherPetal",
+	"RF/Bloomery/AskEjectEgg",
+	"RF/Bloomery/AskLoadEgg",
+	"RF/Bloomery/AskMutate",
+}
+local PAR_MODEL_WORDS = { "parasite", "pest", "bug", "worm", "critter", "larva", "grub", "monster" }
+local PAR_PROMPT_WORDS = { "parasite", "pest", "remove", "catch", "grab", "collect", "squish", "swat", "monster" }
+
+local function parNameMatch(name, words)
+	local n = name:lower()
+	for _, w in ipairs(words) do
+		if n:find(w, 1, true) then return true end
+	end
+	return false
+end
+
+local function findParasites()
+	local found, seen = {}, {}
+	local slotsFolder = slots()
+	if slotsFolder then
+		for _, eggSlot in ipairs(slotsFolder:GetChildren()) do
+			local parasite = eggSlot:FindFirstChild("MonsterParasiteVisual")
+			if parasite then
+				local part = parasite:IsA("BasePart") and parasite
+					or parasite:FindFirstChildWhichIsA("BasePart")
+					or (parasite:IsA("Model") and (parasite.PrimaryPart or parasite:FindFirstChildWhichIsA("BasePart")))
+				if not part and parasite:IsA("Model") then
+					local ok, pv = pcall(function() return parasite:GetPivot() end)
+					if ok and pv then part = eggSlot:FindFirstChildWhichIsA("BasePart") end
+				end
+				local tpPart = part or eggSlot:FindFirstChildWhichIsA("BasePart")
+				if tpPart then
+					local prompts = {}
+					local searchTarget = parasite:IsA("Model") and parasite or eggSlot
+					for _, d in ipairs(searchTarget:GetDescendants()) do
+						if d:IsA("ProximityPrompt") and d.Enabled then prompts[#prompts + 1] = d end
+					end
+					for _, d in ipairs(eggSlot:GetDescendants()) do
+						if d:IsA("ProximityPrompt") and d.Enabled then
+							local already = false
+							for _, ep in ipairs(prompts) do if ep == d then already = true; break end end
+							if not already then prompts[#prompts + 1] = d end
+						end
+					end
+					local uid = eggSlot.Name
+					if not seen[uid] then
+						seen[uid] = true
+						found[#found + 1] = {
+							part = tpPart, prompt = prompts[1], prompts = prompts,
+							name = "MonsterParasiteVisual", model = parasite,
+							eggUid = uid, eggSlot = eggSlot,
+						}
+					end
+				end
+			end
+		end
+	end
+	for _, obj in ipairs(Workspace:GetDescendants()) do
+		if obj:IsA("Model") and parNameMatch(obj.Name, PAR_MODEL_WORDS) then
+			local part = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+			if part and not seen[obj.Name .. tostring(part.Position)] then
+				seen[obj.Name .. tostring(part.Position)] = true
+				local pp = nil
+				for _, d in ipairs(obj:GetDescendants()) do
+					if d:IsA("ProximityPrompt") and d.Enabled then pp = d; break end
+				end
+				found[#found + 1] = {
+					part = part, prompt = pp, prompts = pp and {pp} or {},
+					name = obj.Name, model = obj, eggUid = nil, eggSlot = nil,
+				}
+			end
+		elseif obj:IsA("ProximityPrompt") and obj.Enabled then
+			local txt = (obj.ActionText .. " " .. obj.ObjectText):lower()
+			for _, w in ipairs(PAR_PROMPT_WORDS) do
+				if txt:find(w, 1, true) then
+					local part = obj.Parent
+					if part and part:IsA("BasePart") then
+						local key = tostring(part.Position)
+						if not seen[key] then
+							seen[key] = true
+							found[#found + 1] = {
+								part = part, prompt = obj, prompts = {obj},
+								name = obj.ActionText, model = obj.Parent,
+								eggUid = nil, eggSlot = nil,
+							}
+						end
+					end
+					break
+				end
+			end
+		end
+	end
+	return found
+end
+
+local function interactParasite(p)
+	local allPrompts = p.prompts or (p.prompt and {p.prompt} or {})
+	for _, pp in ipairs(allPrompts) do
+		pcall(function() pp.HoldDuration = 0 end)
+		if fireproximityprompt then pcall(function() fireproximityprompt(pp) end) end
+	end
+	task.wait(0.1)
+	local searchTargets = {}
+	if p.model then searchTargets[#searchTargets+1] = p.model end
+	if p.eggSlot then searchTargets[#searchTargets+1] = p.eggSlot end
+	for _, target in ipairs(searchTargets) do
+		for _, d in ipairs(target:GetDescendants()) do
+			if d:IsA("ProximityPrompt") and d.Enabled then
+				pcall(function() d.HoldDuration = 0 end)
+				if fireproximityprompt then pcall(function() fireproximityprompt(d) end) end
+			elseif d:IsA("ClickDetector") then
+				if fireclickdetector then pcall(function() fireclickdetector(d) end) end
+			elseif d:IsA("RemoteEvent") then
+				pcall(function() d:FireServer() end)
+				if p.eggUid then pcall(function() d:FireServer(p.eggUid) end) end
+			end
+		end
+	end
+	for _, rname in ipairs(PAR_REMOTES) do
+		local r = NET and NET:FindFirstChild(rname)
+		if r then
+			if r:IsA("RemoteEvent") then
+				pcall(function() r:FireServer() end)
+				if p.eggUid then
+					pcall(function() r:FireServer({ Uid = p.eggUid }) end)
+					pcall(function() r:FireServer(p.eggUid) end)
+				end
+			elseif r:IsA("RemoteFunction") then
+				pcall(function() r:InvokeServer() end)
+				if p.eggUid then
+					pcall(function() r:InvokeServer({ Uid = p.eggUid }) end)
+					pcall(function() r:InvokeServer(p.eggUid) end)
+				end
+			end
+		end
+	end
+	if p.eggUid then callNet(Remotes.EggCarry, { Uid = p.eggUid }) end
+end
+
+local function parKey(p)
+	if p.eggUid then return "uid_" .. p.eggUid end
+	return p.name .. "_" .. math.floor(p.part.Position.X) .. "_" .. math.floor(p.part.Position.Z)
+end
+
+spawnLoop(function()
+	while alive() do
+		task.wait(0.1)
+		if PAR.Active and charReady() then
+			if tick() - PAR.lastScan >= PAR.ScanInterval then
+				PAR.lastScan = tick()
+				local parasites = findParasites()
+				for _, p in ipairs(parasites) do
+					if not PAR.Active then break end
+					local key = parKey(p)
+					if tick() - (PAR.tried[key] or 0) < 8 then continue end
+					PAR.tried[key] = tick()
+					local hrp = root()
+					if not hrp then continue end
+					local targetPos = p.part.Position
+					local approachDir = (targetPos - hrp.Position)
+					local flatApproach = Vector3.new(approachDir.X, 0, approachDir.Z)
+					local overshootDir = flatApproach.Magnitude > 0.1 and flatApproach.Unit or Vector3.new(1, 0, 0)
+					local overshootPos = targetPos + overshootDir * 2 + Vector3.new(0, 3, 0)
+					travelTo(targetPos + Vector3.new(0, 3, 0), 3, autoStealOn)
+					task.wait(0.05)
+					pcall(function() hrp.CFrame = CFrame.new(overshootPos) end)
+					task.wait(0.1)
+					local wasProxOn = Config.AutoFireProx
+					if not wasProxOn then Config.AutoFireProx = true; startAutoFireProx() end
+					for attempt = 1, 5 do
+						if not PAR.Active then break end
+						interactParasite(p)
+						pcall(function()
+							local slotsF = slots()
+							if slotsF and p.eggUid then
+								local slot = slotsF:FindFirstChild(p.eggUid)
+								if slot then
+									for _, d in ipairs(slot:GetDescendants()) do
+										if d:IsA("ProximityPrompt") and d.Enabled then
+											pcall(function() d.HoldDuration = 0 end)
+											if fireproximityprompt then pcall(function() fireproximityprompt(d) end) end
+										end
+									end
+								end
+							end
+						end)
+						task.wait(0.12)
+					end
+					if not wasProxOn then Config.AutoFireProx = false; stopAutoFireProx() end
+					local basePos = Config.ManualBase or (plotPivot() and plotPivot().Position)
+					if basePos then travelTo(basePos, 12, autoStealOn) end
+					task.wait(0.2)
+				end
+				local now = tick()
+				for k, t in pairs(PAR.tried) do
+					if now - t > 30 then PAR.tried[k] = nil end
+				end
+			end
+		end
+	end
+end)
+
+-- ═══════════════════════════════════════════════════════
+--  TREADMILL
+-- ═══════════════════════════════════════════════════════
+local TREAD_AVOID = { "upgrade", "tier", "level", "board", "sign", "billboard", "gui", "shop", "buy", "display", "screen", "label", "text", "icon", "price", "cost", "info", "menu" }
+local BELT_HINTS = { "belt", "tread", "walk", "run", "platform", "floor", "deck", "pad" }
+local TreadCache = nil
+
+local function treadAvoided(name)
+	local low = name:lower()
+	for _, w in ipairs(TREAD_AVOID) do
+		if low:find(w, 1, true) then return true end
+	end
+	return false
+end
+
+local function treadCollect(scope, out)
+	if not scope then return out end
+	if (scope:IsA("Model") or scope:IsA("BasePart")) and scope.Name:lower():find("treadmill", 1, true) and not treadAvoided(scope.Name) then
+		out[#out + 1] = scope
+	end
+	for _, d in ipairs(scope:GetDescendants()) do
+		if (d:IsA("Model") or d:IsA("BasePart")) and d.Name:lower():find("treadmill", 1, true) and not treadAvoided(d.Name) then
+			out[#out + 1] = d
+		end
+	end
+	return out
+end
+
+local function anchorOf(inst)
+	if inst:IsA("BasePart") then return inst.Position end
+	local ok, pv = pcall(function() return inst:GetPivot() end)
+	return ok and pv and pv.Position or nil
+end
+
+local function treadmill()
+	if TreadCache and TreadCache.Parent then return TreadCache end
+	local out = {}
+	treadCollect(myPlot(), out)
+	if #out == 0 then treadCollect(Workspace:FindFirstChild("Treadmills"), out) end
+	if #out == 0 then treadCollect(Workspace:FindFirstChild("Stands"), out) end
+	if #out == 0 then
+		for _, c in ipairs(Workspace:GetChildren()) do
+			if c.Name:lower():find("tread", 1, true) then treadCollect(c, out) end
+		end
+	end
+	if #out == 0 then return nil end
+	local base = plotPivot()
+	local hrp = root()
+	local origin = base and base.Position or (hrp and hrp.Position)
+	local best, bestScore
+	for i = 1, #out do
+		local a = anchorOf(out[i])
+		if a then
+			local d = origin and (a - origin).Magnitude or 0
+			local score = (out[i]:IsA("Model") and 40 or 0) - d
+			if not bestScore or score > bestScore then best, bestScore = out[i], score end
+		end
+	end
+	TreadCache = best
+	return TreadCache
+end
+
+local function treadSeat()
+	local t = treadmill()
+	if not t then return nil end
+	if t:IsA("Seat") or t:IsA("VehicleSeat") then return t end
+	if t:IsA("BasePart") then return nil end
+	for _, d in ipairs(t:GetDescendants()) do
+		if d:IsA("Seat") or d:IsA("VehicleSeat") then return d end
+	end
+	return nil
+end
+
+local function treadBelt()
+	local t = treadmill()
+	if not t then return nil end
+	if t:IsA("BasePart") then return t end
+	local best, bestScore
+	for _, d in ipairs(t:GetDescendants()) do
+		if d:IsA("BasePart") and not treadAvoided(d.Name) then
+			local low = d.Name:lower()
+			local bonus = 0
+			for _, w in ipairs(BELT_HINTS) do
+				if low:find(w, 1, true) then bonus = 100000; break end
+			end
+			local score = bonus + d.Size.X * d.Size.Z
+			if not bestScore or score > bestScore then best, bestScore = d, score end
+		end
+	end
+	return best or t.PrimaryPart
+end
+
+local function treadCFrame()
+	local seat = treadSeat()
+	if seat then return seat.CFrame end
+	local part = treadBelt()
+	return part and part.CFrame or nil
+end
+
+local function sitOnTread(seat)
+	local h, hrp = hum(), root()
+	if not seat or not h or not hrp then return false end
+	if h.Sit then return true end
+	for _, pp in ipairs(promptsUnder(treadmill(), { "sit", "ride", "use", "start" })) do
+		if promptInRange(pp) and firePrompt(pp) then
+			task.wait(0.2)
+			if h.Sit then return true end
+		end
+	end
+	pcall(function() seat:Sit(h) end)
+	local target = seat.CFrame * CFrame.new(0, 1.4, 0)
+	for _ = 1, 24 do
+		if h.Sit then return true end
+		pcall(function() hrp.CFrame = target end)
+		RunService.Heartbeat:Wait()
+	end
+	return h.Sit == true
+end
+
+local function upgradeTreadmill()
+	local n = 0
+	if callNet(Remotes.TreadRaise) then n = n + 1 end
+	local t = treadmill()
+	for _, pp in ipairs(promptsUnder(t, { "upgrade", "level", "tier", "buy" })) do
+		if promptInRange(pp) and firePrompt(pp) then n = n + 1; task.wait(0.06) end
+	end
+	return n
+end
+
+spawnLoop(function()
+	local lastUp = 0
+	while alive() do
+		RunService.Heartbeat:Wait()
+		if Config.AutoTreadmill and charReady() and not Travelling then
+			local seat = treadSeat()
+			local cf = treadCFrame()
+			local hrp, h = root(), hum()
+			if cf and hrp and h then
+				local flat = Vector3.new(cf.Position.X - hrp.Position.X, 0, cf.Position.Z - hrp.Position.Z)
+				if flat.Magnitude > 12 and not h.Sit then
+					travelTo(cf.Position, 6, function() return alive() and Config.AutoTreadmill end)
+				elseif seat then
+					if not h.Sit then sitOnTread(seat) end
+					if Config.AutoUpgradeTreadmill and tick() - lastUp > 4 then
+						lastUp = tick()
+						pcall(upgradeTreadmill)
+					end
+				else
+					local dir = cf.LookVector
+					local ahead = (hrp.Position - cf.Position):Dot(dir)
+					if ahead > 6 then dir = -dir end
+					pcall(function() h.WalkSpeed = math.max(h.WalkSpeed, 60) end)
+					h:Move(Vector3.new(dir.X, 0, dir.Z).Unit, false)
+					if Config.AutoUpgradeTreadmill and tick() - lastUp > 4 then
+						lastUp = tick()
+						pcall(upgradeTreadmill)
+					end
+				end
+			end
+		end
+	end
+end)
+
 -- ═══════════════════════════════════════════════════════════
 --  AUTO FIRE PROXIMITY PROMPTS
 -- ═══════════════════════════════════════════════════════════
@@ -2639,6 +3048,93 @@ local function stopAutoFireProx()
 	if ProxConn then ProxConn:Disconnect(); ProxConn = nil end
 end
 
+-- ═══════════════════════════════════════════════════════
+--  VISUAL PETS
+-- ═══════════════════════════════════════════════════════
+local VP = { spawned = {}, orbitRadius = 4, orbitSpeed = 0.8, conn = nil, petNames = {}, inputName = "" }
+local vpFolder = Instance.new("Folder")
+vpFolder.Name = "IvoryVisualPets"
+vpFolder.Parent = Workspace
+
+local function scanPets()
+	local seen, names = {}, {}
+	local function checkModel(m)
+		if not m:IsA("Model") then return end
+		local low = m.Name:lower()
+		if low:find("humanoid") or low:find("egg") then return end
+		local hasPart = m:FindFirstChildWhichIsA("BasePart") ~= nil
+		local parentName = m.Parent and m.Parent.Name:lower() or ""
+		local isPetContext = parentName:find("pet") or parentName:find("pen") or parentName:find("render") or parentName:find("slot")
+		if hasPart and (isPetContext or m:FindFirstChildWhichIsA("AnimationController")) then
+			if not seen[m.Name] then seen[m.Name] = true; names[#names + 1] = m.Name end
+		end
+	end
+	for _, host in ipairs(petHosts()) do
+		for _, d in ipairs(host:GetDescendants()) do checkModel(d) end
+	end
+	for _, d in ipairs(Workspace:GetChildren()) do
+		for _, m in ipairs(d:GetChildren()) do checkModel(m) end
+	end
+	table.sort(names)
+	VP.petNames = names
+	return names
+end
+
+local function findPetModel(name)
+	local low = name:lower()
+	for _, host in ipairs(petHosts()) do
+		for _, d in ipairs(host:GetDescendants()) do
+			if d:IsA("Model") and d.Name:lower():find(low, 1, true) and d:FindFirstChildWhichIsA("BasePart") then return d end
+		end
+	end
+	for _, d in ipairs(Workspace:GetDescendants()) do
+		if d:IsA("Model") and d.Name:lower():find(low, 1, true) and not d:IsDescendantOf(vpFolder) and d:FindFirstChildWhichIsA("BasePart") then return d end
+	end
+	return nil
+end
+
+local function clonePet(name)
+	local src = findPetModel(name)
+	if not src then Library:Notify({Title="Ivory", Description="Could not find: " .. name, Type="Warning", Time=3}) return end
+	local clone = src:Clone()
+	for _, s in ipairs(clone:GetDescendants()) do
+		if s:IsA("Script") or s:IsA("LocalScript") or s:IsA("ModuleScript") then s:Destroy() end
+	end
+	for _, p in ipairs(clone:GetDescendants()) do
+		if p:IsA("BasePart") then p.Anchored = true; p.CanCollide = false; p.CanTouch = false; p.CastShadow = false end
+	end
+	clone.Name = "VP_" .. name
+	clone.Parent = vpFolder
+	local angle = (#VP.spawned) * (math.pi * 2 / math.max(1, #VP.spawned + 1))
+	VP.spawned[#VP.spawned + 1] = { model = clone, angle = angle }
+end
+
+local function removeAllPets()
+	for _, entry in ipairs(VP.spawned) do pcall(function() entry.model:Destroy() end) end
+	VP.spawned = {}
+end
+
+local function removeLastPet()
+	if #VP.spawned == 0 then return end
+	local entry = table.remove(VP.spawned)
+	pcall(function() entry.model:Destroy() end)
+end
+
+VP.conn = RunService.Heartbeat:Connect(function()
+	local hrp = root()
+	if not hrp or #VP.spawned == 0 then return end
+	local t = tick()
+	local basePos = hrp.Position + Vector3.new(0, 1, 0)
+	local count = #VP.spawned
+	for i, entry in ipairs(VP.spawned) do
+		local a = (i - 1) * (math.pi * 2 / count) + t * VP.orbitSpeed
+		local pos = basePos + Vector3.new(math.cos(a) * VP.orbitRadius, 0, math.sin(a) * VP.orbitRadius)
+		local prim = entry.model.PrimaryPart or entry.model:FindFirstChildWhichIsA("BasePart")
+		if prim then pcall(function() entry.model:PivotTo(CFrame.new(pos) * CFrame.Angles(0, a + math.pi, 0)) end) end
+	end
+end)
+track(VP.conn)
+
 -- ═══════════════════════════════════════════════════════════
 --  MAIN TAB — EXTRAS SUBTAB
 -- ═══════════════════════════════════════════════════════════
@@ -2682,6 +3178,103 @@ ProxBox:AddSlider("ProxRange", {
 	Rounding = 0,
 	Callback = function(v) ProxRange = v end,
 })
+
+-- Parasite Farm UI
+local ParasiteBox = ExtrasSub:AddLeftGroupbox("Parasite Farm", "bug")
+
+ParasiteBox:AddToggle("ParasiteFarm", {
+	Text = "Auto Parasite Farm",
+	Default = false,
+	Callback = function(state)
+		PAR.Active = state
+		if state then
+			PAR.tried = {}
+			PAR.lastScan = 0
+			if not Config.PhysReady then
+				task.spawn(function() _Ek() end)
+			end
+		end
+	end,
+})
+
+ParasiteBox:AddSlider("ParasiteScanInterval", {
+	Text = "Scan Interval (s)",
+	Default = 15,
+	Min = 5,
+	Max = 100,
+	Rounding = 0,
+	Callback = function(v) PAR.ScanInterval = v / 10 end,
+})
+
+ParasiteBox:AddButton("Scan Now", function()
+	local list = findParasites()
+	Library:Notify({Title="Ivory", Description="Found " .. #list .. " parasite(s)", Type="Info", Time=3})
+end)
+
+-- Treadmill UI
+local TreadBox = ExtrasSub:AddRightGroupbox("Treadmill", "gauge")
+
+TreadBox:AddToggle("AutoTreadmill", {
+	Text = "Auto Treadmill",
+	Default = false,
+	Callback = function(state) Config.AutoTreadmill = state end,
+})
+
+TreadBox:AddToggle("AutoUpgradeTreadmill", {
+	Text = "Auto Upgrade Treadmill",
+	Default = false,
+	Callback = function(state) Config.AutoUpgradeTreadmill = state end,
+})
+
+-- Visual Pets UI
+local PetBox = ExtrasSub:AddLeftGroupbox("Visual Pets", "heart")
+
+PetBox:AddDropdown("VisualPetSelect", {
+	Text = "Select Pet",
+	Values = { "Click Refresh" },
+	Default = "Click Refresh",
+	Callback = function(v) VP.inputName = v end,
+})
+
+PetBox:AddButton("Refresh Pet List", function()
+	local names = scanPets()
+	if #names > 0 then
+		pcall(function() Options.VisualPetSelect:SetValues(names) end)
+		Library:Notify({Title="Ivory", Description=#names .. " pets found", Type="Info", Time=2})
+	end
+end)
+
+PetBox:AddSlider("OrbitRadius", {
+	Text = "Orbit Radius",
+	Default = 4,
+	Min = 2,
+	Max = 20,
+	Rounding = 0,
+	Callback = function(v) VP.orbitRadius = v end,
+})
+
+PetBox:AddSlider("OrbitSpeed", {
+	Text = "Orbit Speed",
+	Default = 4,
+	Min = 0,
+	Max = 20,
+	Rounding = 0,
+	Callback = function(v) VP.orbitSpeed = v * 0.2 end,
+})
+
+PetBox:AddButton("Spawn Pet", function()
+	if VP.inputName ~= "" and VP.inputName ~= "Click Refresh" then clonePet(VP.inputName) end
+end)
+
+PetBox:AddButton("Remove All Pets", function() removeAllPets() end)
+
+-- Sell Pets UI
+local SellBox = ExtrasSub:AddRightGroupbox("Sell Pets", "dollar-sign")
+
+SellBox:AddButton("Sell All Pets", function()
+	task.spawn(function() sellPets(true) end)
+end)
+
 local ESPSub = Tabs.Visuals:AddSubTab("Egg ESP", "eye")
 
 local ESPBox = ESPSub:AddLeftGroupbox("Egg ESP", "circle")
@@ -2737,11 +3330,16 @@ MenuGroup:AddButton("Unload", function()
 	Config.AutoSteal = false
 	Config.FpsBoost = false
 	Config.AutoFireProx = false
+	Config.AutoTreadmill = false
+	Config.AutoUpgradeTreadmill = false
+	PAR.Active = false
 	cancelTravel()
 	releaseRoot()
 	clearESP()
 	fpsOff()
 	stopAutoFireProx()
+	removeAllPets()
+	if vpFolder then pcall(function() vpFolder:Destroy() end) end
 	if warnLayer then pcall(function() warnLayer:Destroy() end) end
 	for _, c in ipairs(Conns) do
 		pcall(function() c:Disconnect() end)
