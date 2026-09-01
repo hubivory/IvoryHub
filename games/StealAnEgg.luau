@@ -57,6 +57,9 @@ local Config = {
 local Threads = {}
 local Conns = {}
 
+local Assets = require(ReplicatedStorage:WaitForChild("Data"):WaitForChild("Assets"))
+local F = {}
+
 -- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 --  NETWORKING
 -- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -92,7 +95,7 @@ local Remotes = {
 	TreadRaise    = "RF/Treadmill/AskTierRaise",
 	TreadRender   = "RF/Treadmill/AskRenderSnapshot",
 	RigWipe       = "RE/RigSync/AskRigWipe",
-	WriteAutoSell = "RE/Haul/WriteAutoSell",
+	WriteAutoSell = "RF/Haul/WriteAutoSell",
 	FetchAutoSell = "RF/Haul/FetchAutoSell",
 }
 
@@ -230,8 +233,21 @@ local function recordsOf(t)
 	return t.Records or t.Pets or t.Items or t.Entries or t.Inventory or t
 end
 
+F.resolveRarity = function(assetCategory)
+    if typeof(assetCategory) ~= "string" then
+        return nil
+    end
+    local asset = Assets.Directory[assetCategory]
+    if not asset or not asset.Rarity then
+        return nil
+    end
+    return asset.Rarity._id or asset.Rarity.DisplayName
+end
+
 local function rarityOf(rec)
-	local v = rec.Rarity or rec.RarityName or rec.Tier or rec.RarityId
+	local v = F.resolveRarity(rec.AssetCategory)
+	if v then return v end
+	v = rec.Rarity or rec.RarityName or rec.Tier or rec.RarityId
 	if type(v) == "table" then
 		v = v.DisplayName or v._id or v.Name or v.Id
 	end
@@ -239,7 +255,9 @@ local function rarityOf(rec)
 end
 
 local function rankOf(rec)
-	local v = rec.Rarity or rec.RarityName or rec.Tier or rec.RarityId
+	local v = F.resolveRarity(rec.AssetCategory)
+	if v and ladderOf(v) > 0 then return ladderOf(v) end
+	v = rec.Rarity or rec.RarityName or rec.Tier or rec.RarityId
 	if type(v) == "table" then
 		local rn = v.RarityNumber
 		if type(rn) == "number" and rn > 0 then return rn end
@@ -2146,11 +2164,7 @@ spawnLoop(function()
 	while alive() do
 		if Config.AutoSellEggs and charReady() then
 			pcall(function()
-				callNet(Remotes.SellEveryPet)
-				task.wait(0.3)
-				callNet(Remotes.PetSale)
-				task.wait(0.3)
-				callNet(Remotes.SatchelSale)
+				callNet(Remotes.WriteAutoSell, Config.SellEggRarities)
 			end)
 		end
 		task.wait(4)
@@ -2500,12 +2514,19 @@ do
 		R:AddButton("Void Drop", function() FX.voidDrop() end)
 		R:AddButton("Sell Pets", function() FX.sellPets(false) end)
 		R:AddButton("Sell All Eggs", function()
-			callNet(Remotes.SellEveryPet)
-			callNet(Remotes.PetSale)
-			callNet(Remotes.SatchelSale)
+			local rarities = {}
+			for _, name in ipairs(Rarities) do rarities[name] = true end
+			callNet(Remotes.WriteAutoSell, rarities)
 			FX.warnToast("Eggs sold!", 3)
 		end)
-		R:AddToggle("AutoSellEggs", { Text = "Auto Sell Eggs", Default = false, Callback = function(v) Config.AutoSellEggs = v end })
+		R:AddToggle("AutoSellEggs", { Text = "Auto Sell Eggs", Default = false, Callback = function(v)
+			Config.AutoSellEggs = v
+			if v then
+				callNet(Remotes.WriteAutoSell, Config.SellEggRarities)
+			else
+				callNet(Remotes.WriteAutoSell, {})
+			end
+		end })
 		R:AddDropdown("SellEggRarities", { Text = "Sell Egg Rarities", Values = FX.Rarities, Multi = true, Callback = function(v) table.clear(Config.SellEggRarities); for _, item in ipairs(v) do Config.SellEggRarities[item] = true end end })
 	end
 
