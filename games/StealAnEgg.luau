@@ -425,6 +425,11 @@ local function refreshEggs(force)
 					end
 					table.sort(keys)
 					warn("[Ivory DBG] EggSnapshot record keys: " .. table.concat(keys, ", "))
+					warn("[Ivory DBG] areaTierName dump:")
+					for id, tn in pairs(AreaData.areaTierName) do
+						warn("  " .. tostring(id) .. " -> rank=" .. tostring(AreaData.areaRarity[id]) .. " tierName=" .. tostring(tn))
+					end
+					warn("[Ivory DBG] rarityLadder.Secret=" .. tostring(rarityLadder.Secret))
 				end
 				local id = rec.AreaId
 				if id and not AreaData.areaLabel[id] then
