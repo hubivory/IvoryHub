@@ -231,7 +231,9 @@ local function recordsOf(t)
 end
 
 local function rarityOf(rec)
-	local v = rec.Rarity or rec.RarityName or rec.Tier or rec.RarityId
+	local v = resolveRarity(rec.AssetCategory)
+	if v then return v end
+	v = rec.Rarity or rec.RarityName or rec.Tier or rec.RarityId
 	if type(v) == "table" then
 		v = v.DisplayName or v._id or v.Name or v.Id
 	end
@@ -239,7 +241,9 @@ local function rarityOf(rec)
 end
 
 local function rankOf(rec)
-	local v = rec.Rarity or rec.RarityName or rec.Tier or rec.RarityId
+	local v = resolveRarity(rec.AssetCategory)
+	if v and ladderOf(v) > 0 then return ladderOf(v) end
+	v = rec.Rarity or rec.RarityName or rec.Tier or rec.RarityId
 	if type(v) == "table" then
 		local rn = v.RarityNumber
 		if type(rn) == "number" and rn > 0 then return rn end
@@ -315,6 +319,22 @@ do
 		}
 	end
 	table.sort(Rarities, function(a, b) return (rarityLadder[a] or 0) < (rarityLadder[b] or 0) end)
+end
+
+local AssetsMod = nil
+do
+	local ok, mod = pcall(function()
+		return require(ReplicatedStorage:WaitForChild("Data"):WaitForChild("Assets", 5))
+	end)
+	if ok and type(mod) == "table" then AssetsMod = mod end
+end
+
+local function resolveRarity(assetCategory)
+	if type(assetCategory) ~= "string" then return nil end
+	if not AssetsMod or not AssetsMod.Directory then return nil end
+	local asset = AssetsMod.Directory[assetCategory]
+	if not asset or not asset.Rarity then return nil end
+	return asset.Rarity._id or asset.Rarity.DisplayName
 end
 
 local function ladderOf(name)
