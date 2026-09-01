@@ -412,32 +412,32 @@ local function refreshEggs(force)
 	local recs = snap and snap.Records
 	if type(recs) ~= "table" then return EggList end
 	local list = {}
-	local _dbgDumped = false
 	for _, rec in pairs(recs) do
 		if rec.State == "Slot" and rec.Uid then
 			local pos = eggPos(rec)
 			if pos then
-				if not _dbgDumped then
-					_dbgDumped = true
-					local keys = {}
-					for k, v in pairs(rec) do
-						keys[#keys+1] = tostring(k) .. "=" .. tostring(v) .. " (" .. type(v) .. ")"
-					end
-					table.sort(keys)
-					warn("[Ivory DBG] EggSnapshot record keys: " .. table.concat(keys, ", "))
-					warn("[Ivory DBG] areaTierName dump:")
-					for id, tn in pairs(AreaData.areaTierName) do
-						warn("  " .. tostring(id) .. " -> rank=" .. tostring(AreaData.areaRarity[id]) .. " tierName=" .. tostring(tn))
-					end
-					warn("[Ivory DBG] rarityLadder.Secret=" .. tostring(rarityLadder.Secret))
-				end
 				local id = rec.AreaId
 				if id and not AreaData.areaLabel[id] then
 					addArea(id, id, #AreaData.areaOrder + 1, rarityOf(rec))
 				end
-				local own = rarityOf(rec)
-				if ladderOf(own) == 0 then own = nil end
-				local rawName = own or (id and AreaData.areaTierName[id]) or rarityOf(rec)
+				local rawName = (id and AreaData.areaTierName[id]) or rarityOf(rec)
+				if not rawName then
+					local mdl = eggModel(rec.Uid)
+					if mdl then
+						for _, d in ipairs(mdl:GetDescendants()) do
+							if (d:IsA("TextLabel") or d:IsA("SurfaceGui")) then
+								local t = d:IsA("TextLabel") and d.Text or ""
+								if not d:IsA("TextLabel") then
+									for _, c in ipairs(d:GetDescendants()) do
+										if c:IsA("TextLabel") then t = c.Text; break end
+									end
+								end
+								local resolved = resolveRarityName(t)
+								if ladderOf(resolved) > 0 then rawName = resolved; break end
+							end
+						end
+					end
+				end
 				local name = resolveRarityName(rawName)
 				list[#list + 1] = {
 					uid = rec.Uid,
@@ -2177,7 +2177,7 @@ local Options = Library.Options
 local Window = Library:CreateWindow({
 	Title = "Ivory",
 	Footer = {
-		"v1.7 |",
+		"v1.8 |",
 		{ Text = "Lobby/Game", Copyable = true },
 		"|",
 		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
