@@ -235,6 +235,34 @@ local function rarityOf(rec)
 end
 
 -- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+--  HUMANOID UNLOCK (Performance Mode)
+-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+local _pk = {"RigType","HipHeight","JumpPower","JumpHeight","UseJumpPower","AutoRotate","MaxSlopeAngle","DisplayDistanceType","NameDisplayDistance","HealthDisplayDistance","AutomaticScalingEnabled","BreakJointsOnDeath","RequiresNeck","EvaluateStateMachine"}
+
+local _Qk = function()
+	local ch = LocalPlayer.Character; if not ch then return false end
+	local old = ch:FindFirstChildWhichIsA("Humanoid"); if not old then return false end
+	local p = {}; for _, n in ipairs(_pk) do local ok, v = pcall(function() return old[n] end); if ok then p[n] = v end end
+	local _b = old.WalkSpeed
+	pcall(function() old:Destroy() end); RunService.Heartbeat:Wait()
+	local nw = Instance.new("Humanoid"); for k, v in pairs(p) do pcall(function() nw[k] = v end) end
+	nw.Parent = ch; RunService.Heartbeat:Wait()
+	if nw.Parent ~= ch then return false end
+	nw.WalkSpeed = _b; pcall(function() nw:ChangeState(Enum.HumanoidStateType.Landed) end)
+	local c = Workspace.CurrentCamera; if c then pcall(function() c.CameraSubject = nw end) end
+	Config.PhysReady = true; return true
+end
+
+local _Ek = function()
+	if Config.PerfMode and not Config.PhysReady and charReady() then return _Qk() end
+	return Config.PhysReady
+end
+
+
+local FX = {}
+
+do
+-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 --  RARITY SYSTEM
 -- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 local Rarities = {
@@ -384,30 +412,6 @@ end
 local filterValues = {}
 for _, r in ipairs(Rarities) do
 	filterValues[#filterValues + 1] = r
-end
-
--- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
---  HUMANOID UNLOCK (Performance Mode)
--- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-local _pk = {"RigType","HipHeight","JumpPower","JumpHeight","UseJumpPower","AutoRotate","MaxSlopeAngle","DisplayDistanceType","NameDisplayDistance","HealthDisplayDistance","AutomaticScalingEnabled","BreakJointsOnDeath","RequiresNeck","EvaluateStateMachine"}
-
-local _Qk = function()
-	local ch = LocalPlayer.Character; if not ch then return false end
-	local old = ch:FindFirstChildWhichIsA("Humanoid"); if not old then return false end
-	local p = {}; for _, n in ipairs(_pk) do local ok, v = pcall(function() return old[n] end); if ok then p[n] = v end end
-	local _b = old.WalkSpeed
-	pcall(function() old:Destroy() end); RunService.Heartbeat:Wait()
-	local nw = Instance.new("Humanoid"); for k, v in pairs(p) do pcall(function() nw[k] = v end) end
-	nw.Parent = ch; RunService.Heartbeat:Wait()
-	if nw.Parent ~= ch then return false end
-	nw.WalkSpeed = _b; pcall(function() nw:ChangeState(Enum.HumanoidStateType.Landed) end)
-	local c = Workspace.CurrentCamera; if c then pcall(function() c.CameraSubject = nw end) end
-	Config.PhysReady = true; return true
-end
-
-local _Ek = function()
-	if Config.PerfMode and not Config.PhysReady and charReady() then return _Qk() end
-	return Config.PhysReady
 end
 
 -- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -2059,11 +2063,6 @@ local function sellPets(walk)
 end
 
 -- ═══════════════════════════════════════════════════════
---  CROSS-SCOPE EXPORT TABLE
--- ═══════════════════════════════════════════════════════
-local FX = {}
-
--- ═══════════════════════════════════════════════════════
 --  ANTI TRAP LOOP
 -- ═══════════════════════════════════════════════════════
 spawnLoop(function()
@@ -2221,10 +2220,6 @@ local function fpsOff()
 	Workspace.FallenPartsDestroyHeight = -500
 end
 
-FX.fpsOn = fpsOn
-FX.fpsOff = fpsOff
-FX.setFpsTarget = setFpsTarget
-
 -- ═══════════════════════════════════════════════════════
 --  PARASITE FARM
 -- ═══════════════════════════════════════════════════════
@@ -2363,6 +2358,22 @@ do
 	end)
 end
 
+FX.pickList = pickList
+FX.areaLabels = areaLabels
+FX.sortAreas = sortAreas
+FX.Rarities = Rarities
+FX.warnToast = warnToast
+FX.goHome = goHome
+FX.voidDrop = voidDrop
+FX.sellPets = sellPets
+FX._hatchAll = _hatchAll
+FX.fpsOn = fpsOn
+FX.fpsOff = fpsOff
+FX.serverHop = serverHop
+FX.autoStealOn = autoStealOn
+
+end
+
 -- ═══════════════════════════════════════════════════════
 --  OBSIDIANULTRA UI
 -- ═══════════════════════════════════════════════════════
@@ -2418,14 +2429,14 @@ do
 		local R = Sub:AddRightGroupbox("Base & Utility", "home")
 		L:AddToggle("AutoSteal", { Text = "Auto Steal", Default = false, Callback = function(v) Config.AutoSteal = v end })
 		L:AddDropdown("FarmMethod", { Text = "Farm Method", Values = { "Teleport", "TP Walk" }, Default = "TP Walk", Callback = function(v) Config.FarmMethod = v end })
-		L:AddDropdown("AreaFocus", { Text = "Area Focus", Values = pickList(areaLabels), Multi = true, Callback = function(v) table.clear(Config.AreaFocus); for _, item in ipairs(v) do Config.AreaFocus[item] = true end end })
-		L:AddDropdown("RarityFilter", { Text = "Rarity Filter", Values = pickList(sortAreas(Rarities)), Multi = true, Callback = function(v) table.clear(Config.RarityFilter); for _, item in ipairs(v) do Config.RarityFilter[item] = true end end })
+		L:AddDropdown("AreaFocus", { Text = "Area Focus", Values = FX.pickList(FX.areaLabels), Multi = true, Callback = function(v) table.clear(Config.AreaFocus); for _, item in ipairs(v) do Config.AreaFocus[item] = true end end })
+		L:AddDropdown("RarityFilter", { Text = "Rarity Filter", Values = FX.pickList(FX.sortAreas(FX.Rarities)), Multi = true, Callback = function(v) table.clear(Config.RarityFilter); for _, item in ipairs(v) do Config.RarityFilter[item] = true end end })
 		L:AddToggle("SecretPriority", { Text = "Secret Priority", Default = true, Callback = function(v) Config.SecretPriority = v end })
 		L:AddToggle("AntiTrap", { Text = "Anti Trap", Default = true, Callback = function(v) Config.AntiTrap = v end })
-		R:AddButton("Set Base Here", function() Config.ManualBase = (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) and LocalPlayer.Character.HumanoidRootPart.Position or nil; warnToast(Config.ManualBase and "Base set!" or "No character.", 3) end)
-		R:AddButton("Go Home", function() goHome(20) end)
-		R:AddButton("Void Drop", function() voidDrop() end)
-		R:AddButton("Sell Pets", function() sellPets(false) end)
+		R:AddButton("Set Base Here", function() Config.ManualBase = (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) and LocalPlayer.Character.HumanoidRootPart.Position or nil; FX.warnToast(Config.ManualBase and "Base set!" or "No character.", 3) end)
+		R:AddButton("Go Home", function() FX.goHome(20) end)
+		R:AddButton("Void Drop", function() FX.voidDrop() end)
+		R:AddButton("Sell Pets", function() FX.sellPets(false) end)
 	end
 
 	do
@@ -2433,8 +2444,8 @@ do
 		local L = Sub:AddLeftGroupbox("Hatching", "egg")
 		local R = Sub:AddRightGroupbox("Visuals", "eye")
 		L:AddToggle("AutoHatch", { Text = "Auto Hatch", Default = false, Callback = function(v) Config.AutoHatch = v end })
-		L:AddButton("Hatch All (Walk)", function() _hatchAll(true) end)
-		L:AddButton("Hatch All (TP)", function() _hatchAll(false) end)
+		L:AddButton("Hatch All (Walk)", function() FX._hatchAll(true) end)
+		L:AddButton("Hatch All (TP)", function() FX._hatchAll(false) end)
 		R:AddToggle("EggESP", { Text = "Egg ESP", Default = false, Callback = function(v) Config.EggESP = v end })
 	end
 
@@ -2447,11 +2458,11 @@ do
 		L:AddToggle("AutoTreadmill", { Text = "Auto Treadmill", Default = false, Callback = function(v) Config.AutoTreadmill = v end })
 		L:AddToggle("AutoFireProx", { Text = "Auto Fire Prox", Default = false, Callback = function(v) Config.AutoFireProx = v end })
 		L:AddToggle("AntiAFK", { Text = "Anti AFK", Default = false, Callback = function(v) Config.AntiAFK = v end })
-		R:AddToggle("FpsBoost", { Text = "FPS Boost", Default = false, Callback = function(v) if v then fpsOn() else fpsOff() end end })
-		R:AddButton("Server Hop", function() serverHop() end)
+		R:AddToggle("FpsBoost", { Text = "FPS Boost", Default = false, Callback = function(v) if v then FX.fpsOn() else FX.fpsOff() end end })
+		R:AddButton("Server Hop", function() FX.serverHop() end)
 		R:AddButton("Join Discord For Dupe", function()
 			if setclipboard then setclipboard("https://discord.gg/MCWYKBdB4E") end
-			warnToast("Discord link copied!", 3)
+			FX.warnToast("Discord link copied!", 3)
 		end)
 	end
 
