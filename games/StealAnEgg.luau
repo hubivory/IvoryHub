@@ -29,8 +29,8 @@ local Config = {
 	PerfMode = false,
 	PhysReady = false,
 	AntiTrap = true,
-	TargetArea = "All",
-	SelectedRarities = {},
+	AreaFocus = {},
+	RarityFilter = {},
 	ManualBase = nil,
 	SecretPriority = true,
 	AutoHatch = false,
@@ -39,6 +39,8 @@ local Config = {
 	AutoUpgrade = false,
 	AntiAFK = false,
 	EggESP = false,
+	FpsBoost = false,
+	AutoFireProx = false,
 	ServerHop = false,
 	ServerHopDelay = 30,
 	ServerHopCount = 0,
@@ -60,6 +62,8 @@ local Remotes = {
 	EggCarry      = "RF/EggWorld/AskFieldEggCarry",
 	EggPlace      = "RF/EggWorld/AskPlaceEgg",
 	EggDrop       = "RF/EggWorld/AskFieldEggDrop",
+	EggLive       = "RF/EggWorld/AskLiveSnapshot",
+	EggRarityShow = "RF/EggWorld/AskFieldEggRarityShows",
 	Hatch         = "RF/EggWorld/AskHatch",
 	HatchFinish   = "RF/EggWorld/AskFinishHatch",
 	SkipGrowth    = "RF/EggWorld/AskSkipGrowth",
@@ -67,12 +71,18 @@ local Remotes = {
 	BaseTierRaise = "RE/Homestead/AskBaseTierRaise",
 	NearbyBuy     = "RE/Homestead/AskNearbyPurchase",
 	Collect       = "RF/AwayEarnings/AskCollect",
+	PendingCheck  = "RF/AwayEarnings/PendingCheck",
 	CodexAll      = "RF/Codex/AskRedeemAll",
 	WearBest      = "RF/Haul/WearBest",
+	SatchelSale   = "RF/Haul/OfferFullSatchelSale",
 	SellEveryPet  = "RE/PetSatchel/SellEveryPet",
+	SellPet       = "RE/PetSatchel/SellPet",
+	PetSnapshot   = "RF/PenRoster/AskLiveSnapshot",
+	PetSale       = "RF/PenRoster/AskSale",
 	PetWear       = "RF/PenRoster/AskWear",
 	PetDoff       = "RF/PenRoster/AskDoff",
 	TreadRaise    = "RF/Treadmill/AskTierRaise",
+	TreadRender   = "RF/Treadmill/AskRenderSnapshot",
 	WearTool      = "RF/EggWorld/AskWearTool",
 	DoffTool      = "RF/EggWorld/AskDoffTool",
 	RigWipe       = "RE/RigSync/AskRigWipe",
@@ -93,11 +103,23 @@ local function callNet(name, ...)
 	return ok or nil
 end
 
+local uidShapeCache = {}
+
 local function askUid(name, uid)
-	local res = callNet(name, { Uid = uid })
-	if res ~= nil and res ~= false then return true end
-	local res2 = callNet(name, uid)
-	if res2 ~= nil and res2 ~= false then return true end
+	local shape = uidShapeCache[name]
+	if shape ~= 2 then
+		local res = callNet(name, { Uid = uid })
+		if res ~= nil and res ~= false then
+			uidShapeCache[name] = 1
+			return true
+		end
+		if shape == 1 then return false end
+	end
+	local res = callNet(name, uid)
+	if res ~= nil and res ~= false then
+		uidShapeCache[name] = 2
+		return true
+	end
 	return false
 end
 
@@ -162,6 +184,39 @@ local function promptInRange(pp)
 	if not pos then return false end
 	local max = pp.MaxActivationDistance > 0 and pp.MaxActivationDistance or 12
 	return (hrp.Position - pos).Magnitude <= max + 4
+end
+
+local function asSet(list)
+	local set, n = {}, 0
+	if type(list) == "table" then
+		for _, v in ipairs(list) do
+			if type(v) == "string" and v ~= "" then
+				set[v] = true
+				n = n + 1
+			end
+		end
+	end
+	return set, n
+end
+
+local RarityWanted = {}
+local RarityWantedCount = 0
+local AreaWanted = {}
+local AreaWantedCount = 0
+
+local function rebuildRaritySet()
+	RarityWanted, RarityWantedCount = asSet(Config.RarityFilter)
+end
+
+local function rebuildAreaSet()
+	local labels = asSet(Config.AreaFocus)
+	local ids, n = {}, 0
+	for label in pairs(labels) do
+		local id = AreaData.areaByLabel[label] or label
+		ids[id] = true
+		n = n + 1
+	end
+	AreaWanted, AreaWantedCount = ids, n
 end
 
 local function promptsUnder(inst, words)
@@ -359,6 +414,16 @@ local function refreshEggs(force)
 	end
 	EggList = list
 	EggListAt = tick()
+	-- stale triedUids cleanup
+	local live = {}
+	for i = 1, #list do live[list[i].uid] = true end
+	local now = tick()
+	for uid, at in pairs(TriedUids) do
+		if not live[uid] and now - at > 300 then
+			TriedUids[uid] = nil
+			FailUids[uid] = nil
+		end
+	end
 	return list
 end
 
@@ -892,12 +957,221 @@ track(RunService.Heartbeat:Connect(function()
 	end
 end))
 
--- Reset state on respawn
-track(LocalPlayer.CharacterAdded:Connect(function()
+-- ═══════════════════════════════════════════════════════
+--  WARN TOAST
+-- ═══════════════════════════════════════════════════════
+local warnLayer = nil
+
+local function warnRoot()
+	if warnLayer and warnLayer.Parent then return warnLayer end
+	local ok = pcall(function()
+		local sg = Instance.new("ScreenGui")
+		sg.Name = "IvoryWarn"
+		sg.ResetOnSpawn = false
+		sg.IgnoreGuiInset = true
+		sg.DisplayOrder = 9999
+		sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+		sg.Parent = LocalPlayer:WaitForChild("PlayerGui")
+		warnLayer = sg
+	end)
+	return ok and warnLayer or nil
+end
+
+local function warnToast(text, dur)
+	local layer = warnRoot()
+	if not layer then return end
+	dur = dur or 4
+	pcall(function()
+		local card = Instance.new("Frame")
+		card.AnchorPoint = Vector2.new(1, 1)
+		card.Position = UDim2.new(1, 20, 1, -22)
+		card.Size = UDim2.fromOffset(232, 54)
+		card.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
+		card.BorderSizePixel = 0
+		card.Parent = layer
+
+		Instance.new("UICorner", card).CornerRadius = UDim.new(0, 10)
+
+		local stroke = Instance.new("UIStroke", card)
+		stroke.Thickness = 1
+		stroke.Color = Color3.fromRGB(238, 168, 62)
+		stroke.Transparency = 0.35
+
+		local bar = Instance.new("Frame")
+		bar.Size = UDim2.new(0, 3, 1, -16)
+		bar.Position = UDim2.new(0, 8, 0, 8)
+		bar.BackgroundColor3 = Color3.fromRGB(238, 168, 62)
+		bar.BorderSizePixel = 0
+		bar.Parent = card
+		Instance.new("UICorner", bar).CornerRadius = UDim.new(1, 0)
+
+		local head = Instance.new("TextLabel")
+		head.BackgroundTransparency = 1
+		head.Position = UDim2.new(0, 20, 0, 9)
+		head.Size = UDim2.new(1, -30, 0, 16)
+		head.Font = Enum.Font.GothamBold
+		head.TextSize = 12
+		head.TextColor3 = Color3.fromRGB(238, 168, 62)
+		head.TextXAlignment = Enum.TextXAlignment.Left
+		head.Text = "Warning"
+		head.Parent = card
+
+		local body = Instance.new("TextLabel")
+		body.BackgroundTransparency = 1
+		body.Position = UDim2.new(0, 20, 0, 27)
+		body.Size = UDim2.new(1, -30, 0, 18)
+		body.Font = Enum.Font.Gotham
+		body.TextSize = 12
+		body.TextColor3 = Color3.fromRGB(206, 206, 212)
+		body.TextXAlignment = Enum.TextXAlignment.Left
+		body.TextTruncate = Enum.TextTruncate.AtEnd
+		body.Text = text
+		body.Parent = card
+
+		TweenService:Create(card, TweenInfo.new(0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+			Position = UDim2.new(1, -18, 1, -22),
+		}):Play()
+
+		task.delay(dur, function()
+			local out = TweenService:Create(card, TweenInfo.new(0.24, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
+				Position = UDim2.new(1, 260, 1, -22),
+			})
+			out:Play()
+			out.Completed:Wait()
+			card:Destroy()
+		end)
+	end)
+end
+
+-- ═══════════════════════════════════════════════════════
+--  VOID DROP
+-- ═══════════════════════════════════════════════════════
+local voidBusy = false
+
+local function backOnMap(floor)
+	if not charReady() then return false end
+	local r = root()
+	return r ~= nil and r.Parent ~= nil and r.Position.Y > floor
+end
+
+local function voidDrop()
+	if voidBusy then return false end
+	local hrp = root()
+	if not hrp then return false end
+	voidBusy = true
 	cancelTravel()
-	TravelStep = 0
+	local killY = -500
+	local okY, v = pcall(function() return Workspace.FallenPartsDestroyHeight end)
+	if okY and type(v) == "number" then killY = v end
+	local safe = killY + 60
+	local p = hrp.Position
+	local h = hum()
+	if h then pcall(function() h:ChangeState(Enum.HumanoidStateType.Physics) end) end
+	local hold = tick() + 5
+	while alive() and tick() < hold do
+		local r = root()
+		if not r or not r.Parent then break end
+		pcall(function()
+			r.CFrame = CFrame.new(p.X, safe, p.Z)
+			r.AssemblyLinearVelocity = Vector3.zero
+			r.AssemblyAngularVelocity = Vector3.zero
+		end)
+		RunService.Heartbeat:Wait()
+	end
+	local r = root()
+	if r and r.Parent then
+		pcall(function()
+			r.CFrame = CFrame.new(p.X, killY - 250, p.Z)
+			r.AssemblyLinearVelocity = Vector3.new(0, -280, 0)
+		end)
+	end
+	local watch = killY + 200
+	local deadline = tick() + 20
+	local back = false
+	while alive() and tick() < deadline do
+		if backOnMap(watch) then back = true; break end
+		task.wait(0.2)
+	end
+	if not back and alive() then
+		warnToast("Using Fallback..", 5)
+		callNet(Remotes.RigWipe)
+		local retry = tick() + 12
+		while alive() and tick() < retry do
+			if backOnMap(watch) then back = true; break end
+			task.wait(0.2)
+		end
+	end
+	voidBusy = false
+	return back
+end
+
+-- Reset state on respawn
+track(LocalPlayer.CharacterAdded:Connect(function(ch)
 	Config.PhysReady = false
+	CarryingUid = nil
+	cancelTravel()
+	pcall(function() ch:WaitForChild("HumanoidRootPart", 10) end)
+	task.wait(0.7)
+	if Config.AutoSteal then
+		_Ek()
+	end
 end))
+
+-- ═══════════════════════════════════════════════════════
+--  WASD MANUAL MOVEMENT AFTER HUMANOID UNLOCK
+-- ═══════════════════════════════════════════════════════
+local MOVE_KEYS = {
+	[Enum.KeyCode.W] = Vector3.new(0, 0, -1),
+	[Enum.KeyCode.S] = Vector3.new(0, 0, 1),
+	[Enum.KeyCode.A] = Vector3.new(-1, 0, 0),
+	[Enum.KeyCode.D] = Vector3.new(1, 0, 0),
+}
+local held = {}
+
+track(UserInputService.InputBegan:Connect(function(input, gp)
+	if gp then return end
+	if MOVE_KEYS[input.KeyCode] then held[input.KeyCode] = true end
+end))
+
+track(UserInputService.InputEnded:Connect(function(input)
+	if MOVE_KEYS[input.KeyCode] then held[input.KeyCode] = nil end
+end))
+
+track(UserInputService.JumpRequest:Connect(function()
+	if not Config.PhysReady or Travelling then return end
+	local h = hum()
+	if h and h.Health > 0 then
+		pcall(function() h:ChangeState(Enum.HumanoidStateType.Jumping) end)
+	end
+end))
+
+local function manualDir()
+	local cam = Workspace.CurrentCamera
+	if not cam then return Vector3.zero end
+	local raw = Vector3.zero
+	for key, offset in pairs(MOVE_KEYS) do
+		if held[key] then raw = raw + offset end
+	end
+	if raw.Magnitude < 0.01 then return Vector3.zero end
+	local cf = cam.CFrame
+	local dir = cf.RightVector * raw.X - cf.LookVector * raw.Z
+	return Vector3.new(dir.X, 0, dir.Z)
+end
+
+spawnLoop(function()
+	while alive() do
+		RunService.Heartbeat:Wait()
+		if Config.PhysReady and not Travelling then
+			local h = hum()
+			if h and h.Health > 0 then
+				local dir = manualDir()
+				if dir.Magnitude > 0.01 then
+					h:Move(dir.Unit, false)
+				end
+			end
+		end
+	end
+end)
 
 -- ═══════════════════════════════════════════════════════
 --  PLOT / BASE DETECTION
@@ -1040,24 +1314,11 @@ end
 local CarryingUid = nil
 local DeliverFails = 0
 local DryRuns = 0
+local DeliverAt = 0
+local WarnPlantAt = 0
 
 local function autoStealOn()
 	return alive() and Config.AutoSteal
-end
-
-local function getSelectedRarities()
-	local sel = {}
-	local raw = Options.RarityFilter and Options.RarityFilter.Value
-	if type(raw) == "table" then
-		for k, v in pairs(raw) do
-			if v == true or v == 1 or v == "Selected" then
-				sel[#sel + 1] = tostring(k):lower()
-			end
-		end
-	elseif type(raw) == "string" and #raw > 0 then
-		sel[#sel + 1] = raw:lower()
-	end
-	return sel
 end
 
 local function pickEgg()
@@ -1066,35 +1327,31 @@ local function pickEgg()
 	refreshEggs(false)
 	local origin = hrp.Position
 	local best, bestScore
-	local selRarities = getSelectedRarities()
 	for i = 1, #EggList do
 		local e = EggList[i]
-		-- area filter
-		if Config.TargetArea ~= "All" and e.label ~= Config.TargetArea then
+		if AreaWantedCount > 0 and not AreaWanted[e.area] then
+			-- skip
+		elseif RarityWantedCount > 0 and not RarityWanted[e.rarity] then
 			-- skip
 		else
-			-- rarity filter
-			local rarityOk = #selRarities == 0
-			if not rarityOk then
-				local eRarity = e.rarity and e.rarity:lower() or ""
-				for _, r in ipairs(selRarities) do
-					if r == eRarity then rarityOk = true; break end
+			-- cooldown check
+			local at = TriedUids[e.uid]
+			if at then
+				local f = FailUids[e.uid] or 0
+				local hold = 6
+				if f >= 4 then hold = 600
+				elseif f == 3 then hold = 120
+				elseif f == 2 then hold = 45
+				elseif f == 1 then hold = 18 end
+				if tick() - at >= hold then
+					local d = (e.pos - origin).Magnitude
+					local tier = e.tier > 0 and e.tier or e.rank
+					local score = e.rank * 1e12 + tier * 1e8 + (e.mutated and 1e6 or 0) - math.min(d, 1e5)
+					if not bestScore or score > bestScore then
+						best, bestScore = e, score
+					end
 				end
-			end
-			if rarityOk then
-				-- cooldown check
-				local at = TriedUids[e.uid]
-				if at then
-					local f = FailUids[e.uid] or 0
-					local hold = 6
-					if f >= 4 then hold = 600
-					elseif f == 3 then hold = 120
-					elseif f == 2 then hold = 45
-					elseif f == 1 then hold = 18 end
-					if tick() - at < hold then rarityOk = false end
-				end
-			end
-			if rarityOk then
+			else
 				local d = (e.pos - origin).Magnitude
 				local tier = e.tier > 0 and e.tier or e.rank
 				local score = e.rank * 1e12 + tier * 1e8 + (e.mutated and 1e6 or 0) - math.min(d, 1e5)
@@ -1171,7 +1428,24 @@ local function deliver(uid)
 		askUid(Remotes.DoffTool, uid)
 		return true
 	end
-	return placeEggOnBase(uid)
+	-- Try placeEgg first
+	local ok = placeEggOnBase(uid)
+	if ok then return true end
+	-- If failed, try hatch-clear and retry
+	if Config.AutoHatch then
+		pcall(function() hatchAll() end)
+		if placeEggOnBase(uid) then return true end
+	end
+	-- Fallback: smart place prompt
+	for _, pp in ipairs({ smartPlacePrompt() }) do
+		if promptInRange(pp) and firePrompt(pp) then
+			for _ = 1, 12 do
+				if not holdingEgg() then return true end
+				RunService.Heartbeat:Wait()
+			end
+		end
+	end
+	return not holdingEgg()
 end
 
 -- ═══════════════════════════════════════════════════════
@@ -1198,6 +1472,8 @@ spawnLoop(function()
 						DeliverFails = 0
 						return
 					end
+					if tick() - DeliverAt < 1 then return end
+					DeliverAt = tick()
 					if deliver(CarryingUid) then
 						CarryingUid = nil
 						DeliverFails = 0
@@ -1207,17 +1483,35 @@ spawnLoop(function()
 							DeliverFails = 0
 							askUid(Remotes.DoffTool, CarryingUid)
 							CarryingUid = nil
+							if tick() - WarnPlantAt > 60 then
+								WarnPlantAt = tick()
+								warnToast("Could not plant that egg. Moving on.", 6)
+							end
 						end
 					end
 					return
 				end
 				-- Secret Priority
-				if Config.SecretPriority then
+				if Config.SecretPriority and CarryingUid then
 					refreshEggs(false)
 					for i = 1, #EggList do
 						local e = EggList[i]
 						if e.rank >= (rarityLadder.Secret or 8) then
-							-- found a secret+, pick it
+							local carrying = nil
+							for j = 1, #EggList do
+								if EggList[j].uid == CarryingUid then
+									carrying = EggList[j]; break
+								end
+							end
+							local carryRank = carrying and carrying.rank or 0
+							if e.rank > carryRank then
+								pcall(function() askUid(Remotes.DoffTool, CarryingUid) end)
+								CarryingUid = nil
+								DeliverFails = 0
+								cancelTravel()
+								warnToast("Secret egg spotted — switching targets!", 4)
+							end
+							break
 						end
 					end
 				end
@@ -1549,7 +1843,7 @@ local Options = Library.Options
 local Window = Library:CreateWindow({
 	Title = "Ivory",
 	Footer = {
-		"v1.4 |",
+		"v1.5 |",
 		{ Text = "Lobby/Game", Copyable = true },
 		"|",
 		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
@@ -1620,17 +1914,28 @@ MovementBox:AddDropdown("FarmMethod", {
 
 local TargetingBox = StealSub:AddRightGroupbox("Targeting", "crosshair")
 
-local areaOptions = { "All" }
+local areaOptions = {}
 for _, area in ipairs(AreaData.areaOrder) do
 	table.insert(areaOptions, AreaData.areaLabel[area])
 end
 
-TargetingBox:AddDropdown("TargetArea", {
-	Text = "Target Area",
+TargetingBox:AddDropdown("AreaFocus", {
+	Text = "Area Focus",
 	Values = areaOptions,
-	Default = "All",
+	Default = {},
+	Multi = true,
 	Callback = function(state)
-		Config.TargetArea = state
+		local out = {}
+		if type(state) == "table" then
+			for k, v in pairs(state) do
+				if v == true then out[#out+1] = k
+				elseif type(v) == "string" then out[#out+1] = v end
+			end
+		elseif type(state) == "string" then
+			out[1] = state
+		end
+		Config.AreaFocus = out
+		rebuildAreaSet()
 	end,
 })
 
@@ -1640,15 +1945,17 @@ TargetingBox:AddDropdown("RarityFilter", {
 	Default = {},
 	Multi = true,
 	Callback = function(state)
-		local arr = {}
+		local out = {}
 		if type(state) == "table" then
 			for k, v in pairs(state) do
-				if v == true or v == 1 or v == "Selected" then
-					arr[#arr + 1] = k
-				end
+				if v == true then out[#out+1] = k
+				elseif type(v) == "string" then out[#out+1] = v end
 			end
+		elseif type(state) == "string" then
+			out[1] = state
 		end
-		Config.SelectedRarities = arr
+		Config.RarityFilter = out
+		rebuildRaritySet()
 	end,
 })
 
@@ -1700,17 +2007,9 @@ StealControlsBox:AddButton("Steal Nearest Egg", function()
 	if not hrp then return end
 	refreshEggs(false)
 	local best, bestDist
-	local selRarities = getSelectedRarities()
 	for _, e in ipairs(EggList) do
-		if Config.TargetArea == "All" or e.label == Config.TargetArea then
-			local rarityOk = #selRarities == 0
-			if not rarityOk then
-				local eRarity = e.rarity and e.rarity:lower() or ""
-				for _, r in ipairs(selRarities) do
-					if r == eRarity then rarityOk = true; break end
-				end
-			end
-			if rarityOk then
+		if AreaWantedCount == 0 or AreaWanted[e.area] then
+			if RarityWantedCount == 0 or RarityWanted[e.rarity] then
 				local d = (e.pos - hrp.Position).Magnitude
 				if not bestDist or d < bestDist then
 					best, bestDist = e, d
@@ -1849,9 +2148,287 @@ ClaimBox:AddToggle("AntiAFK", {
 	Callback = function(state) Config.AntiAFK = state end,
 })
 
+ClaimBox:AddButton("Void Drop", function()
+	task.spawn(voidDrop)
+end)
+
+ClaimBox:AddButton("Recall to Spawn", function()
+	local function spawnPoint()
+		local ch = LocalPlayer.Character
+		if ch then
+			local rl = ch:FindFirstChild("HumanoidRootPart")
+			if rl then
+				local ok, v = pcall(function() return ch:FindFirstChild("Humanoid") end)
+				if ok and v then
+					local sp = v.SpawnPoint
+					if sp and sp.Position then return sp.Position end
+				end
+			end
+		end
+		for _, v in ipairs(Workspace:GetDescendants()) do
+			if v:IsA("SpawnLocation") then
+				return v.Position
+			end
+		end
+		return nil
+	end
+	local sp = spawnPoint()
+	if sp then travelTo(sp, 8) end
+end)
+
 -- ═══════════════════════════════════════════════════════════
---  VISUALS TAB — EGG ESP
+--  FPS BOOST
 -- ═══════════════════════════════════════════════════════════
+local FpsSaved = nil
+local HiddenParts = {}
+local HiddenGuis = {}
+local KilledFx = {}
+
+local function isCharacterPart(inst)
+	for _, p in ipairs(Players:GetPlayers()) do
+		local ch = p.Character
+		if ch and (inst == ch or inst:IsDescendantOf(ch)) then return true end
+	end
+	return false
+end
+
+local function petish(inst)
+	local node = inst
+	for _ = 1, 8 do
+		if not node or node == Workspace then return false end
+		local low = node.Name:lower()
+		if low:find("pet") or low:find("pen") then return true end
+		node = node.Parent
+	end
+	return false
+end
+
+local function petHosts()
+	local out = {}
+	for _, d in ipairs(Workspace:GetChildren()) do
+		local low = d.Name:lower()
+		if low:find("pet") or low:find("pen") then out[#out + 1] = d end
+	end
+	local plots = Workspace:FindFirstChild("Plots")
+	if plots then out[#out + 1] = plots end
+	return out
+end
+
+local function hidePart(part)
+	if HiddenParts[part] ~= nil then return end
+	HiddenParts[part] = part.LocalTransparencyModifier
+	pcall(function() part.LocalTransparencyModifier = 1 end)
+end
+
+local function hideGui(gui)
+	if HiddenGuis[gui] ~= nil then return end
+	HiddenGuis[gui] = gui.Enabled
+	pcall(function() gui.Enabled = false end)
+end
+
+local function killFx(inst)
+	if KilledFx[inst] ~= nil then return end
+	if inst:IsA("ParticleEmitter") or inst:IsA("Trail") or inst:IsA("Beam")
+		or inst:IsA("Smoke") or inst:IsA("Fire") or inst:IsA("Sparkles")
+		or inst:IsA("PostEffect") then
+		KilledFx[inst] = inst.Enabled
+		pcall(function() inst.Enabled = false end)
+	end
+end
+
+local function sweepPets(list)
+	for i = 1, #list do
+		local d = list[i]
+		killFx(d)
+		if not isCharacterPart(d) and petish(d) then
+			if d:IsA("BasePart") then hidePart(d)
+			elseif d:IsA("BillboardGui") then hideGui(d) end
+		end
+	end
+end
+
+local function fpsOn()
+	local terrain = Workspace:FindFirstChildWhichIsA("Terrain")
+	if not FpsSaved then
+		FpsSaved = {
+			shadows = Lighting.GlobalShadows,
+			diffuse = Lighting.EnvironmentDiffuseScale,
+			specular = Lighting.EnvironmentSpecularScale,
+			fogEnd = Lighting.FogEnd,
+			terrain = terrain,
+		}
+		pcall(function() FpsSaved.quality = settings().Rendering.QualityLevel end)
+		if terrain then
+			FpsSaved.waveSize = terrain.WaterWaveSize
+			FpsSaved.waveSpeed = terrain.WaterWaveSpeed
+			FpsSaved.reflect = terrain.WaterReflectance
+		end
+	end
+	pcall(function() settings().Rendering.QualityLevel = Enum.QualityLevel.Level01 end)
+	pcall(function() Lighting.GlobalShadows = false end)
+	pcall(function() Lighting.EnvironmentDiffuseScale = 0 end)
+	pcall(function() Lighting.EnvironmentSpecularScale = 0 end)
+	pcall(function() Lighting.FogEnd = 100000 end)
+	if terrain then
+		pcall(function()
+			terrain.WaterWaveSize = 0
+			terrain.WaterWaveSpeed = 0
+			terrain.WaterReflectance = 0
+		end)
+	end
+	for _, e in ipairs(Lighting:GetChildren()) do killFx(e) end
+	sweepPets(Workspace:GetDescendants())
+end
+
+local function fpsOff()
+	for part, v in pairs(HiddenParts) do
+		pcall(function() part.LocalTransparencyModifier = v end)
+		HiddenParts[part] = nil
+	end
+	for gui, v in pairs(HiddenGuis) do
+		pcall(function() gui.Enabled = v end)
+		HiddenGuis[gui] = nil
+	end
+	for inst, v in pairs(KilledFx) do
+		pcall(function() inst.Enabled = v end)
+		KilledFx[inst] = nil
+	end
+	if not FpsSaved then return end
+	pcall(function() Lighting.GlobalShadows = FpsSaved.shadows end)
+	pcall(function() Lighting.EnvironmentDiffuseScale = FpsSaved.diffuse end)
+	pcall(function() Lighting.EnvironmentSpecularScale = FpsSaved.specular end)
+	pcall(function() Lighting.FogEnd = FpsSaved.fogEnd end)
+	if FpsSaved.quality then
+		pcall(function() settings().Rendering.QualityLevel = FpsSaved.quality end)
+	end
+	local terrain = FpsSaved.terrain
+	if terrain and FpsSaved.waveSize then
+		pcall(function()
+			terrain.WaterWaveSize = FpsSaved.waveSize
+			terrain.WaterWaveSpeed = FpsSaved.waveSpeed
+			terrain.WaterReflectance = FpsSaved.reflect
+		end)
+	end
+	FpsSaved = nil
+end
+
+spawnLoop(function()
+	while alive() do
+		task.wait(3)
+		if Config.FpsBoost then
+			pcall(function()
+				for _, host in ipairs(petHosts()) do
+					sweepPets(host:GetDescendants())
+				end
+			end)
+		end
+	end
+end)
+
+-- ═══════════════════════════════════════════════════════════
+--  AUTO FIRE PROXIMITY PROMPTS
+-- ═══════════════════════════════════════════════════════════
+local ProxConn = nil
+local ProxScanConn = nil
+local ProxRange = 50
+
+local function zeroHoldDurations()
+	for _, v in ipairs(Workspace:GetDescendants()) do
+		if v:IsA("ProximityPrompt") then
+			pcall(function() v.HoldDuration = 0 end)
+		end
+	end
+end
+
+local function startProxScan()
+	if ProxScanConn then return end
+	ProxScanConn = Workspace.DescendantAdded:Connect(function(v)
+		if Config.AutoFireProx and v:IsA("ProximityPrompt") then
+			pcall(function() v.HoldDuration = 0 end)
+		end
+	end)
+	track(ProxScanConn)
+end
+
+local function fireNearbyPrompts()
+	local hrp = root()
+	if not hrp then return end
+	for _, desc in ipairs(Workspace:GetDescendants()) do
+		if desc:IsA("ProximityPrompt") and desc.Enabled then
+			local part = desc.Parent
+			if part and part:IsA("BasePart") then
+				if (part.Position - hrp.Position).Magnitude <= ProxRange then
+					pcall(function()
+						if fireproximityprompt then fireproximityprompt(desc) end
+					end)
+				end
+			end
+		end
+	end
+end
+
+local function startAutoFireProx()
+	if ProxConn then return end
+	zeroHoldDurations()
+	startProxScan()
+	ProxConn = RunService.Heartbeat:Connect(function()
+		if Config.AutoFireProx then
+			fireNearbyPrompts()
+		else
+			ProxConn:Disconnect()
+			ProxConn = nil
+		end
+	end)
+end
+
+local function stopAutoFireProx()
+	Config.AutoFireProx = false
+	if ProxConn then ProxConn:Disconnect(); ProxConn = nil end
+end
+
+-- ═══════════════════════════════════════════════════════════
+--  MAIN TAB — EXTRAS SUBTAB
+-- ═══════════════════════════════════════════════════════════
+local ExtrasSub = Tabs.Main:AddSubTab("Extras", "star")
+
+local PerfBox = ExtrasSub:AddLeftGroupbox("Performance", "zap")
+
+PerfBox:AddToggle("FpsBoost", {
+	Text = "FPS Boost",
+	Default = false,
+	Callback = function(state)
+		Config.FpsBoost = state
+		if state then fpsOn() else fpsOff() end
+	end,
+})
+
+PerfBox:AddButton("Zero All Hold Durations", function()
+	zeroHoldDurations()
+end)
+
+PerfBox:AddButton("Fire All Prompts Now", function()
+	fireNearbyPrompts()
+end)
+
+local ProxBox = ExtrasSub:AddRightGroupbox("Proximity", "radio")
+
+ProxBox:AddToggle("AutoFireProx", {
+	Text = "Auto Fire Proximity Prompts",
+	Default = false,
+	Callback = function(state)
+		Config.AutoFireProx = state
+		if state then startAutoFireProx() else stopAutoFireProx() end
+	end,
+})
+
+ProxBox:AddSlider("ProxRange", {
+	Text = "Fire Range (studs)",
+	Default = 50,
+	Min = 5,
+	Max = 200,
+	Rounding = 0,
+	Callback = function(v) ProxRange = v end,
+})
 local ESPSub = Tabs.Visuals:AddSubTab("Egg ESP", "eye")
 
 local ESPBox = ESPSub:AddLeftGroupbox("Egg ESP", "circle")
@@ -1905,9 +2482,14 @@ MenuGroup:AddDropdown("NotificationSide", {
 MenuGroup:AddButton("Unload", function()
 	Config.Unloaded = true
 	Config.AutoSteal = false
+	Config.FpsBoost = false
+	Config.AutoFireProx = false
 	cancelTravel()
 	releaseRoot()
 	clearESP()
+	fpsOff()
+	stopAutoFireProx()
+	if warnLayer then pcall(function() warnLayer:Destroy() end) end
 	for _, c in ipairs(Conns) do
 		pcall(function() c:Disconnect() end)
 	end
