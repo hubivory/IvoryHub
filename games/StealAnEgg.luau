@@ -412,10 +412,20 @@ local function refreshEggs(force)
 	local recs = snap and snap.Records
 	if type(recs) ~= "table" then return EggList end
 	local list = {}
+	local _dbgDumped = false
 	for _, rec in pairs(recs) do
 		if rec.State == "Slot" and rec.Uid then
 			local pos = eggPos(rec)
 			if pos then
+				if not _dbgDumped then
+					_dbgDumped = true
+					local keys = {}
+					for k, v in pairs(rec) do
+						keys[#keys+1] = tostring(k) .. "=" .. tostring(v) .. " (" .. type(v) .. ")"
+					end
+					table.sort(keys)
+					warn("[Ivory DBG] EggSnapshot record keys: " .. table.concat(keys, ", "))
+				end
 				local id = rec.AreaId
 				if id and not AreaData.areaLabel[id] then
 					addArea(id, id, #AreaData.areaOrder + 1, rarityOf(rec))
