@@ -1045,12 +1045,28 @@ local function autoStealOn()
 	return alive() and Config.AutoSteal
 end
 
+local function getSelectedRarities()
+	local sel = {}
+	local raw = Options.RarityFilter and Options.RarityFilter.Value
+	if type(raw) == "table" then
+		for k, v in pairs(raw) do
+			if v == true or v == 1 or v == "Selected" then
+				sel[#sel + 1] = tostring(k):lower()
+			end
+		end
+	elseif type(raw) == "string" and #raw > 0 then
+		sel[#sel + 1] = raw:lower()
+	end
+	return sel
+end
+
 local function pickEgg()
 	local hrp = root()
 	if not hrp then return nil end
 	refreshEggs(false)
 	local origin = hrp.Position
 	local best, bestScore
+	local selRarities = getSelectedRarities()
 	for i = 1, #EggList do
 		local e = EggList[i]
 		-- area filter
@@ -1058,10 +1074,11 @@ local function pickEgg()
 			-- skip
 		else
 			-- rarity filter
-			local rarityOk = #Config.SelectedRarities == 0
+			local rarityOk = #selRarities == 0
 			if not rarityOk then
-				for _, r in ipairs(Config.SelectedRarities) do
-					if r == e.rarity then rarityOk = true; break end
+				local eRarity = e.rarity and e.rarity:lower() or ""
+				for _, r in ipairs(selRarities) do
+					if r == eRarity then rarityOk = true; break end
 				end
 			end
 			if rarityOk then
@@ -1683,12 +1700,14 @@ StealControlsBox:AddButton("Steal Nearest Egg", function()
 	if not hrp then return end
 	refreshEggs(false)
 	local best, bestDist
+	local selRarities = getSelectedRarities()
 	for _, e in ipairs(EggList) do
 		if Config.TargetArea == "All" or e.label == Config.TargetArea then
-			local rarityOk = #Config.SelectedRarities == 0
+			local rarityOk = #selRarities == 0
 			if not rarityOk then
-				for _, r in ipairs(Config.SelectedRarities) do
-					if r == e.rarity then rarityOk = true; break end
+				local eRarity = e.rarity and e.rarity:lower() or ""
+				for _, r in ipairs(selRarities) do
+					if r == eRarity then rarityOk = true; break end
 				end
 			end
 			if rarityOk then
