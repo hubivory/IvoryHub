@@ -2584,8 +2584,31 @@ FruitSniperGroup:AddToggle("AutoRandomFruit", {
 		if v then
 			task.spawn(function()
 				while STATE.AutoRandomFruit do
-					pcall(function() CommF:InvokeServer("Cousin", "Buy") end)
-					task.wait(5)
+					-- Scan for cooldown text in Gacha Box UI
+					local cooldownSeconds = 0
+					pcall(function()
+						for _, gui in ipairs(LocalPlayer.PlayerGui:GetDescendants()) do
+							if gui:IsA("TextLabel") and gui.Text:find("You must wait") then
+								-- Parse "01:46 hours" or "00:05 minutes" etc
+								local hours, mins = gui.Text:match("(%d+):(%d+) hours")
+								if hours then
+									cooldownSeconds = tonumber(hours) * 3600 + tonumber(mins) * 60
+								else
+									local m, s = gui.Text:match("(%d+):(%d+) minutes")
+									if m then cooldownSeconds = tonumber(m) * 60 + tonumber(s) end
+								end
+								break
+							end
+						end
+					end)
+
+					if cooldownSeconds > 0 then
+						Library:Notify({ Title = "Ivory", Description = "Random fruit on cooldown — waiting " .. math.ceil(cooldownSeconds / 60) .. " min", Type = "Info", Time = 3 })
+						task.wait(cooldownSeconds + 5)
+					else
+						pcall(function() CommF:InvokeServer("Cousin", "Buy") end)
+						task.wait(5)
+					end
 				end
 			end)
 		end
