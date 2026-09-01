@@ -1634,10 +1634,13 @@ local function pickEgg()
 	if not hrp then return nil end
 	refreshEggs(false)
 	local origin = hrp.Position
+	local secretRank = Config.SecretPriority and (rarityLadder.Secret or 8) or nil
 	local best, bestScore
 	for i = 1, #EggList do
 		local e = EggList[i]
-		if AreaWantedCount > 0 and not AreaWanted[e.area] then
+		if secretRank and e.rank < secretRank then
+			-- Secret Priority: skip anything below Secret
+		elseif AreaWantedCount > 0 and not AreaWanted[e.area] then
 			-- skip
 		elseif RarityWantedCount > 0 and not RarityWanted[e.rarity] then
 			-- skip
