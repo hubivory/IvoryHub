@@ -2366,136 +2366,114 @@ end
 -- ═══════════════════════════════════════════════════════
 --  OBSIDIANULTRA UI
 -- ═══════════════════════════════════════════════════════
-local Library, ThemeManager, SaveManager
-local genv = getgenv()
-local ls, ts, ss = genv._IvoryLibSrc, genv._IvoryTMSrc, genv._IvorySMSrc
-if ls then
-	Library = loadstring(ls)()
-	ThemeManager = loadstring(ts)()
-	SaveManager = loadstring(ss)()
-else
-	local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-	Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-	ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-	SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
-end
-if not Library then warn("[Ivory] ObsidianUltra load failed"); return end
-
-local Window = Library:CreateWindow({
-	Title = "Ivory",
-	Footer = {
-		"v2.1 |",
-		{ Text = "Steal An Egg", Copyable = true },
-		"|",
-		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
-	},
-	CopyableFooter = true,
-	FuzzySearch = true,
-	SearchValues = true,
-	Minimizable = true,
-	MinimizeKeybind = Enum.KeyCode.RightBracket,
-	MinimizedWidth = 280,
-	NotifySide = "Right",
-	ShowCustomCursor = true,
-	SearchKeybind = Enum.KeyCode.F,
-	CornerRadius = 4,
-	Animations = {
-		ToggleWindow = false,
-		TabSwitch = false,
-		Groupbox = false,
-		Dropdown = false,
-		KeyPicker = false,
-		SubTabUnderline = true,
-	},
-})
-
-local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
-
--- ═══════════════════════════════════════════════════════
---  STEAL SUB-TAB
--- ═══════════════════════════════════════════════════════
 do
-	local Sub = MainTab:AddSubTab("Steal", "crosshair")
-	local L = Sub:AddLeftGroupbox("Egg Steal", "crosshair")
-	local R = Sub:AddRightGroupbox("Base & Utility", "home")
+	local genv = getgenv()
+	local ls, ts, ss = genv._IvoryLibSrc, genv._IvoryTMSrc, genv._IvorySMSrc
+	local Library, ThemeManager, SaveManager
+	if ls then
+		Library = loadstring(ls)()
+		ThemeManager = loadstring(ts)()
+		SaveManager = loadstring(ss)()
+	else
+		local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
+		Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+		ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
+		SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+	end
+	if not Library then warn("[Ivory] ObsidianUltra load failed"); return end
 
-	L:AddToggle("AutoSteal", { Text = "Auto Steal", Default = false, Callback = function(v) Config.AutoSteal = v end })
-	L:AddDropdown("FarmMethod", { Text = "Farm Method", Values = { "Teleport", "TP Walk" }, Default = "TP Walk", Callback = function(v) Config.FarmMethod = v end })
-	L:AddDropdown("AreaFocus", { Text = "Area Focus", Values = pickList(areaLabels), Multi = true, Callback = function(v) table.clear(Config.AreaFocus); for _, item in ipairs(v) do Config.AreaFocus[item] = true end end })
-	L:AddDropdown("RarityFilter", { Text = "Rarity Filter", Values = pickList(sortAreas(Rarities)), Multi = true, Callback = function(v) table.clear(Config.RarityFilter); for _, item in ipairs(v) do Config.RarityFilter[item] = true end end })
-	L:AddToggle("SecretPriority", { Text = "Secret Priority", Default = true, Callback = function(v) Config.SecretPriority = v end })
-	L:AddToggle("AntiTrap", { Text = "Anti Trap", Default = true, Callback = function(v) Config.AntiTrap = v end })
+	local Window = Library:CreateWindow({
+		Title = "Ivory",
+		Footer = {
+			"v2.1 |",
+			{ Text = "Steal An Egg", Copyable = true },
+			"|",
+			{ Text = tostring(LocalPlayer.UserId), Copyable = true },
+		},
+		CopyableFooter = true,
+		FuzzySearch = true,
+		SearchValues = true,
+		Minimizable = true,
+		MinimizeKeybind = Enum.KeyCode.RightBracket,
+		MinimizedWidth = 280,
+		NotifySide = "Right",
+		ShowCustomCursor = true,
+		SearchKeybind = Enum.KeyCode.F,
+		CornerRadius = 4,
+		Animations = {
+			ToggleWindow = false,
+			TabSwitch = false,
+			Groupbox = false,
+			Dropdown = false,
+			KeyPicker = false,
+			SubTabUnderline = true,
+		},
+	})
 
-	R:AddButton("Set Base Here", function() Config.ManualBase = (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) and LocalPlayer.Character.HumanoidRootPart.Position or nil; warnToast(Config.ManualBase and "Base set!" or "No character.", 3) end)
-	R:AddButton("Go Home", function() goHome(20) end)
-	R:AddButton("Void Drop", function() voidDrop() end)
-	R:AddButton("Sell Pets", function() sellPets(false) end)
+	local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
+
+	do
+		local Sub = MainTab:AddSubTab("Steal", "crosshair")
+		local L = Sub:AddLeftGroupbox("Egg Steal", "crosshair")
+		local R = Sub:AddRightGroupbox("Base & Utility", "home")
+		L:AddToggle("AutoSteal", { Text = "Auto Steal", Default = false, Callback = function(v) Config.AutoSteal = v end })
+		L:AddDropdown("FarmMethod", { Text = "Farm Method", Values = { "Teleport", "TP Walk" }, Default = "TP Walk", Callback = function(v) Config.FarmMethod = v end })
+		L:AddDropdown("AreaFocus", { Text = "Area Focus", Values = pickList(areaLabels), Multi = true, Callback = function(v) table.clear(Config.AreaFocus); for _, item in ipairs(v) do Config.AreaFocus[item] = true end end })
+		L:AddDropdown("RarityFilter", { Text = "Rarity Filter", Values = pickList(sortAreas(Rarities)), Multi = true, Callback = function(v) table.clear(Config.RarityFilter); for _, item in ipairs(v) do Config.RarityFilter[item] = true end end })
+		L:AddToggle("SecretPriority", { Text = "Secret Priority", Default = true, Callback = function(v) Config.SecretPriority = v end })
+		L:AddToggle("AntiTrap", { Text = "Anti Trap", Default = true, Callback = function(v) Config.AntiTrap = v end })
+		R:AddButton("Set Base Here", function() Config.ManualBase = (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) and LocalPlayer.Character.HumanoidRootPart.Position or nil; warnToast(Config.ManualBase and "Base set!" or "No character.", 3) end)
+		R:AddButton("Go Home", function() goHome(20) end)
+		R:AddButton("Void Drop", function() voidDrop() end)
+		R:AddButton("Sell Pets", function() sellPets(false) end)
+	end
+
+	do
+		local Sub = MainTab:AddSubTab("Hatch & ESP", "egg")
+		local L = Sub:AddLeftGroupbox("Hatching", "egg")
+		local R = Sub:AddRightGroupbox("Visuals", "eye")
+		L:AddToggle("AutoHatch", { Text = "Auto Hatch", Default = false, Callback = function(v) Config.AutoHatch = v end })
+		L:AddButton("Hatch All (Walk)", function() _hatchAll(true) end)
+		L:AddButton("Hatch All (TP)", function() _hatchAll(false) end)
+		R:AddToggle("EggESP", { Text = "Egg ESP", Default = false, Callback = function(v) Config.EggESP = v end })
+	end
+
+	do
+		local Sub = MainTab:AddSubTab("Automation", "zap")
+		local L = Sub:AddLeftGroupbox("Farming", "sprout")
+		local R = Sub:AddRightGroupbox("Performance", "zap")
+		L:AddToggle("AutoEquipBest", { Text = "Auto Equip Best", Default = false, Callback = function(v) Config.AutoEquipBest = v end })
+		L:AddToggle("ParasiteFarm", { Text = "Parasite Farm", Default = false, Callback = function(v) Config.ParasiteFarm = v end })
+		L:AddToggle("AutoTreadmill", { Text = "Auto Treadmill", Default = false, Callback = function(v) Config.AutoTreadmill = v end })
+		L:AddToggle("AutoFireProx", { Text = "Auto Fire Prox", Default = false, Callback = function(v) Config.AutoFireProx = v end })
+		L:AddToggle("AntiAFK", { Text = "Anti AFK", Default = false, Callback = function(v) Config.AntiAFK = v end })
+		R:AddToggle("FpsBoost", { Text = "FPS Boost", Default = false, Callback = function(v) if v then fpsOn() else fpsOff() end end })
+		R:AddButton("Server Hop", function() serverHop() end)
+		R:AddButton("Join Discord For Dupe", function()
+			if setclipboard then setclipboard("https://discord.gg/MCWYKBdB4E") end
+			warnToast("Discord link copied!", 3)
+		end)
+	end
+
+	do
+		local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
+		ThemeManager:SetLibrary(Library)
+		SaveManager:SetLibrary(Library)
+		SaveManager:IgnoreThemeSettings()
+		SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
+		ThemeManager:SetFolder("IvoryHub")
+		SaveManager:SetFolder("IvoryHub")
+		SaveManager:SetSubFolder("game")
+		ThemeManager:ApplyToTab(SettingsTab)
+		SaveManager:BuildConfigSection(SettingsTab)
+		local G = SettingsTab:AddLeftGroupbox("Menu", "settings")
+		G:AddSlider("MenuKeybind", { Text = "Menu Keybind", Default = Enum.KeyCode.RightBracket.Value, Min = 0, Max = 400, Rounding = 0 })
+		G:AddButton("Destroy UI", function() pcall(function() Library:Destroy() end) end)
+	end
 end
 
--- ═══════════════════════════════════════════════════════
---  HATCH & ESP SUB-TAB
--- ═══════════════════════════════════════════════════════
-do
-	local Sub = MainTab:AddSubTab("Hatch & ESP", "egg")
-	local L = Sub:AddLeftGroupbox("Hatching", "egg")
-	local R = Sub:AddRightGroupbox("Visuals", "eye")
-
-	L:AddToggle("AutoHatch", { Text = "Auto Hatch", Default = false, Callback = function(v) Config.AutoHatch = v end })
-	L:AddButton("Hatch All (Walk)", function() _hatchAll(true) end)
-	L:AddButton("Hatch All (TP)", function() _hatchAll(false) end)
-
-	R:AddToggle("EggESP", { Text = "Egg ESP", Default = false, Callback = function(v) Config.EggESP = v end })
-end
-
--- ═══════════════════════════════════════════════════════
---  AUTOMATION SUB-TAB
--- ═══════════════════════════════════════════════════════
-do
-	local Sub = MainTab:AddSubTab("Automation", "zap")
-	local L = Sub:AddLeftGroupbox("Farming", "sprout")
-	local R = Sub:AddRightGroupbox("Performance", "zap")
-
-	L:AddToggle("AutoEquipBest", { Text = "Auto Equip Best", Default = false, Callback = function(v) Config.AutoEquipBest = v end })
-	L:AddToggle("ParasiteFarm", { Text = "Parasite Farm", Default = false, Callback = function(v) Config.ParasiteFarm = v end })
-	L:AddToggle("AutoTreadmill", { Text = "Auto Treadmill", Default = false, Callback = function(v) Config.AutoTreadmill = v end })
-	L:AddToggle("AutoFireProx", { Text = "Auto Fire Prox", Default = false, Callback = function(v) Config.AutoFireProx = v end })
-	L:AddToggle("AntiAFK", { Text = "Anti AFK", Default = false, Callback = function(v) Config.AntiAFK = v end })
-
-	R:AddToggle("FpsBoost", { Text = "FPS Boost", Default = false, Callback = function(v) if v then fpsOn() else fpsOff() end end })
-	R:AddButton("Server Hop", function() serverHop() end)
-	R:AddButton("Join Discord For Dupe", function()
-		if setclipboard then setclipboard("https://discord.gg/MCWYKBdB4E") end
-		warnToast("Discord link copied!", 3)
-	end)
-end
-
--- ═══════════════════════════════════════════════════════
---  SETTINGS TAB
--- ═══════════════════════════════════════════════════════
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
-
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub")
-SaveManager:SetSubFolder("game")
-ThemeManager:ApplyToTab(SettingsTab)
-SaveManager:BuildConfigSection(SettingsTab)
-
-local SG3 = SettingsTab:AddLeftGroupbox("Menu", "settings")
-SG3:AddSlider("MenuKeybind", { Text = "Menu Keybind", Default = Enum.KeyCode.RightBracket.Value, Min = 0, Max = 400, Rounding = 0 })
-SG3:AddButton("Destroy UI", function() pcall(function() Library:Destroy() end) end)
-
--- ═══════════════════════════════════════════════════════
---  PHYSICAL MODE LEGACY
--- ═══════════════════════════════════════════════════════
 if Config.PhysReady then
 	Config.PhysReady = false
 end
 
--- ═══════════════════════════════════════════════════════
---  FINAL LOG
--- ═══════════════════════════════════════════════════════
 print("[Ivory Hub] Steal An Egg loaded successfully!")
