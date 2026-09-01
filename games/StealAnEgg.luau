@@ -1325,6 +1325,7 @@ end
 -- ═══════════════════════════════════════════════════════
 --  EGG PLACEMENT GRID SYSTEM
 -- ═══════════════════════════════════════════════════════
+do
 local PLACE_HALF = 24
 local EGG_CLEAR = 7
 local ZONE_HALF = 20
@@ -1570,6 +1571,8 @@ local function placeEggGrid(uid, maxTries)
 	end
 	return false, #targets == 0
 end
+FX.placeEggGrid = placeEggGrid
+end -- end grid do block
 
 local function inRange(pos, reach)
 	local hrp = root()
@@ -1687,7 +1690,7 @@ local function placeEggOnBase(uid)
 		travelTo(basePos, 12, autoStealOn)
 	end
 	-- Try grid-based placement
-	local ok = placeEggGrid(uid)
+	local ok = FX.placeEggGrid(uid)
 	if ok then return true end
 	-- Fallback: smart place prompt
 	for _, pp in ipairs({ smartPlacePrompt() }) do
@@ -1713,12 +1716,12 @@ local function deliver(uid)
 		return true
 	end
 	-- Try grid-based placement
-	local ok, full = placeEggGrid(uid)
+	local ok, full = FX.placeEggGrid(uid)
 	if ok then return true end
 	-- If no targets (base full), try hatch-clear and retry
 	if full and Config.AutoHatch then
 		pcall(function() hatchAll() end)
-		if placeEggGrid(uid) then return true end
+		if FX.placeEggGrid(uid) then return true end
 	end
 	-- Fallback: smart place prompt
 	for _, pp in ipairs({ smartPlacePrompt() }) do
