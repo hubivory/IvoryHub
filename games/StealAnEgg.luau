@@ -258,7 +258,28 @@ end
 
 local function ladderOf(name)
 	if type(name) ~= "string" then return 0 end
-	return rarityLadder[name] or 0
+	if rarityLadder[name] then return rarityLadder[name] end
+	local best = 0
+	for _, r in ipairs(Rarities) do
+		if name:find(r, 1, true) then
+			local rank = rarityLadder[r]
+			if rank and rank > best then best = rank end
+		end
+	end
+	return best
+end
+
+local function resolveRarityName(name)
+	if type(name) ~= "string" then return name end
+	if rarityLadder[name] then return name end
+	local bestName, bestRank = name, 0
+	for _, r in ipairs(Rarities) do
+		if name:find(r, 1, true) then
+			local rank = rarityLadder[r]
+			if rank and rank > bestRank then bestName, bestRank = r, rank end
+		end
+	end
+	return bestName
 end
 
 local function rarityOf(rec)
@@ -401,7 +422,8 @@ local function refreshEggs(force)
 				end
 				local own = rarityOf(rec)
 				if ladderOf(own) == 0 then own = nil end
-				local name = own or (id and AreaData.areaTierName[id]) or rarityOf(rec)
+				local rawName = own or (id and AreaData.areaTierName[id]) or rarityOf(rec)
+				local name = resolveRarityName(rawName)
 				list[#list + 1] = {
 					uid = rec.Uid,
 					area = id,
