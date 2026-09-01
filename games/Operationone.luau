@@ -26,6 +26,10 @@ local Window = Library:CreateWindow({
 	CornerRadius = 4, Animations = {SubTabUnderline = true},
 })
 
+if Library.ScreenGui and Library.ScreenGui.Parent and Library.ScreenGui.Parent ~= game:GetService("CoreGui") then
+	Library.ScreenGui.Parent = game:GetService("CoreGui")
+end
+
 local function notify(desc, kind)
 	Library:Notify({ Title = "Ivory", Description = desc, Type = kind or "Info", Time = 3 })
 end
@@ -177,34 +181,58 @@ end
 
 local function applyConfig(data)
 	if not data then return end
-	local function setUI(ref, val)
-		if ref and val ~= nil then pcall(function() ref:Set(val) end) end
+
+	if data.NoRecoil_Enabled ~= nil then
+		NoRecoilSettings.Enabled = data.NoRecoil_Enabled
+		if NoRecoilToggleRef then pcall(function() NoRecoilToggleRef.Value = data.NoRecoil_Enabled; NoRecoilToggleRef:FireChanged() end) end
+		if data.NoRecoil_Enabled then syncCamera() end
+	end
+	if data.NoRecoil_Sens ~= nil then
+		NoRecoilSettings.Sens = data.NoRecoil_Sens
+		if NoRecoilSensRef then pcall(function() NoRecoilSensRef.Value = data.NoRecoil_Sens; NoRecoilSensRef:FireChanged() end) end
+	end
+	if data.NoRecoil_Smoothness ~= nil then
+		NoRecoilSettings.Smoothness = data.NoRecoil_Smoothness
+		if NoRecoilSmoothRef then pcall(function() NoRecoilSmoothRef.Value = data.NoRecoil_Smoothness; NoRecoilSmoothRef:FireChanged() end) end
 	end
 
-	if data.NoRecoil_Enabled ~= nil then setUI(NoRecoilToggleRef, data.NoRecoil_Enabled) end
-	if data.NoRecoil_Sens    ~= nil then setUI(NoRecoilSensRef,    data.NoRecoil_Sens)    end
-	if data.NoRecoil_Smoothness ~= nil then setUI(NoRecoilSmoothRef, data.NoRecoil_Smoothness) end
-
-	if data.ESP_Main      ~= nil then setUI(ESPToggleRef,  data.ESP_Main)      end
-	if data.ESP_Team      ~= nil then setUI(ESPTeamRef,    data.ESP_Team)      end
-	if data.ESP_Tracers   ~= nil then setUI(TracersRef,    data.ESP_Tracers)   end
-	if data.ESP_HealthBar ~= nil then setUI(HealthBarRef,  data.ESP_HealthBar) end
-	if data.ESP_Skeletons ~= nil then setUI(SkeletonsRef,  data.ESP_Skeletons) end
-	if data.GadgetESP     ~= nil then setUI(GadgetESPRef,  data.GadgetESP)     end
+	if data.ESP_Main ~= nil then
+		_G.ESP_SETTINGS.MainEnabled = data.ESP_Main
+		if ESPToggleRef then pcall(function() ESPToggleRef.Value = data.ESP_Main; ESPToggleRef:FireChanged() end) end
+	end
+	if data.ESP_Team ~= nil then
+		_G.ESP_SETTINGS.TeamCheck = data.ESP_Team
+		if ESPTeamRef then pcall(function() ESPTeamRef.Value = data.ESP_Team; ESPTeamRef:FireChanged() end) end
+	end
+	if data.ESP_Tracers ~= nil then
+		_G.ESP_SETTINGS.Tracers = data.ESP_Tracers
+		if TracersRef then pcall(function() TracersRef.Value = data.ESP_Tracers; TracersRef:FireChanged() end) end
+	end
+	if data.ESP_HealthBar ~= nil then
+		_G.ESP_SETTINGS.HealthBar = data.ESP_HealthBar
+		if HealthBarRef then pcall(function() HealthBarRef.Value = data.ESP_HealthBar; HealthBarRef:FireChanged() end) end
+	end
+	if data.ESP_Skeletons ~= nil then
+		_G.ESP_SETTINGS.Skeletons = data.ESP_Skeletons
+		_G.espSkeletons = data.ESP_Skeletons
+		if SkeletonsRef then pcall(function() SkeletonsRef.Value = data.ESP_Skeletons; SkeletonsRef:FireChanged() end) end
+	end
+	if data.GadgetESP ~= nil then
+		_G.GADGET_ESP_ENABLED = data.GadgetESP
+		if GadgetESPRef then pcall(function() GadgetESPRef.Value = data.GadgetESP; GadgetESPRef:FireChanged() end) end
+	end
 
 	if data.ESP_TracerPos ~= nil then
-		local posMap = {bottom=0, middle=1, top=2, left=3, right=4}
-		local idx = posMap[data.ESP_TracerPos]
-		if idx and TracerPosRef then setUI(TracerPosRef, idx) end
+		_G.ESP_SETTINGS.TracerStart = data.ESP_TracerPos
+		tracerStartPos = data.ESP_TracerPos
 	end
 
 	if data.ESP_Color then
 		local col = tableToColor(data.ESP_Color)
 		_G.ESPColor = col
 		_G.ESP_SETTINGS.Color = col
-		if ESPColorRef then pcall(function() ESPColorRef:Set(col) end) end
 		for _, ui in pairs(_G.ESP_Table) do
-			if ui.Box   then ui.Box.Color   = col end
+			if ui.Box then ui.Box.Color = col end
 			if ui.Tracer then ui.Tracer.Color = col end
 		end
 		for _, skel in pairs(_G.skeleton_list) do
@@ -215,33 +243,81 @@ local function applyConfig(data)
 		updateChamsColor(col)
 	end
 
-	if data.Chams_Enabled ~= nil then setUI(ChamsToggleRef, data.Chams_Enabled) end
-	if data.Chams_Team    ~= nil then setUI(ChamsTeamRef,   data.Chams_Team)    end
-	if data.Chams_Mode    ~= nil then
-		local display = (data.Chams_Mode == "NotVisible") and "Not Visible" or "Visible"
-		setUI(ChamsModeRef, display)
+	if data.Chams_Enabled ~= nil then
+		_G.CHAMS_SETTINGS.Enabled = data.Chams_Enabled
+		if ChamsToggleRef then pcall(function() ChamsToggleRef.Value = data.Chams_Enabled; ChamsToggleRef:FireChanged() end) end
+		rebuildChams()
+	end
+	if data.Chams_Team ~= nil then
+		_G.CHAMS_SETTINGS.TeamCheck = data.Chams_Team
+		if ChamsTeamRef then pcall(function() ChamsTeamRef.Value = data.Chams_Team; ChamsTeamRef:FireChanged() end) end
+	end
+	if data.Chams_Mode ~= nil then
 		_G.CHAMS_SETTINGS.Mode = data.Chams_Mode
 		updateChamsDepthMode()
 	end
 	if data.Chams_Trans ~= nil then
-		setUI(ChamsTransRef, data.Chams_Trans)
+		local t = data.Chams_Trans / 100
+		_G.CHAMS_SETTINGS.Transparency = t
+		updateChamsTransparency(t)
 	end
 
-	if data.TB_Enabled ~= nil then setUI(TriggerToggleRef, data.TB_Enabled) end
-	if data.TB_Team    ~= nil then setUI(TriggerTeamRef,   data.TB_Team)    end
-	if data.TB_Auto    ~= nil then setUI(TriggerAutoRef,   data.TB_Auto)    end
-	if data.TB_Delay   ~= nil then setUI(TriggerDelayRef,  data.TB_Delay)   end
-	if data.TB_Vis     ~= nil then setUI(TriggerVisRef,    data.TB_Vis)     end
-	if data.TB_Soft    ~= nil then setUI(TriggerSoftRef,   data.TB_Soft)    end
+	if data.TB_Enabled ~= nil then
+		TriggerbotSettings.Enabled = data.TB_Enabled
+		if TriggerToggleRef then pcall(function() TriggerToggleRef.Value = data.TB_Enabled; TriggerToggleRef:FireChanged() end) end
+	end
+	if data.TB_Team ~= nil then
+		TriggerbotSettings.TeamCheck = data.TB_Team
+		if TriggerTeamRef then pcall(function() TriggerTeamRef.Value = data.TB_Team; TriggerTeamRef:FireChanged() end) end
+	end
+	if data.TB_Auto ~= nil then
+		TriggerbotSettings.AutoGunMode = data.TB_Auto
+		if TriggerAutoRef then pcall(function() TriggerAutoRef.Value = data.TB_Auto; TriggerAutoRef:FireChanged() end) end
+	end
+	if data.TB_Delay ~= nil then
+		TriggerbotSettings.Delay = data.TB_Delay
+		if TriggerDelayRef then pcall(function() TriggerDelayRef.Value = data.TB_Delay; TriggerDelayRef:FireChanged() end) end
+	end
+	if data.TB_Vis ~= nil then
+		TriggerbotSettings.VisibilityCheck = data.TB_Vis
+		if TriggerVisRef then pcall(function() TriggerVisRef.Value = data.TB_Vis; TriggerVisRef:FireChanged() end) end
+	end
+	if data.TB_Soft ~= nil then
+		TriggerbotSettings.AllowSoftVisible = data.TB_Soft
+		if TriggerSoftRef then pcall(function() TriggerSoftRef.Value = data.TB_Soft; TriggerSoftRef:FireChanged() end) end
+	end
 
-	if data.AB_Enabled    ~= nil then setUI(AimbotToggleRef,     data.AB_Enabled)    end
-	if data.AB_AlwaysOn   ~= nil then setUI(AimbotAlwaysRef,     data.AB_AlwaysOn)   end
-	if data.AB_Camera     ~= nil then setUI(AimbotCameraRef,     data.AB_Camera)     end
-	if data.AB_Team       ~= nil then setUI(AimbotTeamRef,       data.AB_Team)       end
-	if data.AB_Smoothness ~= nil then setUI(AimbotSmoothnessRef, data.AB_Smoothness) end
-	if data.AB_FOV        ~= nil then setUI(AimbotFOVRef,        data.AB_FOV)        end
-	if data.AB_OffsetY    ~= nil then setUI(AimbotOffsetRef,     data.AB_OffsetY)    end
-	if data.AB_Part       ~= nil then
+	if data.AB_Enabled ~= nil then
+		AimbotSettings.Enabled = data.AB_Enabled
+		if AimbotToggleRef then pcall(function() AimbotToggleRef.Value = data.AB_Enabled; AimbotToggleRef:FireChanged() end) end
+		if data.AB_Enabled then enableAimbot() else disableAimbot() end
+	end
+	if data.AB_AlwaysOn ~= nil then
+		AimbotSettings.AlwaysOn = data.AB_AlwaysOn
+		if AimbotAlwaysRef then pcall(function() AimbotAlwaysRef.Value = data.AB_AlwaysOn; AimbotAlwaysRef:FireChanged() end) end
+	end
+	if data.AB_Camera ~= nil then
+		AimbotSettings.UseCameraAim = data.AB_Camera
+		if AimbotCameraRef then pcall(function() AimbotCameraRef.Value = data.AB_Camera; AimbotCameraRef:FireChanged() end) end
+	end
+	if data.AB_Team ~= nil then
+		AimbotSettings.TeamCheck = data.AB_Team
+		if AimbotTeamRef then pcall(function() AimbotTeamRef.Value = data.AB_Team; AimbotTeamRef:FireChanged() end) end
+	end
+	if data.AB_Smoothness ~= nil then
+		AimbotSettings.Smoothness = data.AB_Smoothness
+		if AimbotSmoothnessRef then pcall(function() AimbotSmoothnessRef.Value = data.AB_Smoothness; AimbotSmoothnessRef:FireChanged() end) end
+	end
+	if data.AB_FOV ~= nil then
+		AimbotSettings.FOV = data.AB_FOV
+		if AimbotFOVRef then pcall(function() AimbotFOVRef.Value = data.AB_FOV; AimbotFOVRef:FireChanged() end) end
+		if AimbotSettings.FOVCircle then AimbotSettings.FOVCircle.Radius = data.AB_FOV end
+	end
+	if data.AB_OffsetY ~= nil then
+		AimbotSettings.AimOffsetY = data.AB_OffsetY
+		if AimbotOffsetRef then pcall(function() AimbotOffsetRef.Value = data.AB_OffsetY; AimbotOffsetRef:FireChanged() end) end
+	end
+	if data.AB_Part ~= nil then
 		AimbotSettings.AimPart = data.AB_Part
 		if AimbotPartRef then pcall(function() AimbotPartRef:Set(data.AB_Part) end) end
 	end
@@ -329,30 +405,103 @@ RunService:BindToRenderStep("DynamicZeroRecoil", Enum.RenderPriority.Camera.Valu
 		targetX = targetX - math.rad(delta.Y * NoRecoilSettings.Sens * 0.48)
 		targetX = math.clamp(targetX, math.rad(-85), math.rad(85))
 		Camera.CFrame = CFrame.new(Camera.CFrame.Position) * CFrame.fromEulerAnglesYXZ(targetX, targetY, realZ)
-	else
-		if isFiring then
-			if recoveryTime > 0 then
-				recoveryTime = recoveryTime - dt
-				if delta.Magnitude > 0 then
-					targetY = targetY - math.rad(delta.X * NoRecoilSettings.Sens * 0.48 * flip)
-					targetX = targetX - math.rad(delta.Y * NoRecoilSettings.Sens * 0.48)
-					targetX = math.clamp(targetX, math.rad(-85), math.rad(85))
-				end
-				Camera.CFrame = CFrame.new(Camera.CFrame.Position) * CFrame.fromEulerAnglesYXZ(targetX, targetY, targetZ)
-			else
-				syncCamera(); isFiring = false
-			end
-		else
-			syncCamera()
+	elseif isFiring and recoveryTime > 0 then
+		recoveryTime = recoveryTime - dt
+		if delta.Magnitude > 0 then
+			targetY = targetY - math.rad(delta.X * NoRecoilSettings.Sens * 0.48 * flip)
+			targetX = targetX - math.rad(delta.Y * NoRecoilSettings.Sens * 0.48)
+			targetX = math.clamp(targetX, math.rad(-85), math.rad(85))
+			Camera.CFrame = CFrame.new(Camera.CFrame.Position) * CFrame.fromEulerAnglesYXZ(targetX, targetY, realZ)
 		end
+	else
+		syncCamera(); isFiring = false
 	end
 end)
 
 -- ==================== TABS ====================
 local CombatTab = Window:AddTab({ Name = "Combat", Icon = "swords" })
 local CombatSub = CombatTab:AddSubTab("Combat", "swords")
+local DiscordGrp = CombatSub:AddLeftGroupbox("Discord", "link")
 local CombatLeft = CombatSub:AddLeftGroupbox("No Recoil", "crosshair")
 local CombatRight = CombatSub:AddRightGroupbox("Aimbot", "crosshair")
+
+local DiscordLabel = DiscordGrp:AddLabel({ Text = "Join discord for free keys!", DoesWrap = true, Size = 26 })
+
+task.spawn(function()
+	task.wait(0.5)
+	local discordTextLabel = nil
+	pcall(function()
+		for _, desc in ipairs(Library.ScreenGui:GetDescendants()) do
+			if desc:IsA("TextLabel") and desc.Text:find("discord") then
+				discordTextLabel = desc
+				break
+			end
+		end
+	end)
+
+	if discordTextLabel then
+		discordTextLabel.RichText = false
+		discordTextLabel.TextColor3 = Color3.fromRGB(157, 130, 250)
+		discordTextLabel.Font = Enum.Font.GothamBold
+		discordTextLabel.TextSize = 26
+	end
+
+	task.wait(0.3)
+
+	local fullText = "Join discord for free keys!"
+	local cursor = "_"
+	while true do
+		for i = 1, #fullText do
+			pcall(function()
+				DiscordLabel:SetText(string.sub(fullText, 1, i) .. cursor)
+			end)
+			pcall(function()
+				if discordTextLabel and discordTextLabel.Parent then
+					discordTextLabel.RichText = false
+					discordTextLabel.TextColor3 = Color3.fromRGB(157, 130, 250)
+					discordTextLabel.Font = Enum.Font.GothamBold
+					discordTextLabel.TextSize = 26
+				end
+			end)
+			task.wait(0.06)
+		end
+		pcall(function()
+			DiscordLabel:SetText(fullText)
+		end)
+		pcall(function()
+			if discordTextLabel and discordTextLabel.Parent then
+				discordTextLabel.RichText = false
+				discordTextLabel.TextColor3 = Color3.fromRGB(157, 130, 250)
+				discordTextLabel.Font = Enum.Font.GothamBold
+				discordTextLabel.TextSize = 26
+			end
+		end)
+		task.wait(1.5)
+		for i = #fullText, 0, -1 do
+			pcall(function()
+				DiscordLabel:SetText(string.sub(fullText, 1, i) .. cursor)
+			end)
+			pcall(function()
+				if discordTextLabel and discordTextLabel.Parent then
+					discordTextLabel.RichText = false
+					discordTextLabel.TextColor3 = Color3.fromRGB(157, 130, 250)
+					discordTextLabel.Font = Enum.Font.GothamBold
+					discordTextLabel.TextSize = 26
+				end
+			end)
+			task.wait(0.04)
+		end
+		pcall(function()
+			DiscordLabel:SetText("")
+		end)
+		task.wait(0.5)
+	end
+end)
+
+DiscordGrp:AddButton({ Text = "Copy Discord Link", Callback = function()
+	pcall(function() setclipboard("https://discord.gg/MCWYKBdB4E") end)
+	notify("Discord Link Copied!", "Success")
+end })
 
 NoRecoilToggleRef = CombatLeft:AddToggle("NoRecoil", {
 	Text = "No Recoil",
@@ -483,7 +632,7 @@ local function createCham(viewmodel)
 		hl.OutlineTransparency = _G.CHAMS_SETTINGS.Transparency
 		hl.DepthMode = getChamsDepthMode()
 		hl.Enabled = _G.CHAMS_SETTINGS.Enabled
-		hl.Parent = workspace
+	hl.Parent = workspace
 		_G.chams_highlights[viewmodel] = hl
 	end)
 end
@@ -524,6 +673,7 @@ updateChamsDepthMode = function()
 	local mode = getChamsDepthMode()
 	for _, hl in pairs(_G.chams_highlights) do hl.DepthMode = mode end
 end
+
 
 if viewmodelsFolder then
 	viewmodelsFolder.ChildAdded:Connect(function(vm)
@@ -1214,7 +1364,7 @@ TriggerSoftRef = CombatLeft:AddToggle("TriggerSoft", {
 local isMobile = UserInputService.TouchEnabled
 
 AimbotSettings = {
-	Enabled = false, Smoothness = 0, FOV = 150, AimOffsetY = 0,
+	Enabled = false, Smoothness = 0, FOV = 150, AimOffsetY = 40,
 	AimPart = "Head", RandomPart = nil, FOVCircle = nil,
 	Connection = nil, WasRMBPressed = false, AlwaysOn = false,
 	UseCameraAim = false, MobileScopeActive = false, TeamCheck = false,
@@ -1458,7 +1608,7 @@ AimbotPartRef = CombatRight:AddDropdown("AimPart", {
 })
 
 AimbotSmoothnessRef = CombatRight:AddSlider("AimbotSmooth", {
-	Text = "Smoothness", Min = 0, Max = 10, Default = 0, Rounding = 0,
+	Text = "Smoothness", Min = 0, Max = 20, Default = 0, Rounding = 0,
 	Callback = function(Value) AimbotSettings.Smoothness=Value end,
 })
 
@@ -1471,7 +1621,7 @@ AimbotFOVRef = CombatRight:AddSlider("AimbotFOV", {
 })
 
 AimbotOffsetRef = CombatRight:AddSlider("AimbotOffset", {
-	Text = "Aim Offset Y", Min = -60, Max = 60, Default = 0, Rounding = 0,
+	Text = "Aim Offset Y", Min = -60, Max = 60, Default = 40, Rounding = 0,
 	Callback = function(Value) AimbotSettings.AimOffsetY=Value end,
 })
 
@@ -1480,11 +1630,6 @@ RunService.RenderStepped:Connect(function()
 		AimbotSettings.FOVCircle.Position = Camera.ViewportSize/2
 	end
 end)
-
-CombatRight:AddButton({ Text = "Join Discord For Dupe", Callback = function()
-	pcall(function() setclipboard("https://discord.gg/MCWYKBdB4E") end)
-	notify("Discord Copied To Clipboard", "Success")
-end })
 
 -- ==================== UTILITY TAB ====================
 local UtilityTab = Window:AddTab({ Name = "Utilities", Icon = "wrench" })
@@ -1857,6 +2002,16 @@ end)
 RunService.RenderStepped:Connect(function()
 	if not menuOpen and Library.ScreenGui and Library.ScreenGui.Enabled then
 		Library.ScreenGui.Enabled = false
+	end
+end)
+
+RunService.Heartbeat:Connect(function()
+	if not menuOpen then
+		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+		UserInputService.MouseIconEnabled = false
+		if Library.ScreenGui and Library.ScreenGui.Enabled then
+			Library.ScreenGui.Enabled = false
+		end
 	end
 end)
 
