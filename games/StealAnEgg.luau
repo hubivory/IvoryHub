@@ -1323,6 +1323,11 @@ local function sellPets(walk)
 end
 
 -- ═══════════════════════════════════════════════════════
+--  CROSS-SCOPE EXPORT TABLE
+-- ═══════════════════════════════════════════════════════
+local FX = {}
+
+-- ═══════════════════════════════════════════════════════
 --  EGG PLACEMENT GRID SYSTEM
 -- ═══════════════════════════════════════════════════════
 do
@@ -2465,8 +2470,7 @@ ClaimBox:AddButton("Recall to Spawn", function()
 	if sp then travelTo(sp, 8) end
 end)
 
--- Forward declarations for feature exports (single table to save registers)
-local FX = {}
+-- Aliases for cross-scope feature exports
 local PAR = FX
 local VP = FX
 
