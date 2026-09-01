@@ -50,6 +50,8 @@ local Config = {
 	SecretPriority = true,
 	AutoHatch = false,
 	EggESP = false,
+	AutoSellEggs = false,
+	SellEggRarities = {},
 }
 
 local Threads = {}
@@ -90,6 +92,8 @@ local Remotes = {
 	TreadRaise    = "RF/Treadmill/AskTierRaise",
 	TreadRender   = "RF/Treadmill/AskRenderSnapshot",
 	RigWipe       = "RE/RigSync/AskRigWipe",
+	WriteAutoSell = "RE/Haul/WriteAutoSell",
+	FetchAutoSell = "RF/Haul/FetchAutoSell",
 }
 
 local function net(name)
@@ -2136,6 +2140,23 @@ spawnLoop(function()
 	end
 end)
 -- ═══════════════════════════════════════════════════════
+--  AUTO SELL EGGS
+-- ═══════════════════════════════════════════════════════
+spawnLoop(function()
+	while alive() do
+		if Config.AutoSellEggs and charReady() then
+			pcall(function()
+				callNet(Remotes.SellEveryPet)
+				task.wait(0.3)
+				callNet(Remotes.PetSale)
+				task.wait(0.3)
+				callNet(Remotes.SatchelSale)
+			end)
+		end
+		task.wait(4)
+	end
+end)
+-- ═══════════════════════════════════════════════════════
 --  SERVER HOP
 -- ═══════════════════════════════════════════════════════
 local function serverHop()
@@ -2478,6 +2499,14 @@ do
 		R:AddButton("Go Home", function() FX.goHome(20) end)
 		R:AddButton("Void Drop", function() FX.voidDrop() end)
 		R:AddButton("Sell Pets", function() FX.sellPets(false) end)
+		R:AddButton("Sell All Eggs", function()
+			callNet(Remotes.SellEveryPet)
+			callNet(Remotes.PetSale)
+			callNet(Remotes.SatchelSale)
+			FX.warnToast("Eggs sold!", 3)
+		end)
+		R:AddToggle("AutoSellEggs", { Text = "Auto Sell Eggs", Default = false, Callback = function(v) Config.AutoSellEggs = v end })
+		R:AddDropdown("SellEggRarities", { Text = "Sell Egg Rarities", Values = FX.Rarities, Multi = true, Callback = function(v) table.clear(Config.SellEggRarities); for _, item in ipairs(v) do Config.SellEggRarities[item] = true end end })
 	end
 
 	do
