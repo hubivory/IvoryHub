@@ -234,6 +234,9 @@ local function rarityOf(rec)
 	return type(v) == "string" and v or nil
 end
 
+local FX = {}
+
+do
 -- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 --  HUMANOID UNLOCK (Performance Mode)
 -- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -258,10 +261,6 @@ local _Ek = function()
 	return Config.PhysReady
 end
 
-
-local FX = {}
-
-do
 -- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 --  RARITY SYSTEM
 -- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -2480,6 +2479,21 @@ do
 		local G = SettingsTab:AddLeftGroupbox("Menu", "settings")
 		G:AddSlider("MenuKeybind", { Text = "Menu Keybind", Default = Enum.KeyCode.RightBracket.Value, Min = 0, Max = 400, Rounding = 0 })
 		G:AddButton("Destroy UI", function() pcall(function() Library:Destroy() end) end)
+		local AG = SettingsTab:AddLeftGroupbox("Anti-Cheat", "shield")
+		AG:AddToggle("PerfMode", { Text = "Enable Anti-Cheat Bypass", Default = false, Callback = function(v)
+			Config.PerfMode = v
+			if v then
+				Config.PhysReady = false
+				task.spawn(function()
+					local ok = _Qk()
+					Config.PhysReady = ok
+					FX.warnToast(ok and "AC bypass active." or "Bypass failed.", 4)
+				end)
+			else
+				Config.PhysReady = false
+				FX.warnToast("AC bypass disabled.", 3)
+			end
+		end })
 	end
 end
 
