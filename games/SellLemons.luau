@@ -1059,7 +1059,7 @@ armSpecialIncome()
 -- ObsidianUltra UI
 --------------------------------------------------------------------------------
 
-local httpGet = function(url)
+local function httpGet(url)
 	local ok, res = pcall(function()
 		return request({ Url = url, Method = "GET" })
 	end)
@@ -1074,9 +1074,13 @@ local httpGet = function(url)
 end
 
 local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = loadstring(httpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
+local genv = getgenv()
+local libSrc = genv._IvoryLibSrc or httpGet(repo .. "Library.lua")
+local tmSrc = genv._IvoryTMSrc or httpGet(repo .. "addons/ThemeManager.lua")
+local smSrc = genv._IvorySMSrc or httpGet(repo .. "addons/SaveManager.lua")
+local Library = loadstring(libSrc)()
+local ThemeManager = loadstring(tmSrc)()
+local SaveManager = loadstring(smSrc)()
 
 local Options = Library.Options
 local Toggles = Library.Toggles
