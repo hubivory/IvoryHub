@@ -1076,6 +1076,13 @@ end
 local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
 local genv = getgenv()
 
+local oldCloneref = genv.cloneref
+genv.cloneref = function(obj)
+	if typeof(obj) == "Instance" then return obj end
+	if obj == nil then return nil end
+	return obj
+end
+
 local libSrc = genv._IvoryLibSrc or httpGet(repo .. "Library.lua")
 local tmSrc = genv._IvoryTMSrc or httpGet(repo .. "addons/ThemeManager.lua")
 local smSrc = genv._IvorySMSrc or httpGet(repo .. "addons/SaveManager.lua")
@@ -1113,6 +1120,8 @@ if smSrc then
 		if ok then SaveManager = sm end
 	end
 end
+
+genv.cloneref = oldCloneref
 
 local Options = Library.Options
 local Toggles = Library.Toggles
