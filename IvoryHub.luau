@@ -22,6 +22,7 @@ local GameScripts = {
 	[16281300371] = "games/Bladeball_BAC.luau",
 	[142823291] = "games/MM2.luau",
 	[17516596118] = "games/Hypershot.luau",
+	[100040622766961] = "games/Hypershot.luau",
 	[92637789841354] = "games/CleanAllTheLeaves.luau",
 	[100068273119174] = "games/CleanAllTheLeaves.luau",
 	[114697347887839] = "games/Monkeyescape.luau",
