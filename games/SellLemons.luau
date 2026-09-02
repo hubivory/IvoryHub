@@ -1075,12 +1075,44 @@ end
 
 local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
 local genv = getgenv()
+
 local libSrc = genv._IvoryLibSrc or httpGet(repo .. "Library.lua")
 local tmSrc = genv._IvoryTMSrc or httpGet(repo .. "addons/ThemeManager.lua")
 local smSrc = genv._IvorySMSrc or httpGet(repo .. "addons/SaveManager.lua")
-local Library = loadstring(libSrc)()
-local ThemeManager = loadstring(tmSrc)()
-local SaveManager = loadstring(smSrc)()
+
+local Library, ThemeManager, SaveManager
+
+if libSrc then
+	local ls, le = loadstring(libSrc)
+	if ls then
+		local ok, lib = pcall(ls)
+		if ok then Library = lib end
+		if not ok then warn("[Ivory] Library init failed:", lib) end
+	else
+		warn("[Ivory] Library compile failed:", le)
+	end
+end
+
+if not Library then
+	warn("[Ivory] ObsidianUltra failed to load - aborting")
+	return
+end
+
+if tmSrc then
+	local ls = loadstring(tmSrc)
+	if ls then
+		local ok, tm = pcall(ls)
+		if ok then ThemeManager = tm end
+	end
+end
+
+if smSrc then
+	local ls = loadstring(smSrc)
+	if ls then
+		local ok, sm = pcall(ls)
+		if ok then SaveManager = sm end
+	end
+end
 
 local Options = Library.Options
 local Toggles = Library.Toggles
