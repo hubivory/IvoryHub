@@ -681,6 +681,21 @@ local aimbotFOVStrokeGrad = aFOV.strokegrad
 
 aimbotFOVContainer.AnchorPoint = Vector2.new(0.5, 0.5)
 
+local aimbot = {
+    enabled = false,
+    masterEnabled = false,
+    keyMode = "toggle",
+    showFov = false,
+    targetPart = "Head",
+    fovRadius = 500,
+    maxDistance = 500,
+    smoothness = 2,
+    aimCurve = "Linear",
+    followMuzzle = false,
+    lockedTarget = nil,
+    smoothCF = nil,
+}
+
 RunService.RenderStepped:Connect(function()
     local size = aimbot.fovRadius * 2
     aimbotFOVContainer.Size = UDim2.new(0, size, 0, size)
@@ -700,21 +715,6 @@ local function updaimbotfillgrad()
         ColorSequenceKeypoint.new(1, aimbotFOVCfg.FilledColor2),
     })
 end
-
-local aimbot = {
-    enabled = false,
-    masterEnabled = false,
-    keyMode = "toggle",
-    showFov = false,
-    targetPart = "Head",
-    fovRadius = 500,
-    maxDistance = 500,
-    smoothness = 2,
-    aimCurve = "Linear",
-    followMuzzle = false,
-    lockedTarget = nil,
-    smoothCF = nil,
-}
 
 local function clearAimbotLock()
     aimbot.lockedTarget = nil
