@@ -345,15 +345,19 @@ local function attackEnemy(enemy)
 		task.wait(0.2)
 	end
 
-	safeFire("Combat", enemy)
+	safeFire("Combat", "Attack", enemyHRP.CFrame)
 end
 
 local function useSkills()
-	if CONFIG.skillSlot1 then safeFire("SkillCast", 1) end
+	local enemy = getClosestEnemy(500)
+	if not enemy then return end
+	local ehrp = enemy:FindFirstChild("HumanoidRootPart") or enemy:FindFirstChild("Head")
+	if not ehrp then return end
+	if CONFIG.skillSlot1 then safeFire("SkillCast", 1, ehrp.CFrame) end
 	task.wait(0.1)
-	if CONFIG.skillSlot2 then safeFire("SkillCast", 2) end
+	if CONFIG.skillSlot2 then safeFire("SkillCast", 2, ehrp.CFrame) end
 	task.wait(0.1)
-	if CONFIG.skillSlot3 then safeFire("SkillCast", 3) end
+	if CONFIG.skillSlot3 then safeFire("SkillCast", 3, ehrp.CFrame) end
 end
 
 --// ═══════════════════════════════════════════════════════════
@@ -1041,7 +1045,10 @@ task.spawn(function()
 		if CONFIG.autoSwing and CONFIG.autoFarm then
 			local enemy = getClosestEnemy(500)
 			if enemy then
-				safeFire("Combat", enemy)
+				local ehrp = enemy:FindFirstChild("HumanoidRootPart") or enemy:FindFirstChild("Head")
+				if ehrp then
+					safeFire("Combat", "Attack", ehrp.CFrame)
+				end
 			end
 		end
 		task.wait(0.2)
