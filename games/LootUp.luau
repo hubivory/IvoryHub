@@ -122,6 +122,7 @@ local CONFIG = {
 	hitboxSize = 15,
 	walkSpeed = 16,
 	jumpPower = 50,
+	clickSpeed = 0.1,
 	statType = "Damage",
 	statAmount = 1,
 	sellRarity = 1,
@@ -329,8 +330,16 @@ local function stopNoclip()
 end
 
 --// ═══════════════════════════════════════════════════════════
---// COMBAT
+--// COMBAT (via VirtualInputManager - bypasses anti-exploit)
 --// ═══════════════════════════════════════════════════════════
+
+local VIM = game:GetService("VirtualInputManager")
+
+local function vimClick()
+	VIM:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+	task.wait(0.05)
+	VIM:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+end
 
 local function attackEnemy(enemy)
 	if not enemy or not enemy.Parent then return end
@@ -340,24 +349,23 @@ local function attackEnemy(enemy)
 	if not enemyHRP then return end
 
 	local dist = (enemyHRP.Position - hrp.Position).Magnitude
-	if dist > 10 then
-		tpTo(enemyHRP.Position + Vector3.new(0, 0, 3))
-		task.wait(0.2)
+	if dist > 5 then
+		hrp.CFrame = CFrame.lookAt(
+			(enemyHRP.CFrame * CFrame.new(0, CONFIG.hitboxSize or 2, 5)).Position,
+			enemyHRP.Position
+		)
+		task.wait(0.1)
 	end
 
-	safeFire("Combat", "Attack", enemyHRP.CFrame, enemy.Name)
+	vimClick()
 end
 
 local function useSkills()
 	local enemy = getClosestEnemy(500)
 	if not enemy then return end
-	local ehrp = enemy:FindFirstChild("HumanoidRootPart") or enemy:FindFirstChild("Head")
-	if not ehrp then return end
-	if CONFIG.skillSlot1 then safeFire("SkillCast", 1, ehrp.Position) end
-	task.wait(0.1)
-	if CONFIG.skillSlot2 then safeFire("SkillCast", 2, ehrp.Position) end
-	task.wait(0.1)
-	if CONFIG.skillSlot3 then safeFire("SkillCast", 3, ehrp.Position) end
+	if CONFIG.skillSlot1 then VIM:SendKeyEvent(true, Enum.KeyCode.One, false, game) end
+	if CONFIG.skillSlot2 then VIM:SendKeyEvent(true, Enum.KeyCode.Two, false, game) end
+	if CONFIG.skillSlot3 then VIM:SendKeyEvent(true, Enum.KeyCode.Three, false, game) end
 end
 
 --// ═══════════════════════════════════════════════════════════
@@ -1039,7 +1047,7 @@ task.spawn(function()
 	end
 end)
 
--- Auto swing via remotes
+-- Auto swing via VIM clicks
 task.spawn(function()
 	while true do
 		if CONFIG.autoSwing and CONFIG.autoFarm then
@@ -1047,11 +1055,22 @@ task.spawn(function()
 			if enemy then
 				local ehrp = enemy:FindFirstChild("HumanoidRootPart") or enemy:FindFirstChild("Head")
 				if ehrp then
-					safeFire("Combat", "Attack", ehrp.CFrame, enemy.Name)
+					local hrp = rootPart()
+					if hrp then
+						local dist = (ehrp.Position - hrp.Position).Magnitude
+						if dist > 5 then
+							hrp.CFrame = CFrame.lookAt(
+								(ehrp.CFrame * CFrame.new(0, CONFIG.hitboxSize or 2, 5)).Position,
+								ehrp.Position
+							)
+							task.wait(0.1)
+						end
+						vimClick()
+					end
 				end
 			end
 		end
-		task.wait(0.2)
+		task.wait(CONFIG.clickSpeed or 0.1)
 	end
 end)
 
