@@ -80,7 +80,7 @@ end
 
 --// WINDOW
 local Window = Library:CreateWindow({
-	Title="Ivory", Icon = "rbxassetid://110090697336524",
+	Title="Ivory", Icon = "swords",
 	Footer={"v1.4 |",{Text="Game",Copyable=true},"|",{Text=tostring(LP.UserId),Copyable=true}},
 	CopyableFooter=true, FuzzySearch=true, SearchValues=true,
 	Minimizable=true, MinimizeKeybind=Enum.KeyCode.RightBracket, MinimizedWidth=280,
@@ -89,7 +89,7 @@ local Window = Library:CreateWindow({
 })
 
 -- ═══ MAIN TAB ═══
-local MainTab = Window:AddTab({Name="Main",Icon = "rbxassetid://110090697336524"})
+local MainTab = Window:AddTab({Name="Main",Icon = "swords"})
 
 local FarmSub = MainTab:AddSubTab("Farm","rbxassetid://110090697336524")
 local FG1=FarmSub:AddLeftGroupbox("Floppa","cat")
@@ -134,7 +134,7 @@ PG1:AddButton("Save Now",function() R.Save:FireServer() end)
 PG1:AddToggle("AutoSlots",{Text="Auto Slots Spin",Default=false,Callback=function(v) S.AutoSlots=v end})
 
 -- ═══ PLAYER TAB ═══
-local PlayerTab = Window:AddTab({Name="Player",Icon = "rbxassetid://110090697336524"})
+local PlayerTab = Window:AddTab({Name="Player",Icon = "swords"})
 local TpSub = PlayerTab:AddSubTab("Teleports","rbxassetid://110090697336524")
 local TG1=TpSub:AddLeftGroupbox("Locations","map-pin")
 TG1:AddButton("To Floppa",function() local f=getFloppa(); if f and f:FindFirstChild("HumanoidRootPart") then local h=gHRP(); if h then h.CFrame=f.HumanoidRootPart.CFrame+Vector3.new(0,5,0) end end end)
@@ -153,7 +153,7 @@ MG1:AddToggle("JumpBoost",{Text="Jump Boost",Default=false,Callback=function(v) 
 MG1:AddSlider("JumpVal",{Text="Jump Power",Default=50,Min=50,Max=200,Rounding=0,Callback=function(v) S.JumpValue=v end})
 
 -- ═══ VISUALS TAB ═══
-local VisTab = Window:AddTab({Name="Visuals",Icon = "rbxassetid://110090697336524"})
+local VisTab = Window:AddTab({Name="Visuals",Icon = "swords"})
 local ESPSub=VisTab:AddSubTab("ESP","rbxassetid://110090697336524")
 local VG1=ESPSub:AddLeftGroupbox("ESP","eye")
 VG1:AddToggle("ESPEnabled",{Text="Enable ESP",Default=false,Callback=function(v) S.ESPEnabled=v; if v then updateESP() else clearESP() end end}):AddKeyPicker("ESPKey",{Default="None",Text="ESP Key",Mode="Toggle",SyncToggleState=true,NoUI=false})
@@ -182,7 +182,7 @@ ThemeManager:SetLibrary(Library); SaveManager:SetLibrary(Library)
 SaveManager:IgnoreThemeSettings(); SaveManager:SetIgnoreIndexes({"MenuKeybind"})
 ThemeManager:SetFolder("IvoryHub"); SaveManager:SetFolder("IvoryHub"); SaveManager:SetSubFolder("floppa2")
 
-local SettingsTab = Window:AddTab({Name="UI Settings",Icon = "rbxassetid://110090697336524"})
+local SettingsTab = Window:AddTab({Name="UI Settings",Icon = "swords"})
 local CreditGroup = SettingsTab:AddLeftGroupbox("Credits", "heart")
 local CreditLabel = CreditGroup:AddLabel({ Text = "", Size = 26, DoesWrap = true })
 local CreditTL = CreditLabel.TextLabel

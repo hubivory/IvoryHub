@@ -49,7 +49,7 @@ end)
 
 local Window = Library:CreateWindow({
 	Title = "Ivory",
-	Icon = "rbxassetid://110090697336524",
+	Icon = "swords",
 	Footer = {
 		"v1.4 |",
 		{ Text = isLobby and "Lobby" or "Game", Copyable = true },
@@ -1340,12 +1340,12 @@ end
 --// UI TABS
 --// ═══════════════════════════════════════════════════════════
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "rbxassetid://110090697336524" })
-local CombatTab = Window:AddTab({ Name = "Combat", Icon = "rbxassetid://110090697336524" })
-local ShopTab = Window:AddTab({ Name = "Shop", Icon = "rbxassetid://110090697336524" })
-local PetTab = Window:AddTab({ Name = "Eggs & Pets", Icon = "rbxassetid://110090697336524" })
-local StatusTab = Window:AddTab({ Name = "Status", Icon = "rbxassetid://110090697336524" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524" })
+local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
+local CombatTab = Window:AddTab({ Name = "Combat", Icon = "swords" })
+local ShopTab = Window:AddTab({ Name = "Shop", Icon = "swords" })
+local PetTab = Window:AddTab({ Name = "Eggs & Pets", Icon = "swords" })
+local StatusTab = Window:AddTab({ Name = "Status", Icon = "swords" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
 
 --// ═══════════════════════════════════════════════════════════
 --// MAIN TAB

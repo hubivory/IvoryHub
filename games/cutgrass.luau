@@ -1376,7 +1376,7 @@ local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
 
 local Window = Library:CreateWindow({
 	Title = "Ivory - Cut Grass",
-	Icon = "rbxassetid://110090697336524",
+	Icon = "swords",
 	Footer = {"v1.5 |", {Text = tostring(plr.UserId), Copyable = true}},
 	CopyableFooter = true,
 	FuzzySearch = true,
@@ -1391,8 +1391,8 @@ local Window = Library:CreateWindow({
 	Animations = {ToggleWindow = false, TabSwitch = false, Groupbox = false, Dropdown = false, KeyPicker = false, SubTabUnderline = true},
 })
 
-local MainTab = Window:AddTab({Name = "Main", Icon = "rbxassetid://110090697336524"})
-local SettingsTab = Window:AddTab({Name = "Settings", Icon = "rbxassetid://110090697336524"})
+local MainTab = Window:AddTab({Name = "Main", Icon = "swords"})
+local SettingsTab = Window:AddTab({Name = "Settings", Icon = "swords"})
 
 local AutomationSub = MainTab:AddSubTab("Automation", "rbxassetid://110090697336524")
 local StatusSub = MainTab:AddSubTab("Status", "rbxassetid://110090697336524")

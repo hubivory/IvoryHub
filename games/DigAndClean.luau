@@ -347,7 +347,7 @@ end
 ------------------------------------------------------------------------
 local Window = Library:CreateWindow({
     Title = "Ivory",
-    Icon = "rbxassetid://110090697336524",
+    Icon = "swords",
     Footer = {
         "v1.4 |",
         { Text = isLobby and "Lobby" or "Game", Copyable = true },
@@ -422,11 +422,11 @@ local ST = {
 ------------------------------------------------------------------------
 --// TABS
 ------------------------------------------------------------------------
-local MainTab = Window:AddTab({ Name = "Main", Icon = "rbxassetid://110090697336524" })
-local PlayerTab = Window:AddTab({ Name = "Player", Icon = "rbxassetid://110090697336524" })
-local FarmTab = Window:AddTab({ Name = "Farm", Icon = "rbxassetid://110090697336524" })
-local ShopTab = Window:AddTab({ Name = "Shop", Icon = "rbxassetid://110090697336524" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524" })
+local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
+local PlayerTab = Window:AddTab({ Name = "Player", Icon = "swords" })
+local FarmTab = Window:AddTab({ Name = "Farm", Icon = "swords" })
+local ShopTab = Window:AddTab({ Name = "Shop", Icon = "swords" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
 
 ------------------------------------------------------------------------
 --// MAIN > AUTOMATION

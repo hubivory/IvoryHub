@@ -16,7 +16,7 @@ local Toggles = Library.Toggles
 
 local Window = Library:CreateWindow({
     Title = 'Ivory | Bloxstrike',
-    Icon = "rbxassetid://110090697336524",
+    Icon = "swords",
     Center = true,
     AutoShow = true,
     TabPadding = 8,

@@ -53,7 +53,7 @@ local ThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
 local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
 
 local Window = Library:CreateWindow({
-    Title = "Ivory", Icon = "rbxassetid://110090697336524",
+    Title = "Ivory", Icon = "swords",
     Footer = { "v1.4 |", { Text = isLobby and "Lobby" or "Game", Copyable = true }, "|", { Text = tostring(LocalPlayer.UserId), Copyable = true } },
     CopyableFooter = true, FuzzySearch = true, SearchValues = true, Minimizable = true,
     MinimizeKeybind = Enum.KeyCode.RightBracket, MinimizedWidth = 280, NotifySide = "Right",
@@ -69,10 +69,10 @@ SaveManager:SetSubFolder(isLobby and "lobby" or "game")
 local Remotes = ReplicatedStorage:WaitForChild("Remotes", 5)
 local function getRemote(name) if Remotes then return Remotes:FindFirstChild(name) end return nil end
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "rbxassetid://110090697336524" })
-local PlayerTab = Window:AddTab({ Name = "Player", Icon = "rbxassetid://110090697336524" })
-local FarmTab = Window:AddTab({ Name = "Farm", Icon = "rbxassetid://110090697336524" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524" })
+local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
+local PlayerTab = Window:AddTab({ Name = "Player", Icon = "swords" })
+local FarmTab = Window:AddTab({ Name = "Farm", Icon = "swords" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
 
 local AutoSubTab = MainTab:AddSubTab("Automation", "rbxassetid://110090697336524")
 local CoreGroup = AutoSubTab:AddLeftGroupbox("Core Features", "box-icon")

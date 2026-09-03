@@ -178,7 +178,7 @@ local SpectateTarget = ReplicatedStorage:WaitForChild("SpectateTarget", 10)
 -- ═══════════════════════════════════════════════════════
 local Window = Library:CreateWindow({
 	Title = "Ivory",
-	Icon = "rbxassetid://110090697336524",
+	Icon = "swords",
 	Footer = {
 		"v2.0 |",
 		{ Text = "Game", Copyable = true },
@@ -208,7 +208,7 @@ local Window = Library:CreateWindow({
 -- ═══════════════════════════════════════════════════════
 --  TABS (matching template)
 -- ═══════════════════════════════════════════════════════
-local MainTab = Window:AddTab({ Name = "Main", Icon = "rbxassetid://110090697336524" })
+local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
 
 -- ═══════════════════════════════════════════════════════
 --  MAIN > COMBAT
@@ -671,7 +671,7 @@ MoveMisc:AddToggle("Click Teleport", {
 -- ═══════════════════════════════════════════════════════
 --  SETTINGS TAB (always last)
 -- ═══════════════════════════════════════════════════════
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
 
 ThemeManager:SetLibrary(Library)
 SaveManager:SetLibrary(Library)

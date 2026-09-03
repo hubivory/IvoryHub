@@ -28,7 +28,7 @@ Library.ShowToggleFrameInKeybinds = true
 
 local Window = Library:CreateWindow({
 	Title = "Ivory | MM2",
-	Icon = "rbxassetid://110090697336524",
+	Icon = "swords",
 	NotifySide = "Right",
 	ShowCustomCursor = false,
 	Minimizable = true,
@@ -42,10 +42,10 @@ local Window = Library:CreateWindow({
 })
 
 local Tabs = {
-	Main = Window:AddTab({ Name = "ESP", Icon = "rbxassetid://110090697336524", Description = "Boxes, Names, Roles" }),
-	Visuals = Window:AddTab({ Name = "Visuals", Icon = "rbxassetid://110090697336524", Description = "Highlights & X-Ray" }),
-	Aim = Window:AddTab({ Name = "Aim", Icon = "rbxassetid://110090697336524", Description = "Aimbot" }),
-	Settings = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524", Description = "UI & Config" }),
+	Main = Window:AddTab({ Name = "ESP", Icon = "swords", Description = "Boxes, Names, Roles" }),
+	Visuals = Window:AddTab({ Name = "Visuals", Icon = "swords", Description = "Highlights & X-Ray" }),
+	Aim = Window:AddTab({ Name = "Aim", Icon = "swords", Description = "Aimbot" }),
+	Settings = Window:AddTab({ Name = "Settings", Icon = "swords", Description = "UI & Config" }),
 }
 
 local State = {

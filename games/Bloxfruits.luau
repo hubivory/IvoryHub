@@ -1065,7 +1065,7 @@ end
 
 local Window = Library:CreateWindow({
 	Title = "Ivory",
-	Icon = "rbxassetid://110090697336524",
+	Icon = "swords",
 	Footer = {
 		"v2.0 |",
 		{ Text = "Game", Copyable = true },
@@ -1092,12 +1092,12 @@ local Window = Library:CreateWindow({
 	},
 })
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "rbxassetid://110090697336524" })
-local CombatTab = Window:AddTab({ Name = "Combat", Icon = "rbxassetid://110090697336524" })
-local TeleportTab = Window:AddTab({ Name = "Teleport", Icon = "rbxassetid://110090697336524" })
-local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "rbxassetid://110090697336524" })
-local PlayerTab = Window:AddTab({ Name = "Player", Icon = "rbxassetid://110090697336524" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524" })
+local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
+local CombatTab = Window:AddTab({ Name = "Combat", Icon = "swords" })
+local TeleportTab = Window:AddTab({ Name = "Teleport", Icon = "swords" })
+local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "swords" })
+local PlayerTab = Window:AddTab({ Name = "Player", Icon = "swords" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
 
 local FarmSub = MainTab:AddSubTab("Farming", "rbxassetid://110090697336524")
 local DiscordGroup = FarmSub:AddLeftGroupbox("Community", "users")

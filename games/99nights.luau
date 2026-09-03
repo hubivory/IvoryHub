@@ -21,7 +21,7 @@ local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
 
 local Window = Library:CreateWindow({
 	Title = "Ivory",
-	Icon = "rbxassetid://110090697336524",
+	Icon = "swords",
 	Footer = {
 		"v1.4 |",
 		{ Text = "99 Nights", Copyable = true },
@@ -186,7 +186,7 @@ local function stopAntiWolfLoop() if antiWolfLoopConn then antiWolfLoopConn:Disc
 local function restoreAllWolves() for model in pairs(antiWolfOriginals) do pcall(function() restoreWolf(model) end) end; antiWolfOriginals = {} end
 local function setupAntiWolfDescendant() local folder = workspace:FindFirstChild("Characters") or workspace; antiWolfConn = folder.DescendantAdded:Connect(function(desc) if not antiWolfEnabled then return end; if desc:IsA("Model") and isWolf(desc) then saveWolfState(desc); for part in pairs(antiWolfOriginals[desc].parts) do pcall(function() part.Anchored = true; part.CanCollide = false end) end else local parent = desc.Parent; while parent and parent ~= workspace and parent ~= folder do if isWolf(parent) then saveWolfState(parent); for part in pairs(antiWolfOriginals[parent].parts) do pcall(function() part.Anchored = true; part.CanCollide = false end) end; break end; parent = parent.Parent end end end) end
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "rbxassetid://110090697336524" })
+local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
 local DiscordGrp = MainTab:AddLeftGroupbox("Discord", "link")
 local DiscordLabel = DiscordGrp:AddLabel({ Text = "Join discord for free keys!", DoesWrap = true, Size = 26 })
 
@@ -207,7 +207,7 @@ end)
 
 DiscordGrp:AddButton("Copy Discord Link", function() pcall(function() setclipboard("https://discord.gg/ivory") end); notify("Discord Link Copied!", "Success") end)
 
-local AutoTab = Window:AddTab({ Name = "Automation", Icon = "rbxassetid://110090697336524" })
+local AutoTab = Window:AddTab({ Name = "Automation", Icon = "swords" })
 local AutoGrp = AutoTab:AddLeftGroupbox("Automation", "zap")
 AutoGrp:AddToggle("auto_days", { Text = "Auto Days", Default = false, Callback = function(val) autoDaysEnabled = val; notify("Automation", val and "Auto Days Enabled" or "Auto Days Disabled") end })
 AutoGrp:AddToggle("auto_kill_bunny", { Text = "Auto Kill Bunny", Default = false, Callback = function(val) autoKillBunny = val; local hrp = getHRP() if val then if hrp then bunnyCFrame = hrp.CFrame end; updateBunnyTarget() else if bunnyCFrame and hrp then hrp.CFrame = bunnyCFrame end end; notify("Automation", val and "Auto Kill Bunny Enabled" or "Auto Kill Bunny Disabled") end })
@@ -219,7 +219,7 @@ addTweenLostChild("Lost Child"); addTweenLostChild("Lost Child2"); addTweenLostC
 AutoGrp:AddToggle("auto_eat", { Text = "Auto Eat Cooked Morsel", Default = false, Callback = function(val) if val then local function eatMorsel() local items = workspace:FindFirstChild("Items") if items then for _, item in ipairs(items:GetChildren()) do if item.Name == "Cooked Morsel" then if REMOTES.RequestConsumeItem then REMOTES.RequestConsumeItem:InvokeServer(item) end; break end end end end; pcall(function() local hungerBar = LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("Interface"):WaitForChild("StatBars"):WaitForChild("HungerBar"):WaitForChild("Bar"); autoEatConn = hungerBar:GetPropertyChangedSignal("Size"):Connect(function() if hungerBar.Size.X.Scale < 0.9 then eatMorsel() end end); if hungerBar.Size.X.Scale < 0.9 then eatMorsel() end end); notify("Food", "Auto Eat Active") else if autoEatConn then autoEatConn:Disconnect(); autoEatConn = nil end; notify("Food", "Auto Eat Disabled") end end })
 AutoGrp:AddButton("Cook Foods", function() local hrp = getHRP() if not hrp then return end; local campfire = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Campground") and workspace.Map.Campground:FindFirstChild("MainFire") if not campfire or not campfire:IsA("Model") or not campfire.PrimaryPart then notify("Food", "Campfire not found"); return end; local items = workspace:FindFirstChild("Items") if items then for _, item in ipairs(items:GetChildren()) do if item:IsA("Model") and item.PrimaryPart and (string.find(item.Name, "Morsel") or string.find(item.Name, "Steak")) then if REMOTES.RequestStartDraggingItem and REMOTES.StopDraggingItem then REMOTES.RequestStartDraggingItem:FireServer(item); item:PivotTo(campfire.PrimaryPart.CFrame * CFrame.new(0,8,0)); REMOTES.StopDraggingItem:FireServer(item) else item:PivotTo(campfire.PrimaryPart.CFrame * CFrame.new(0,8,0)) end end end; notify("Food", "Cooked raw foods!") end end)
 
-local CollTab = Window:AddTab({ Name = "Item Collection", Icon = "rbxassetid://110090697336524" })
+local CollTab = Window:AddTab({ Name = "Item Collection", Icon = "swords" })
 local CollGrp = CollTab:AddLeftGroupbox("Item Collection", "package")
 CollGrp:AddButton("Stop All Brings", function() stopAllBrings() end)
 makeBringToggle(CollGrp, "Fuel Items", "Fuel", FUEL_ITEMS, nil)
@@ -233,20 +233,20 @@ makeBringToggle(CollGrp, "Coal Only", "CoalSingle", nil, "Coal")
 makeBringToggle(CollGrp, "Microwaves Only", "MicrowaveSingle", nil, "Broken Microwave")
 makeBringToggle(CollGrp, "Steaks Only", "SteakSingle", nil, "Steak")
 
-local CombatTab = Window:AddTab({ Name = "Combat & Farming", Icon = "rbxassetid://110090697336524" })
+local CombatTab = Window:AddTab({ Name = "Combat & Farming", Icon = "swords" })
 local CombatGrp = CombatTab:AddLeftGroupbox("Combat", "swords")
 CombatGrp:AddToggle("kill_aura", { Text = "Kill Aura", Default = false, Callback = function(val) killAuraEnabled = val; notify("Combat", val and "Kill Aura Active" or "Kill Aura Disabled") end })
 CombatGrp:AddSlider("kill_aura_range", { Text = "Kill Aura Distance", Default = 70, Min = 20, Max = 1200, Rounding = 0, Callback = function(val) killAuraRange = val end })
 CombatGrp:AddToggle("auto_chop", { Text = "Auto Chop Tree", Default = false, Callback = function(val) autoChopEnabled = val; notify("Combat", val and "Tree Aura Active" or "Tree Aura Disabled") end })
 CombatGrp:AddSlider("auto_chop_range", { Text = "Tree Aura Distance", Default = 100, Min = 20, Max = 100, Rounding = 0, Callback = function(val) autoChopRange = val end })
 
-local EspTab = Window:AddTab({ Name = "Visuals & ESP", Icon = "rbxassetid://110090697336524" })
+local EspTab = Window:AddTab({ Name = "Visuals & ESP", Icon = "swords" })
 local EspGrp = EspTab:AddLeftGroupbox("Item ESP", "eye")
 EspGrp:AddToggle("esp_fuel", { Text = "Fuel ESP", Default = false, Callback = function(val) espState.Fuel = val; if val then setupESP("Fuel", FUEL_ITEMS, Color3.fromRGB(255,215,0)) else stopESP("Fuel") end end })
 EspGrp:AddToggle("esp_metal", { Text = "Metal ESP", Default = false, Callback = function(val) espState.Metal = val; if val then setupESP("Metal", METAL_ITEMS, Color3.fromRGB(255,0,0)) else stopESP("Metal") end end })
 EspGrp:AddToggle("esp_food", { Text = "Food ESP", Default = false, Callback = function(val) espState.Food = val; if val then setupESP("Food", FOOD_ITEMS, Color3.fromRGB(0,255,0)) else stopESP("Food") end end })
 
-local PlayerTab = Window:AddTab({ Name = "Player & Utilities", Icon = "rbxassetid://110090697336524" })
+local PlayerTab = Window:AddTab({ Name = "Player & Utilities", Icon = "swords" })
 local SpeedGrp = PlayerTab:AddLeftGroupbox("Movement", "bar-chart-2")
 local MiscGrp = PlayerTab:AddRightGroupbox("Utilities", "sliders")
 local customSpeed = 70; local defaultSpeed = 16; local speedEnabled = false
@@ -272,7 +272,7 @@ MiscGrp:AddButton("Anti-Wolf GUI", function()
 	setupAntiWolfDescendant()
 end)
 
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
 
 local CreditsGrp = SettingsTab:AddLeftGroupbox("Credits", "heart")
 local CreditsLabel = CreditsGrp:AddLabel({ Text = " ", DoesWrap = true, Size = 26 })

@@ -2458,7 +2458,7 @@ do
 
 	local Window = Library:CreateWindow({
 		Title = "Ivory",
-		Icon = "rbxassetid://110090697336524",
+		Icon = "swords",
 		Footer = {
 			"v2.1 |",
 			{ Text = "Steal An Egg", Copyable = true },
@@ -2485,7 +2485,7 @@ do
 		},
 	})
 
-	local MainTab = Window:AddTab({ Name = "Main", Icon = "rbxassetid://110090697336524" })
+	local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
 
 	do
 		local Sub = MainTab:AddSubTab("Steal", "rbxassetid://110090697336524")
@@ -2561,7 +2561,7 @@ do
 	end
 
 	do
-		local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524" })
+		local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
 		ThemeManager:SetLibrary(Library)
 		SaveManager:SetLibrary(Library)
 		SaveManager:IgnoreThemeSettings()

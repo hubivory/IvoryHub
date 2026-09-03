@@ -66,7 +66,7 @@ end
 if W then
 
 local win = W:CreateWindow({
-    Title="Ivory", Icon = "rbxassetid://110090697336524",
+    Title="Ivory", Icon = "swords",
     Footer={"v1.7 |",{Text="Game",Copyable=true},"|",{Text=tostring(L.UserId),Copyable=true}},
     CopyableFooter=true, FuzzySearch=true, SearchValues=true,
     Minimizable=true, MinimizeKeybind=Enum.KeyCode.RightBracket,
@@ -74,10 +74,10 @@ local win = W:CreateWindow({
     CornerRadius=4, Animations={ToggleWindow=false,TabSwitch=false,Groupbox=false,Dropdown=false,KeyPicker=false,SubTabUnderline=true},
 })
 
-local MT = win:AddTab({Name="Home",Icon = "rbxassetid://110090697336524"})
-local PT = win:AddTab({Name="Player",Icon = "rbxassetid://110090697336524"})
-local WT = win:AddTab({Name="World",Icon = "rbxassetid://110090697336524"})
-local ST = win:AddTab({Name="Settings",Icon = "rbxassetid://110090697336524"})
+local MT = win:AddTab({Name="Home",Icon = "swords"})
+local PT = win:AddTab({Name="Player",Icon = "swords"})
+local WT = win:AddTab({Name="World",Icon = "swords"})
+local ST = win:AddTab({Name="Settings",Icon = "swords"})
 
 local QK = MT:AddSubTab("Quick Actions","rbxassetid://110090697336524")
 local AB = MT:AddSubTab("About","rbxassetid://110090697336524")

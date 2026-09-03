@@ -193,7 +193,7 @@ getgenv().InstanceApplyUiLayering = applyInstanceUiLayering
 
 local Window = Library:CreateWindow({
     Title = 'Ivory',
-    Icon = "rbxassetid://110090697336524",
+    Icon = "swords",
     Footer = 'Ivory Hub',
     Center = true,
     AutoShow = true,

@@ -662,7 +662,7 @@ local Toggles = Library.Toggles
 
 local Window = Library:CreateWindow({
 	Title = "Ivory",
-	Icon = "rbxassetid://110090697336524",
+	Icon = "swords",
 	Footer = {
 		"v1.4 |",
 		{ Text = isLobby and "Lobby" or "Game", Copyable = true },
@@ -690,7 +690,7 @@ local Window = Library:CreateWindow({
 })
 
 if isLobby then
-	local LobbyTab = Window:AddTab({ Name = "Lobby", Icon = "rbxassetid://110090697336524" })
+	local LobbyTab = Window:AddTab({ Name = "Lobby", Icon = "swords" })
 	local LSub = LobbyTab:AddSubTab("Automation", "rbxassetid://110090697336524")
 
 	local LG1 = LSub:AddLeftGroupbox("Chests", "package")
@@ -806,7 +806,7 @@ if isLobby then
 end
 
 if isGame then
-	local CombatTab = Window:AddTab({ Name = "Combat", Icon = "rbxassetid://110090697336524" })
+	local CombatTab = Window:AddTab({ Name = "Combat", Icon = "swords" })
 	local DefSub = CombatTab:AddSubTab("Defense", "rbxassetid://110090697336524")
 	local DG1 = DefSub:AddLeftGroupbox("Dodge", "move")
 	DG1:AddToggle("AutoDodge", {
@@ -866,7 +866,7 @@ if isGame then
 		NoUI = false,
 	})
 
-	local UpgTab = Window:AddTab({ Name = "Upgrades", Icon = "rbxassetid://110090697336524" })
+	local UpgTab = Window:AddTab({ Name = "Upgrades", Icon = "swords" })
 	local UpgSub = UpgTab:AddSubTab("Auto Select", "rbxassetid://110090697336524")
 	local UG1 = UpgSub:AddLeftGroupbox("Auto Upgrade", "arrow-up-circle")
 	UG1:AddToggle("AutoUpgrade", {
@@ -902,7 +902,7 @@ if isGame then
 		end
 	end)
 
-	local VisTab = Window:AddTab({ Name = "Visuals", Icon = "rbxassetid://110090697336524" })
+	local VisTab = Window:AddTab({ Name = "Visuals", Icon = "swords" })
 	local VisSub = VisTab:AddSubTab("ESP", "rbxassetid://110090697336524")
 	local VG1 = VisSub:AddLeftGroupbox("Enemy ESP", "eye")
 	VG1:AddToggle("ESP", {
@@ -934,7 +934,7 @@ if isGame then
 		end
 	end)
 
-	local AutoTab = Window:AddTab({ Name = "Auto", Icon = "rbxassetid://110090697336524" })
+	local AutoTab = Window:AddTab({ Name = "Auto", Icon = "swords" })
 	local AutoSub = AutoTab:AddSubTab("Post-Game", "rbxassetid://110090697336524")
 	local AG1 = AutoSub:AddLeftGroupbox("After Death", "skull")
 	AG1:AddToggle("AutoContinue", {
@@ -955,7 +955,7 @@ if isGame then
 		Callback = function(v) STATE.AutoLobby = v end,
 	})
 
-	local PlayerTab = Window:AddTab({ Name = "Player", Icon = "rbxassetid://110090697336524" })
+	local PlayerTab = Window:AddTab({ Name = "Player", Icon = "swords" })
 	local PlSub = PlayerTab:AddSubTab("Movement", "rbxassetid://110090697336524")
 	local PG1 = PlSub:AddLeftGroupbox("Speed", "zap")
 	PG1:AddToggle("SpeedBoost", {
@@ -1002,7 +1002,7 @@ else
 	SaveManager:SetSubFolder("lobby")
 end
 
-	local SettingsTab = Window:AddTab({ Name = "UI Settings", Icon = "rbxassetid://110090697336524" })
+	local SettingsTab = Window:AddTab({ Name = "UI Settings", Icon = "swords" })
 local CreditGroup = SettingsTab:AddLeftGroupbox("Credits", "heart")
 local CreditLabel = CreditGroup:AddLabel({ Text = "", Size = 26, DoesWrap = true })
 local CreditTL = CreditLabel.TextLabel

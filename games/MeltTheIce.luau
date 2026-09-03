@@ -210,7 +210,7 @@ end
 
 local Window = Library:CreateWindow({
 	Title = "Ivory",
-	Icon = "rbxassetid://110090697336524",
+	Icon = "swords",
 	Footer = {
 		"v1.4 |",
 		{ Text = "Game", Copyable = true },
@@ -229,11 +229,11 @@ local Window = Library:CreateWindow({
 	CornerRadius = 4,
 })
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "rbxassetid://110090697336524" })
-local ShopTab = Window:AddTab({ Name = "Shop", Icon = "rbxassetid://110090697336524" })
-local PlayerTab = Window:AddTab({ Name = "Player", Icon = "rbxassetid://110090697336524" })
-local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "rbxassetid://110090697336524" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524" })
+local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
+local ShopTab = Window:AddTab({ Name = "Shop", Icon = "swords" })
+local PlayerTab = Window:AddTab({ Name = "Player", Icon = "swords" })
+local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "swords" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
 
 local AutoSub = MainTab:AddSubTab("Automation", "rbxassetid://110090697336524")
 local MeltGroup = AutoSub:AddLeftGroupbox("Melt", "flame")

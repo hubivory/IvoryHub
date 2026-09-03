@@ -53,7 +53,7 @@ local Toggles = Library.Toggles
 
 local Window = Library:CreateWindow({
 	Title = "Ivory",
-	Icon = "rbxassetid://110090697336524",
+	Icon = "swords",
 	Footer = {
 		"Rocks RNG |",
 		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
@@ -92,7 +92,7 @@ end
 --// TAB 1: CRASH TRACKER
 --// ========================================================
 
-local CrashTab = Window:AddTab({ Name = "Crash Tracker", Icon = "rbxassetid://110090697336524" })
+local CrashTab = Window:AddTab({ Name = "Crash Tracker", Icon = "swords" })
 local CrashSub = CrashTab:AddSubTab("Live Data", "rbxassetid://110090697336524")
 local CrashSub2 = CrashTab:AddSubTab("Session", "rbxassetid://110090697336524")
 
@@ -217,7 +217,7 @@ getgenv().RocksCrashTracker.revealConn = revealConn
 --// TAB 2: CASH-OUT ASSIST
 --// ========================================================
 
-local AssistTab = Window:AddTab({ Name = "Cash-Out Assist", Icon = "rbxassetid://110090697336524" })
+local AssistTab = Window:AddTab({ Name = "Cash-Out Assist", Icon = "swords" })
 local AssistSub = AssistTab:AddSubTab("Suggestion", "rbxassetid://110090697336524")
 local AG1 = AssistSub:AddLeftGroupbox("Suggested Cash-Out", "target")
 
@@ -276,7 +276,7 @@ getgenv().RocksCrashTracker.assistConn = assistConn
 --// TAB 3: AUTO-LOOP
 --// ========================================================
 
-local AutoLoopTab = Window:AddTab({ Name = "Auto-Loop", Icon = "rbxassetid://110090697336524" })
+local AutoLoopTab = Window:AddTab({ Name = "Auto-Loop", Icon = "swords" })
 local AutoLoopSub = AutoLoopTab:AddSubTab("Auto-Fill", "rbxassetid://110090697336524")
 local ALG1 = AutoLoopSub:AddLeftGroupbox("Auto-Fill Auto-Roll", "repeat")
 
@@ -408,7 +408,7 @@ getgenv().RocksCrashTracker.autoLoopRollConn = autoLoopRollConn
 --// TAB 4: AUTO COLLECT
 --// ========================================================
 
-local AutoCollectTab = Window:AddTab({ Name = "Auto Collect", Icon = "rbxassetid://110090697336524" })
+local AutoCollectTab = Window:AddTab({ Name = "Auto Collect", Icon = "swords" })
 local AutoCollectSub = AutoCollectTab:AddSubTab("Shards", "rbxassetid://110090697336524")
 local ACG1 = AutoCollectSub:AddLeftGroupbox("Auto Collect Shards", "magnet")
 
@@ -514,7 +514,7 @@ getgenv().RocksCrashTracker.shardSyncConn = shardSyncConn
 --// TAB 5: RUNE SHOP
 --// ========================================================
 
-local ShopTab = Window:AddTab({ Name = "Rune Shop", Icon = "rbxassetid://110090697336524" })
+local ShopTab = Window:AddTab({ Name = "Rune Shop", Icon = "swords" })
 local ShopSub = ShopTab:AddSubTab("Auto-Buy", "rbxassetid://110090697336524")
 local SG1 = ShopSub:AddLeftGroupbox("Auto-Buy Runes", "shopping-cart")
 
@@ -637,7 +637,7 @@ getgenv().RocksCrashTracker.shopLoopThread = shopLoopThread
 --// TAB 6: LIVE EVENTS
 --// ========================================================
 
-local EventsTab = Window:AddTab({ Name = "Live Events", Icon = "rbxassetid://110090697336524" })
+local EventsTab = Window:AddTab({ Name = "Live Events", Icon = "swords" })
 local EventsSub = EventsTab:AddSubTab("World Event", "rbxassetid://110090697336524")
 local EventsSub2 = EventsTab:AddSubTab("Luck Boost", "rbxassetid://110090697336524")
 
@@ -736,7 +736,7 @@ getgenv().RocksCrashTracker.eventsLoopThread = eventsLoopThread
 --// TAB 7: CLAIMS & JUNK
 --// ========================================================
 
-local ClaimsTab = Window:AddTab({ Name = "Claims & Junk", Icon = "rbxassetid://110090697336524" })
+local ClaimsTab = Window:AddTab({ Name = "Claims & Junk", Icon = "swords" })
 local ClaimsSub = ClaimsTab:AddSubTab("Index Stars", "rbxassetid://110090697336524")
 local ClaimsSub2 = ClaimsTab:AddSubTab("Junk Crush", "rbxassetid://110090697336524")
 
@@ -885,7 +885,7 @@ CG2c:AddButton({
 --// TAB 8: PLOT OPTIMIZER
 --// ========================================================
 
-local PlotTab = Window:AddTab({ Name = "Plot Optimizer", Icon = "rbxassetid://110090697336524" })
+local PlotTab = Window:AddTab({ Name = "Plot Optimizer", Icon = "swords" })
 local PlotSub = PlotTab:AddSubTab("Income", "rbxassetid://110090697336524")
 local PlotSub2 = PlotTab:AddSubTab("Bulk Actions", "rbxassetid://110090697336524")
 
@@ -1394,7 +1394,7 @@ SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
 ThemeManager:SetFolder("RocksRNGHub")
 SaveManager:SetFolder("RocksRNGHub")
 
-local SettingsTab = Window:AddTab({ Name = "UI Settings", Icon = "rbxassetid://110090697336524" })
+local SettingsTab = Window:AddTab({ Name = "UI Settings", Icon = "swords" })
 local CreditGroup = SettingsTab:AddLeftGroupbox("Credits", "heart")
 local CreditLabel = CreditGroup:AddLabel({ Text = "", Size = 26, DoesWrap = true })
 local CreditTL = CreditLabel.TextLabel

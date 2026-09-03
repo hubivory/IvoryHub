@@ -347,19 +347,19 @@ end end)
 -- ---------------------------------------
 local Window = Library:CreateWindow({
     Title = "Ivory",
-    Icon = "rbxassetid://110090697336524",
+    Icon = "swords",
     Footer = { "Ivory | v1.0", { Text = "v1.0", Copyable = true } },
     Minimizable = true, FuzzySearch = true, SearchValues = true,
 })
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "rbxassetid://110090697336524", Description = "Core Automation" })
-local ShopTab = Window:AddTab({ Name = "Shop", Icon = "rbxassetid://110090697336524", Description = "Buying & Inventory" })
-local PlayerTab = Window:AddTab({ Name = "Player", Icon = "rbxassetid://110090697336524", Description = "Character Mods" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524", Description = "Themes & UI" })
-local LogsTab = Window:AddTab({ Name = "Logs", Icon = "rbxassetid://110090697336524", Description = "Money & Status" })
+local MainTab = Window:AddTab({ Name = "Main", Icon = "swords", Description = "Core Automation" })
+local ShopTab = Window:AddTab({ Name = "Shop", Icon = "swords", Description = "Buying & Inventory" })
+local PlayerTab = Window:AddTab({ Name = "Player", Icon = "swords", Description = "Character Mods" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords", Description = "Themes & UI" })
+local LogsTab = Window:AddTab({ Name = "Logs", Icon = "swords", Description = "Money & Status" })
 
 -- --- MAIN TAB: Automation Sub-Tab ---
-local AutoSub = MainTab:AddSubTab({ Name = "Automation", Icon = "rbxassetid://110090697336524" })
+local AutoSub = MainTab:AddSubTab({ Name = "Automation", Icon = "swords" })
 
 local FoodBox = AutoSub:AddLeftGroupbox("Food", "utensils")
 FoodBox:AddToggle("AutoServe", { Text = "Auto Serve Food", Default = false })
@@ -391,7 +391,7 @@ DelaysBox:AddSlider("CleanDelay", { Text = "Clean Delay", Default = 2, Min = 0.5
 DelaysBox:AddSlider("WashDelay", { Text = "Wash Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
 
 -- --- MAIN TAB: Furniture & Menu Sub-Tab ---
-local FurnMenuSub = MainTab:AddSubTab({ Name = "Furniture & Menu", Icon = "rbxassetid://110090697336524" })
+local FurnMenuSub = MainTab:AddSubTab({ Name = "Furniture & Menu", Icon = "swords" })
 
 local FurnBox = FurnMenuSub:AddLeftGroupbox("Furniture", "armchair")
 FurnBox:AddToggle("AutoBuyFurniture", { Text = "Auto Buy Furniture", Default = false })
@@ -440,7 +440,7 @@ MenuBox:AddButton({ Text = "Enable All Menus", Func = function()
 end })
 
 -- --- SHOP TAB: Groceries Sub-Tab ---
-local GrocerySub = ShopTab:AddSubTab({ Name = "Groceries", Icon = "rbxassetid://110090697336524" })
+local GrocerySub = ShopTab:AddSubTab({ Name = "Groceries", Icon = "swords" })
 
 local GroceryBox = GrocerySub:AddLeftGroupbox("Ingredients", "apple")
 GroceryBox:AddToggle("AutoBuyIngredients", { Text = "Auto Buy Ingredients", Default = false, Tooltip = "Auto-buys ingredients when stock is low" })
@@ -455,7 +455,7 @@ UnlockBox:AddToggle("AutoUnlockTables", { Text = "Auto Unlock Tables", Default =
 UnlockBox:AddButton({ Text = "Upgrade to Golden Pan", Func = function() pcall(function() UpgradeToGoldenPan:InvokeServer() end) end })
 
 -- --- SHOP TAB: Boosts & Store Sub-Tab ---
-local BoostStoreSub = ShopTab:AddSubTab({ Name = "Boosts & Store", Icon = "rbxassetid://110090697336524" })
+local BoostStoreSub = ShopTab:AddSubTab({ Name = "Boosts & Store", Icon = "swords" })
 
 local BoostBox = BoostStoreSub:AddLeftGroupbox("Boosts", "zap")
 BoostBox:AddToggle("AutoUseBoosts", { Text = "Auto Use Boosts", Default = false, Tooltip = "Auto-uses Cash/Luck/UltraLuck potions" })
@@ -469,7 +469,7 @@ StoreBox:AddToggle("AutoBuyMysteryBox", { Text = "Auto Buy Mystery Box", Default
 StoreBox:AddToggle("AutoOpenMysteryBox", { Text = "Auto Open Mystery Box", Default = false, Tooltip = "Auto-opens mystery boxes when available" })
 
 -- --- PLAYER TAB: Character Sub-Tab ---
-local CharSub = PlayerTab:AddSubTab({ Name = "Character", Icon = "rbxassetid://110090697336524" })
+local CharSub = PlayerTab:AddSubTab({ Name = "Character", Icon = "swords" })
 
 local CharBox = CharSub:AddLeftGroupbox("Movement", "person-standing")
 CharBox:AddSlider("WalkSpeed", { Text = "Walk Speed", Default = 16, Min = 16, Max = 100, Rounding = 0 })
@@ -481,7 +481,7 @@ local EspBox = CharSub:AddRightGroupbox("Visuals", "eye")
 EspBox:AddToggle("EspNPCs", { Text = "ESP NPCs", Default = false, Tooltip = "Highlights all NPCs with colored boxes" })
 
 -- --- PLAYER TAB: Teleports Sub-Tab ---
-local TPSub = PlayerTab:AddSubTab({ Name = "Teleports", Icon = "rbxassetid://110090697336524" })
+local TPSub = PlayerTab:AddSubTab({ Name = "Teleports", Icon = "swords" })
 
 local PlotTPBox = TPSub:AddLeftGroupbox("My Plot", "map-pin")
 PlotTPBox:AddButton({ Text = "Teleport to Counter", Func = function() local p = getPlot() if p then local c = p:FindFirstChild("Counter") if c then local cp = c:FindFirstChild("Comp", true) if cp then tp(cp.CFrame * CFrame.new(0,3,0)) end end end end })
@@ -494,8 +494,8 @@ WorldTPBox:AddButton({ Text = "Teleport to Grocery", Func = function() local g =
 WorldTPBox:AddButton({ Text = "Teleport to Shop", Func = function() local s = Workspace:FindFirstChild("SHOP") if s then local sh = s:FindFirstChild("Shop") if sh then local pp = sh:FindFirstChild("ProximityPrompt") if pp and pp.Parent:IsA("BasePart") then tp(pp.Parent.CFrame * CFrame.new(0,3,0)) end end end end })
 
 -- --- SETTINGS TAB ---
-local ThemesSub = SettingsTab:AddSubTab({ Name = "Themes & UI", Icon = "rbxassetid://110090697336524" })
-local ConfigSub = SettingsTab:AddSubTab({ Name = "Config", Icon = "rbxassetid://110090697336524" })
+local ThemesSub = SettingsTab:AddSubTab({ Name = "Themes & UI", Icon = "swords" })
+local ConfigSub = SettingsTab:AddSubTab({ Name = "Config", Icon = "swords" })
 
 -- LOGS TAB
 local StatusBox = LogsTab:AddLeftGroupbox("Status", "activity")

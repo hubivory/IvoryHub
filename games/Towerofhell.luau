@@ -35,7 +35,7 @@ SaveManager:SetSubFolder("toh")
 
 local Window = Library:CreateWindow({
     Title = "Ivory",
-    Icon = "rbxassetid://110090697336524",
+    Icon = "swords",
     Footer = {
         "v1.4 |",
         { Text = "Game", Copyable = true },
@@ -64,14 +64,14 @@ local Window = Library:CreateWindow({
 Window:SetCornerRadius(Tokens.cornerRadius)
 
 local Tabs = {
-    Main = Window:AddTab({ Name = "Tower", Icon = "rbxassetid://110090697336524" }),
-    Movement = Window:AddTab({ Name = "Movement", Icon = "rbxassetid://110090697336524" }),
-    Settings = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524" }),
+    Main = Window:AddTab({ Name = "Tower", Icon = "swords" }),
+    Movement = Window:AddTab({ Name = "Movement", Icon = "swords" }),
+    Settings = Window:AddTab({ Name = "Settings", Icon = "swords" }),
 }
 
 Tabs.Main:SetSubTabAlignment("Center")
-local AutoSubTab = Tabs.Main:AddSubTab({ Name = "Auto Win", Icon = "rbxassetid://110090697336524" })
-local SkipSubTab = Tabs.Main:AddSubTab({ Name = "Skip", Icon = "rbxassetid://110090697336524" })
+local AutoSubTab = Tabs.Main:AddSubTab({ Name = "Auto Win", Icon = "swords" })
+local SkipSubTab = Tabs.Main:AddSubTab({ Name = "Skip", Icon = "swords" })
 
 local State = { AutoWinEnabled = false, AutoWinDelay = 1.2, InfiniteJump = false, JumpHeight = 50 }
 

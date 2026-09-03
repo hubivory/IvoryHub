@@ -1,4 +1,4 @@
-﻿local genv = getgenv()
+local genv = getgenv()
 local Library = nil
 local ThemeManager = nil
 local SaveManager = nil
@@ -138,12 +138,12 @@ local function AutoUpgradeLives()
     end
 end
 
--- ═══════════════════════════════════════
+-- ---------------------------------------
 -- WINDOW
--- ═══════════════════════════════════════
+-- ---------------------------------------
 local Window = Library:CreateWindow({
     Title = "Ivory",
-    Icon = "rbxassetid://110090697336524",
+    Icon = "swords",
     Footer = {
         "v1.4 |",
         { Text = "Build A Burger", Copyable = true },
@@ -165,7 +165,7 @@ local MainTab = Window:AddTab({ Name = "Main", Description = "Automation" })
 local DelaysTab = Window:AddTab({ Name = "Delays", Description = "Adjust Delays" })
 local SettingsTab = Window:AddTab({ Name = "Settings", Description = "Themes & UI" })
 
--- ═══ MAIN TAB: Automation Sub-Tab ═══
+-- --- MAIN TAB: Automation Sub-Tab ---
 local AutoSub = MainTab:AddSubTab("Automation")
 
 local BurgerBox = AutoSub:AddLeftGroupbox("Burger")
@@ -180,7 +180,7 @@ local EconBox = AutoSub:AddLeftGroupbox("Economy")
 EconBox:AddToggle("AutoSell", { Text = "Auto Sell", Default = false, Callback = function(v) Settings.AutoSellEnabled = v if v then task.spawn(AutoSell) end end })
 EconBox:AddToggle("AutoCollect", { Text = "Auto Collect Cash", Default = false, Callback = function(v) Settings.AutoCollectEnabled = v if v then task.spawn(AutoCollect) end end })
 
--- ═══ DELAYS TAB ═══
+-- --- DELAYS TAB ---
 local DelaySub = DelaysTab:AddSubTab("Delays")
 
 local DL1 = DelaySub:AddLeftGroupbox("Delays (seconds)")
@@ -193,7 +193,7 @@ local DL2 = DelaySub:AddRightGroupbox("More Delays")
 DL2:AddSlider("UpgradeFloorsDelay", { Text = "Upgrade Floors Delay", Default = 0.5, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s", Callback = function(v) Settings.UpgradeFloorsDelay = v end })
 DL2:AddSlider("UpgradeLivesDelay", { Text = "Upgrade Lives Delay", Default = 0.5, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s", Callback = function(v) Settings.UpgradeLivesDelay = v end })
 
--- ═══ SETTINGS TAB ═══
+-- --- SETTINGS TAB ---
 local ThemesSub = SettingsTab:AddSubTab("Themes & UI")
 local ConfigSub = SettingsTab:AddSubTab("Config")
 

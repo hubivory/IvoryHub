@@ -17,7 +17,7 @@ _G.espSkeletons = false
 _G.ESP_ENABLED = false
 
 local Window = Library:CreateWindow({
-	Title = "Ivory", Icon = "rbxassetid://110090697336524",
+	Title = "Ivory", Icon = "swords",
 	Footer = {"Operation One |", {Text = tostring(LocalPlayer.UserId), Copyable = true}},
 	CopyableFooter = true, FuzzySearch = true, SearchValues = true,
 	Minimizable = true,
@@ -419,7 +419,7 @@ RunService:BindToRenderStep("DynamicZeroRecoil", Enum.RenderPriority.Camera.Valu
 end)
 
 -- ==================== TABS ====================
-local CombatTab = Window:AddTab({ Name = "Combat", Icon = "rbxassetid://110090697336524" })
+local CombatTab = Window:AddTab({ Name = "Combat", Icon = "swords" })
 local CombatSub = CombatTab:AddSubTab("Combat", "rbxassetid://110090697336524")
 local DiscordGrp = CombatSub:AddLeftGroupbox("Discord", "link")
 local CombatLeft = CombatSub:AddLeftGroupbox("No Recoil", "crosshair")
@@ -523,7 +523,7 @@ NoRecoilSmoothRef = CombatLeft:AddSlider("NoRecoilSmooth", {
 
 -- ==================== ESP TAB ====================
 local tracerStartPos = "bottom"
-local ESPTab = Window:AddTab({ Name = "ESP", Icon = "rbxassetid://110090697336524" })
+local ESPTab = Window:AddTab({ Name = "ESP", Icon = "swords" })
 local ESPSub = ESPTab:AddSubTab("ESP", "rbxassetid://110090697336524")
 local ESPGrp = ESPSub:AddLeftGroupbox("ESP Settings", "eye")
 local ChamsGrp = ESPSub:AddRightGroupbox("Chams", "palette")
@@ -1125,7 +1125,7 @@ ChamsTransRef = ChamsGrp:AddSlider("ChamsTrans", {
 })
 
 -- ==================== OPTIMIZATIONS TAB ====================
-local OptTab = Window:AddTab({ Name = "Optimizations", Icon = "rbxassetid://110090697336524" })
+local OptTab = Window:AddTab({ Name = "Optimizations", Icon = "swords" })
 local OptGrp = OptTab:AddSubTab("Performance", "rbxassetid://110090697336524"):AddLeftGroupbox("Performance", "zap")
 
 OptGrp:AddLabel("Warning: Optimize will break scoped weapons!")
@@ -1632,7 +1632,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ==================== UTILITY TAB ====================
-local UtilityTab = Window:AddTab({ Name = "Utilities", Icon = "rbxassetid://110090697336524" })
+local UtilityTab = Window:AddTab({ Name = "Utilities", Icon = "swords" })
 local UtilSub = UtilityTab:AddSubTab("Utilities", "rbxassetid://110090697336524")
 local UtilGrp = UtilSub:AddLeftGroupbox("Tools", "wrench")
 
@@ -1671,7 +1671,7 @@ UtilGrp:AddButton({ Text = "Apply Transparency to Breakables", Callback = functi
 end })
 
 -- ==================== SETTINGS TAB ====================
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
 local SettingsSub = SettingsTab:AddSubTab("Settings", "rbxassetid://110090697336524")
 local SettingsLeft = SettingsSub:AddLeftGroupbox("Credits", "heart")
 local SettingsRight = SettingsSub:AddRightGroupbox("Configuration", "save")

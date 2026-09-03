@@ -1293,7 +1293,7 @@ local isLobby = false
 
 local Window = Library:CreateWindow({
     Title = "Ivory",
-    Icon = "rbxassetid://110090697336524",
+    Icon = "swords",
     Footer = {
         "v1.4 |",
         { Text = isLobby and "Lobby" or "Game", Copyable = true },
@@ -1332,10 +1332,10 @@ SaveManager:SetSubFolder("game")
 -- Tabs
 ----------------------------------------------------------------------------
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "rbxassetid://110090697336524" })
-local FarmingTab = Window:AddTab({ Name = "Farming", Icon = "rbxassetid://110090697336524" })
-local ShopTab = Window:AddTab({ Name = "Shop", Icon = "rbxassetid://110090697336524" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524" })
+local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
+local FarmingTab = Window:AddTab({ Name = "Farming", Icon = "swords" })
+local ShopTab = Window:AddTab({ Name = "Shop", Icon = "swords" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
 
 -- Main Tab
 local MainSubTab = MainTab:AddSubTab("Overview", "rbxassetid://110090697336524")

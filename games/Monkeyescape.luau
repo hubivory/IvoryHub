@@ -33,7 +33,7 @@ pcall(function() isLobby = workspace:FindFirstChild("Lobby") ~= nil end)
 
 local Window = Library:CreateWindow({
     Title = "Ivory",
-    Icon = "rbxassetid://110090697336524",
+    Icon = "swords",
     Footer = {"v1.4 |", {Text=isLobby and "Lobby" or "Game", Copyable=true}, "|", {Text=tostring(LocalPlayer.UserId), Copyable=true}},
     CopyableFooter=true, Center=true, AutoShow=true, Resizable=true, ShowCustomCursor=true, NotifySide="Right",
     SearchbarSize=UDim2.fromScale(0.35,1), FuzzySearch=true, SearchValues=true, Minimizable=true, CornerRadius=10, ToggleKeybind=Enum.KeyCode.RightShift,
@@ -75,11 +75,11 @@ local BigNum = {
 }
 
 local Tabs = {
-    Main = Window:AddTab({Name="Main", Icon = "rbxassetid://110090697336524", Description="Dashboard"}),
-    Farming = Window:AddTab({Name="Farming", Icon = "rbxassetid://110090697336524", Description="Train & Wins & Collect"}),
-    Inventory = Window:AddTab({Name="Inventory", Icon = "rbxassetid://110090697336524", Description="Tails, Trails, Auras, Charms"}),
-    Rebirth = Window:AddTab({Name="Rebirth", Icon = "rbxassetid://110090697336524", Description="Rebirth"}),
-    Settings = Window:AddTab({Name="Settings", Icon = "rbxassetid://110090697336524", Description="Config"}),
+    Main = Window:AddTab({Name="Main", Icon = "swords", Description="Dashboard"}),
+    Farming = Window:AddTab({Name="Farming", Icon = "swords", Description="Train & Wins & Collect"}),
+    Inventory = Window:AddTab({Name="Inventory", Icon = "swords", Description="Tails, Trails, Auras, Charms"}),
+    Rebirth = Window:AddTab({Name="Rebirth", Icon = "swords", Description="Rebirth"}),
+    Settings = Window:AddTab({Name="Settings", Icon = "swords", Description="Config"}),
 }
 Tabs.Farming:SetSubTabAlignment("Center")
 local FarmTrain = Tabs.Farming:AddSubTab("Train")

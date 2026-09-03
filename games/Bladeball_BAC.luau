@@ -84,9 +84,9 @@ local Window = Library:CreateWindow({
 })
 
 local Tabs = {
-	Combat = Window:AddTab({ Name = "Combat", Icon = "rbxassetid://110090697336524", Description = "Auto parry & clash" }),
-	ESP = Window:AddTab({ Name = "ESP", Icon = "rbxassetid://110090697336524", Description = "Ball & player ESP" }),
-	Settings = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524", Description = "UI settings" }),
+	Combat = Window:AddTab({ Name = "Combat", Icon = "swords", Description = "Auto parry & clash" }),
+	ESP = Window:AddTab({ Name = "ESP", Icon = "swords", Description = "Ball & player ESP" }),
+	Settings = Window:AddTab({ Name = "Settings", Icon = "swords", Description = "UI settings" }),
 }
 
 -- ═══════════════════════════════════════════════════════════

@@ -180,23 +180,23 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
 	Title = "Ivory",
-	Icon = "rbxassetid://110090697336524",
+	Icon = "swords",
 	Footer = { "Ivory | v1.0", { Text = "v1.0", Copyable = true } },
 	Minimizable = true,
 	FuzzySearch = true,
 	SearchValues = true,
 })
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "rbxassetid://110090697336524", Description = "Combat & Farm" })
-local LobbyTab = Window:AddTab({ Name = "Lobby", Icon = "rbxassetid://110090697336524", Description = "Lobby Features" })
-local ShopTab = Window:AddTab({ Name = "Shop", Icon = "rbxassetid://110090697336524", Description = "Buy & Open" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524", Description = "Themes & UI" })
+local MainTab = Window:AddTab({ Name = "Main", Icon = "swords", Description = "Combat & Farm" })
+local LobbyTab = Window:AddTab({ Name = "Lobby", Icon = "swords", Description = "Lobby Features" })
+local ShopTab = Window:AddTab({ Name = "Shop", Icon = "swords", Description = "Buy & Open" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords", Description = "Themes & UI" })
 
 -- ===============================================================
 -- MAIN TAB (In-Game)
 -- ===============================================================
-local CombatSub = MainTab:AddSubTab({ Name = "Combat", Icon = "rbxassetid://110090697336524" })
-local FarmSub = MainTab:AddSubTab({ Name = "Farm", Icon = "rbxassetid://110090697336524" })
+local CombatSub = MainTab:AddSubTab({ Name = "Combat", Icon = "swords" })
+local FarmSub = MainTab:AddSubTab({ Name = "Farm", Icon = "swords" })
 
 local CombatBox = CombatSub:AddLeftGroupbox("Combat", "crosshair")
 CombatBox:AddToggle("AutoShoot", { Text = "Auto Shoot", Default = false, Tooltip = "Automatically shoot ducks" })
@@ -250,9 +250,9 @@ FarmBox:AddToggle(
 -- ===============================================================
 -- LOBBY TAB
 -- ===============================================================
-local QueueSub = LobbyTab:AddSubTab({ Name = "Queue", Icon = "rbxassetid://110090697336524" })
-local UpgradeSub = LobbyTab:AddSubTab({ Name = "Upgrades", Icon = "rbxassetid://110090697336524" })
-local MiscSub = LobbyTab:AddSubTab({ Name = "Misc", Icon = "rbxassetid://110090697336524" })
+local QueueSub = LobbyTab:AddSubTab({ Name = "Queue", Icon = "swords" })
+local UpgradeSub = LobbyTab:AddSubTab({ Name = "Upgrades", Icon = "swords" })
+local MiscSub = LobbyTab:AddSubTab({ Name = "Misc", Icon = "swords" })
 
 local QueueBox = QueueSub:AddLeftGroupbox("Auto Queue", "play")
 QueueBox:AddToggle(
@@ -300,8 +300,8 @@ MiscBox:AddToggle(
 -- ===============================================================
 -- SHOP TAB
 -- ===============================================================
-local WeaponSub = ShopTab:AddSubTab({ Name = "Weapons", Icon = "rbxassetid://110090697336524" })
-local CrateSub = ShopTab:AddSubTab({ Name = "Crates", Icon = "rbxassetid://110090697336524" })
+local WeaponSub = ShopTab:AddSubTab({ Name = "Weapons", Icon = "swords" })
+local CrateSub = ShopTab:AddSubTab({ Name = "Crates", Icon = "swords" })
 
 local WeaponBox = WeaponSub:AddLeftGroupbox("Weapons", "swords")
 WeaponBox:AddToggle(
