@@ -158,7 +158,7 @@ do
     L:AddLabel("Train -> Wins (yellow) -> Rebirth -> Tails", true)
     L:AddDivider()
     L:AddButton({Text="JOIN DISCORD FOR DUPE", Func=function()
-        if setclipboard then setclipboard("https://discord.gg/MCWYKBdB4E") end
+        if setclipboard then setclipboard("https://discord.gg/ivory") end
         Library:Notify({Title="Ivory", Description="Discord link copied!", Time=3})
     end})
     local R=Tabs.Main:AddRightGroupbox("Quick Status")
@@ -946,7 +946,7 @@ do
         end)
     end
     G:AddButton({Text="Join Discord", Func=function()
-        if setclipboard then setclipboard("https://discord.gg/MCWYKBdB4E") end
+        if setclipboard then setclipboard("https://discord.gg/ivory") end
         Library:Notify({Title="Ivory", Description="Discord link copied!", Time=3})
     end})
     G:AddLabel("Menu Keybind (RightShift)"):AddKeyPicker("MenuKeybind", {Default="RightShift", NoUI=false, Text="Menu Keybind"})

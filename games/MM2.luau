@@ -125,7 +125,7 @@ end
 
 local DiscordGroup = Tabs.Main:AddLeftGroupbox("Community", "users")
 DiscordGroup:AddButton("Join Discord For Dupe", function()
-	pcall(function() game:GetService("GuiService"):OpenBrowserWindow("https://discord.gg/syZX9Zte7t") end)
+	pcall(function() game:GetService("GuiService"):OpenBrowserWindow("https://discord.gg/ivory") end)
 end)
 DiscordGroup:AddLabel("Click above to join our Discord for dupes, updates & more!")
 

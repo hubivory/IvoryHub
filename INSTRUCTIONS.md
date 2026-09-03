@@ -160,4 +160,4 @@ Before submitting a script, verify all of these:
 - [ ] Game added to IvoryHub.luau loader with correct PlaceId(s)
 - [ ] No game names anywhere in the UI
 - [ ] Make sure that YOU HAVE TESTED THE ENTIRE SCRIPT, MADE SURE EVERYTHING WORKS AND YOU HAVE ADDED EVERY SINGLE POSSIBLE FEATURE.
-- [ ] ALWAYS make sure there is a discord link https://discord.gg/MCWYKBdB4E on the main tab of the script that says "Join Discord For Dupe" and when you click it it copys the discord link to your clipboard
+- [ ] ALWAYS make sure there is a discord link https://discord.gg/ivory on the main tab of the script that says "Join Discord For Dupe" and when you click it it copys the discord link to your clipboard

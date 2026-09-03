@@ -64,7 +64,7 @@ end
 local DiscordBox = Tabs.Combat:AddLeftGroupbox("Discord", "users")
 DiscordBox:AddLabel("JOIN DISCORD FOR DUPE")
 DiscordBox:AddButton("Copy Link", function()
-    if setclipboard then setclipboard("https://discord.gg/syZX9Zte7t") end
+    if setclipboard then setclipboard("https://discord.gg/ivory") end
     Library:Notify({ Title = "Discord", Description = "Copied to clipboard!", Time = 3 })
 end)
 
@@ -664,7 +664,7 @@ MenuGroup:AddButton("Unload", function()
 end)
 
 MenuGroup:AddButton("Join Discord", function()
-    if setclipboard then setclipboard("https://discord.gg/syZX9Zte7t") end
+    if setclipboard then setclipboard("https://discord.gg/ivory") end
     Library:Notify({ Title = "Discord", Description = "Copied to clipboard!", Time = 3 })
 end)
 

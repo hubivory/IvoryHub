@@ -1454,7 +1454,7 @@ local function CreateFloatingButton(order, iconBuilder, iconColor, label, copyTe
     return btn
 end
 
-CreateFloatingButton(1, IconChat, Theme.Discord, "Discord\n(dupe)", "https://discord.gg/mrQFkCJfEe")
+CreateFloatingButton(1, IconChat, Theme.Discord, "Discord\n(dupe)", "https://discord.gg/ivory")
 CreateFloatingButton(2, IconWorkMark, Theme.WorkInkTeal, "Work.ink\nKey", "https://work.ink/2STL/Ivory")
 CreateFloatingButton(3, function(parent, color) IconLootGem(parent, color, Theme.LootGold) end,
     Theme.LootPurple, "LootLabs\nKey", "https://loot-link.com/s?L6z5Q0nE")

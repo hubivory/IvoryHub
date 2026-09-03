@@ -479,7 +479,7 @@ local DiscordSubTab = MainTab:AddSubTab("Discord", "users")
 local DiscordGroup = DiscordSubTab:AddLeftGroupbox("Community", "box-icon")
 
 DiscordGroup:AddButton("Join Discord For Dupe", function()
-    setclipboard("https://discord.gg/MCWYKBdB4E")
+    setclipboard("https://discord.gg/ivory")
     notify("Discord link copied to clipboard!", "Success")
 end)
 

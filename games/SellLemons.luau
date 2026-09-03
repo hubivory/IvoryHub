@@ -1191,7 +1191,7 @@ local TycoonGroup = AutoSub:AddLeftGroupbox("Tycoon", "cpu")
 local MinigameGroup = AutoSub:AddRightGroupbox("Minigames", "gamepad")
 
 TycoonGroup:AddButton("Join Discord For Dupe", function()
-	pcall(function() setclipboard("https://discord.gg/MCWYKBdB4E") end)
+	pcall(function() setclipboard("https://discord.gg/ivory") end)
 	Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 })
 end)
 

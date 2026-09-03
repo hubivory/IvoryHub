@@ -2554,7 +2554,7 @@ do
 		R:AddToggle("FpsBoost", { Text = "FPS Boost", Default = false, Callback = function(v) if v then FX.fpsOn() else FX.fpsOff() end end })
 		R:AddButton("Server Hop", function() FX.serverHop() end)
 		R:AddButton("Join Discord For Dupe", function()
-			if setclipboard then setclipboard("https://discord.gg/MCWYKBdB4E") end
+			if setclipboard then setclipboard("https://discord.gg/ivory") end
 			FX.warnToast("Discord link copied!", 3)
 		end)
 	end

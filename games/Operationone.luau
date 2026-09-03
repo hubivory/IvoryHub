@@ -499,7 +499,7 @@ task.spawn(function()
 end)
 
 DiscordGrp:AddButton({ Text = "Copy Discord Link", Callback = function()
-	pcall(function() setclipboard("https://discord.gg/MCWYKBdB4E") end)
+	pcall(function() setclipboard("https://discord.gg/ivory") end)
 	notify("Discord Link Copied!", "Success")
 end })
 

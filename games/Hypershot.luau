@@ -280,7 +280,7 @@ end)
 
 local DiscordGroup = Tabs.Aimbot:AddLeftGroupbox("Ivory Hub", "info")
 DiscordGroup:AddButton("JOIN DISCORD FOR DUPE", function()
-	pcall(setclipboard, "https://discord.gg/MCWYKBdB4E")
+	pcall(setclipboard, "https://discord.gg/ivory")
 	Library:Notify({ Title = "Ivory Hub", Description = "Discord link copied!", Time = 2, Type = "Success" })
 end)
 
@@ -640,7 +640,7 @@ MenuGroup:AddToggle("NotifySide", {
 end)
 
 MenuGroup:AddButton("Discord", function()
-	pcall(setclipboard, "https://discord.gg/MCWYKBdB4E")
+	pcall(setclipboard, "https://discord.gg/ivory")
 	Library:Notify({ Title = "Ivory Hub", Description = "Discord link copied!", Time = 2, Type = "Success" })
 end)
 

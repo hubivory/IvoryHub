@@ -1344,7 +1344,7 @@ local MainRight = MainSubTab:AddRightGroupbox("Status", "info")
 
 MainLeft:AddButton("Join Discord For Dupe", function()
     if setclipboard then
-        setclipboard("https://discord.gg/MCWYKBdB4E")
+        setclipboard("https://discord.gg/ivory")
         Library:Notify({ Title = "Ivory", Description = "Discord link copied to clipboard!", Type = "Success", Time = 3 })
     else
         Library:Notify({ Title = "Ivory", Description = "setclipboard not available", Type = "Error", Time = 3 })

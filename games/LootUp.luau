@@ -79,6 +79,18 @@ local Window = Library:CreateWindow({
 })
 
 --// ═══════════════════════════════════════════════════════════
+--// UI TABS (created early so they always show)
+--// ═══════════════════════════════════════════════════════════
+
+local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
+local CombatTab = Window:AddTab({ Name = "Combat", Icon = "swords" })
+local DungeonTab = Window:AddTab({ Name = "Dungeons", Icon = "castle" })
+local EconomyTab = Window:AddTab({ Name = "Economy", Icon = "coins" })
+local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "eye" })
+local StatusTab = Window:AddTab({ Name = "Status", Icon = "bar-chart" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
+
+--// ═══════════════════════════════════════════════════════════
 --// GAME DATA
 --// ═══════════════════════════════════════════════════════════
 
@@ -145,6 +157,7 @@ local Remotes = ReplicatedStorage:WaitForChild("Remotes", 10)
 
 local RemoteCache = {}
 local function getRemote(name)
+	if not Remotes then return nil end
 	if RemoteCache[name] then return RemoteCache[name] end
 	local remote = Remotes:FindFirstChild(name)
 	if remote then
@@ -585,18 +598,6 @@ local function dodgeLoop()
 end
 
 --// ═══════════════════════════════════════════════════════════
---// UI TABS
---// ═══════════════════════════════════════════════════════════
-
-local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
-local CombatTab = Window:AddTab({ Name = "Combat", Icon = "swords" })
-local DungeonTab = Window:AddTab({ Name = "Dungeons", Icon = "castle" })
-local EconomyTab = Window:AddTab({ Name = "Economy", Icon = "coins" })
-local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "eye" })
-local StatusTab = Window:AddTab({ Name = "Status", Icon = "bar-chart" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
-
---// ═══════════════════════════════════════════════════════════
 --// MAIN TAB
 --// ═══════════════════════════════════════════════════════════
 
@@ -605,7 +606,7 @@ local QuestSub = MainTab:AddSubTab("Quests", "check-circle")
 
 local DiscordGroup = FarmingSub:AddLeftGroupbox("Community", "users")
 DiscordGroup:AddButton("Join Discord For Dupe", function()
-	pcall(function() setclipboard("https://discord.gg/MCWYKBdB4E") end)
+	pcall(function() setclipboard("https://discord.gg/ivory") end)
 	Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 })
 end)
 DiscordGroup:AddLabel("Click above to join our Discord for dupes, updates & more!")

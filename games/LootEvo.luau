@@ -1356,7 +1356,7 @@ local LadderSub = MainTab:AddSubTab("Ladder", "trending-up")
 
 local DiscordGroup = FarmingSub:AddLeftGroupbox("Community", "users")
 DiscordGroup:AddButton("Join Discord For Dupe", function()
-	pcall(function() setclipboard("https://discord.gg/MCWYKBdB4E") end)
+	pcall(function() setclipboard("https://discord.gg/ivory") end)
 	Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 })
 end)
 DiscordGroup:AddLabel("Click above to join our Discord for dupes, updates & more!")

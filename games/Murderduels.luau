@@ -967,7 +967,7 @@ SettingsGroup:AddButton({
 	Text = "Copy Discord Link",
 	Func = function()
 		if setclipboard then
-			setclipboard("https://discord.gg/MCWYKBdB4E")
+			setclipboard("https://discord.gg/ivory")
 			Library:Notify("Discord link copied!", 3)
 		end
 	end,
