@@ -367,7 +367,7 @@ local Window = Library:CreateWindow({
     Animations = { SubTabUnderline = true },
 })
 --// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://113133903091338"
+local IVORY_ICON = "rbxassetid://79379082636309"
 task.spawn(function()
 	task.wait()
 	local function trySetIcon(parent)
@@ -460,7 +460,7 @@ local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
 ------------------------------------------------------------------------
 --// MAIN > AUTOMATION
 ------------------------------------------------------------------------
-local AutoSubTab = MainTab:AddSubTab("Automation", "rbxassetid://113133903091338")
+local AutoSubTab = MainTab:AddSubTab("Automation", "rbxassetid://79379082636309")
 local CoreGroup = AutoSubTab:AddLeftGroupbox("Core Loop", "box-icon")
 local ExtraGroup = AutoSubTab:AddRightGroupbox("Extras", "box-icon")
 
@@ -504,7 +504,7 @@ end)
 ------------------------------------------------------------------------
 --// MAIN > DISCORD
 ------------------------------------------------------------------------
-local DiscordSubTab = MainTab:AddSubTab("Discord", "rbxassetid://113133903091338")
+local DiscordSubTab = MainTab:AddSubTab("Discord", "rbxassetid://79379082636309")
 local DiscordGroup = DiscordSubTab:AddLeftGroupbox("Community", "box-icon")
 
 DiscordGroup:AddButton("Join Discord For Dupe", function()
@@ -515,7 +515,7 @@ end)
 ------------------------------------------------------------------------
 --// MAIN > CONFIG
 ------------------------------------------------------------------------
-local ConfigSubTab = MainTab:AddSubTab("Config", "rbxassetid://113133903091338")
+local ConfigSubTab = MainTab:AddSubTab("Config", "rbxassetid://79379082636309")
 local ConfigGroup = ConfigSubTab:AddLeftGroupbox("Settings", "box-icon")
 local InfoGroup = ConfigSubTab:AddRightGroupbox("Info", "box-icon")
 
@@ -531,7 +531,7 @@ InfoGroup:AddLabel("PlaceId: " .. tostring(PlaceId))
 ------------------------------------------------------------------------
 --// PLAYER > MOVEMENT
 ------------------------------------------------------------------------
-local MovementSubTab = PlayerTab:AddSubTab("Movement", "rbxassetid://113133903091338")
+local MovementSubTab = PlayerTab:AddSubTab("Movement", "rbxassetid://79379082636309")
 local SpeedGroup = MovementSubTab:AddLeftGroupbox("Speed", "box-icon")
 local JumpGroup = MovementSubTab:AddRightGroupbox("Jump", "box-icon")
 
@@ -556,7 +556,7 @@ end)
 ------------------------------------------------------------------------
 --// PLAYER > VISUALS
 ------------------------------------------------------------------------
-local VisualsSubTab = PlayerTab:AddSubTab("Visuals", "rbxassetid://113133903091338")
+local VisualsSubTab = PlayerTab:AddSubTab("Visuals", "rbxassetid://79379082636309")
 local ESPGroup = VisualsSubTab:AddLeftGroupbox("ESP", "box-icon")
 
 ESPGroup:AddLabel("ESP Color"):AddColorPicker("ESPColor", {
@@ -570,7 +570,7 @@ ESPGroup:AddSlider("ESPRange", { Text = "ESP Range", Default = 200, Min = 50, Ma
 ------------------------------------------------------------------------
 --// FARM > STATUS
 ------------------------------------------------------------------------
-local StatusSubTab = FarmTab:AddSubTab("Status", "rbxassetid://113133903091338")
+local StatusSubTab = FarmTab:AddSubTab("Status", "rbxassetid://79379082636309")
 local StatusGroup = StatusSubTab:AddLeftGroupbox("Status", "box-icon")
 
 local StatusLabel = StatusGroup:AddLabel("Loading...")
@@ -585,7 +585,7 @@ end)
 ------------------------------------------------------------------------
 --// FARM > DIGGING
 ------------------------------------------------------------------------
-local DiggingSubTab = FarmTab:AddSubTab("Digging", "rbxassetid://113133903091338")
+local DiggingSubTab = FarmTab:AddSubTab("Digging", "rbxassetid://79379082636309")
 local DigGroup = DiggingSubTab:AddLeftGroupbox("Manual Dig", "box-icon")
 
 DigGroup:AddButton("Begin Dig", function()
@@ -724,7 +724,7 @@ local function doPlaceBest()
     return placedCount > 0 or swaps > 0
 end
 
-local MuseumSubTab = FarmTab:AddSubTab("Museum", "rbxassetid://113133903091338")
+local MuseumSubTab = FarmTab:AddSubTab("Museum", "rbxassetid://79379082636309")
 local MuseumGroup = MuseumSubTab:AddLeftGroupbox("Museum", "box-icon")
 local PolishGroup = MuseumSubTab:AddRightGroupbox("Polisher", "box-icon")
 
@@ -776,7 +776,7 @@ end)
 ------------------------------------------------------------------------
 --// FARM > ISLANDS
 ------------------------------------------------------------------------
-local IslandSubTab = FarmTab:AddSubTab("Islands", "rbxassetid://113133903091338")
+local IslandSubTab = FarmTab:AddSubTab("Islands", "rbxassetid://79379082636309")
 local TravelGroup = IslandSubTab:AddLeftGroupbox("Travel", "box-icon")
 local IslandInfo = IslandSubTab:AddRightGroupbox("Island Info", "box-icon")
 
@@ -817,7 +817,7 @@ IslandInfo:AddLabel("island5 | $20B | 16x Luck")
 ------------------------------------------------------------------------
 --// SHOP > SHOVELS
 ------------------------------------------------------------------------
-local ShovelsSubTab = ShopTab:AddSubTab("Shovels", "rbxassetid://113133903091338")
+local ShovelsSubTab = ShopTab:AddSubTab("Shovels", "rbxassetid://79379082636309")
 local ShovelGroup = ShovelsSubTab:AddLeftGroupbox("Buy & Equip", "box-icon")
 
 ShovelGroup:AddButton("Buy Best Shovel", function()
@@ -870,7 +870,7 @@ end)
 ------------------------------------------------------------------------
 --// SHOP > DETECTORS
 ------------------------------------------------------------------------
-local DetectorsSubTab = ShopTab:AddSubTab("Detectors", "rbxassetid://113133903091338")
+local DetectorsSubTab = ShopTab:AddSubTab("Detectors", "rbxassetid://79379082636309")
 local DetectorGroup = DetectorsSubTab:AddLeftGroupbox("Buy & Equip", "box-icon")
 
 DetectorGroup:AddButton("Buy Best Detector", function()
@@ -923,7 +923,7 @@ end)
 ------------------------------------------------------------------------
 --// SHOP > SPRAYS
 ------------------------------------------------------------------------
-local SpraysSubTab = ShopTab:AddSubTab("Sprays", "rbxassetid://113133903091338")
+local SpraysSubTab = ShopTab:AddSubTab("Sprays", "rbxassetid://79379082636309")
 local SprayGroup = SpraysSubTab:AddLeftGroupbox("Buy & Equip", "box-icon")
 
 SprayGroup:AddButton("Buy Best Spray", function()
@@ -976,7 +976,7 @@ end)
 ------------------------------------------------------------------------
 --// SHOP > REWARDS
 ------------------------------------------------------------------------
-local RewardsSubTab = ShopTab:AddSubTab("Rewards", "rbxassetid://113133903091338")
+local RewardsSubTab = ShopTab:AddSubTab("Rewards", "rbxassetid://79379082636309")
 local RewardGroup = RewardsSubTab:AddLeftGroupbox("Rewards", "box-icon")
 
 RewardGroup:AddButton("Redeem All Codes", function()

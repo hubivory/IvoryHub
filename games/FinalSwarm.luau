@@ -689,7 +689,7 @@ local Window = Library:CreateWindow({
 	},
 })
 --// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://113133903091338"
+local IVORY_ICON = "rbxassetid://79379082636309"
 task.spawn(function()
 	task.wait()
 	local function trySetIcon(parent)
@@ -720,7 +720,7 @@ end)
 
 if isLobby then
 	local LobbyTab = Window:AddTab({ Name = "Lobby", Icon = "swords" })
-	local LSub = LobbyTab:AddSubTab("Automation", "rbxassetid://113133903091338")
+	local LSub = LobbyTab:AddSubTab("Automation", "rbxassetid://79379082636309")
 
 	local LG1 = LSub:AddLeftGroupbox("Chests", "package")
 	LG1:AddToggle("LobbyAutoChest", {
@@ -836,7 +836,7 @@ end
 
 if isGame then
 	local CombatTab = Window:AddTab({ Name = "Combat", Icon = "swords" })
-	local DefSub = CombatTab:AddSubTab("Defense", "rbxassetid://113133903091338")
+	local DefSub = CombatTab:AddSubTab("Defense", "rbxassetid://79379082636309")
 	local DG1 = DefSub:AddLeftGroupbox("Dodge", "move")
 	DG1:AddToggle("AutoDodge", {
 		Text = "Auto Dodge",
@@ -896,7 +896,7 @@ if isGame then
 	})
 
 	local UpgTab = Window:AddTab({ Name = "Upgrades", Icon = "swords" })
-	local UpgSub = UpgTab:AddSubTab("Auto Select", "rbxassetid://113133903091338")
+	local UpgSub = UpgTab:AddSubTab("Auto Select", "rbxassetid://79379082636309")
 	local UG1 = UpgSub:AddLeftGroupbox("Auto Upgrade", "arrow-up-circle")
 	UG1:AddToggle("AutoUpgrade", {
 		Text = "Auto Pick Upgrade",
@@ -932,7 +932,7 @@ if isGame then
 	end)
 
 	local VisTab = Window:AddTab({ Name = "Visuals", Icon = "swords" })
-	local VisSub = VisTab:AddSubTab("ESP", "rbxassetid://113133903091338")
+	local VisSub = VisTab:AddSubTab("ESP", "rbxassetid://79379082636309")
 	local VG1 = VisSub:AddLeftGroupbox("Enemy ESP", "eye")
 	VG1:AddToggle("ESP", {
 		Text = "Show Enemy Health",
@@ -964,7 +964,7 @@ if isGame then
 	end)
 
 	local AutoTab = Window:AddTab({ Name = "Auto", Icon = "swords" })
-	local AutoSub = AutoTab:AddSubTab("Post-Game", "rbxassetid://113133903091338")
+	local AutoSub = AutoTab:AddSubTab("Post-Game", "rbxassetid://79379082636309")
 	local AG1 = AutoSub:AddLeftGroupbox("After Death", "skull")
 	AG1:AddToggle("AutoContinue", {
 		Text = "Auto Continue (Death)",
@@ -985,7 +985,7 @@ if isGame then
 	})
 
 	local PlayerTab = Window:AddTab({ Name = "Player", Icon = "swords" })
-	local PlSub = PlayerTab:AddSubTab("Movement", "rbxassetid://113133903091338")
+	local PlSub = PlayerTab:AddSubTab("Movement", "rbxassetid://79379082636309")
 	local PG1 = PlSub:AddLeftGroupbox("Speed", "zap")
 	PG1:AddToggle("SpeedBoost", {
 		Text = "Speed Boost",

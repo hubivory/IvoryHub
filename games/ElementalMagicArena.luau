@@ -287,7 +287,7 @@ local Window = Library:CreateWindow({
 	},
 })
 --// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://113133903091338"
+local IVORY_ICON = "rbxassetid://79379082636309"
 task.spawn(function()
 	task.wait()
 	local function trySetIcon(parent)
@@ -329,9 +329,9 @@ local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
 --// MAIN TAB
 --// ═══════════════════════════════════════════════════════════
 
-local AutoSub = MainTab:AddSubTab("Automation", "rbxassetid://113133903091338")
-local CombatSub = MainTab:AddSubTab("Combat", "rbxassetid://113133903091338")
-local UtilitySub = MainTab:AddSubTab("Utility", "rbxassetid://113133903091338")
+local AutoSub = MainTab:AddSubTab("Automation", "rbxassetid://79379082636309")
+local CombatSub = MainTab:AddSubTab("Combat", "rbxassetid://79379082636309")
+local UtilitySub = MainTab:AddSubTab("Utility", "rbxassetid://79379082636309")
 
 --// Automation: Auto Pick
 local PickGroup = AutoSub:AddLeftGroupbox("Auto Pick Class", "person-standing")
@@ -518,8 +518,8 @@ ExtraGroup:AddToggle("NoFallDamage", {
 --// PLAYER TAB
 --// ═══════════════════════════════════════════════════════════
 
-local MoveSub = PlayerTab:AddSubTab("Movement", "rbxassetid://113133903091338")
-local MiscSub = PlayerTab:AddSubTab("Misc", "rbxassetid://113133903091338")
+local MoveSub = PlayerTab:AddSubTab("Movement", "rbxassetid://79379082636309")
+local MiscSub = PlayerTab:AddSubTab("Misc", "rbxassetid://79379082636309")
 
 local SpeedGroup = MoveSub:AddLeftGroupbox("Speed", "zap")
 SpeedGroup:AddToggle("WalkSpeedEnabled", {
@@ -573,8 +573,8 @@ FlyGroup:AddSlider("FlySpeed", {
 --// VISUALS TAB
 --// ═══════════════════════════════════════════════════════════
 
-local ESPSub = VisualsTab:AddSubTab("ESP", "rbxassetid://113133903091338")
-local ChamsSub = VisualsTab:AddSubTab("Chams", "rbxassetid://113133903091338")
+local ESPSub = VisualsTab:AddSubTab("ESP", "rbxassetid://79379082636309")
+local ChamsSub = VisualsTab:AddSubTab("Chams", "rbxassetid://79379082636309")
 
 local ESPControls = ESPSub:AddLeftGroupbox("ESP", "eye")
 ESPControls:AddToggle("ESPEnabled", { Text = "Enable ESP", Default = false })

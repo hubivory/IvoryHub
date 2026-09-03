@@ -849,7 +849,7 @@ do
     local DiscordGroup = Tabs.Combat:AddLeftGroupbox('discord', 'info')
     local DiscordLabel = DiscordGroup:AddLabel({ Text = "Join discord for free keys!", DoesWrap = true, Size = 26 })
 --// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://113133903091338"
+local IVORY_ICON = "rbxassetid://79379082636309"
 task.spawn(function()
 	task.wait()
 	local function trySetIcon(parent)

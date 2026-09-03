@@ -2485,7 +2485,7 @@ do
 		},
 	})
 --// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://113133903091338"
+local IVORY_ICON = "rbxassetid://79379082636309"
 task.spawn(function()
 	task.wait()
 	local function trySetIcon(parent)
@@ -2517,7 +2517,7 @@ end)
 	local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
 
 	do
-		local Sub = MainTab:AddSubTab("Steal", "rbxassetid://113133903091338")
+		local Sub = MainTab:AddSubTab("Steal", "rbxassetid://79379082636309")
 		local L = Sub:AddLeftGroupbox("Egg Steal", "crosshair")
 		local R = Sub:AddRightGroupbox("Base & Utility", "home")
 		L:AddToggle("AutoSteal", { Text = "Auto Steal", Default = false, Callback = function(v)
@@ -2563,7 +2563,7 @@ end)
 	end
 
 	do
-		local Sub = MainTab:AddSubTab("Hatch & ESP", "rbxassetid://113133903091338")
+		local Sub = MainTab:AddSubTab("Hatch & ESP", "rbxassetid://79379082636309")
 		local L = Sub:AddLeftGroupbox("Hatching", "egg")
 		local R = Sub:AddRightGroupbox("Visuals", "eye")
 		L:AddToggle("AutoHatch", { Text = "Auto Hatch", Default = false, Callback = function(v) Config.AutoHatch = v end })
@@ -2573,7 +2573,7 @@ end)
 	end
 
 	do
-		local Sub = MainTab:AddSubTab("Automation", "rbxassetid://113133903091338")
+		local Sub = MainTab:AddSubTab("Automation", "rbxassetid://79379082636309")
 		local L = Sub:AddLeftGroupbox("Farming", "sprout")
 		local R = Sub:AddRightGroupbox("Performance", "zap")
 		L:AddToggle("AutoEquipBest", { Text = "Auto Equip Best", Default = false, Callback = function(v) Config.AutoEquipBest = v end })

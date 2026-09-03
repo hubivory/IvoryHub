@@ -39,7 +39,7 @@ local Window = Library:CreateWindow({
     SearchbarSize=UDim2.fromScale(0.35,1), FuzzySearch=true, SearchValues=true, Minimizable=true, CornerRadius=10, ToggleKeybind=Enum.KeyCode.RightShift,
 })
 --// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://113133903091338"
+local IVORY_ICON = "rbxassetid://79379082636309"
 task.spawn(function()
 	task.wait()
 	local function trySetIcon(parent)
