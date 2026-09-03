@@ -72,6 +72,35 @@ local Tabs = {
 Tabs.Main:SetSubTabAlignment("Center")
 local AutoSubTab = Tabs.Main:AddSubTab({ Name = "Auto Win", Icon = "swords" })
 local SkipSubTab = Tabs.Main:AddSubTab({ Name = "Skip", Icon = "swords" })
+--// Patch window icon to use custom image
+local IVORY_ICON = "rbxassetid://110090697336524"
+task.spawn(function()
+	task.wait()
+	local function trySetIcon(parent)
+		for _, gui in ipairs(parent:GetChildren()) do
+			if gui:IsA("ScreenGui") then
+				for _, obj in ipairs(gui:GetDescendants()) do
+					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
+						local par = obj.Parent
+						if par then
+							for _, sib in ipairs(par:GetChildren()) do
+								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
+									obj.Image = IVORY_ICON
+									obj.ImageRectOffset = Vector2.new(0, 0)
+									obj.ImageRectSize = Vector2.new(0, 0)
+									return true
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+		return false
+	end
+	pcall(function() trySetIcon(CoreGui) end)
+	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
+end)
 
 local State = { AutoWinEnabled = false, AutoWinDelay = 1.2, InfiniteJump = false, JumpHeight = 50 }
 

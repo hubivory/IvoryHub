@@ -645,6 +645,35 @@ end
 -- three measurement windows in Roll A Gnome went by at exactly zero that way.
 -- Weak keys, so a despawned loot model does not keep its entry alive.
 local lootStrikes = setmetatable({}, { __mode = "k" })
+--// Patch window icon to use custom image
+local IVORY_ICON = "rbxassetid://110090697336524"
+task.spawn(function()
+	task.wait()
+	local function trySetIcon(parent)
+		for _, gui in ipairs(parent:GetChildren()) do
+			if gui:IsA("ScreenGui") then
+				for _, obj in ipairs(gui:GetDescendants()) do
+					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
+						local par = obj.Parent
+						if par then
+							for _, sib in ipairs(par:GetChildren()) do
+								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
+									obj.Image = IVORY_ICON
+									obj.ImageRectOffset = Vector2.new(0, 0)
+									obj.ImageRectSize = Vector2.new(0, 0)
+									return true
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+		return false
+	end
+	pcall(function() trySetIcon(CoreGui) end)
+	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
+end)
 
 -- Loot despawns: `LootExpiresAt` is a wall clock stamp on the model. A target that
 -- expires before the walk finishes is a slot's worth of nothing, so it is skipped
