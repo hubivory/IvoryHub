@@ -345,7 +345,7 @@ local function attackEnemy(enemy)
 		task.wait(0.2)
 	end
 
-	safeFire("Combat", "Attack", enemyHRP.CFrame)
+	safeFire("Combat", "Attack", enemyHRP.CFrame, enemy.Name)
 end
 
 local function useSkills()
@@ -353,11 +353,11 @@ local function useSkills()
 	if not enemy then return end
 	local ehrp = enemy:FindFirstChild("HumanoidRootPart") or enemy:FindFirstChild("Head")
 	if not ehrp then return end
-	if CONFIG.skillSlot1 then safeFire("SkillCast", 1, ehrp.CFrame) end
+	if CONFIG.skillSlot1 then safeFire("SkillCast", 1, ehrp.Position) end
 	task.wait(0.1)
-	if CONFIG.skillSlot2 then safeFire("SkillCast", 2, ehrp.CFrame) end
+	if CONFIG.skillSlot2 then safeFire("SkillCast", 2, ehrp.Position) end
 	task.wait(0.1)
-	if CONFIG.skillSlot3 then safeFire("SkillCast", 3, ehrp.CFrame) end
+	if CONFIG.skillSlot3 then safeFire("SkillCast", 3, ehrp.Position) end
 end
 
 --// ═══════════════════════════════════════════════════════════
@@ -1047,7 +1047,7 @@ task.spawn(function()
 			if enemy then
 				local ehrp = enemy:FindFirstChild("HumanoidRootPart") or enemy:FindFirstChild("Head")
 				if ehrp then
-					safeFire("Combat", "Attack", ehrp.CFrame)
+					safeFire("Combat", "Attack", ehrp.CFrame, enemy.Name)
 				end
 			end
 		end
