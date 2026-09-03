@@ -61,7 +61,7 @@ local Window = Library:CreateWindow({
     Animations = { SubTabUnderline = true },
 })
 --// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://110090697336524"
+local IVORY_ICON = "rbxassetid://113133903091338"
 task.spawn(function()
 	task.wait()
 	local function trySetIcon(parent)
@@ -103,26 +103,26 @@ local PlayerTab = Window:AddTab({ Name = "Player", Icon = "swords" })
 local FarmTab = Window:AddTab({ Name = "Farm", Icon = "swords" })
 local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
 
-local AutoSubTab = MainTab:AddSubTab("Automation", "rbxassetid://110090697336524")
+local AutoSubTab = MainTab:AddSubTab("Automation", "rbxassetid://113133903091338")
 local CoreGroup = AutoSubTab:AddLeftGroupbox("Core Features", "box-icon")
 local BoostGroup = AutoSubTab:AddRightGroupbox("Boosts & Rewards", "box-icon")
 
-local ConfigSubTab = MainTab:AddSubTab("Config", "rbxassetid://110090697336524")
+local ConfigSubTab = MainTab:AddSubTab("Config", "rbxassetid://113133903091338")
 local ConfigGroup = ConfigSubTab:AddLeftGroupbox("Settings", "box-icon")
 local InfoGroup = ConfigSubTab:AddRightGroupbox("Info", "box-icon")
 
-local MovementSubTab = PlayerTab:AddSubTab("Movement", "rbxassetid://110090697336524")
+local MovementSubTab = PlayerTab:AddSubTab("Movement", "rbxassetid://113133903091338")
 local SpeedGroup = MovementSubTab:AddLeftGroupbox("Speed", "box-icon")
 local JumpGroup = MovementSubTab:AddRightGroupbox("Jump", "box-icon")
 
-local VisualsSubTab = PlayerTab:AddSubTab("Visuals", "rbxassetid://110090697336524")
+local VisualsSubTab = PlayerTab:AddSubTab("Visuals", "rbxassetid://113133903091338")
 local ESPGroup = VisualsSubTab:AddLeftGroupbox("ESP", "box-icon")
 
-local LeavesSubTab = FarmTab:AddSubTab("Leaves", "rbxassetid://110090697336524")
+local LeavesSubTab = FarmTab:AddSubTab("Leaves", "rbxassetid://113133903091338")
 local FarmGroup = LeavesSubTab:AddLeftGroupbox("Auto Farm", "box-icon")
 local TeleportGroup = LeavesSubTab:AddRightGroupbox("Teleport", "box-icon")
 
-local UpgradesSubTab = FarmTab:AddSubTab("Upgrades", "rbxassetid://110090697336524")
+local UpgradesSubTab = FarmTab:AddSubTab("Upgrades", "rbxassetid://113133903091338")
 local UpgradesGroup = UpgradesSubTab:AddLeftGroupbox("Upgrades", "box-icon")
 
 local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "box-icon")

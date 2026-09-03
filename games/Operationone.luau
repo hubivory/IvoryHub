@@ -26,7 +26,7 @@ local Window = Library:CreateWindow({
 	CornerRadius = 4, Animations = {SubTabUnderline = true},
 })
 --// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://110090697336524"
+local IVORY_ICON = "rbxassetid://113133903091338"
 task.spawn(function()
 	task.wait()
 	local function trySetIcon(parent)
@@ -449,7 +449,7 @@ end)
 
 -- ==================== TABS ====================
 local CombatTab = Window:AddTab({ Name = "Combat", Icon = "swords" })
-local CombatSub = CombatTab:AddSubTab("Combat", "rbxassetid://110090697336524")
+local CombatSub = CombatTab:AddSubTab("Combat", "rbxassetid://113133903091338")
 local DiscordGrp = CombatSub:AddLeftGroupbox("Discord", "link")
 local CombatLeft = CombatSub:AddLeftGroupbox("No Recoil", "crosshair")
 local CombatRight = CombatSub:AddRightGroupbox("Aimbot", "crosshair")
@@ -553,7 +553,7 @@ NoRecoilSmoothRef = CombatLeft:AddSlider("NoRecoilSmooth", {
 -- ==================== ESP TAB ====================
 local tracerStartPos = "bottom"
 local ESPTab = Window:AddTab({ Name = "ESP", Icon = "swords" })
-local ESPSub = ESPTab:AddSubTab("ESP", "rbxassetid://110090697336524")
+local ESPSub = ESPTab:AddSubTab("ESP", "rbxassetid://113133903091338")
 local ESPGrp = ESPSub:AddLeftGroupbox("ESP Settings", "eye")
 local ChamsGrp = ESPSub:AddRightGroupbox("Chams", "palette")
 
@@ -1155,7 +1155,7 @@ ChamsTransRef = ChamsGrp:AddSlider("ChamsTrans", {
 
 -- ==================== OPTIMIZATIONS TAB ====================
 local OptTab = Window:AddTab({ Name = "Optimizations", Icon = "swords" })
-local OptGrp = OptTab:AddSubTab("Performance", "rbxassetid://110090697336524"):AddLeftGroupbox("Performance", "zap")
+local OptGrp = OptTab:AddSubTab("Performance", "rbxassetid://113133903091338"):AddLeftGroupbox("Performance", "zap")
 
 OptGrp:AddLabel("Warning: Optimize will break scoped weapons!")
 
@@ -1662,7 +1662,7 @@ end)
 
 -- ==================== UTILITY TAB ====================
 local UtilityTab = Window:AddTab({ Name = "Utilities", Icon = "swords" })
-local UtilSub = UtilityTab:AddSubTab("Utilities", "rbxassetid://110090697336524")
+local UtilSub = UtilityTab:AddSubTab("Utilities", "rbxassetid://113133903091338")
 local UtilGrp = UtilSub:AddLeftGroupbox("Tools", "wrench")
 
 UtilGrp:AddButton({ Text = "Check Account Ages", Callback = function()
@@ -1701,7 +1701,7 @@ end })
 
 -- ==================== SETTINGS TAB ====================
 local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
-local SettingsSub = SettingsTab:AddSubTab("Settings", "rbxassetid://110090697336524")
+local SettingsSub = SettingsTab:AddSubTab("Settings", "rbxassetid://113133903091338")
 local SettingsLeft = SettingsSub:AddLeftGroupbox("Credits", "heart")
 local SettingsRight = SettingsSub:AddRightGroupbox("Configuration", "save")
 

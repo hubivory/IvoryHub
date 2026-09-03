@@ -88,7 +88,7 @@ local Window = Library:CreateWindow({
 	Animations={ToggleWindow=false,TabSwitch=false,Groupbox=false,Dropdown=false,KeyPicker=false,SubTabUnderline=true},
 })
 --// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://110090697336524"
+local IVORY_ICON = "rbxassetid://113133903091338"
 task.spawn(function()
 	task.wait()
 	local function trySetIcon(parent)
@@ -120,7 +120,7 @@ end)
 -- ═══ MAIN TAB ═══
 local MainTab = Window:AddTab({Name="Main",Icon = "swords"})
 
-local FarmSub = MainTab:AddSubTab("Farm","rbxassetid://110090697336524")
+local FarmSub = MainTab:AddSubTab("Farm","rbxassetid://113133903091338")
 local FG1=FarmSub:AddLeftGroupbox("Floppa","cat")
 FG1:AddToggle("AutoClick",{Text="Auto Click Floppa",Default=false,Callback=function(v) S.AutoClick=v end}):AddKeyPicker("ClickKey",{Default="None",Text="Click Key",Mode="Toggle",SyncToggleState=true,NoUI=false})
 FG1:AddToggle("AutoPet",{Text="Auto Pet Floppa",Default=false,Callback=function(v) S.AutoPet=v end}):AddKeyPicker("PetKey",{Default="None",Text="Pet Key",Mode="Toggle",SyncToggleState=true,NoUI=false})
@@ -133,28 +133,28 @@ FG2:AddToggle("AutoPayRent",{Text="Auto Pay Rent",Default=false,Callback=functio
 FG2:AddToggle("AutoCollectRoommateRent",{Text="Auto Collect Roommate Rent",Default=false,Callback=function(v) S.AutoCollectRoommateRent=v end})
 FG2:AddToggle("AutoRefillBowls",{Text="Auto Refill Bowls",Default=false,Callback=function(v) S.AutoRefillBowls=v end})
 
-local UpgSub = MainTab:AddSubTab("Upgrades","rbxassetid://110090697336524")
+local UpgSub = MainTab:AddSubTab("Upgrades","rbxassetid://113133903091338")
 local UG1=UpgSub:AddLeftGroupbox("Interwebs & Fishing","wifi")
 UG1:AddToggle("AutoInterwebs",{Text="Auto Buy Interwebs",Default=false,Callback=function(v) S.AutoInterwebs=v end})
 UG1:AddToggle("AutoFishing",{Text="Auto Fish",Default=false,Callback=function(v) S.AutoFishing=v end})
 
-local BRSub = MainTab:AddSubTab("Backrooms","rbxassetid://110090697336524")
+local BRSub = MainTab:AddSubTab("Backrooms","rbxassetid://113133903091338")
 local BG1=BRSub:AddLeftGroupbox("Backrooms","door-open")
 BG1:AddToggle("BackroomsBypass",{Text="Backrooms Maze Bypass",Default=false,Callback=function(v) S.BackroomsBypass=v end})
 BG1:AddToggle("AutoAlmondWater",{Text="Auto Feed Almond Water",Default=false,Callback=function(v) S.AutoAlmondWater=v end})
 
-local FarmSub2 = MainTab:AddSubTab("Farming","rbxassetid://110090697336524")
+local FarmSub2 = MainTab:AddSubTab("Farming","rbxassetid://113133903091338")
 local FM1=FarmSub2:AddLeftGroupbox("Plants & Cooking","sprout")
 FM1:AddToggle("AutoPlant",{Text="Auto Plant & Harvest",Default=false,Callback=function(v) S.AutoPlant=v end})
 FM1:AddToggle("AutoCook",{Text="Auto Cook",Default=false,Callback=function(v) S.AutoCook=v end})
 
-local CmbSub = MainTab:AddSubTab("Combat","rbxassetid://110090697336524")
+local CmbSub = MainTab:AddSubTab("Combat","rbxassetid://113133903091338")
 local CM1=CmbSub:AddLeftGroupbox("Defense","shield")
 CM1:AddToggle("AntiRaid",{Text="Anti-Raid / Auto-Kill",Default=false,Callback=function(v) S.AntiRaid=v end})
 CM1:AddToggle("AltarAutoFight",{Text="Altar Boss Auto-Fight",Default=false,Callback=function(v) S.AltarAutoFight=v end})
 CM1:AddToggle("RaidFailSafe",{Text="Raid Fail-Safe (Server Hop)",Default=false,Callback=function(v) S.RaidFailSafe=v end})
 
-local ProgSub = MainTab:AddSubTab("Progress","rbxassetid://110090697336524")
+local ProgSub = MainTab:AddSubTab("Progress","rbxassetid://113133903091338")
 local PG1=ProgSub:AddLeftGroupbox("Rebirth & Save","refresh-cw")
 PG1:AddToggle("AutoRebirth",{Text="Auto Rebirth",Default=false,Callback=function(v) S.AutoRebirth=v end})
 PG1:AddButton("Rebirth Now",function() R.Rebirth:FireServer() end)
@@ -164,14 +164,14 @@ PG1:AddToggle("AutoSlots",{Text="Auto Slots Spin",Default=false,Callback=functio
 
 -- ═══ PLAYER TAB ═══
 local PlayerTab = Window:AddTab({Name="Player",Icon = "swords"})
-local TpSub = PlayerTab:AddSubTab("Teleports","rbxassetid://110090697336524")
+local TpSub = PlayerTab:AddSubTab("Teleports","rbxassetid://113133903091338")
 local TG1=TpSub:AddLeftGroupbox("Locations","map-pin")
 TG1:AddButton("To Floppa",function() local f=getFloppa(); if f and f:FindFirstChild("HumanoidRootPart") then local h=gHRP(); if h then h.CFrame=f.HumanoidRootPart.CFrame+Vector3.new(0,5,0) end end end)
 TG1:AddButton("To House",function() local h=WS:FindFirstChild("House"); if h then local r=h:FindFirstChildWhichIsA("BasePart"); if r then local h2=gHRP(); if h2 then h2.CFrame=r.CFrame+Vector3.new(0,5,0) end end end end)
 TG1:AddButton("To Village",function() local v=WS:FindFirstChild("Village"); if v then local r=v:FindFirstChildWhichIsA("BasePart"); if r then local h=gHRP(); if h then h.CFrame=r.CFrame+Vector3.new(0,5,0) end end end end)
 TG1:AddButton("To Backrooms Door",function() local d=WS:FindFirstChild("DoorPoint"); if d then local h=gHRP(); if h then h.CFrame=d.CFrame+Vector3.new(0,3,0) end end end)
 
-local MvSub = PlayerTab:AddSubTab("Movement","rbxassetid://110090697336524")
+local MvSub = PlayerTab:AddSubTab("Movement","rbxassetid://113133903091338")
 local MG1=MvSub:AddLeftGroupbox("Character","person-standing")
 MG1:AddToggle("InfJump",{Text="Infinite Jump",Default=false,Callback=function(v) S.InfJump=v end}):AddKeyPicker("InfJumpKey",{Default="None",Text="Inf Jump",Mode="Toggle",SyncToggleState=true,NoUI=false})
 MG1:AddToggle("Noclip",{Text="Noclip",Default=false,Callback=function(v) S.Noclip=v end}):AddKeyPicker("NoclipKey",{Default="None",Text="Noclip",Mode="Toggle",SyncToggleState=true,NoUI=false})
@@ -183,7 +183,7 @@ MG1:AddSlider("JumpVal",{Text="Jump Power",Default=50,Min=50,Max=200,Rounding=0,
 
 -- ═══ VISUALS TAB ═══
 local VisTab = Window:AddTab({Name="Visuals",Icon = "swords"})
-local ESPSub=VisTab:AddSubTab("ESP","rbxassetid://110090697336524")
+local ESPSub=VisTab:AddSubTab("ESP","rbxassetid://113133903091338")
 local VG1=ESPSub:AddLeftGroupbox("ESP","eye")
 VG1:AddToggle("ESPEnabled",{Text="Enable ESP",Default=false,Callback=function(v) S.ESPEnabled=v; if v then updateESP() else clearESP() end end}):AddKeyPicker("ESPKey",{Default="None",Text="ESP Key",Mode="Toggle",SyncToggleState=true,NoUI=false})
 VG1:AddToggle("ESPEggs",{Text="Show Floppa",Default=true,Callback=function(v) S.ESPEggs=v end})
@@ -192,7 +192,7 @@ VG1:AddToggle("ESPEnemies",{Text="Show Enemies",Default=true,Callback=function(v
 local VG2=ESPSub:AddRightGroupbox("Color","palette")
 VG2:AddLabel("ESP Color"):AddColorPicker("ESPColorPicker",{Default=S.ESPColor,Title="ESP Color",Callback=function(v) S.ESPColor=v end})
 
-local FPSSub=VisTab:AddSubTab("Optimizer","rbxassetid://110090697336524")
+local FPSSub=VisTab:AddSubTab("Optimizer","rbxassetid://113133903091338")
 local FG3=FPSSub:AddLeftGroupbox("FPS Boost","monitor")
 FG3:AddButton("Remove Textures",function()
 	for _,d in ipairs(WS:GetDescendants()) do

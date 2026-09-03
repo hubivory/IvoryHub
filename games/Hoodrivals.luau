@@ -205,7 +205,7 @@ local Window = Library:CreateWindow({
 	},
 })
 --// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://110090697336524"
+local IVORY_ICON = "rbxassetid://113133903091338"
 task.spawn(function()
 	task.wait()
 	local function trySetIcon(parent)
@@ -242,7 +242,7 @@ local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
 -- ═══════════════════════════════════════════════════════
 --  MAIN > COMBAT
 -- ═══════════════════════════════════════════════════════
-local CombatSub = MainTab:AddSubTab("Combat", "rbxassetid://110090697336524")
+local CombatSub = MainTab:AddSubTab("Combat", "rbxassetid://113133903091338")
 local ParryGroup = CombatSub:AddLeftGroupbox("Auto Parry", "shield")
 
 ParryGroup:AddToggle("AutoParry", {
@@ -364,7 +364,7 @@ AntiCCGroup:AddToggle("NoBlurWhenKnocked", {
 -- ═══════════════════════════════════════════════════════
 --  MAIN > TARGETING
 -- ═══════════════════════════════════════════════════════
-local TargetingSub = MainTab:AddSubTab("Targeting", "rbxassetid://110090697336524")
+local TargetingSub = MainTab:AddSubTab("Targeting", "rbxassetid://113133903091338")
 local TargetGroup = TargetingSub:AddLeftGroupbox("Target", "crosshair")
 
 TargetGroup:AddToggle("FaceLock", {
@@ -426,7 +426,7 @@ end)
 -- ═══════════════════════════════════════════════════════
 --  MAIN > RHYTHM
 -- ═══════════════════════════════════════════════════════
-local RhythmSub = MainTab:AddSubTab("Rhythm", "rbxassetid://110090697336524")
+local RhythmSub = MainTab:AddSubTab("Rhythm", "rbxassetid://113133903091338")
 local RhythmGroup = RhythmSub:AddLeftGroupbox("Auto Rhythm", "music")
 
 RhythmGroup:AddToggle("AutoGreen", {
@@ -466,7 +466,7 @@ RhythmSet:AddSlider("RhythmAnimSpeed", {
 -- ═══════════════════════════════════════════════════════
 --  MAIN > VISUALS
 -- ═══════════════════════════════════════════════════════
-local VisualsSub = MainTab:AddSubTab("Visuals", "rbxassetid://110090697336524")
+local VisualsSub = MainTab:AddSubTab("Visuals", "rbxassetid://113133903091338")
 local ESPGroup = VisualsSub:AddLeftGroupbox("Player ESP", "eye")
 
 ESPGroup:AddToggle("ESP Enabled", {
@@ -515,7 +515,7 @@ ESPSet:AddSlider("ESP BoxThickness", {
 })
 ESPSet:AddToggle("ESP TeamCheck", { Text = "Team Check", Default = false, Callback = function(v) State.ESP_TeamCheck = v end })
 
-local HighlightSub = VisualsSub:AddSubTab("Highlights", "rbxassetid://110090697336524")
+local HighlightSub = VisualsSub:AddSubTab("Highlights", "rbxassetid://113133903091338")
 local HighlightGroup = HighlightSub:AddLeftGroupbox("Highlights", "highlighter")
 HighlightGroup:AddToggle("Highlight Enabled", {
 	Text = "Enable Highlights", Default = false,
@@ -548,7 +548,7 @@ HighlightColors:AddLabel("Highlight Color"):AddColorPicker("HighlightColor", {
 -- ═══════════════════════════════════════════════════════
 --  MAIN > WORLD
 -- ═══════════════════════════════════════════════════════
-local WorldSub = MainTab:AddSubTab("World", "rbxassetid://110090697336524")
+local WorldSub = MainTab:AddSubTab("World", "rbxassetid://113133903091338")
 local LightingGroup = WorldSub:AddLeftGroupbox("Lighting", "sun")
 
 LightingGroup:AddToggle("FullBright", {
@@ -643,7 +643,7 @@ WorldSet:AddToggle("NoFog", {
 -- ═══════════════════════════════════════════════════════
 --  MAIN > MOVEMENT
 -- ═══════════════════════════════════════════════════════
-local MovementSub = MainTab:AddSubTab("Movement", "rbxassetid://110090697336524")
+local MovementSub = MainTab:AddSubTab("Movement", "rbxassetid://113133903091338")
 local SpeedGroup = MovementSub:AddLeftGroupbox("Speed", "zap")
 
 SpeedGroup:AddToggle("Speedhack", {

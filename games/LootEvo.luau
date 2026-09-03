@@ -76,7 +76,7 @@ local Window = Library:CreateWindow({
 	},
 })
 --// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://110090697336524"
+local IVORY_ICON = "rbxassetid://113133903091338"
 task.spawn(function()
 	task.wait()
 	local function trySetIcon(parent)
@@ -1380,8 +1380,8 @@ local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
 --// MAIN TAB
 --// ═══════════════════════════════════════════════════════════
 
-local FarmingSub = MainTab:AddSubTab("Farming", "rbxassetid://110090697336524")
-local LadderSub = MainTab:AddSubTab("Ladder", "rbxassetid://110090697336524")
+local FarmingSub = MainTab:AddSubTab("Farming", "rbxassetid://113133903091338")
+local LadderSub = MainTab:AddSubTab("Ladder", "rbxassetid://113133903091338")
 
 local DiscordGroup = FarmingSub:AddLeftGroupbox("Community", "users")
 DiscordGroup:AddButton("Join Discord For Dupe", function()
@@ -1453,9 +1453,9 @@ local SessionWins = SessionGroup:AddLabel("Wins Gained: 0")
 --// COMBAT TAB
 --// ═══════════════════════════════════════════════════════════
 
-local ClickSub = CombatTab:AddSubTab("Clicking", "rbxassetid://110090697336524")
-local SkillSub = CombatTab:AddSubTab("Skills", "rbxassetid://110090697336524")
-local SurvivalSub = CombatTab:AddSubTab("Survival", "rbxassetid://110090697336524")
+local ClickSub = CombatTab:AddSubTab("Clicking", "rbxassetid://113133903091338")
+local SkillSub = CombatTab:AddSubTab("Skills", "rbxassetid://113133903091338")
+local SurvivalSub = CombatTab:AddSubTab("Survival", "rbxassetid://113133903091338")
 
 local ClickGroup = ClickSub:AddLeftGroupbox("Clicking", "mouse-pointer")
 ClickGroup:AddToggle("AutoClick", {
@@ -1511,10 +1511,10 @@ SurvivalGroup:AddSlider("ChaseRange", {
 --// SHOP TAB
 --// ═══════════════════════════════════════════════════════════
 
-local WeaponSub = ShopTab:AddSubTab("Weapons", "rbxassetid://110090697336524")
-local SkillShopSub = ShopTab:AddSubTab("Skills", "rbxassetid://110090697336524")
-local AuraSub = ShopTab:AddSubTab("Auras", "rbxassetid://110090697336524")
-local RebirthSub = ShopTab:AddSubTab("Rebirth", "rbxassetid://110090697336524")
+local WeaponSub = ShopTab:AddSubTab("Weapons", "rbxassetid://113133903091338")
+local SkillShopSub = ShopTab:AddSubTab("Skills", "rbxassetid://113133903091338")
+local AuraSub = ShopTab:AddSubTab("Auras", "rbxassetid://113133903091338")
+local RebirthSub = ShopTab:AddSubTab("Rebirth", "rbxassetid://113133903091338")
 
 local WeaponGroup = WeaponSub:AddLeftGroupbox("Weapons", "swords")
 WeaponGroup:AddToggle("AutoWeapon", {
@@ -1563,8 +1563,8 @@ end)
 --// EGGS & PETS TAB
 --// ═══════════════════════════════════════════════════════════
 
-local EggSub = PetTab:AddSubTab("Eggs", "rbxassetid://110090697336524")
-local PetSub = PetTab:AddSubTab("Pets", "rbxassetid://110090697336524")
+local EggSub = PetTab:AddSubTab("Eggs", "rbxassetid://113133903091338")
+local PetSub = PetTab:AddSubTab("Pets", "rbxassetid://113133903091338")
 
 local EggGroup = EggSub:AddLeftGroupbox("Eggs", "egg")
 EggGroup:AddToggle("AutoBuyEgg", {
@@ -1630,9 +1630,9 @@ PetGroup:AddSlider("PetKeep", {
 --// STATUS TAB
 --// ═══════════════════════════════════════════════════════════
 
-local PlayerSub = StatusTab:AddSubTab("Player", "rbxassetid://110090697336524")
-local ProgressSub = StatusTab:AddSubTab("Progress", "rbxassetid://110090697336524")
-local ToolsSub = StatusTab:AddSubTab("Tools", "rbxassetid://110090697336524")
+local PlayerSub = StatusTab:AddSubTab("Player", "rbxassetid://113133903091338")
+local ProgressSub = StatusTab:AddSubTab("Progress", "rbxassetid://113133903091338")
+local ToolsSub = StatusTab:AddSubTab("Tools", "rbxassetid://113133903091338")
 
 local PlayerGroup = PlayerSub:AddLeftGroupbox("Player Data", "user")
 local PlayerWins = PlayerGroup:AddLabel("Wins: 0")

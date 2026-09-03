@@ -1170,7 +1170,7 @@ local Window = Library:CreateWindow({
 	},
 })
 --// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://110090697336524"
+local IVORY_ICON = "rbxassetid://113133903091338"
 task.spawn(function()
 	task.wait()
 	local function trySetIcon(parent)
@@ -1207,10 +1207,10 @@ _G.__LEMON_WIN = Window
 local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
 local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
 
-local AutoSub = MainTab:AddSubTab("Automation", "rbxassetid://110090697336524")
-local FruitSub = MainTab:AddSubTab("Fruit", "rbxassetid://110090697336524")
-local PrestigeSub = MainTab:AddSubTab("Prestige", "rbxassetid://110090697336524")
-local StatusSub = MainTab:AddSubTab("Status", "rbxassetid://110090697336524")
+local AutoSub = MainTab:AddSubTab("Automation", "rbxassetid://113133903091338")
+local FruitSub = MainTab:AddSubTab("Fruit", "rbxassetid://113133903091338")
+local PrestigeSub = MainTab:AddSubTab("Prestige", "rbxassetid://113133903091338")
+local StatusSub = MainTab:AddSubTab("Status", "rbxassetid://113133903091338")
 
 --------------------------------------------------------------------------------
 -- Automation: Tycoon

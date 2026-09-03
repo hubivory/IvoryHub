@@ -24,7 +24,7 @@ local Window = Library:CreateWindow({
     Footer = "made by Veqxoo"
 })
 --// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://110090697336524"
+local IVORY_ICON = "rbxassetid://113133903091338"
 task.spawn(function()
 	task.wait()
 	local function trySetIcon(parent)

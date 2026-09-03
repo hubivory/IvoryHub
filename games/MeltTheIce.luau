@@ -229,7 +229,7 @@ local Window = Library:CreateWindow({
 	CornerRadius = 4,
 })
 --// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://110090697336524"
+local IVORY_ICON = "rbxassetid://113133903091338"
 task.spawn(function()
 	task.wait()
 	local function trySetIcon(parent)
@@ -264,7 +264,7 @@ local PlayerTab = Window:AddTab({ Name = "Player", Icon = "swords" })
 local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "swords" })
 local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
 
-local AutoSub = MainTab:AddSubTab("Automation", "rbxassetid://110090697336524")
+local AutoSub = MainTab:AddSubTab("Automation", "rbxassetid://113133903091338")
 local MeltGroup = AutoSub:AddLeftGroupbox("Melt", "flame")
 local SellGroup = AutoSub:AddRightGroupbox("Sell", "coins")
 local CollectGroup = AutoSub:AddRightGroupbox("Collect", "package")
@@ -385,7 +385,7 @@ PlaytimeGroup:AddButton("Claim All Index Stages", function()
 	end
 end)
 
-local TeleSub = MainTab:AddSubTab("Teleport", "rbxassetid://110090697336524")
+local TeleSub = MainTab:AddSubTab("Teleport", "rbxassetid://113133903091338")
 local TeleGroup = TeleSub:AddLeftGroupbox("Stage Teleport", "navigation")
 
 TeleGroup:AddDropdown("TeleportDropdown", {
@@ -406,7 +406,7 @@ TeleGroup:AddButton("TP to Current Stage", function()
 	pcall(function() Remotes.TeleportToStage:FireServer() end)
 end)
 
-local UpgradeSub = ShopTab:AddSubTab("Upgrades", "rbxassetid://110090697336524")
+local UpgradeSub = ShopTab:AddSubTab("Upgrades", "rbxassetid://113133903091338")
 local UpgradeGroup = UpgradeSub:AddLeftGroupbox("Upgrades", "trending-up")
 
 UpgradeGroup:AddToggle("AutoBuyUpgrade", {
@@ -433,7 +433,7 @@ UpgradeGroup:AddButton("Buy Max Melt", function()
 	end)
 end)
 
-local WeaponSub = ShopTab:AddSubTab("Weapons", "rbxassetid://110090697336524")
+local WeaponSub = ShopTab:AddSubTab("Weapons", "rbxassetid://113133903091338")
 local WeaponGroup = WeaponSub:AddLeftGroupbox("Weapons", "shield")
 
 WeaponGroup:AddToggle("AutoBuyWeapon", {
@@ -458,7 +458,7 @@ BackpackGroup:AddButton("Buy Backpack Now", function()
 	pcall(function() Remotes.BuyBackpack:InvokeServer() end)
 end)
 
-local PotionSub = ShopTab:AddSubTab("Potions", "rbxassetid://110090697336524")
+local PotionSub = ShopTab:AddSubTab("Potions", "rbxassetid://113133903091338")
 local PotionGroup = PotionSub:AddLeftGroupbox("Potions", "droplet")
 
 PotionGroup:AddToggle("AutoBuyPotion", {
@@ -483,7 +483,7 @@ PotionGroup:AddButton("Buy Cash Potion", function()
 	pcall(function() Remotes.BuyPotion:InvokeServer("coins_1") end)
 end)
 
-local MoveSub = PlayerTab:AddSubTab("Movement", "rbxassetid://110090697336524")
+local MoveSub = PlayerTab:AddSubTab("Movement", "rbxassetid://113133903091338")
 local SpeedGroup = MoveSub:AddLeftGroupbox("Speed", "zap")
 local JumpGroup = MoveSub:AddRightGroupbox("Jump", "arrow-up")
 
@@ -543,7 +543,7 @@ JumpGroup:AddToggle("InfJump", {
 	NoUI = false,
 })
 
-local ESPSub = VisualsTab:AddSubTab("ESP", "rbxassetid://110090697336524")
+local ESPSub = VisualsTab:AddSubTab("ESP", "rbxassetid://113133903091338")
 local ESPGroup = ESPSub:AddLeftGroupbox("Player ESP", "users")
 
 ESPGroup:AddToggle("ESPEnabled", {

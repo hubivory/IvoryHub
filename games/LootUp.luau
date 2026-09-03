@@ -80,7 +80,7 @@ local Window = Library:CreateWindow({
 })
 
 --// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://110090697336524"
+local IVORY_ICON = "rbxassetid://113133903091338"
 task.spawn(function()
 	task.wait()
 	local function trySetIcon(parent)
@@ -180,18 +180,18 @@ local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "swords" })
 local StatusTab = Window:AddTab({ Name = "Status", Icon = "swords" })
 local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
 
-local FarmingSub = MainTab:AddSubTab("Farming", "rbxassetid://110090697336524")
-local QuestSub = MainTab:AddSubTab("Quests", "rbxassetid://110090697336524")
-local SkillsSub = CombatTab:AddSubTab("Skills", "rbxassetid://110090697336524")
-local StatsSub = CombatTab:AddSubTab("Stats", "rbxassetid://110090697336524")
-local DungeonSub = DungeonTab:AddSubTab("Dungeons", "rbxassetid://110090697336524")
-local TowerSub = DungeonTab:AddSubTab("Towers", "rbxassetid://110090697336524")
-local ForgeSub = EconomyTab:AddSubTab("Forge & Enchant", "rbxassetid://110090697336524")
-local MerchantSub = EconomyTab:AddSubTab("Merchants", "rbxassetid://110090697336524")
-local MovementSub = VisualsTab:AddSubTab("Movement", "rbxassetid://110090697336524")
-local VisualSub = VisualsTab:AddSubTab("Visuals", "rbxassetid://110090697336524")
-local LiveSub = StatusTab:AddSubTab("Live", "rbxassetid://110090697336524")
-local ToolsSub = StatusTab:AddSubTab("Tools", "rbxassetid://110090697336524")
+local FarmingSub = MainTab:AddSubTab("Farming", "rbxassetid://113133903091338")
+local QuestSub = MainTab:AddSubTab("Quests", "rbxassetid://113133903091338")
+local SkillsSub = CombatTab:AddSubTab("Skills", "rbxassetid://113133903091338")
+local StatsSub = CombatTab:AddSubTab("Stats", "rbxassetid://113133903091338")
+local DungeonSub = DungeonTab:AddSubTab("Dungeons", "rbxassetid://113133903091338")
+local TowerSub = DungeonTab:AddSubTab("Towers", "rbxassetid://113133903091338")
+local ForgeSub = EconomyTab:AddSubTab("Forge & Enchant", "rbxassetid://113133903091338")
+local MerchantSub = EconomyTab:AddSubTab("Merchants", "rbxassetid://113133903091338")
+local MovementSub = VisualsTab:AddSubTab("Movement", "rbxassetid://113133903091338")
+local VisualSub = VisualsTab:AddSubTab("Visuals", "rbxassetid://113133903091338")
+local LiveSub = StatusTab:AddSubTab("Live", "rbxassetid://113133903091338")
+local ToolsSub = StatusTab:AddSubTab("Tools", "rbxassetid://113133903091338")
 
 --// ═══════════════════════════════════════════════════════════
 --// MAIN TAB WIDGETS

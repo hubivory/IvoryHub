@@ -646,7 +646,7 @@ end
 -- Weak keys, so a despawned loot model does not keep its entry alive.
 local lootStrikes = setmetatable({}, { __mode = "k" })
 --// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://110090697336524"
+local IVORY_ICON = "rbxassetid://113133903091338"
 task.spawn(function()
 	task.wait()
 	local function trySetIcon(parent)
@@ -1423,8 +1423,8 @@ local Window = Library:CreateWindow({
 local MainTab = Window:AddTab({Name = "Main", Icon = "swords"})
 local SettingsTab = Window:AddTab({Name = "Settings", Icon = "swords"})
 
-local AutomationSub = MainTab:AddSubTab("Automation", "rbxassetid://110090697336524")
-local StatusSub = MainTab:AddSubTab("Status", "rbxassetid://110090697336524")
+local AutomationSub = MainTab:AddSubTab("Automation", "rbxassetid://113133903091338")
+local StatusSub = MainTab:AddSubTab("Status", "rbxassetid://113133903091338")
 
 local FarmGroup = AutomationSub:AddLeftGroupbox("Core Features", "box-icon")
 local ZoneGroup = AutomationSub:AddRightGroupbox("Zone & Extras", "box-icon")

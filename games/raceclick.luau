@@ -74,7 +74,7 @@ local win = W:CreateWindow({
     CornerRadius=4, Animations={ToggleWindow=false,TabSwitch=false,Groupbox=false,Dropdown=false,KeyPicker=false,SubTabUnderline=true},
 })
 --// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://110090697336524"
+local IVORY_ICON = "rbxassetid://113133903091338"
 task.spawn(function()
 	task.wait()
 	local function trySetIcon(parent)
@@ -108,11 +108,11 @@ local PT = win:AddTab({Name="Player",Icon = "swords"})
 local WT = win:AddTab({Name="World",Icon = "swords"})
 local ST = win:AddTab({Name="Settings",Icon = "swords"})
 
-local QK = MT:AddSubTab("Quick Actions","rbxassetid://110090697336524")
-local AB = MT:AddSubTab("About","rbxassetid://110090697336524")
+local QK = MT:AddSubTab("Quick Actions","rbxassetid://113133903091338")
+local AB = MT:AddSubTab("About","rbxassetid://113133903091338")
 
-local TRS = WT:AddSubTab("Teleport","rbxassetid://110090697336524")
-local WTS = WT:AddSubTab("Teleport to Mouse","rbxassetid://110090697336524")
+local TRS = WT:AddSubTab("Teleport","rbxassetid://113133903091338")
+local WTS = WT:AddSubTab("Teleport to Mouse","rbxassetid://113133903091338")
 
 local WTMG = WTS:AddLeftGroupbox("Click Teleport","mouse-pointer")
 WTMG:AddButton("Teleport to Mouse",function()
@@ -325,8 +325,8 @@ local SGR = AB:AddRightGroupbox("Live Stats","bar-chart")
 local CL = SGR:AddLabel("Clicks: Loading...")
 task.spawn(function() while true do pcall(function() local a=I(GCA) if a then local raw = tostring(a) local num = tonumber((raw:match("[%d%.]+"))) or 0 local suffix = raw:match("([KMBT])") if suffix == "K" then num = num * 1000 elseif suffix == "M" then num = num * 1000000 end CL:SetText("Clicks: "..tostring(num)) end end) task.wait(2) end end)
 
-local MS = PT:AddSubTab("Movement","rbxassetid://110090697336524")
-local VS = PT:AddSubTab("Visuals","rbxassetid://110090697336524")
+local MS = PT:AddSubTab("Movement","rbxassetid://113133903091338")
+local VS = PT:AddSubTab("Visuals","rbxassetid://113133903091338")
 
 local SPG = MS:AddLeftGroupbox("Walk Speed","gauge")
 local WST = SPG:AddToggle("WST",{Text="Enable Walk Speed",Default=false,Tooltip="Change your movement speed"})

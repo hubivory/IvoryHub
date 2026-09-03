@@ -93,8 +93,8 @@ end
 --// ========================================================
 
 local CrashTab = Window:AddTab({ Name = "Crash Tracker", Icon = "swords" })
-local CrashSub = CrashTab:AddSubTab("Live Data", "rbxassetid://110090697336524")
-local CrashSub2 = CrashTab:AddSubTab("Session", "rbxassetid://110090697336524")
+local CrashSub = CrashTab:AddSubTab("Live Data", "rbxassetid://113133903091338")
+local CrashSub2 = CrashTab:AddSubTab("Session", "rbxassetid://113133903091338")
 
 local CG1 = CrashSub:AddLeftGroupbox("Live Crash Value", "activity")
 local CrashLabel = CG1:AddLabel("Crash: waiting for a roll...")
@@ -137,7 +137,7 @@ CG3:AddButton({
 	end,
 })
 --// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://110090697336524"
+local IVORY_ICON = "rbxassetid://113133903091338"
 task.spawn(function()
 	task.wait()
 	local function trySetIcon(parent)
@@ -247,7 +247,7 @@ getgenv().RocksCrashTracker.revealConn = revealConn
 --// ========================================================
 
 local AssistTab = Window:AddTab({ Name = "Cash-Out Assist", Icon = "swords" })
-local AssistSub = AssistTab:AddSubTab("Suggestion", "rbxassetid://110090697336524")
+local AssistSub = AssistTab:AddSubTab("Suggestion", "rbxassetid://113133903091338")
 local AG1 = AssistSub:AddLeftGroupbox("Suggested Cash-Out", "target")
 
 local AssistCrashLabel = AG1:AddLabel("Crash: waiting for a roll...")
@@ -306,7 +306,7 @@ getgenv().RocksCrashTracker.assistConn = assistConn
 --// ========================================================
 
 local AutoLoopTab = Window:AddTab({ Name = "Auto-Loop", Icon = "swords" })
-local AutoLoopSub = AutoLoopTab:AddSubTab("Auto-Fill", "rbxassetid://110090697336524")
+local AutoLoopSub = AutoLoopTab:AddSubTab("Auto-Fill", "rbxassetid://113133903091338")
 local ALG1 = AutoLoopSub:AddLeftGroupbox("Auto-Fill Auto-Roll", "repeat")
 
 local AutoLoopEnabled = false
@@ -438,7 +438,7 @@ getgenv().RocksCrashTracker.autoLoopRollConn = autoLoopRollConn
 --// ========================================================
 
 local AutoCollectTab = Window:AddTab({ Name = "Auto Collect", Icon = "swords" })
-local AutoCollectSub = AutoCollectTab:AddSubTab("Shards", "rbxassetid://110090697336524")
+local AutoCollectSub = AutoCollectTab:AddSubTab("Shards", "rbxassetid://113133903091338")
 local ACG1 = AutoCollectSub:AddLeftGroupbox("Auto Collect Shards", "magnet")
 
 local AutoCollectEnabled = false
@@ -544,7 +544,7 @@ getgenv().RocksCrashTracker.shardSyncConn = shardSyncConn
 --// ========================================================
 
 local ShopTab = Window:AddTab({ Name = "Rune Shop", Icon = "swords" })
-local ShopSub = ShopTab:AddSubTab("Auto-Buy", "rbxassetid://110090697336524")
+local ShopSub = ShopTab:AddSubTab("Auto-Buy", "rbxassetid://113133903091338")
 local SG1 = ShopSub:AddLeftGroupbox("Auto-Buy Runes", "shopping-cart")
 
 local AutoShopEnabled = false
@@ -667,8 +667,8 @@ getgenv().RocksCrashTracker.shopLoopThread = shopLoopThread
 --// ========================================================
 
 local EventsTab = Window:AddTab({ Name = "Live Events", Icon = "swords" })
-local EventsSub = EventsTab:AddSubTab("World Event", "rbxassetid://110090697336524")
-local EventsSub2 = EventsTab:AddSubTab("Luck Boost", "rbxassetid://110090697336524")
+local EventsSub = EventsTab:AddSubTab("World Event", "rbxassetid://113133903091338")
+local EventsSub2 = EventsTab:AddSubTab("Luck Boost", "rbxassetid://113133903091338")
 
 local EG1 = EventsSub:AddLeftGroupbox("World Mutation Event", "globe")
 local WorldEventLabel = EG1:AddLabel("No active event")
@@ -766,8 +766,8 @@ getgenv().RocksCrashTracker.eventsLoopThread = eventsLoopThread
 --// ========================================================
 
 local ClaimsTab = Window:AddTab({ Name = "Claims & Junk", Icon = "swords" })
-local ClaimsSub = ClaimsTab:AddSubTab("Index Stars", "rbxassetid://110090697336524")
-local ClaimsSub2 = ClaimsTab:AddSubTab("Junk Crush", "rbxassetid://110090697336524")
+local ClaimsSub = ClaimsTab:AddSubTab("Index Stars", "rbxassetid://113133903091338")
+local ClaimsSub2 = ClaimsTab:AddSubTab("Junk Crush", "rbxassetid://113133903091338")
 
 local CG1c = ClaimsSub:AddLeftGroupbox("Auto-Claim Index Stars", "star")
 local AutoClaimEnabled = false
@@ -915,8 +915,8 @@ CG2c:AddButton({
 --// ========================================================
 
 local PlotTab = Window:AddTab({ Name = "Plot Optimizer", Icon = "swords" })
-local PlotSub = PlotTab:AddSubTab("Income", "rbxassetid://110090697336524")
-local PlotSub2 = PlotTab:AddSubTab("Bulk Actions", "rbxassetid://110090697336524")
+local PlotSub = PlotTab:AddSubTab("Income", "rbxassetid://113133903091338")
+local PlotSub2 = PlotTab:AddSubTab("Bulk Actions", "rbxassetid://113133903091338")
 
 local PG1 = PlotSub:AddLeftGroupbox("Current Plot Income", "dollar-sign")
 local PlotTotalLabel = PG1:AddLabel("Total: -- (no data yet)")
