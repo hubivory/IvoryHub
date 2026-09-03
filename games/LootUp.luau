@@ -166,7 +166,8 @@ local function fireRemote(name, ...)
 end
 
 local function safeFire(name, ...)
-	pcall(function() fireRemote(name, ...) end)
+	local args = { ... }
+	pcall(function() fireRemote(name, unpack(args)) end)
 end
 
 --// ═══════════════════════════════════════════════════════════
