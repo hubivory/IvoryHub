@@ -165,9 +165,9 @@ oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
 end)
 
 local Tabs = {
-	Aimbot = Window:AddTab({ Name = "Aimbot", Icon = "crosshair", Description = "Aimbot & Silent Aim" }),
-	Visuals = Window:AddTab({ Name = "Visuals", Icon = "eye", Description = "ESP, Highlights, Health" }),
-	Settings = Window:AddTab({ Name = "Settings", Icon = "settings", Description = "UI settings" }),
+	Aimbot = Window:AddTab({ Name = "Aimbot", Icon = "rbxassetid://110090697336524", Description = "Aimbot & Silent Aim" }),
+	Visuals = Window:AddTab({ Name = "Visuals", Icon = "rbxassetid://110090697336524", Description = "ESP, Highlights, Health" }),
+	Settings = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524", Description = "UI settings" }),
 }
 
 -- ═══════════════════════════════════════════════════════════

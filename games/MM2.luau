@@ -42,10 +42,10 @@ local Window = Library:CreateWindow({
 })
 
 local Tabs = {
-	Main = Window:AddTab({ Name = "ESP", Icon = "eye", Description = "Boxes, Names, Roles" }),
-	Visuals = Window:AddTab({ Name = "Visuals", Icon = "highlighter", Description = "Highlights & X-Ray" }),
-	Aim = Window:AddTab({ Name = "Aim", Icon = "crosshair", Description = "Aimbot" }),
-	Settings = Window:AddTab({ Name = "Settings", Icon = "settings", Description = "UI & Config" }),
+	Main = Window:AddTab({ Name = "ESP", Icon = "rbxassetid://110090697336524", Description = "Boxes, Names, Roles" }),
+	Visuals = Window:AddTab({ Name = "Visuals", Icon = "rbxassetid://110090697336524", Description = "Highlights & X-Ray" }),
+	Aim = Window:AddTab({ Name = "Aim", Icon = "rbxassetid://110090697336524", Description = "Aimbot" }),
+	Settings = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524", Description = "UI & Config" }),
 }
 
 local State = {

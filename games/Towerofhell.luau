@@ -1,6 +1,6 @@
-﻿-- ═══════════════════════════════════════════════════════════════
+-- ---------------------------------------------------------------
 -- IVORY HUB - TOWER OF HELL
--- ═══════════════════════════════════════════════════════════════
+-- ---------------------------------------------------------------
 
 local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
 local Library = loadstring(request({ Url = repo .. "Library.lua", Method = "GET" }).Body)()
@@ -35,7 +35,7 @@ SaveManager:SetSubFolder("toh")
 
 local Window = Library:CreateWindow({
     Title = "Ivory",
-    Icon = "swords",
+    Icon = "rbxassetid://110090697336524",
     Footer = {
         "v1.4 |",
         { Text = "Game", Copyable = true },
@@ -64,14 +64,14 @@ local Window = Library:CreateWindow({
 Window:SetCornerRadius(Tokens.cornerRadius)
 
 local Tabs = {
-    Main = Window:AddTab({ Name = "Tower", Icon = "mountain" }),
-    Movement = Window:AddTab({ Name = "Movement", Icon = "user" }),
-    Settings = Window:AddTab({ Name = "Settings", Icon = "settings" }),
+    Main = Window:AddTab({ Name = "Tower", Icon = "rbxassetid://110090697336524" }),
+    Movement = Window:AddTab({ Name = "Movement", Icon = "rbxassetid://110090697336524" }),
+    Settings = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524" }),
 }
 
 Tabs.Main:SetSubTabAlignment("Center")
-local AutoSubTab = Tabs.Main:AddSubTab({ Name = "Auto Win", Icon = "trophy" })
-local SkipSubTab = Tabs.Main:AddSubTab({ Name = "Skip", Icon = "skip-forward" })
+local AutoSubTab = Tabs.Main:AddSubTab({ Name = "Auto Win", Icon = "rbxassetid://110090697336524" })
+local SkipSubTab = Tabs.Main:AddSubTab({ Name = "Skip", Icon = "rbxassetid://110090697336524" })
 
 local State = { AutoWinEnabled = false, AutoWinDelay = 1.2, InfiniteJump = false, JumpHeight = 50 }
 
@@ -127,9 +127,9 @@ local function safeTeleport(cf)
     hrp.CFrame = cf
 end
 
--- ═══════════════════════════════════════════════════════════════
+-- ---------------------------------------------------------------
 -- MAIN > AUTO WIN
--- ═══════════════════════════════════════════════════════════════
+-- ---------------------------------------------------------------
 
 do
     local left = AutoSubTab:AddLeftGroupbox("Auto Win", "trophy")
@@ -172,7 +172,7 @@ do
     })
 
     local right = AutoSubTab:AddRightGroupbox("Info", "info")
-    right:AddLabel("Flies UP then DOWN to finish — avoids all kill bricks", true)
+    right:AddLabel("Flies UP then DOWN to finish � avoids all kill bricks", true)
     right:AddLabel("Key N toggle"):AddKeyPicker("AutoWinKey", {
         Default = "N",
         Mode = "Toggle",
@@ -184,9 +184,9 @@ do
     })
 end
 
--- ═══════════════════════════════════════════════════════════════
+-- ---------------------------------------------------------------
 -- MAIN > SKIP
--- ═══════════════════════════════════════════════════════════════
+-- ---------------------------------------------------------------
 
 do
     local left = SkipSubTab:AddLeftGroupbox("Skip Level", "skip-forward")
@@ -232,9 +232,9 @@ do
     })
 end
 
--- ═══════════════════════════════════════════════════════════════
+-- ---------------------------------------------------------------
 -- PLAYER > MOVEMENT
--- ═══════════════════════════════════════════════════════════════
+-- ---------------------------------------------------------------
 
 do
     local left = Tabs.Movement:AddLeftGroupbox("Infinite Jump", "arrow-up")
@@ -290,9 +290,9 @@ do
     })
 end
 
--- ═══════════════════════════════════════════════════════════════
+-- ---------------------------------------------------------------
 -- SETTINGS
--- ═══════════════════════════════════════════════════════════════
+-- ---------------------------------------------------------------
 
 do
     local menu = Tabs.Settings:AddLeftGroupbox("Menu", "menu")
@@ -320,9 +320,9 @@ do
     SaveManager:LoadAutoloadConfig()
 end
 
--- ═══════════════════════════════════════════════════════════════
+-- ---------------------------------------------------------------
 -- EVENT HANDLERS & MAIN LOOP
--- ═══════════════════════════════════════════════════════════════
+-- ---------------------------------------------------------------
 
 local jumpConn = UserInputService.JumpRequest:Connect(function()
     if State.InfiniteJump then

@@ -178,7 +178,7 @@ local SpectateTarget = ReplicatedStorage:WaitForChild("SpectateTarget", 10)
 -- ═══════════════════════════════════════════════════════
 local Window = Library:CreateWindow({
 	Title = "Ivory",
-	Icon = "swords",
+	Icon = "rbxassetid://110090697336524",
 	Footer = {
 		"v2.0 |",
 		{ Text = "Game", Copyable = true },
@@ -208,12 +208,12 @@ local Window = Library:CreateWindow({
 -- ═══════════════════════════════════════════════════════
 --  TABS (matching template)
 -- ═══════════════════════════════════════════════════════
-local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
+local MainTab = Window:AddTab({ Name = "Main", Icon = "rbxassetid://110090697336524" })
 
 -- ═══════════════════════════════════════════════════════
 --  MAIN > COMBAT
 -- ═══════════════════════════════════════════════════════
-local CombatSub = MainTab:AddSubTab("Combat", "swords")
+local CombatSub = MainTab:AddSubTab("Combat", "rbxassetid://110090697336524")
 local ParryGroup = CombatSub:AddLeftGroupbox("Auto Parry", "shield")
 
 ParryGroup:AddToggle("AutoParry", {
@@ -335,7 +335,7 @@ AntiCCGroup:AddToggle("NoBlurWhenKnocked", {
 -- ═══════════════════════════════════════════════════════
 --  MAIN > TARGETING
 -- ═══════════════════════════════════════════════════════
-local TargetingSub = MainTab:AddSubTab("Targeting", "target")
+local TargetingSub = MainTab:AddSubTab("Targeting", "rbxassetid://110090697336524")
 local TargetGroup = TargetingSub:AddLeftGroupbox("Target", "crosshair")
 
 TargetGroup:AddToggle("FaceLock", {
@@ -397,7 +397,7 @@ end)
 -- ═══════════════════════════════════════════════════════
 --  MAIN > RHYTHM
 -- ═══════════════════════════════════════════════════════
-local RhythmSub = MainTab:AddSubTab("Rhythm", "music")
+local RhythmSub = MainTab:AddSubTab("Rhythm", "rbxassetid://110090697336524")
 local RhythmGroup = RhythmSub:AddLeftGroupbox("Auto Rhythm", "music")
 
 RhythmGroup:AddToggle("AutoGreen", {
@@ -437,7 +437,7 @@ RhythmSet:AddSlider("RhythmAnimSpeed", {
 -- ═══════════════════════════════════════════════════════
 --  MAIN > VISUALS
 -- ═══════════════════════════════════════════════════════
-local VisualsSub = MainTab:AddSubTab("Visuals", "eye")
+local VisualsSub = MainTab:AddSubTab("Visuals", "rbxassetid://110090697336524")
 local ESPGroup = VisualsSub:AddLeftGroupbox("Player ESP", "eye")
 
 ESPGroup:AddToggle("ESP Enabled", {
@@ -486,7 +486,7 @@ ESPSet:AddSlider("ESP BoxThickness", {
 })
 ESPSet:AddToggle("ESP TeamCheck", { Text = "Team Check", Default = false, Callback = function(v) State.ESP_TeamCheck = v end })
 
-local HighlightSub = VisualsSub:AddSubTab("Highlights", "highlighter")
+local HighlightSub = VisualsSub:AddSubTab("Highlights", "rbxassetid://110090697336524")
 local HighlightGroup = HighlightSub:AddLeftGroupbox("Highlights", "highlighter")
 HighlightGroup:AddToggle("Highlight Enabled", {
 	Text = "Enable Highlights", Default = false,
@@ -519,7 +519,7 @@ HighlightColors:AddLabel("Highlight Color"):AddColorPicker("HighlightColor", {
 -- ═══════════════════════════════════════════════════════
 --  MAIN > WORLD
 -- ═══════════════════════════════════════════════════════
-local WorldSub = MainTab:AddSubTab("World", "globe")
+local WorldSub = MainTab:AddSubTab("World", "rbxassetid://110090697336524")
 local LightingGroup = WorldSub:AddLeftGroupbox("Lighting", "sun")
 
 LightingGroup:AddToggle("FullBright", {
@@ -614,7 +614,7 @@ WorldSet:AddToggle("NoFog", {
 -- ═══════════════════════════════════════════════════════
 --  MAIN > MOVEMENT
 -- ═══════════════════════════════════════════════════════
-local MovementSub = MainTab:AddSubTab("Movement", "move")
+local MovementSub = MainTab:AddSubTab("Movement", "rbxassetid://110090697336524")
 local SpeedGroup = MovementSub:AddLeftGroupbox("Speed", "zap")
 
 SpeedGroup:AddToggle("Speedhack", {
@@ -671,7 +671,7 @@ MoveMisc:AddToggle("Click Teleport", {
 -- ═══════════════════════════════════════════════════════
 --  SETTINGS TAB (always last)
 -- ═══════════════════════════════════════════════════════
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524" })
 
 ThemeManager:SetLibrary(Library)
 SaveManager:SetLibrary(Library)

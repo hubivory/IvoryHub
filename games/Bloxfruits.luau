@@ -1065,7 +1065,7 @@ end
 
 local Window = Library:CreateWindow({
 	Title = "Ivory",
-	Icon = "swords",
+	Icon = "rbxassetid://110090697336524",
 	Footer = {
 		"v2.0 |",
 		{ Text = "Game", Copyable = true },
@@ -1092,14 +1092,14 @@ local Window = Library:CreateWindow({
 	},
 })
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
-local CombatTab = Window:AddTab({ Name = "Combat", Icon = "swords" })
-local TeleportTab = Window:AddTab({ Name = "Teleport", Icon = "map" })
-local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "eye" })
-local PlayerTab = Window:AddTab({ Name = "Player", Icon = "user" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
+local MainTab = Window:AddTab({ Name = "Main", Icon = "rbxassetid://110090697336524" })
+local CombatTab = Window:AddTab({ Name = "Combat", Icon = "rbxassetid://110090697336524" })
+local TeleportTab = Window:AddTab({ Name = "Teleport", Icon = "rbxassetid://110090697336524" })
+local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "rbxassetid://110090697336524" })
+local PlayerTab = Window:AddTab({ Name = "Player", Icon = "rbxassetid://110090697336524" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524" })
 
-local FarmSub = MainTab:AddSubTab("Farming", "zap")
+local FarmSub = MainTab:AddSubTab("Farming", "rbxassetid://110090697336524")
 local DiscordGroup = FarmSub:AddLeftGroupbox("Community", "users")
 DiscordGroup:AddButton("Join Discord For Dupe", function()
 	pcall(function() setclipboard("https://discord.gg/ivory") end)
@@ -1525,7 +1525,7 @@ end)
 -- ========================================
 -- EXTENDED FARMING (Phase 1)
 -- ========================================
-local ExtFarmSub = MainTab:AddSubTab("Extended", "plus-circle")
+local ExtFarmSub = MainTab:AddSubTab("Extended", "rbxassetid://110090697336524")
 
 -- Boss Farm
 local BossFarmGroup = ExtFarmSub:AddLeftGroupbox("Boss Farm", "skull")
@@ -2217,7 +2217,7 @@ KenGroup:AddButton("Join Team", function()
 	Library:Notify({ Title = "Ivory", Description = "Joined " .. STATE.AutoTeam, Type = "Success", Time = 3 })
 end)
 
-local RaidSub = MainTab:AddSubTab("Raids", "shield")
+local RaidSub = MainTab:AddSubTab("Raids", "rbxassetid://110090697336524")
 local RaidGroup = RaidSub:AddLeftGroupbox("Raid Control", "zap")
 local RaidSet = RaidSub:AddRightGroupbox("Raid Settings", "settings")
 
@@ -2327,7 +2327,7 @@ RaidSet:AddDropdown("RaidType", {
 -- ========================================
 -- SEA EVENTS (Phase 2)
 -- ========================================
-local SeaEventSub = MainTab:AddSubTab("Sea Events", "anchor")
+local SeaEventSub = MainTab:AddSubTab("Sea Events", "rbxassetid://110090697336524")
 local SeaEventGroup = SeaEventSub:AddLeftGroupbox("Event Farm", "ship")
 local SeaEventSettings = SeaEventSub:AddRightGroupbox("Settings", "sliders")
 
@@ -2539,7 +2539,7 @@ SeaEventSettings:AddSlider("FarmHeight", {
 -- ========================================
 -- FRUIT SYSTEM (Phase 5)
 -- ========================================
-local FruitSystemSub = MainTab:AddSubTab("Fruits+", "apple")
+local FruitSystemSub = MainTab:AddSubTab("Fruits+", "rbxassetid://110090697336524")
 local FruitSniperGroup = FruitSystemSub:AddLeftGroupbox("Fruit Sniper", "crosshair")
 local FruitStockGroup = FruitSystemSub:AddRightGroupbox("Stock Checker", "package")
 
@@ -2695,7 +2695,7 @@ FruitStockGroup:AddToggle("AutoBerry", {
 -- ========================================
 -- RACE V4 (Phase 4)
 -- ========================================
-local RaceV4Sub = TeleportTab:AddSubTab("Race V4", "users")
+local RaceV4Sub = TeleportTab:AddSubTab("Race V4", "rbxassetid://110090697336524")
 local TempleGroup = RaceV4Sub:AddLeftGroupbox("Temple of Time", "landmark")
 local TrialsGroup = RaceV4Sub:AddRightGroupbox("Trials & Training", "target")
 
@@ -2799,11 +2799,11 @@ TrialsGroup:AddButton("Teleport to Ancient One", function()
 	end)
 end)
 
-local CombatSub = CombatTab:AddSubTab("Bounty", "crosshair")
+local CombatSub = CombatTab:AddSubTab("Bounty", "rbxassetid://110090697336524")
 local BountyGroup = CombatSub:AddLeftGroupbox("Bounty Farm", "target")
 local BountySet = CombatSub:AddRightGroupbox("Settings", "sliders")
 
-local SkillsSub = CombatTab:AddSubTab("Skills", "zap")
+local SkillsSub = CombatTab:AddSubTab("Skills", "rbxassetid://110090697336524")
 local SkillsGroup = SkillsSub:AddLeftGroupbox("Auto Skills", "swords")
 local SkillsSet = SkillsSub:AddRightGroupbox("Skill Config", "sliders")
 
@@ -2908,7 +2908,7 @@ BountySet:AddSlider("BountyDist", {
 -- ========================================
 -- PVP SECTION (Phase 8)
 -- ========================================
-local PvPSub = CombatTab:AddSubTab("PvP", "swords")
+local PvPSub = CombatTab:AddSubTab("PvP", "rbxassetid://110090697336524")
 local PvPGroup = PvPSub:AddLeftGroupbox("Combat", "crosshair")
 local PvPSettings = PvPSub:AddRightGroupbox("Settings", "sliders")
 
@@ -3047,7 +3047,7 @@ PvPSettings:AddSlider("ClickDelay", {
 	Callback = function(v) STATE.ClickDelay = v end,
 })
 
-local StatsSub = CombatTab:AddSubTab("Stats", "bar-chart")
+local StatsSub = CombatTab:AddSubTab("Stats", "rbxassetid://110090697336524")
 local StatsGroup = StatsSub:AddLeftGroupbox("Auto Stats", "cpu")
 
 StatsGroup:AddToggle("AutoStats", {
@@ -3082,7 +3082,7 @@ StatsGroup:AddButton("Reset Stats", function()
 	pcall(function() CommF:InvokeServer("BuyTrait", "Reset") end)
 end)
 
-local TeleSub1 = TeleportTab:AddSubTab("Islands", "map-pin")
+local TeleSub1 = TeleportTab:AddSubTab("Islands", "rbxassetid://110090697336524")
 local Sea1Group = TeleSub1:AddLeftGroupbox("Sea 1", "compass")
 local Sea2Group = TeleSub1:AddRightGroupbox("Sea 2", "compass")
 
@@ -3094,7 +3094,7 @@ for _, island in ipairs({"DarkArea", "Cafe", "Ship", "Usoapp", "Forgotten", "Cur
 	Sea2Group:AddButton(island, function() teleportToIsland(island) end)
 end
 
-local TeleSub2 = TeleportTab:AddSubTab("NPCs", "user")
+local TeleSub2 = TeleportTab:AddSubTab("NPCs", "rbxassetid://110090697336524")
 local QuestNPCGroup = TeleSub2:AddLeftGroupbox("Quest NPCs", "scroll")
 local ShopNPCGroup = TeleSub2:AddRightGroupbox("Shop NPCs", "shopping-cart")
 
@@ -3115,7 +3115,7 @@ for _, npc in ipairs({"Sword Dealer", "Archangel", "Master of Enhancement", "Exp
 	end)
 end
 
-local ESPSub = VisualsTab:AddSubTab("ESP", "eye")
+local ESPSub = VisualsTab:AddSubTab("ESP", "rbxassetid://110090697336524")
 local ESPGroup = ESPSub:AddLeftGroupbox("Player ESP", "users")
 local WorldESP = ESPSub:AddRightGroupbox("World ESP", "globe")
 
@@ -3186,7 +3186,7 @@ ESPGroup:AddLabel("ESP Color"):AddColorPicker("ESPColor", {
 	Callback = function(v) STATE.ESPColor = v end,
 })
 
-local WorldSub = VisualsTab:AddSubTab("World", "globe")
+local WorldSub = VisualsTab:AddSubTab("World", "rbxassetid://110090697336524")
 local WorldGroup = WorldSub:AddLeftGroupbox("Lighting", "sun")
 
 WorldGroup:AddButton("Full Bright", function()
@@ -3232,7 +3232,7 @@ WorldGroup:AddButton("Fast Mode", function()
 	Library:Notify({ Title = "Ivory", Description = "Fast Mode enabled", Type = "Info", Time = 3 })
 end)
 
-local MoveSub = PlayerTab:AddSubTab("Movement", "move")
+local MoveSub = PlayerTab:AddSubTab("Movement", "rbxassetid://110090697336524")
 local SpeedGroup = MoveSub:AddLeftGroupbox("Speed", "zap")
 local JumpGroup = MoveSub:AddRightGroupbox("Jump", "arrow-up")
 
@@ -3273,7 +3273,7 @@ JumpGroup:AddToggle("Noclip", {
 	Default = "None", Text = "Noclip Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
-local MiscSub = PlayerTab:AddSubTab("Misc", "settings")
+local MiscSub = PlayerTab:AddSubTab("Misc", "rbxassetid://110090697336524")
 local MiscGroup = MiscSub:AddLeftGroupbox("Utilities", "tool")
 
 MiscGroup:AddToggle("WalkOnWater", {
@@ -3460,7 +3460,7 @@ end)
 -- ========================================
 -- PLAYER SUBTABS: Infinite Abilities, Buy, Craft
 -- ========================================
-local PlayerMiscSub = PlayerTab:AddSubTab("Abilities", "star")
+local PlayerMiscSub = PlayerTab:AddSubTab("Abilities", "rbxassetid://110090697336524")
 
 local AbilityGroup = PlayerMiscSub:AddLeftGroupbox("Infinite Abilities", "zap")
 AbilityGroup:AddToggle("InfiniteEnergy", {

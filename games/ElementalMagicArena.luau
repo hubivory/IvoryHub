@@ -260,7 +260,7 @@ local State = {
 
 local Window = Library:CreateWindow({
 	Title = "Ivory",
-	Icon = "swords",
+	Icon = "rbxassetid://110090697336524",
 	Footer = {
 		"v1.4 |",
 		{ Text = isLobby and "Lobby" or "Game", Copyable = true },
@@ -291,18 +291,18 @@ local Window = Library:CreateWindow({
 --// TABS
 --// ═══════════════════════════════════════════════════════════
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
-local PlayerTab = Window:AddTab({ Name = "Player", Icon = "user" })
-local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "eye" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
+local MainTab = Window:AddTab({ Name = "Main", Icon = "rbxassetid://110090697336524" })
+local PlayerTab = Window:AddTab({ Name = "Player", Icon = "rbxassetid://110090697336524" })
+local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "rbxassetid://110090697336524" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524" })
 
 --// ═══════════════════════════════════════════════════════════
 --// MAIN TAB
 --// ═══════════════════════════════════════════════════════════
 
-local AutoSub = MainTab:AddSubTab("Automation", "zap")
-local CombatSub = MainTab:AddSubTab("Combat", "swords")
-local UtilitySub = MainTab:AddSubTab("Utility", "globe")
+local AutoSub = MainTab:AddSubTab("Automation", "rbxassetid://110090697336524")
+local CombatSub = MainTab:AddSubTab("Combat", "rbxassetid://110090697336524")
+local UtilitySub = MainTab:AddSubTab("Utility", "rbxassetid://110090697336524")
 
 --// Automation: Auto Pick
 local PickGroup = AutoSub:AddLeftGroupbox("Auto Pick Class", "person-standing")
@@ -489,8 +489,8 @@ ExtraGroup:AddToggle("NoFallDamage", {
 --// PLAYER TAB
 --// ═══════════════════════════════════════════════════════════
 
-local MoveSub = PlayerTab:AddSubTab("Movement", "move")
-local MiscSub = PlayerTab:AddSubTab("Misc", "settings")
+local MoveSub = PlayerTab:AddSubTab("Movement", "rbxassetid://110090697336524")
+local MiscSub = PlayerTab:AddSubTab("Misc", "rbxassetid://110090697336524")
 
 local SpeedGroup = MoveSub:AddLeftGroupbox("Speed", "zap")
 SpeedGroup:AddToggle("WalkSpeedEnabled", {
@@ -544,8 +544,8 @@ FlyGroup:AddSlider("FlySpeed", {
 --// VISUALS TAB
 --// ═══════════════════════════════════════════════════════════
 
-local ESPSub = VisualsTab:AddSubTab("ESP", "eye")
-local ChamsSub = VisualsTab:AddSubTab("Chams", "highlighter")
+local ESPSub = VisualsTab:AddSubTab("ESP", "rbxassetid://110090697336524")
+local ChamsSub = VisualsTab:AddSubTab("Chams", "rbxassetid://110090697336524")
 
 local ESPControls = ESPSub:AddLeftGroupbox("ESP", "eye")
 ESPControls:AddToggle("ESPEnabled", { Text = "Enable ESP", Default = false })

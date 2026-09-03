@@ -1293,7 +1293,7 @@ local isLobby = false
 
 local Window = Library:CreateWindow({
     Title = "Ivory",
-    Icon = "swords",
+    Icon = "rbxassetid://110090697336524",
     Footer = {
         "v1.4 |",
         { Text = isLobby and "Lobby" or "Game", Copyable = true },
@@ -1332,13 +1332,13 @@ SaveManager:SetSubFolder("game")
 -- Tabs
 ----------------------------------------------------------------------------
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
-local FarmingTab = Window:AddTab({ Name = "Farming", Icon = "leaf" })
-local ShopTab = Window:AddTab({ Name = "Shop", Icon = "bag" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
+local MainTab = Window:AddTab({ Name = "Main", Icon = "rbxassetid://110090697336524" })
+local FarmingTab = Window:AddTab({ Name = "Farming", Icon = "rbxassetid://110090697336524" })
+local ShopTab = Window:AddTab({ Name = "Shop", Icon = "rbxassetid://110090697336524" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524" })
 
 -- Main Tab
-local MainSubTab = MainTab:AddSubTab("Overview", "home")
+local MainSubTab = MainTab:AddSubTab("Overview", "rbxassetid://110090697336524")
 local MainLeft = MainSubTab:AddLeftGroupbox("Discord", "users")
 local MainRight = MainSubTab:AddRightGroupbox("Status", "info")
 
@@ -1357,7 +1357,7 @@ local GnomesLabel = MainRight:AddLabel("Gnomes: 0")
 local PetsLabel = MainRight:AddLabel("Pets: 0/3")
 
 -- Farming Tab
-local AutoSubTab = FarmingTab:AddSubTab("Automation", "zap")
+local AutoSubTab = FarmingTab:AddSubTab("Automation", "rbxassetid://110090697336524")
 local GardenGroup = AutoSubTab:AddLeftGroupbox("Garden", "box-icon")
 local RollGroup = AutoSubTab:AddRightGroupbox("Rolling", "refresh-cw")
 
@@ -1426,7 +1426,7 @@ RollGroup:AddSlider("BuyMargin", {
     Callback = function(v) CONFIG.buyMargin = v / 100 end
 })
 
-local SpendSubTab = FarmingTab:AddSubTab("Spending", "dollar-sign")
+local SpendSubTab = FarmingTab:AddSubTab("Spending", "rbxassetid://110090697336524")
 local UpgradeGroup = SpendSubTab:AddLeftGroupbox("Upgrades", "arrow-up-circle")
 local ExpandGroup = SpendSubTab:AddRightGroupbox("Expansion", "maximize-2")
 
@@ -1461,7 +1461,7 @@ ExpandGroup:AddSlider("ExpandKeep", {
 })
 
 -- Shop Tab
-local GearSubTab = ShopTab:AddSubTab("Gear", "package")
+local GearSubTab = ShopTab:AddSubTab("Gear", "rbxassetid://110090697336524")
 local GearGroup = GearSubTab:AddLeftGroupbox("Item Shop", "shopping-cart")
 local PetShopGroup = GearSubTab:AddRightGroupbox("Pet Field", "heart")
 
@@ -1508,7 +1508,7 @@ PetShopGroup:AddSlider("PetKeep", {
     Callback = function(v) CONFIG.petKeep = v end
 })
 
-local StatusSubTab = ShopTab:AddSubTab("Status", "bar-chart-2")
+local StatusSubTab = ShopTab:AddSubTab("Status", "rbxassetid://110090697336524")
 local StatusGroup = StatusSubTab:AddLeftGroupbox("Shop Stock", "package")
 local PetStatusGroup = StatusSubTab:AddRightGroupbox("Pet Status", "heart")
 

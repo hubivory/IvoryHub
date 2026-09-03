@@ -51,7 +51,7 @@ end)
 
 local Window = Library:CreateWindow({
 	Title = "Ivory",
-	Icon = "swords",
+	Icon = "rbxassetid://110090697336524",
 	Footer = {
 		"v1.4 |",
 		{ Text = isLobby and "Lobby" or "Game", Copyable = true },
@@ -79,19 +79,7 @@ local Window = Library:CreateWindow({
 })
 
 --// ═══════════════════════════════════════════════════════════
---// UI TABS (created early so they always show)
---// ═══════════════════════════════════════════════════════════
-
-local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
-local CombatTab = Window:AddTab({ Name = "Combat", Icon = "swords" })
-local DungeonTab = Window:AddTab({ Name = "Dungeons", Icon = "castle" })
-local EconomyTab = Window:AddTab({ Name = "Economy", Icon = "coins" })
-local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "eye" })
-local StatusTab = Window:AddTab({ Name = "Status", Icon = "bar-chart" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
-
---// ═══════════════════════════════════════════════════════════
---// GAME DATA
+--// GAME DATA (must be before UI widgets so callbacks work)
 --// ═══════════════════════════════════════════════════════════
 
 local CONFIG = {
@@ -151,12 +139,397 @@ local STATE = {
 }
 
 --// ═══════════════════════════════════════════════════════════
+--// UI TABS + SUBTABS (created immediately for instant render)
+--// ═══════════════════════════════════════════════════════════
+
+local MainTab = Window:AddTab({ Name = "Main", Icon = "rbxassetid://110090697336524" })
+local CombatTab = Window:AddTab({ Name = "Combat", Icon = "rbxassetid://110090697336524" })
+local DungeonTab = Window:AddTab({ Name = "Dungeons", Icon = "rbxassetid://110090697336524" })
+local EconomyTab = Window:AddTab({ Name = "Economy", Icon = "rbxassetid://110090697336524" })
+local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "rbxassetid://110090697336524" })
+local StatusTab = Window:AddTab({ Name = "Status", Icon = "rbxassetid://110090697336524" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524" })
+
+local FarmingSub = MainTab:AddSubTab("Farming", "rbxassetid://110090697336524")
+local QuestSub = MainTab:AddSubTab("Quests", "rbxassetid://110090697336524")
+local SkillsSub = CombatTab:AddSubTab("Skills", "rbxassetid://110090697336524")
+local StatsSub = CombatTab:AddSubTab("Stats", "rbxassetid://110090697336524")
+local DungeonSub = DungeonTab:AddSubTab("Dungeons", "rbxassetid://110090697336524")
+local TowerSub = DungeonTab:AddSubTab("Towers", "rbxassetid://110090697336524")
+local ForgeSub = EconomyTab:AddSubTab("Forge & Enchant", "rbxassetid://110090697336524")
+local MerchantSub = EconomyTab:AddSubTab("Merchants", "rbxassetid://110090697336524")
+local MovementSub = VisualsTab:AddSubTab("Movement", "rbxassetid://110090697336524")
+local VisualSub = VisualsTab:AddSubTab("Visuals", "rbxassetid://110090697336524")
+local LiveSub = StatusTab:AddSubTab("Live", "rbxassetid://110090697336524")
+local ToolsSub = StatusTab:AddSubTab("Tools", "rbxassetid://110090697336524")
+
+--// ═══════════════════════════════════════════════════════════
+--// MAIN TAB WIDGETS
+--// ═══════════════════════════════════════════════════════════
+
+local DiscordGroup = FarmingSub:AddLeftGroupbox("Community", "users")
+DiscordGroup:AddButton("Join Discord", function()
+	pcall(function() setclipboard("https://discord.gg/MCWYKBdB4E") end)
+	Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 })
+end)
+DiscordGroup:AddLabel("Click above to join our Discord for dupes, updates & more!")
+
+local FarmGroup = FarmingSub:AddRightGroupbox("Auto Farm", "cpu")
+FarmGroup:AddToggle("AutoFarm", {
+	Text = "Auto Farm",
+	Default = false,
+	Callback = function(v) CONFIG.autoFarm = v end,
+})
+FarmGroup:AddToggle("AutoSwing", {
+	Text = "Auto Swing",
+	Default = true,
+	Callback = function(v) CONFIG.autoSwing = v end,
+})
+FarmGroup:AddToggle("AutoLoot", {
+	Text = "Auto Collect Loot",
+	Default = false,
+	Callback = function(v) CONFIG.autoLoot = v end,
+})
+FarmGroup:AddDropdown("FarmWorld", {
+	Values = { "1", "2", "3", "4", "5", "6", "7" },
+	Default = 1,
+	Text = "World",
+	Callback = function(v) CONFIG.farmWorld = tonumber(v) or 1 end,
+})
+
+local EquipGroup = FarmingSub:AddLeftGroupbox("Equipment", "package")
+EquipGroup:AddToggle("AutoEquip", {
+	Text = "Auto Equip Best",
+	Default = false,
+	Callback = function(v) CONFIG.autoEquip = v end,
+})
+EquipGroup:AddToggle("AutoSell", {
+	Text = "Auto Sell",
+	Default = false,
+	Callback = function(v) CONFIG.autoSell = v end,
+})
+EquipGroup:AddSlider("SellRarity", {
+	Text = "Sell Below Rarity",
+	Default = 1,
+	Min = 1,
+	Max = 7,
+	Rounding = 0,
+	Callback = function(v) CONFIG.sellRarity = v end,
+})
+
+local QuestGroup = QuestSub:AddLeftGroupbox("Quests", "check-circle")
+QuestGroup:AddToggle("AutoQuests", {
+	Text = "Auto Claim Quests",
+	Default = false,
+	Callback = function(v) CONFIG.autoQuests = v end,
+})
+QuestGroup:AddToggle("AutoDaily", {
+	Text = "Auto Daily Rewards",
+	Default = false,
+	Callback = function(v) CONFIG.autoDaily = v end,
+})
+QuestGroup:AddToggle("AutoSpin", {
+	Text = "Auto Season Spin",
+	Default = false,
+	Callback = function(v) CONFIG.autoSpin = v end,
+})
+QuestGroup:AddToggle("AutoPotions", {
+	Text = "Auto Use Potions",
+	Default = false,
+	Callback = function(v) CONFIG.autoPotions = v end,
+})
+
+--// ═══════════════════════════════════════════════════════════
+--// COMBAT TAB WIDGETS
+--// ═══════════════════════════════════════════════════════════
+
+local SkillGroup = SkillsSub:AddLeftGroupbox("Skills", "zap")
+SkillGroup:AddToggle("AutoSkills", {
+	Text = "Auto Cast Skills",
+	Default = false,
+	Callback = function(v) CONFIG.autoSkills = v end,
+})
+SkillGroup:AddToggle("SkillSlot1", {
+	Text = "Skill Slot 1",
+	Default = true,
+	Callback = function(v) CONFIG.skillSlot1 = v end,
+})
+SkillGroup:AddToggle("SkillSlot2", {
+	Text = "Skill Slot 2",
+	Default = true,
+	Callback = function(v) CONFIG.skillSlot2 = v end,
+})
+SkillGroup:AddToggle("SkillSlot3", {
+	Text = "Skill Slot 3",
+	Default = true,
+	Callback = function(v) CONFIG.skillSlot3 = v end,
+})
+SkillGroup:AddToggle("AutoDodge", {
+	Text = "Auto Dodge",
+	Default = false,
+	Callback = function(v) CONFIG.autoDodge = v end,
+})
+
+local StatGroup = StatsSub:AddLeftGroupbox("Auto Stats", "bar-chart")
+StatGroup:AddToggle("AutoStats", {
+	Text = "Auto Upgrade Stats",
+	Default = false,
+	Callback = function(v) CONFIG.autoStats = v end,
+})
+StatGroup:AddDropdown("StatType", {
+	Values = { "Damage", "Health", "Defence", "Speed", "Luck" },
+	Default = "Damage",
+	Text = "Stat Type",
+	Callback = function(v) CONFIG.statType = v end,
+})
+StatGroup:AddSlider("StatAmount", {
+	Text = "Points Per Click",
+	Default = 1,
+	Min = 1,
+	Max = 50,
+	Rounding = 0,
+	Callback = function(v) CONFIG.statAmount = v end,
+})
+
+local RebirthGroup = StatsSub:AddRightGroupbox("Rebirth", "refresh-cw")
+RebirthGroup:AddToggle("AutoRebirth", {
+	Text = "Auto Rebirth",
+	Default = false,
+	Callback = function(v) CONFIG.autoRebirth = v end,
+})
+
+--// ═══════════════════════════════════════════════════════════
+--// DUNGEONS TAB WIDGETS
+--// ═══════════════════════════════════════════════════════════
+
+local DungeonGroup = DungeonSub:AddLeftGroupbox("Dungeons", "castle")
+DungeonGroup:AddToggle("AutoDungeon", {
+	Text = "Auto Dungeon",
+	Default = false,
+	Callback = function(v) CONFIG.autoDungeon = v end,
+})
+DungeonGroup:AddToggle("DungeonLeave", {
+	Text = "Auto Leave When Done",
+	Default = false,
+	Callback = function(v) CONFIG.dungeonLeave = v end,
+})
+
+local TowerGroup = TowerSub:AddLeftGroupbox("Towers", "building")
+TowerGroup:AddToggle("AutoTower", {
+	Text = "Auto Tower",
+	Default = false,
+	Callback = function(v) CONFIG.autoTower = v end,
+})
+TowerGroup:AddToggle("AutoInfiniteTower", {
+	Text = "Auto Infinite Tower",
+	Default = false,
+	Callback = function(v) CONFIG.autoInfiniteTower = v end,
+})
+TowerGroup:AddToggle("TowerSpeed", {
+	Text = "x2 Tower Speed",
+	Default = false,
+	Callback = function(v) CONFIG.towerSpeed = v end,
+})
+
+--// ═══════════════════════════════════════════════════════════
+--// ECONOMY TAB WIDGETS
+--// ═══════════════════════════════════════════════════════════
+
+local ForgeGroup = ForgeSub:AddLeftGroupbox("Forge", "hammer")
+ForgeGroup:AddToggle("AutoForge", {
+	Text = "Auto Forge",
+	Default = false,
+	Callback = function(v) CONFIG.autoForge = v end,
+})
+ForgeGroup:AddToggle("AutoEnchant", {
+	Text = "Auto Enchant",
+	Default = false,
+	Callback = function(v) CONFIG.autoEnchant = v end,
+})
+
+local MerchantGroup = MerchantSub:AddLeftGroupbox("Merchants", "shopping-cart")
+MerchantGroup:AddButton("Refresh Stock", function()
+	safeFire("GoldMerchant", "Refresh")
+end)
+MerchantGroup:AddButton("Buy Merchant", function()
+	safeFire("GoldMerchant", "Buy")
+end)
+
+--// ═══════════════════════════════════════════════════════════
+--// VISUALS TAB WIDGETS
+--// ═══════════════════════════════════════════════════════════
+
+local MovementGroup = MovementSub:AddLeftGroupbox("Movement", "move")
+MovementGroup:AddToggle("Fly", {
+	Text = "Fly",
+	Default = false,
+	Callback = function(v)
+		CONFIG.fly = v
+		if v then startFly() else stopFly() end
+	end,
+})
+MovementGroup:AddSlider("FlySpeed", {
+	Text = "Fly Speed",
+	Default = 50,
+	Min = 10,
+	Max = 200,
+	Rounding = 0,
+	Callback = function(v) CONFIG.flySpeed = v end,
+})
+MovementGroup:AddToggle("InfiniteJump", {
+	Text = "Infinite Jump",
+	Default = false,
+	Callback = function(v) CONFIG.infiniteJump = v end,
+})
+MovementGroup:AddToggle("NoClip", {
+	Text = "NoClip",
+	Default = false,
+	Callback = function(v)
+		CONFIG.noclip = v
+		if v then startNoclip() else stopNoclip() end
+	end,
+})
+MovementGroup:AddSlider("WalkSpeed", {
+	Text = "Walk Speed",
+	Default = 16,
+	Min = 16,
+	Max = 200,
+	Rounding = 0,
+	Callback = function(v) CONFIG.walkSpeed = v end,
+})
+MovementGroup:AddSlider("JumpPower", {
+	Text = "Jump Power",
+	Default = 50,
+	Min = 50,
+	Max = 300,
+	Rounding = 0,
+	Callback = function(v) CONFIG.jumpPower = v end,
+})
+MovementGroup:AddToggle("AntiAFK", {
+	Text = "Anti AFK",
+	Default = false,
+	Callback = function(v) CONFIG.antiAFK = v end,
+})
+
+local VisualGroup = VisualSub:AddLeftGroupbox("Visuals", "eye")
+VisualGroup:AddToggle("HitboxExpand", {
+	Text = "Hitbox Expand",
+	Default = false,
+	Callback = function(v) CONFIG.hitboxExpand = v end,
+})
+VisualGroup:AddSlider("HitboxSize", {
+	Text = "Hitbox Size",
+	Default = 15,
+	Min = 5,
+	Max = 50,
+	Rounding = 0,
+	Callback = function(v) CONFIG.hitboxSize = v end,
+})
+
+--// ═══════════════════════════════════════════════════════════
+--// STATUS TAB WIDGETS
+--// ═══════════════════════════════════════════════════════════
+
+local LiveGroup = LiveSub:AddLeftGroupbox("Status", "activity")
+local PhaseLabel = LiveGroup:AddLabel("Phase: idle")
+local NoteLabel = LiveGroup:AddLabel("Note: -")
+local KillsLabel = LiveGroup:AddLabel("Kills: 0")
+local LootLabel = LiveGroup:AddLabel("Loot: 0")
+
+local ToolsGroup = ToolsSub:AddLeftGroupbox("Tools", "wrench")
+ToolsGroup:AddButton("Teleport to Hub", function()
+	local hub = workspace:FindFirstChild("Hub") or workspace:FindFirstChild("Lobby") or workspace:FindFirstChild("Spawn")
+	if hub then
+		local part = hub:IsA("BasePart") and hub or hub:FindFirstChildWhichIsA("BasePart")
+		if part then tpTo(part.Position) end
+	end
+end)
+ToolsGroup:AddButton("Rejoin Server", function()
+	TeleportService:Teleport(PlaceId, plr)
+end)
+ToolsGroup:AddButton("Server Hop", function()
+	pcall(function()
+		local servers = HttpService:JSONDecode(request({
+			Url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100",
+			Method = "GET"
+		}).Body)
+		if servers and servers.data then
+			for _, server in ipairs(servers.data) do
+				if server.id ~= game.JobId and server.playing < server.maxPlayers then
+					TeleportService:TeleportToPlaceInstance(PlaceId, server.id, plr)
+					break
+				end
+			end
+		end
+	end)
+end)
+ToolsGroup:AddButton("Copy JobId", function()
+	pcall(function() setclipboard(game.JobId) end)
+	Library:Notify({ Title = "Ivory", Description = "JobId copied!", Type = "Success", Time = 2 })
+end)
+
+--// ═══════════════════════════════════════════════════════════
+--// SETTINGS TAB (always last)
+--// ═══════════════════════════════════════════════════════════
+
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
+ThemeManager:SetFolder("IvoryHub")
+SaveManager:SetFolder("IvoryHub")
+if isLobby then SaveManager:SetSubFolder("lobby") else SaveManager:SetSubFolder("game") end
+
+ThemeManager:ApplyToTab(SettingsTab)
+SaveManager:BuildConfigSection(SettingsTab)
+
+local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "wrench")
+MenuGroup:AddToggle("KeybindMenuOpen", {
+	Default = Library.KeybindFrame.Visible,
+	Text = "Open Keybind Menu",
+	Callback = function(value) Library.KeybindFrame.Visible = value end,
+})
+MenuGroup:AddToggle("ShowCustomCursor", {
+	Text = "Custom Cursor",
+	Default = Library.ShowCustomCursor,
+	Callback = function(Value) Library.ShowCustomCursor = Value end,
+})
+MenuGroup:AddButton("Test Notification", function()
+	Library:Notify({ Title = "Ivory", Description = "This is a test notification!", Type = "Info", Time = 3 })
+end)
+MenuGroup:AddDropdown("NotifySide", {
+	Values = { "Left", "Right" },
+	Default = "Right",
+	Text = "Notification Side",
+	Callback = function(Value) Library.NotifySide = Value end,
+})
+MenuGroup:AddDropdown("DPIDropdown", {
+	Values = { "50%", "75%", "100%", "125%", "150%", "175%", "Refhts" },
+	Default = "100%",
+	Text = "DPI Scale",
+	Callback = function(Value) Library:SetDPIScale(tonumber(Value:gsub("%%", ""))) end,
+})
+MenuGroup:AddSlider("UICornerSlider", {
+	Text = "Corner Radius",
+	Default = 4,
+	Min = 0,
+	Max = 20,
+	Rounding = 0,
+	Callback = function(value) Window:SetCornerRadius(value) end,
+})
+MenuGroup:AddDivider()
+MenuGroup:AddLabel("Menu: RightShift (default)"):AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
+MenuGroup:AddButton("Unload", function() Library:Unload() end)
+Library.ToggleKeybind = Options.MenuKeybind
+SaveManager:LoadAutoloadConfig()
+
+--// ═══════════════════════════════════════════════════════════
 --// REMOTE DISCOVERY (Knit-based: Net/Events + Net/Functions)
 --// ═══════════════════════════════════════════════════════════
 
-local Net = ReplicatedStorage:WaitForChild("Net", 10)
-local NetEvents = Net and Net:WaitForChild("Events", 5)
-local NetFunctions = Net and Net:WaitForChild("Functions", 5)
+local Net = ReplicatedStorage:FindFirstChild("Net")
+local NetEvents = Net and Net:FindFirstChild("Events")
+local NetFunctions = Net and Net:FindFirstChild("Functions")
 
 local RemoteCache = {}
 local function getRemote(name)
@@ -554,8 +927,8 @@ end
 --// MAIN TAB
 --// ═══════════════════════════════════════════════════════════
 
-local FarmingSub = MainTab:AddSubTab("Farming", "zap")
-local QuestSub = MainTab:AddSubTab("Quests", "check-circle")
+local FarmingSub = MainTab:AddSubTab("Farming", "rbxassetid://110090697336524")
+local QuestSub = MainTab:AddSubTab("Quests", "rbxassetid://110090697336524")
 
 local DiscordGroup = FarmingSub:AddLeftGroupbox("Community", "users")
 DiscordGroup:AddButton("Join Discord For Dupe", function()
@@ -633,8 +1006,8 @@ QuestGroup:AddToggle("AutoPotions", {
 --// COMBAT TAB
 --// ═══════════════════════════════════════════════════════════
 
-local SkillsSub = CombatTab:AddSubTab("Skills", "zap")
-local StatsSub = CombatTab:AddSubTab("Stats", "bar-chart")
+local SkillsSub = CombatTab:AddSubTab("Skills", "rbxassetid://110090697336524")
+local StatsSub = CombatTab:AddSubTab("Stats", "rbxassetid://110090697336524")
 
 local SkillGroup = SkillsSub:AddLeftGroupbox("Skills", "zap")
 SkillGroup:AddToggle("AutoSkills", {
@@ -695,8 +1068,8 @@ RebirthGroup:AddToggle("AutoRebirth", {
 --// DUNGEONS TAB
 --// ═══════════════════════════════════════════════════════════
 
-local DungeonSub = DungeonTab:AddSubTab("Dungeons", "castle")
-local TowerSub = DungeonTab:AddSubTab("Towers", "building")
+local DungeonSub = DungeonTab:AddSubTab("Dungeons", "rbxassetid://110090697336524")
+local TowerSub = DungeonTab:AddSubTab("Towers", "rbxassetid://110090697336524")
 
 local DungeonGroup = DungeonSub:AddLeftGroupbox("Dungeons", "castle")
 DungeonGroup:AddToggle("AutoDungeon", {
@@ -731,8 +1104,8 @@ TowerGroup:AddToggle("TowerSpeed", {
 --// ECONOMY TAB
 --// ═══════════════════════════════════════════════════════════
 
-local ForgeSub = EconomyTab:AddSubTab("Forge & Enchant", "hammer")
-local MerchantSub = EconomyTab:AddSubTab("Merchants", "shopping-cart")
+local ForgeSub = EconomyTab:AddSubTab("Forge & Enchant", "rbxassetid://110090697336524")
+local MerchantSub = EconomyTab:AddSubTab("Merchants", "rbxassetid://110090697336524")
 
 local ForgeGroup = ForgeSub:AddLeftGroupbox("Forge", "hammer")
 ForgeGroup:AddToggle("AutoForge", {
@@ -758,8 +1131,8 @@ end)
 --// VISUALS TAB
 --// ═══════════════════════════════════════════════════════════
 
-local MovementSub = VisualsTab:AddSubTab("Movement", "move")
-local VisualSub = VisualsTab:AddSubTab("Visuals", "eye")
+local MovementSub = VisualsTab:AddSubTab("Movement", "rbxassetid://110090697336524")
+local VisualSub = VisualsTab:AddSubTab("Visuals", "rbxassetid://110090697336524")
 
 local MovementGroup = MovementSub:AddLeftGroupbox("Movement", "move")
 MovementGroup:AddToggle("Fly", {
@@ -832,8 +1205,8 @@ VisualGroup:AddSlider("HitboxSize", {
 --// STATUS TAB
 --// ═══════════════════════════════════════════════════════════
 
-local LiveSub = StatusTab:AddSubTab("Live", "activity")
-local ToolsSub = StatusTab:AddSubTab("Tools", "wrench")
+local LiveSub = StatusTab:AddSubTab("Live", "rbxassetid://110090697336524")
+local ToolsSub = StatusTab:AddSubTab("Tools", "rbxassetid://110090697336524")
 
 local LiveGroup = LiveSub:AddLeftGroupbox("Status", "activity")
 local PhaseLabel = LiveGroup:AddLabel("Phase: idle")

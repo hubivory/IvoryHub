@@ -53,7 +53,7 @@ local ThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
 local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
 
 local Window = Library:CreateWindow({
-    Title = "Ivory", Icon = "swords",
+    Title = "Ivory", Icon = "rbxassetid://110090697336524",
     Footer = { "v1.4 |", { Text = isLobby and "Lobby" or "Game", Copyable = true }, "|", { Text = tostring(LocalPlayer.UserId), Copyable = true } },
     CopyableFooter = true, FuzzySearch = true, SearchValues = true, Minimizable = true,
     MinimizeKeybind = Enum.KeyCode.RightBracket, MinimizedWidth = 280, NotifySide = "Right",
@@ -69,31 +69,31 @@ SaveManager:SetSubFolder(isLobby and "lobby" or "game")
 local Remotes = ReplicatedStorage:WaitForChild("Remotes", 5)
 local function getRemote(name) if Remotes then return Remotes:FindFirstChild(name) end return nil end
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
-local PlayerTab = Window:AddTab({ Name = "Player", Icon = "user" })
-local FarmTab = Window:AddTab({ Name = "Farm", Icon = "leaf" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
+local MainTab = Window:AddTab({ Name = "Main", Icon = "rbxassetid://110090697336524" })
+local PlayerTab = Window:AddTab({ Name = "Player", Icon = "rbxassetid://110090697336524" })
+local FarmTab = Window:AddTab({ Name = "Farm", Icon = "rbxassetid://110090697336524" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524" })
 
-local AutoSubTab = MainTab:AddSubTab("Automation", "zap")
+local AutoSubTab = MainTab:AddSubTab("Automation", "rbxassetid://110090697336524")
 local CoreGroup = AutoSubTab:AddLeftGroupbox("Core Features", "box-icon")
 local BoostGroup = AutoSubTab:AddRightGroupbox("Boosts & Rewards", "box-icon")
 
-local ConfigSubTab = MainTab:AddSubTab("Config", "cog")
+local ConfigSubTab = MainTab:AddSubTab("Config", "rbxassetid://110090697336524")
 local ConfigGroup = ConfigSubTab:AddLeftGroupbox("Settings", "box-icon")
 local InfoGroup = ConfigSubTab:AddRightGroupbox("Info", "box-icon")
 
-local MovementSubTab = PlayerTab:AddSubTab("Movement", "zap")
+local MovementSubTab = PlayerTab:AddSubTab("Movement", "rbxassetid://110090697336524")
 local SpeedGroup = MovementSubTab:AddLeftGroupbox("Speed", "box-icon")
 local JumpGroup = MovementSubTab:AddRightGroupbox("Jump", "box-icon")
 
-local VisualsSubTab = PlayerTab:AddSubTab("Visuals", "eye")
+local VisualsSubTab = PlayerTab:AddSubTab("Visuals", "rbxassetid://110090697336524")
 local ESPGroup = VisualsSubTab:AddLeftGroupbox("ESP", "box-icon")
 
-local LeavesSubTab = FarmTab:AddSubTab("Leaves", "leaf")
+local LeavesSubTab = FarmTab:AddSubTab("Leaves", "rbxassetid://110090697336524")
 local FarmGroup = LeavesSubTab:AddLeftGroupbox("Auto Farm", "box-icon")
 local TeleportGroup = LeavesSubTab:AddRightGroupbox("Teleport", "box-icon")
 
-local UpgradesSubTab = FarmTab:AddSubTab("Upgrades", "zap")
+local UpgradesSubTab = FarmTab:AddSubTab("Upgrades", "rbxassetid://110090697336524")
 local UpgradesGroup = UpgradesSubTab:AddLeftGroupbox("Upgrades", "box-icon")
 
 local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "box-icon")

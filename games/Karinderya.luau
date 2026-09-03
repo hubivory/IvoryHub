@@ -1,4 +1,4 @@
-﻿local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
+local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
 local Library = loadstring(request({ Url = repo .. "Library.lua", Method = "GET" }).Body)()
 local ThemeManager = loadstring(request({ Url = repo .. "addons/ThemeManager.lua", Method = "GET" }).Body)()
 local SaveManager = loadstring(request({ Url = repo .. "addons/SaveManager.lua", Method = "GET" }).Body)()
@@ -72,9 +72,9 @@ end
 table.sort(npcNamesWithRarity)
 table.insert(npcNamesWithRarity, 1, "None")
 
--- ═══════════════════════════════════════
+-- ---------------------------------------
 -- SOFTDRINK ORDER TRACKING
--- ═══════════════════════════════════════
+-- ---------------------------------------
 local activeDrinkOrders = {}
 local lastDrinkAttempt = {}
 local drinkConns = {}
@@ -129,9 +129,9 @@ table.insert(drinkConns, NPCDrink.OnClientEvent:Connect(function(_npcName, drink
     drinkStats.state = string.format("Delivered %s!", resolveDrinkKey(drinkKey))
 end))
 
--- ═══════════════════════════════════════
+-- ---------------------------------------
 -- TELEPORT LOCK - only one feature teleports at a time
--- ═══════════════════════════════════════
+-- ---------------------------------------
 local tpLock = false
 
 -- Waits until the lock is free, takes it, returns a release function
@@ -176,9 +176,9 @@ local function getCash()
     return 0
 end
 
--- ═══════════════════════════════════════
+-- ---------------------------------------
 -- STATE
--- ═══════════════════════════════════════
+-- ---------------------------------------
 local cfg = {
     autoServe = false,
     autoOrder = false,
@@ -208,9 +208,9 @@ local cfg = {
     infJump = false,
 }
 
--- ═══════════════════════════════════════
+-- ---------------------------------------
 -- SOFTDRINK FULFILLMENT (needs cfg)
--- ═══════════════════════════════════════
+-- ---------------------------------------
 local function buyIngredient(key)
     local ingCfg = IngredientsConfig[key]
     if not ingCfg or not ingCfg.Cost then return false end
@@ -263,9 +263,9 @@ local function stepFulfillSoftdrinkOrders()
     return false
 end
 
--- ═══════════════════════════════════════
+-- ---------------------------------------
 -- MONEY LOGGING
--- ═══════════════════════════════════════
+-- ---------------------------------------
 local moneyLog = { entries = {}, totalEarned = 0, totalSpent = 0, startCash = getCash() }
 
 local function logMoney(action, amount)
@@ -282,9 +282,9 @@ local function logMoney(action, amount)
     end
 end
 
--- ═══════════════════════════════════════
+-- ---------------------------------------
 -- STATUS TRACKING
--- ═══════════════════════════════════════
+-- ---------------------------------------
 local status = {
     serve = "Idle",
     order = "Idle",
@@ -307,9 +307,9 @@ local function setStatus(key, text)
     status[key] = text
 end
 
--- ═══════════════════════════════════════
+-- ---------------------------------------
 -- MY NPCs TRACKING (for runaway filtering)
--- ═══════════════════════════════════════
+-- ---------------------------------------
 local myAssignedNPCs = {} -- tracks NPCs assigned to my tables
 
 local function trackNPC(npcId)
@@ -342,23 +342,23 @@ task.spawn(function() while true do
     task.wait(1)
 end end)
 
--- ═══════════════════════════════════════
+-- ---------------------------------------
 -- WINDOW
--- ═══════════════════════════════════════
+-- ---------------------------------------
 local Window = Library:CreateWindow({
     Title = "Ivory",
     Footer = { "Ivory | v1.0", { Text = "v1.0", Copyable = true } },
     Minimizable = true, FuzzySearch = true, SearchValues = true,
 })
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "utensils", Description = "Core Automation" })
-local ShopTab = Window:AddTab({ Name = "Shop", Icon = "shopping-cart", Description = "Buying & Inventory" })
-local PlayerTab = Window:AddTab({ Name = "Player", Icon = "user", Description = "Character Mods" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings", Description = "Themes & UI" })
-local LogsTab = Window:AddTab({ Name = "Logs", Icon = "scroll-text", Description = "Money & Status" })
+local MainTab = Window:AddTab({ Name = "Main", Icon = "rbxassetid://110090697336524", Description = "Core Automation" })
+local ShopTab = Window:AddTab({ Name = "Shop", Icon = "rbxassetid://110090697336524", Description = "Buying & Inventory" })
+local PlayerTab = Window:AddTab({ Name = "Player", Icon = "rbxassetid://110090697336524", Description = "Character Mods" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524", Description = "Themes & UI" })
+local LogsTab = Window:AddTab({ Name = "Logs", Icon = "rbxassetid://110090697336524", Description = "Money & Status" })
 
--- ═══ MAIN TAB: Automation Sub-Tab ═══
-local AutoSub = MainTab:AddSubTab({ Name = "Automation", Icon = "zap" })
+-- --- MAIN TAB: Automation Sub-Tab ---
+local AutoSub = MainTab:AddSubTab({ Name = "Automation", Icon = "rbxassetid://110090697336524" })
 
 local FoodBox = AutoSub:AddLeftGroupbox("Food", "utensils")
 FoodBox:AddToggle("AutoServe", { Text = "Auto Serve Food", Default = false })
@@ -389,8 +389,8 @@ DelaysBox:AddSlider("OrderDelay", { Text = "Order Delay", Default = 2, Min = 0.5
 DelaysBox:AddSlider("CleanDelay", { Text = "Clean Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
 DelaysBox:AddSlider("WashDelay", { Text = "Wash Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
 
--- ═══ MAIN TAB: Furniture & Menu Sub-Tab ═══
-local FurnMenuSub = MainTab:AddSubTab({ Name = "Furniture & Menu", Icon = "armchair" })
+-- --- MAIN TAB: Furniture & Menu Sub-Tab ---
+local FurnMenuSub = MainTab:AddSubTab({ Name = "Furniture & Menu", Icon = "rbxassetid://110090697336524" })
 
 local FurnBox = FurnMenuSub:AddLeftGroupbox("Furniture", "armchair")
 FurnBox:AddToggle("AutoBuyFurniture", { Text = "Auto Buy Furniture", Default = false })
@@ -438,8 +438,8 @@ MenuBox:AddButton({ Text = "Enable All Menus", Func = function()
     pcall(function() ToggleMenu:InvokeServer("LUTONG BAHAY", true) end)
 end })
 
--- ═══ SHOP TAB: Groceries Sub-Tab ═══
-local GrocerySub = ShopTab:AddSubTab({ Name = "Groceries", Icon = "apple" })
+-- --- SHOP TAB: Groceries Sub-Tab ---
+local GrocerySub = ShopTab:AddSubTab({ Name = "Groceries", Icon = "rbxassetid://110090697336524" })
 
 local GroceryBox = GrocerySub:AddLeftGroupbox("Ingredients", "apple")
 GroceryBox:AddToggle("AutoBuyIngredients", { Text = "Auto Buy Ingredients", Default = false, Tooltip = "Auto-buys ingredients when stock is low" })
@@ -453,8 +453,8 @@ local UnlockBox = GrocerySub:AddRightGroupbox("Unlocks", "lock-open")
 UnlockBox:AddToggle("AutoUnlockTables", { Text = "Auto Unlock Tables", Default = false, Tooltip = "Auto-unlocks Table7-12 when affordable" })
 UnlockBox:AddButton({ Text = "Upgrade to Golden Pan", Func = function() pcall(function() UpgradeToGoldenPan:InvokeServer() end) end })
 
--- ═══ SHOP TAB: Boosts & Store Sub-Tab ═══
-local BoostStoreSub = ShopTab:AddSubTab({ Name = "Boosts & Store", Icon = "zap" })
+-- --- SHOP TAB: Boosts & Store Sub-Tab ---
+local BoostStoreSub = ShopTab:AddSubTab({ Name = "Boosts & Store", Icon = "rbxassetid://110090697336524" })
 
 local BoostBox = BoostStoreSub:AddLeftGroupbox("Boosts", "zap")
 BoostBox:AddToggle("AutoUseBoosts", { Text = "Auto Use Boosts", Default = false, Tooltip = "Auto-uses Cash/Luck/UltraLuck potions" })
@@ -467,8 +467,8 @@ StoreBox:AddButton({ Text = "Toggle Store Open/Close", Func = function() pcall(f
 StoreBox:AddToggle("AutoBuyMysteryBox", { Text = "Auto Buy Mystery Box", Default = false, Tooltip = "Buys Mystery Box when you can afford it ($10,000 each, max 5)" })
 StoreBox:AddToggle("AutoOpenMysteryBox", { Text = "Auto Open Mystery Box", Default = false, Tooltip = "Auto-opens mystery boxes when available" })
 
--- ═══ PLAYER TAB: Character Sub-Tab ═══
-local CharSub = PlayerTab:AddSubTab({ Name = "Character", Icon = "person-standing" })
+-- --- PLAYER TAB: Character Sub-Tab ---
+local CharSub = PlayerTab:AddSubTab({ Name = "Character", Icon = "rbxassetid://110090697336524" })
 
 local CharBox = CharSub:AddLeftGroupbox("Movement", "person-standing")
 CharBox:AddSlider("WalkSpeed", { Text = "Walk Speed", Default = 16, Min = 16, Max = 100, Rounding = 0 })
@@ -479,8 +479,8 @@ CharBox:AddToggle("AntiAfk", { Text = "Anti-AFK", Default = false, Tooltip = "Pr
 local EspBox = CharSub:AddRightGroupbox("Visuals", "eye")
 EspBox:AddToggle("EspNPCs", { Text = "ESP NPCs", Default = false, Tooltip = "Highlights all NPCs with colored boxes" })
 
--- ═══ PLAYER TAB: Teleports Sub-Tab ═══
-local TPSub = PlayerTab:AddSubTab({ Name = "Teleports", Icon = "map-pin" })
+-- --- PLAYER TAB: Teleports Sub-Tab ---
+local TPSub = PlayerTab:AddSubTab({ Name = "Teleports", Icon = "rbxassetid://110090697336524" })
 
 local PlotTPBox = TPSub:AddLeftGroupbox("My Plot", "map-pin")
 PlotTPBox:AddButton({ Text = "Teleport to Counter", Func = function() local p = getPlot() if p then local c = p:FindFirstChild("Counter") if c then local cp = c:FindFirstChild("Comp", true) if cp then tp(cp.CFrame * CFrame.new(0,3,0)) end end end end })
@@ -492,9 +492,9 @@ local WorldTPBox = TPSub:AddRightGroupbox("World", "globe")
 WorldTPBox:AddButton({ Text = "Teleport to Grocery", Func = function() local g = Workspace:FindFirstChild("Grocery") if g then local c = g:FindFirstChild("Comp", true) if c then tp(c.CFrame * CFrame.new(0,3,0)) end end end })
 WorldTPBox:AddButton({ Text = "Teleport to Shop", Func = function() local s = Workspace:FindFirstChild("SHOP") if s then local sh = s:FindFirstChild("Shop") if sh then local pp = sh:FindFirstChild("ProximityPrompt") if pp and pp.Parent:IsA("BasePart") then tp(pp.Parent.CFrame * CFrame.new(0,3,0)) end end end end })
 
--- ═══ SETTINGS TAB ═══
-local ThemesSub = SettingsTab:AddSubTab({ Name = "Themes & UI", Icon = "palette" })
-local ConfigSub = SettingsTab:AddSubTab({ Name = "Config", Icon = "save" })
+-- --- SETTINGS TAB ---
+local ThemesSub = SettingsTab:AddSubTab({ Name = "Themes & UI", Icon = "rbxassetid://110090697336524" })
+local ConfigSub = SettingsTab:AddSubTab({ Name = "Config", Icon = "rbxassetid://110090697336524" })
 
 -- LOGS TAB
 local StatusBox = LogsTab:AddLeftGroupbox("Status", "activity")
@@ -619,7 +619,7 @@ Options.WalkSpeed:OnChanged(function(v) cfg.walkSpeed = v local _,h = getChar() 
 Toggles.InfJump:OnChanged(function(s) cfg.infJump = s end)
 Toggles.AutoRefreshLogs:OnChanged(function(s) cfg.autoRefreshLogs = s end)
 
--- ═══ AUTO SERVE ═══
+-- --- AUTO SERVE ---
 task.spawn(function() while true do
     if cfg.autoServe then
         local cashBefore = getCash()
@@ -696,7 +696,7 @@ task.spawn(function() while true do
     task.wait(0.3)
 end end)
 
--- ═══ AUTO ORDER ═══
+-- --- AUTO ORDER ---
 task.spawn(function() while true do
     if cfg.autoOrder then
         local totalAssigned = 0
@@ -758,7 +758,7 @@ task.spawn(function() while true do
     task.wait(0.5)
 end end)
 
--- ═══ AUTO CLAIM CODES ═══
+-- --- AUTO CLAIM CODES ---
 task.spawn(function() local claimed = {} while true do
     if cfg.autoClaimCodes then
         setStatus("codes", "Claiming codes...")
@@ -782,7 +782,7 @@ task.spawn(function() local claimed = {} while true do
     task.wait(10)
 end end)
 
--- ═══ AUTO PAN ═══
+-- --- AUTO PAN ---
 task.spawn(function() while true do
     if cfg.autoPan then
         local char, hum = getChar()
@@ -849,7 +849,7 @@ task.spawn(function() while true do
     task.wait(0.5)
 end end)
 
--- ═══ AUTO CLEAN ═══
+-- --- AUTO CLEAN ---
 task.spawn(function() while true do
     if cfg.autoClean then
         setStatus("clean", "Scanning...")
@@ -932,7 +932,7 @@ task.spawn(function() while true do
     task.wait(Options.CleanDelay and Options.CleanDelay.Value or 2)
 end end)
 
--- ═══ AUTO WASH ═══
+-- --- AUTO WASH ---
 task.spawn(function() while true do
     if cfg.autoWash then
         setStatus("wash", "Scanning...")
@@ -1052,7 +1052,7 @@ task.spawn(function() while true do
     task.wait(Options.WashDelay and Options.WashDelay.Value or 2)
 end end)
 
--- ═══ AUTO FIX CHILLER ═══
+-- --- AUTO FIX CHILLER ---
 task.spawn(function() while true do
     if cfg.autoFixChiller then
         local plot = getPlot()
@@ -1095,7 +1095,7 @@ task.spawn(function() while true do
     task.wait(3)
 end end)
 
--- ═══ AUTO BUY MERCHANT ═══
+-- --- AUTO BUY MERCHANT ---
 task.spawn(function() while true do
     if cfg.autoBuyMerchant then
         local hasItems = false
@@ -1141,7 +1141,7 @@ task.spawn(function() while true do
     task.wait(5)
 end end)
 
--- ═══ AUTO BUY MYSTERY BOX ═══
+-- --- AUTO BUY MYSTERY BOX ---
 task.spawn(function() while true do
     if cfg.autoBuyMysteryBox then
         local mbCfg = MysteryBoxConfig and MysteryBoxConfig.Common
@@ -1172,7 +1172,7 @@ task.spawn(function() while true do
     task.wait(5)
 end end)
 
--- ═══ AUTO OPEN MYSTERY BOX ═══
+-- --- AUTO OPEN MYSTERY BOX ---
 local MYSTERY_COORDS = {
     Karenderya  = Vector3.new(-183.31, 2.72, -92.42),
     Karenderya2 = Vector3.new(-9.31, 2.72, -92.42),
@@ -1242,7 +1242,7 @@ task.spawn(function() while true do
     task.wait(5)
 end end)
 
--- ═══ AUTO BUY FURNITURE ═══
+-- --- AUTO BUY FURNITURE ---
 task.spawn(function() while true do
     if cfg.autoBuyFurniture then
         setStatus("buyFurn", "Checking shop...")
@@ -1311,7 +1311,7 @@ task.spawn(function() while true do
     task.wait(Options.FurnDelay and Options.FurnDelay.Value or 5)
 end end)
 
--- ═══ AUTO PLACE / UPGRADE FURNITURE ═══
+-- --- AUTO PLACE / UPGRADE FURNITURE ---
 task.spawn(function()
     local priceLookup = {}
     local furnCfg = FurnitureConfig
@@ -1448,7 +1448,7 @@ task.spawn(function()
     end
 end)
 
--- ═══ AUTO BUY INGREDIENTS ═══
+-- --- AUTO BUY INGREDIENTS ---
 task.spawn(function() while true do
     if cfg.autoBuyIngredients then
         setStatus("buyIng", "Checking stock...")
@@ -1492,7 +1492,7 @@ task.spawn(function() while true do
     task.wait(5)
 end end)
 
--- ═══ AUTO USE BOOSTS ═══
+-- --- AUTO USE BOOSTS ---
 task.spawn(function() while true do
     if cfg.autoUseBoosts then
         local used = 0
@@ -1528,7 +1528,7 @@ task.spawn(function() while true do
     task.wait(30)
 end end)
 
--- ═══ AUTO UNLOCK TABLES ═══
+-- --- AUTO UNLOCK TABLES ---
 task.spawn(function() while true do
     if cfg.autoUnlockTables then
         setStatus("unlockTbl", "Checking tables...")
@@ -1566,7 +1566,7 @@ task.spawn(function() while true do
     task.wait(10)
 end end)
 
--- ═══ AUTO UNLOCK MENU ═══
+-- --- AUTO UNLOCK MENU ---
 task.spawn(function() while true do
     if cfg.autoUnlockMenu then
         setStatus("unlockMenu", "Checking menu...")
@@ -1595,7 +1595,7 @@ task.spawn(function() while true do
     task.wait(15)
 end end)
 
--- ═══ NOCLIP ═══
+-- --- NOCLIP ---
 RunService.Stepped:Connect(function()
     if cfg.noclip then
         local char = LocalPlayer.Character
@@ -1609,7 +1609,7 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- ═══ ANTI-AFK ═══
+-- --- ANTI-AFK ---
 task.spawn(function()
     local VirtualUser = game:GetService("VirtualUser")
     LocalPlayer.Idled:Connect(function()
@@ -1620,7 +1620,7 @@ task.spawn(function()
     end)
 end)
 
--- ═══ ESP NPCS ═══
+-- --- ESP NPCS ---
 task.spawn(function()
     local espFolder = Instance.new("Folder")
     espFolder.Name = "KarinderyaESP"
@@ -1672,16 +1672,16 @@ task.spawn(function()
     end
 end)
 
--- ═══════════════════════════════════════
+-- ---------------------------------------
 -- WALKSPEED & INFINITE JUMP
--- ═══════════════════════════════════════
+-- ---------------------------------------
 LocalPlayer.CharacterAdded:Connect(function(c) local h = c:WaitForChild("Humanoid",10) if h then h.WalkSpeed = cfg.walkSpeed end end)
 do local _,h = getChar() if h then h.WalkSpeed = cfg.walkSpeed end end
 UserInputService.JumpRequest:Connect(function() if cfg.infJump then local _,h = getChar() if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end end end)
 
--- ═══════════════════════════════════════
+-- ---------------------------------------
 -- LOGS REFRESH LOOP
--- ═══════════════════════════════════════
+-- ---------------------------------------
 task.spawn(function() while true do
     if Library.Toggled then
         for _, key in ipairs(statusOrder) do
@@ -1699,9 +1699,9 @@ task.spawn(function() while true do
     task.wait(interval)
 end end)
 
--- ═══════════════════════════════════════
+-- ---------------------------------------
 -- CASH MONITOR (passive detection)
--- ═══════════════════════════════════════
+-- ---------------------------------------
 task.spawn(function()
     local lastCash = getCash()
     while true do

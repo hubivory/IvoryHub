@@ -1143,7 +1143,7 @@ end
 
 local Window = Library:CreateWindow({
 	Title = "Ivory",
-	Icon = "lemon",
+	Icon = "rbxassetid://110090697336524",
 	Footer = {
 		"v1.4 |",
 		{ Text = "Game", Copyable = true },
@@ -1175,13 +1175,13 @@ _G.__LEMON_WIN = Window
 -- tabs & sub-tabs
 --------------------------------------------------------------------------------
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
+local MainTab = Window:AddTab({ Name = "Main", Icon = "rbxassetid://110090697336524" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524" })
 
-local AutoSub = MainTab:AddSubTab("Automation", "zap")
-local FruitSub = MainTab:AddSubTab("Fruit", "apple")
-local PrestigeSub = MainTab:AddSubTab("Prestige", "star")
-local StatusSub = MainTab:AddSubTab("Status", "activity")
+local AutoSub = MainTab:AddSubTab("Automation", "rbxassetid://110090697336524")
+local FruitSub = MainTab:AddSubTab("Fruit", "rbxassetid://110090697336524")
+local PrestigeSub = MainTab:AddSubTab("Prestige", "rbxassetid://110090697336524")
+local StatusSub = MainTab:AddSubTab("Status", "rbxassetid://110090697336524")
 
 --------------------------------------------------------------------------------
 -- Automation: Tycoon

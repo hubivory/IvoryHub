@@ -74,11 +74,11 @@ local BigNum = {
 }
 
 local Tabs = {
-    Main = Window:AddTab({Name="Main", Icon="house", Description="Dashboard"}),
-    Farming = Window:AddTab({Name="Farming", Icon="tractor", Description="Train & Wins & Collect"}),
-    Inventory = Window:AddTab({Name="Inventory", Icon="backpack", Description="Tails, Trails, Auras, Charms"}),
-    Rebirth = Window:AddTab({Name="Rebirth", Icon="refresh-cw", Description="Rebirth"}),
-    Settings = Window:AddTab({Name="Settings", Icon="settings", Description="Config"}),
+    Main = Window:AddTab({Name="Main", Icon = "rbxassetid://110090697336524", Description="Dashboard"}),
+    Farming = Window:AddTab({Name="Farming", Icon = "rbxassetid://110090697336524", Description="Train & Wins & Collect"}),
+    Inventory = Window:AddTab({Name="Inventory", Icon = "rbxassetid://110090697336524", Description="Tails, Trails, Auras, Charms"}),
+    Rebirth = Window:AddTab({Name="Rebirth", Icon = "rbxassetid://110090697336524", Description="Rebirth"}),
+    Settings = Window:AddTab({Name="Settings", Icon = "rbxassetid://110090697336524", Description="Config"}),
 }
 Tabs.Farming:SetSubTabAlignment("Center")
 local FarmTrain = Tabs.Farming:AddSubTab("Train")

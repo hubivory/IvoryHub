@@ -1,4 +1,4 @@
-﻿local Players = game:GetService("Players")
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
@@ -210,7 +210,7 @@ end
 
 local Window = Library:CreateWindow({
 	Title = "Ivory",
-	Icon = "flame",
+	Icon = "rbxassetid://110090697336524",
 	Footer = {
 		"v1.4 |",
 		{ Text = "Game", Copyable = true },
@@ -229,13 +229,13 @@ local Window = Library:CreateWindow({
 	CornerRadius = 4,
 })
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
-local ShopTab = Window:AddTab({ Name = "Shop", Icon = "shopping-cart" })
-local PlayerTab = Window:AddTab({ Name = "Player", Icon = "user" })
-local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "eye" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
+local MainTab = Window:AddTab({ Name = "Main", Icon = "rbxassetid://110090697336524" })
+local ShopTab = Window:AddTab({ Name = "Shop", Icon = "rbxassetid://110090697336524" })
+local PlayerTab = Window:AddTab({ Name = "Player", Icon = "rbxassetid://110090697336524" })
+local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "rbxassetid://110090697336524" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524" })
 
-local AutoSub = MainTab:AddSubTab("Automation", "zap")
+local AutoSub = MainTab:AddSubTab("Automation", "rbxassetid://110090697336524")
 local MeltGroup = AutoSub:AddLeftGroupbox("Melt", "flame")
 local SellGroup = AutoSub:AddRightGroupbox("Sell", "coins")
 local CollectGroup = AutoSub:AddRightGroupbox("Collect", "package")
@@ -356,7 +356,7 @@ PlaytimeGroup:AddButton("Claim All Index Stages", function()
 	end
 end)
 
-local TeleSub = MainTab:AddSubTab("Teleport", "map-pin")
+local TeleSub = MainTab:AddSubTab("Teleport", "rbxassetid://110090697336524")
 local TeleGroup = TeleSub:AddLeftGroupbox("Stage Teleport", "navigation")
 
 TeleGroup:AddDropdown("TeleportDropdown", {
@@ -377,7 +377,7 @@ TeleGroup:AddButton("TP to Current Stage", function()
 	pcall(function() Remotes.TeleportToStage:FireServer() end)
 end)
 
-local UpgradeSub = ShopTab:AddSubTab("Upgrades", "arrow-up-circle")
+local UpgradeSub = ShopTab:AddSubTab("Upgrades", "rbxassetid://110090697336524")
 local UpgradeGroup = UpgradeSub:AddLeftGroupbox("Upgrades", "trending-up")
 
 UpgradeGroup:AddToggle("AutoBuyUpgrade", {
@@ -404,7 +404,7 @@ UpgradeGroup:AddButton("Buy Max Melt", function()
 	end)
 end)
 
-local WeaponSub = ShopTab:AddSubTab("Weapons", "swords")
+local WeaponSub = ShopTab:AddSubTab("Weapons", "rbxassetid://110090697336524")
 local WeaponGroup = WeaponSub:AddLeftGroupbox("Weapons", "shield")
 
 WeaponGroup:AddToggle("AutoBuyWeapon", {
@@ -429,7 +429,7 @@ BackpackGroup:AddButton("Buy Backpack Now", function()
 	pcall(function() Remotes.BuyBackpack:InvokeServer() end)
 end)
 
-local PotionSub = ShopTab:AddSubTab("Potions", "droplet")
+local PotionSub = ShopTab:AddSubTab("Potions", "rbxassetid://110090697336524")
 local PotionGroup = PotionSub:AddLeftGroupbox("Potions", "droplet")
 
 PotionGroup:AddToggle("AutoBuyPotion", {
@@ -454,7 +454,7 @@ PotionGroup:AddButton("Buy Cash Potion", function()
 	pcall(function() Remotes.BuyPotion:InvokeServer("coins_1") end)
 end)
 
-local MoveSub = PlayerTab:AddSubTab("Movement", "move")
+local MoveSub = PlayerTab:AddSubTab("Movement", "rbxassetid://110090697336524")
 local SpeedGroup = MoveSub:AddLeftGroupbox("Speed", "zap")
 local JumpGroup = MoveSub:AddRightGroupbox("Jump", "arrow-up")
 
@@ -514,7 +514,7 @@ JumpGroup:AddToggle("InfJump", {
 	NoUI = false,
 })
 
-local ESPSub = VisualsTab:AddSubTab("ESP", "eye")
+local ESPSub = VisualsTab:AddSubTab("ESP", "rbxassetid://110090697336524")
 local ESPGroup = ESPSub:AddLeftGroupbox("Player ESP", "users")
 
 ESPGroup:AddToggle("ESPEnabled", {

@@ -65,9 +65,9 @@ UserInputService.InputBegan:Connect(function(input, gpe)
 end)
 
 local Tabs = {
-	Aimbot = Window:AddTab({ Name = "Aimbot", Icon = "crosshair", Description = "Aimbot & Triggerbot" }),
-	Visuals = Window:AddTab({ Name = "Visuals", Icon = "eye", Description = "ESP, Chams, FOV" }),
-	Settings = Window:AddTab({ Name = "Settings", Icon = "settings", Description = "UI settings" }),
+	Aimbot = Window:AddTab({ Name = "Aimbot", Icon = "rbxassetid://110090697336524", Description = "Aimbot & Triggerbot" }),
+	Visuals = Window:AddTab({ Name = "Visuals", Icon = "rbxassetid://110090697336524", Description = "ESP, Chams, FOV" }),
+	Settings = Window:AddTab({ Name = "Settings", Icon = "rbxassetid://110090697336524", Description = "UI settings" }),
 }
 
 -- ═══════════════════════════════════════════════════════════

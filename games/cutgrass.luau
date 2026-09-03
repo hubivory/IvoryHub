@@ -1390,11 +1390,11 @@ local Window = Library:CreateWindow({
 	Animations = {ToggleWindow = false, TabSwitch = false, Groupbox = false, Dropdown = false, KeyPicker = false, SubTabUnderline = true},
 })
 
-local MainTab = Window:AddTab({Name = "Main", Icon = "home"})
-local SettingsTab = Window:AddTab({Name = "Settings", Icon = "settings"})
+local MainTab = Window:AddTab({Name = "Main", Icon = "rbxassetid://110090697336524"})
+local SettingsTab = Window:AddTab({Name = "Settings", Icon = "rbxassetid://110090697336524"})
 
-local AutomationSub = MainTab:AddSubTab("Automation", "zap")
-local StatusSub = MainTab:AddSubTab("Status", "bar-chart")
+local AutomationSub = MainTab:AddSubTab("Automation", "rbxassetid://110090697336524")
+local StatusSub = MainTab:AddSubTab("Status", "rbxassetid://110090697336524")
 
 local FarmGroup = AutomationSub:AddLeftGroupbox("Core Features", "box-icon")
 local ZoneGroup = AutomationSub:AddRightGroupbox("Zone & Extras", "box-icon")
