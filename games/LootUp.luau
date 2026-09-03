@@ -150,16 +150,19 @@ local STATE = {
 }
 
 --// ═══════════════════════════════════════════════════════════
---// REMOTE DISCOVERY
+--// REMOTE DISCOVERY (Knit-based: Net/Events + Net/Functions)
 --// ═══════════════════════════════════════════════════════════
 
-local Remotes = ReplicatedStorage:WaitForChild("Remotes", 10)
+local Net = ReplicatedStorage:WaitForChild("Net", 10)
+local NetEvents = Net and Net:WaitForChild("Events", 5)
+local NetFunctions = Net and Net:WaitForChild("Functions", 5)
 
 local RemoteCache = {}
 local function getRemote(name)
-	if not Remotes then return nil end
 	if RemoteCache[name] then return RemoteCache[name] end
-	local remote = Remotes:FindFirstChild(name)
+	local remote
+	if NetEvents then remote = NetEvents:FindFirstChild(name) end
+	if not remote and NetFunctions then remote = NetFunctions:FindFirstChild(name) end
 	if remote then
 		RemoteCache[name] = remote
 		return remote
@@ -336,27 +339,21 @@ local function attackEnemy(enemy)
 	local enemyHRP = enemy:FindFirstChild("HumanoidRootPart") or enemy:FindFirstChild("Head")
 	if not enemyHRP then return end
 
-	-- Teleport close to enemy
 	local dist = (enemyHRP.Position - hrp.Position).Magnitude
 	if dist > 10 then
 		tpTo(enemyHRP.Position + Vector3.new(0, 0, 3))
 		task.wait(0.2)
 	end
 
-	-- Auto swing via remotes
-	safeFire("Swing")
-	safeFire("Attack")
-	safeFire("Hit")
-	safeFire("Combat")
-	safeFire("MeleeAttack")
+	safeFire("Combat", enemy)
 end
 
 local function useSkills()
-	if CONFIG.skillSlot1 then safeFire("Skill", 1) safeFire("UseSkill", 1) end
+	if CONFIG.skillSlot1 then safeFire("SkillCast", 1) end
 	task.wait(0.1)
-	if CONFIG.skillSlot2 then safeFire("Skill", 2) safeFire("UseSkill", 2) end
+	if CONFIG.skillSlot2 then safeFire("SkillCast", 2) end
 	task.wait(0.1)
-	if CONFIG.skillSlot3 then safeFire("Skill", 3) safeFire("UseSkill", 3) end
+	if CONFIG.skillSlot3 then safeFire("SkillCast", 3) end
 end
 
 --// ═══════════════════════════════════════════════════════════
@@ -412,50 +409,31 @@ local function collectLoop()
 			task.wait(0.15)
 		end
 	end
-	safeFire("CollectLoot")
-	safeFire("LootAll")
-	safeFire("CollectAll")
-	safeFire("PickupLoot")
-	safeFire("GrabLoot")
+	safeFire("LootDrop")
 end
 
 local function questLoop()
 	if not CONFIG.autoQuests then return end
 	STATE.phase = "quests"
-	safeFire("ClaimQuest")
-	safeFire("ClaimQuests")
-	safeFire("CompleteQuest")
-	safeFire("FinishQuest")
-	safeFire("TurnInQuest")
-	safeFire("AcceptQuest")
-	safeFire("AutoQuest")
+	safeFire("Quest")
 	STATE.questsClaimed += 1
 end
 
 local function equipLoop()
 	if not CONFIG.autoEquip then return end
-	safeFire("EquipBest")
-	safeFire("EquipBestGear")
-	safeFire("AutoEquip")
-	safeFire("Equip", "Best")
+	safeFire("Inventory", "EquipBest")
 end
 
 local function sellLoop()
 	if not CONFIG.autoSell then return end
 	STATE.phase = "selling"
-	safeFire("SellAll")
-	safeFire("SellInventory")
-	safeFire("Sell")
-	safeFire("SellByRarity", CONFIG.sellRarity)
+	safeFire("Inventory", "Sell")
 end
 
 local function forgeLoop()
 	if not CONFIG.autoForge then return end
 	STATE.phase = "forging"
 	safeFire("Forge")
-	safeFire("AutoForge")
-	safeFire("ForgeItem")
-	safeFire("StartForge")
 	STATE.forgesDone += 1
 end
 
@@ -463,9 +441,6 @@ local function enchantLoop()
 	if not CONFIG.autoEnchant then return end
 	STATE.phase = "enchanting"
 	safeFire("Enchant")
-	safeFire("EnchantWeapon")
-	safeFire("AutoEnchant")
-	safeFire("ApplyEnchant")
 	STATE.enchantDone += 1
 end
 
@@ -474,59 +449,40 @@ local function statsLoop()
 	STATE.phase = "stats"
 	local amount = CONFIG.statAmount or 1
 	for _ = 1, amount do
-		safeFire("UpgradeStat", CONFIG.statType)
-		safeFire("AddStat", CONFIG.statType)
-		safeFire("StatUpgrade", CONFIG.statType)
+		safeFire("Inventory", "UpgradeStat", CONFIG.statType)
 	end
 	STATE.statsUpgraded += amount
 end
 
 local function dailyLoop()
 	if not CONFIG.autoDaily then return end
-	safeFire("ClaimDaily")
-	safeFire("DailyReward")
-	safeFire("ClaimPlaytime")
-	safeFire("PlaytimeReward")
-	safeFire("ClaimSeason")
-	safeFire("SeasonReward")
+	safeFire("Reward")
 end
 
 local function potionLoop()
 	if not CONFIG.autoPotions then return end
-	safeFire("UsePotion", "Damage")
-	safeFire("UsePotion", "Coins")
-	safeFire("UsePotion", "Exp")
-	safeFire("UsePotion", "Speed")
-	safeFire("DrinkPotion", "Damage")
-	safeFire("DrinkPotion", "Coins")
-	safeFire("DrinkPotion", "Exp")
+	safeFire("Inventory", "UsePotion")
 	STATE.potionsUsed += 1
 end
 
 local function dungeonLoop()
 	if not CONFIG.autoDungeon then return end
 	STATE.phase = "dungeon"
-	-- Teleport to dungeon pad
 	local pad = workspace:FindFirstChild("DungeonPad") or workspace:FindFirstChild("Dungeon")
 	if pad then
 		local padPart = pad:IsA("BasePart") and pad or pad:FindFirstChildWhichIsA("BasePart")
 		if padPart then
 			tpTo(padPart.Position)
-			safeFire("EnterDungeon")
-			safeFire("StartDungeon")
-			safeFire("JoinDungeon")
+			safeFire("Teleport", "Dungeon")
 		end
 	end
-	-- Auto fight inside dungeon
 	local enemy = getClosestEnemy(300)
 	if enemy then
 		attackEnemy(enemy)
 		if CONFIG.autoSkills then useSkills() end
 	end
 	if CONFIG.dungeonLeave then
-		safeFire("LeaveDungeon")
-		safeFire("ExitDungeon")
-		safeFire("LeaveRun")
+		safeFire("Teleport", "Leave")
 	end
 end
 
@@ -538,15 +494,8 @@ local function towerLoop()
 		local padPart = pad:IsA("BasePart") and pad or pad:FindFirstChildWhichIsA("BasePart")
 		if padPart then
 			tpTo(padPart.Position)
-			safeFire("EnterTower")
-			safeFire("StartTower")
-			safeFire("JoinTower")
+			safeFire("Teleport", "Tower")
 		end
-	end
-	if CONFIG.towerSpeed then
-		safeFire("SpeedTower")
-		safeFire("TowerSpeed")
-		safeFire("x2Speed")
 	end
 	local enemy = getClosestEnemy(300)
 	if enemy then
@@ -563,8 +512,7 @@ local function infiniteTowerLoop()
 		local padPart = pad:IsA("BasePart") and pad or pad:FindFirstChildWhichIsA("BasePart")
 		if padPart then
 			tpTo(padPart.Position)
-			safeFire("EnterInfiniteTower")
-			safeFire("StartInfiniteTower")
+			safeFire("Teleport", "InfiniteTower")
 		end
 	end
 	local enemy = getClosestEnemy(300)
@@ -576,25 +524,18 @@ end
 
 local function rebirthLoop()
 	if not CONFIG.autoRebirth then return end
-	safeFire("Rebirth")
-	safeFire("RebirthRequest")
-	safeFire("DoRebirth")
+	safeFire("Inventory", "Rebirth")
 	STATE.rebirths += 1
 end
 
 local function spinLoop()
 	if not CONFIG.autoSpin then return end
-	safeFire("Spin")
-	safeFire("SpinWheel")
-	safeFire("SeasonSpin")
-	safeFire("UseSpin")
+	safeFire("Reward", "Spin")
 end
 
 local function dodgeLoop()
 	if not CONFIG.autoDodge then return end
-	safeFire("Dodge")
-	safeFire("AutoDodge")
-	safeFire("Roll")
+	safeFire("Dash")
 end
 
 --// ═══════════════════════════════════════════════════════════
@@ -795,14 +736,10 @@ ForgeGroup:AddToggle("AutoEnchant", {
 
 local MerchantGroup = MerchantSub:AddLeftGroupbox("Merchants", "shopping-cart")
 MerchantGroup:AddButton("Refresh Stock", function()
-	safeFire("RequestStock")
-	safeFire("RefreshStock")
-	safeFire("UpdateStock")
+	safeFire("GoldMerchant", "Refresh")
 end)
 MerchantGroup:AddButton("Buy Merchant", function()
-	safeFire("BuyMerchant")
-	safeFire("BuyMerchantItem")
-	safeFire("PurchaseMerchant")
+	safeFire("GoldMerchant", "Buy")
 end)
 
 --// ═══════════════════════════════════════════════════════════
@@ -1102,10 +1039,10 @@ end)
 task.spawn(function()
 	while true do
 		if CONFIG.autoSwing and CONFIG.autoFarm then
-			safeFire("Swing")
-			safeFire("Attack")
-			safeFire("MeleeAttack")
-			safeFire("AutoSwing")
+			local enemy = getClosestEnemy(500)
+			if enemy then
+				safeFire("Combat", enemy)
+			end
 		end
 		task.wait(0.2)
 	end
