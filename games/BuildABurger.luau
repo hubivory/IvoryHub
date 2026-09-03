@@ -143,6 +143,7 @@ end
 -- ═══════════════════════════════════════
 local Window = Library:CreateWindow({
     Title = "Ivory",
+    Icon = "rbxassetid://110090697336524",
     Footer = {
         "v1.4 |",
         { Text = "Build A Burger", Copyable = true },

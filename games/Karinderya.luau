@@ -347,6 +347,7 @@ end end)
 -- ---------------------------------------
 local Window = Library:CreateWindow({
     Title = "Ivory",
+    Icon = "rbxassetid://110090697336524",
     Footer = { "Ivory | v1.0", { Text = "v1.0", Copyable = true } },
     Minimizable = true, FuzzySearch = true, SearchValues = true,
 })

@@ -1376,6 +1376,7 @@ local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
 
 local Window = Library:CreateWindow({
 	Title = "Ivory - Cut Grass",
+	Icon = "rbxassetid://110090697336524",
 	Footer = {"v1.5 |", {Text = tostring(plr.UserId), Copyable = true}},
 	CopyableFooter = true,
 	FuzzySearch = true,

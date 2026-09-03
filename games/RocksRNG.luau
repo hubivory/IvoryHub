@@ -53,6 +53,7 @@ local Toggles = Library.Toggles
 
 local Window = Library:CreateWindow({
 	Title = "Ivory",
+	Icon = "rbxassetid://110090697336524",
 	Footer = {
 		"Rocks RNG |",
 		{ Text = tostring(LocalPlayer.UserId), Copyable = true },

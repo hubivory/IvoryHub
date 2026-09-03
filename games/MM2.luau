@@ -28,7 +28,7 @@ Library.ShowToggleFrameInKeybinds = true
 
 local Window = Library:CreateWindow({
 	Title = "Ivory | MM2",
-	Icon = 95816097006870,
+	Icon = "rbxassetid://110090697336524",
 	NotifySide = "Right",
 	ShowCustomCursor = false,
 	Minimizable = true,

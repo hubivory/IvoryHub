@@ -2458,6 +2458,7 @@ do
 
 	local Window = Library:CreateWindow({
 		Title = "Ivory",
+		Icon = "rbxassetid://110090697336524",
 		Footer = {
 			"v2.1 |",
 			{ Text = "Steal An Egg", Copyable = true },

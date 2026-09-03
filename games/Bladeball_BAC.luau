@@ -67,7 +67,7 @@ Library.ForceCheckbox = false
 Library.ShowToggleFrameInKeybinds = true
 
 local Window = Library:CreateWindow({
-	Title = "Ivory Hub",
+	Title = "Ivory",
 	NotifySide = "Right",
 	ShowCustomCursor = false,
 	Footer = {

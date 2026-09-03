@@ -54,7 +54,7 @@ end)
 --// Window
 local Window = Library:CreateWindow({
 	Title = "Ivory",
-	Icon = "swords",
+	Icon = "110090697336524",
 	Footer = {
 		"v1.4 |",
 		{ Text = isLobby and "Lobby" or "Game", Copyable = true },
@@ -128,11 +128,11 @@ local State = {
 }
 
 --// Tabs
-local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
-local PlayerTab = Window:AddTab({ Name = "Player", Icon = "user" })
-local CombatTab = Window:AddTab({ Name = "Combat", Icon = "swords" })
-local WorldTab = Window:AddTab({ Name = "World", Icon = "globe" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
+local MainTab = Window:AddTab({ Name = "Main", Icon = "110090697336524" })
+local PlayerTab = Window:AddTab({ Name = "Player", Icon = "110090697336524" })
+local CombatTab = Window:AddTab({ Name = "Combat", Icon = "110090697336524" })
+local WorldTab = Window:AddTab({ Name = "World", Icon = "110090697336524" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "110090697336524" })
 
 --// ═══════════════════════════════════════════════════════════
 --// MAIN TAB
@@ -199,7 +199,7 @@ HighlightColors:AddLabel("Highlight Color"):AddColorPicker("HighlightColor", { D
 --// ═══════════════════════════════════════════════════════════
 
 local MovementTab = PlayerTab:AddSubTab("Movement", "move")
-local MiscTab = PlayerTab:AddSubTab("Misc", "settings")
+local MiscTab = PlayerTab:AddSubTab("Misc", "110090697336524")
 
 local SpeedGroup = MovementTab:AddLeftGroupbox("Speed", "zap")
 SpeedGroup:AddToggle("Speed Enabled", { Text = "Enable Speed", Default = false, Callback = function(v)
@@ -218,7 +218,7 @@ JumpGroup:AddSlider("JumpPower Value", { Text = "Jump Power", Default = 50, Min 
 JumpGroup:AddButton("Apply Jump Power", function() pcall(function() LocalPlayer.Character.Humanoid.JumpPower = State.JumpPower_Value end) end)
 JumpGroup:AddToggle("Infinite Jump", { Text = "Infinite Jump", Default = false, Callback = function(v) State.InfiniteJump = v end })
 
-local MiscPlayerGroup = MiscTab:AddLeftGroupbox("Player Mods", "user")
+local MiscPlayerGroup = MiscTab:AddLeftGroupbox("Player Mods", "110090697336524")
 MiscPlayerGroup:AddToggle("No Fall Damage", { Text = "No Fall Damage", Default = false, Callback = function(v) State.NoFallDamage = v end })
 MiscPlayerGroup:AddToggle("Noclip", { Text = "Noclip", Default = false, Callback = function(v) State.Noclip = v end })
 MiscPlayerGroup:AddToggle("Click Teleport", { Text = "Click Teleport", Default = false, Callback = function(v) State.ClickTeleport = v end })
@@ -248,8 +248,8 @@ AimbotGroup:AddToggle("Aimbot TeamCheck", { Text = "Team Check", Default = false
 --// WORLD TAB
 --// ═══════════════════════════════════════════════════════════
 
-local WorldMiscTab = WorldTab:AddSubTab("World Misc", "globe")
-local WorldMiscGroup = WorldMiscTab:AddLeftGroupbox("World Settings", "globe")
+local WorldMiscTab = WorldTab:AddSubTab("World Misc", "110090697336524")
+local WorldMiscGroup = WorldMiscTab:AddLeftGroupbox("World Settings", "110090697336524")
 WorldMiscGroup:AddToggle("Auto Rejoin", { Text = "Auto Rejoin on Kick", Default = false, Callback = function(v) State.AutoRejoin = v end })
 WorldMiscGroup:AddToggle("Anti AFK", { Text = "Anti AFK", Default = false, Callback = function(v) State.AntiAFK = v end })
 WorldMiscGroup:AddButton("Rejoin Now", function() pcall(function() TeleportService:Teleport(PlaceId, LocalPlayer) end) end)

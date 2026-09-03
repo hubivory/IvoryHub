@@ -33,6 +33,7 @@ pcall(function() isLobby = workspace:FindFirstChild("Lobby") ~= nil end)
 
 local Window = Library:CreateWindow({
     Title = "Ivory",
+    Icon = "rbxassetid://110090697336524",
     Footer = {"v1.4 |", {Text=isLobby and "Lobby" or "Game", Copyable=true}, "|", {Text=tostring(LocalPlayer.UserId), Copyable=true}},
     CopyableFooter=true, Center=true, AutoShow=true, Resizable=true, ShowCustomCursor=true, NotifySide="Right",
     SearchbarSize=UDim2.fromScale(0.35,1), FuzzySearch=true, SearchValues=true, Minimizable=true, CornerRadius=10, ToggleKeybind=Enum.KeyCode.RightShift,
