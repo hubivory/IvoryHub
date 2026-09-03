@@ -351,7 +351,7 @@ local function attackEnemy(enemy)
 	local dist = (enemyHRP.Position - hrp.Position).Magnitude
 	if dist > 5 then
 		hrp.CFrame = CFrame.lookAt(
-			(enemyHRP.CFrame * CFrame.new(0, CONFIG.hitboxSize or 2, 5)).Position,
+			(enemyHRP.CFrame * CFrame.new(0, 2, 5)).Position,
 			enemyHRP.Position
 		)
 		task.wait(0.1)
@@ -1059,10 +1059,10 @@ task.spawn(function()
 					if hrp then
 						local dist = (ehrp.Position - hrp.Position).Magnitude
 						if dist > 5 then
-							hrp.CFrame = CFrame.lookAt(
-								(ehrp.CFrame * CFrame.new(0, CONFIG.hitboxSize or 2, 5)).Position,
-								ehrp.Position
-							)
+						hrp.CFrame = CFrame.lookAt(
+							(ehrp.CFrame * CFrame.new(0, 2, 5)).Position,
+							ehrp.Position
+						)
 							task.wait(0.1)
 						end
 						vimClick()
