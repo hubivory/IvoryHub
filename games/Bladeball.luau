@@ -225,6 +225,7 @@ task.spawn(function()
 	end
 end)
 
+MenuGroup:AddButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 }) end)
 MenuGroup:AddButton("Unload", function()
 	pcall(function()
 		for _, obj in ipairs(CoreGui:GetChildren()) do

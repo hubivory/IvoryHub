@@ -710,6 +710,7 @@ MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", {
 	NoUI = true,
 	Text = "Menu keybind",
 })
+MenuGroup:AddButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 }) end)
 MenuGroup:AddButton("Unload", function()
 	Library:Unload()
 end)

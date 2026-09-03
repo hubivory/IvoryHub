@@ -1636,6 +1636,7 @@ ThemeManager:ApplyToTab(SettingsTab)
 local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "box-icon")
 MenuGroup:AddToggle("CustomCursor", {Text = "Custom Cursor", Default = true, Callback = function(v) Library.ShowCustomCursor = v end})
 MenuGroup:AddKeyPicker("MenuKeybind", {Default = "RightShift", Text = "Menu Toggle", Mode = "Toggle", SyncToggleState = false})
+MenuGroup:AddButton({Text = "Join Discord", Callback = function() pcall(function() setclipboard("https://discord.gg/ivory") end) end})
 MenuGroup:AddButton({Text = "Unload", Callback = function() CONFIG.auto = false; stopWalking(); pcall(function() Library:Destroy() end) end})
 MenuGroup:AddButton({Text = "Unstuck", Callback = unstuck})
 

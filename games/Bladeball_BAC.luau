@@ -277,6 +277,7 @@ local CreditsGroup = Tabs.Settings:AddLeftGroupbox("Credits", "heart")
 CreditsGroup:AddLabel('<font size="18" color="#FF69B4"><b>Made by Mommy Veqxoo &lt; / 3</b></font>', true)
 CreditsGroup:AddLabel('<font size="12" color="#FFB7C5"><b>BAC-hardened by ENI</b></font>', true)
 
+MenuGroup:AddButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 }) end)
 MenuGroup:AddButton("Unload", function()
 	pcall(function()
 		DestroyIvoryGuis()

@@ -417,6 +417,7 @@ MenuGroup:AddToggle("CustomCursor", { Text = "Custom Cursor", Default = false, C
 MenuGroup:AddButton("Test Notification", function() Library:Notify({ Title = "Ivory", Description = "Test Notification!", Type = "Success", Time = 5 }) end)
 MenuGroup:AddDropdown("NotifySide", { Text = "Notification Side", Values = {"Left", "Right"}, Default = "Right", Multi = false, Callback = function(v) Library.NotifySide = v end })
 MenuGroup:AddSlider("CornerRadius", { Text = "Corner Radius", Default = 4, Min = 0, Max = 20, Rounding = 0, Callback = function(v) Library.CornerRadius = v end })
+MenuGroup:AddButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 }) end)
 MenuGroup:AddButton("Unload Script", function() Library:Notify({ Title = "Ivory", Description = "Unloading...", Type = "Info", Time = 2 }); task.wait(0.5); for k in pairs(_G) do if string.find(k, "Ivory") then _G[k] = nil end end; pcall(function() Library:ToggleWindow() end) end)
 
 --// Helper: Get LeafSim module

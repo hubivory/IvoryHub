@@ -569,6 +569,9 @@ SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
 ThemeManager:SetFolder("IvoryHub")
 SaveManager:SetFolder("IvoryHub")
 SaveManager:SetSubFolder("melttheice")
+local DiscordGroup = SettingsTab:AddLeftGroupbox("Discord", "users")
+DiscordGroup:AddButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 }) end)
+
 local CreditGroup = SettingsTab:AddLeftGroupbox("Credits", "heart")
 local CreditLabel = CreditGroup:AddLabel({ Text = "", Size = 26, DoesWrap = true })
 local CreditTL = CreditLabel.TextLabel

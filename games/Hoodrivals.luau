@@ -693,6 +693,7 @@ MenuGroup:AddDropdown("DPIDropdown", { Values = { "50%", "75%", "100%", "125%", 
 MenuGroup:AddSlider("UICornerSlider", { Text = "Corner Radius", Default = 4, Min = 0, Max = 20, Rounding = 0, Callback = function(value) Window:SetCornerRadius(value) end })
 MenuGroup:AddDivider()
 MenuGroup:AddLabel("Menu: RightShift (default)"):AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
+MenuGroup:AddButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 }) end)
 MenuGroup:AddButton("Unload", function() Library:Unload() end)
 Library.ToggleKeybind = Options.MenuKeybind
 SaveManager:LoadAutoloadConfig()

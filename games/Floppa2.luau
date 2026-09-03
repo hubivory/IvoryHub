@@ -222,6 +222,7 @@ MG:AddDropdown("DPIDropdown",{Values={"50%","75%","100%","125%","150%","175%","2
 MG:AddSlider("UICornerSlider",{Text="Corner Radius",Default=Library.CornerRadius,Min=0,Max=20,Rounding=0,Callback=function(v) Window:SetCornerRadius(v) end})
 MG:AddDivider()
 MG:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind",{Default="RightShift",NoUI=true,Text="Menu keybind"})
+MG:AddButton("Join Discord",function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library:Notify({Title="Ivory",Description="Discord link copied!",Time=3}) end)
 MG:AddButton("Unload",function() clearESP(); Library:Unload() end)
 Library.ToggleKeybind = Options.MenuKeybind
 SaveManager:LoadAutoloadConfig()

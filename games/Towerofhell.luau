@@ -306,6 +306,7 @@ do
         NoUI = true,
         Text = "Menu keybind",
     })
+    menu:AddButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 }) end)
     menu:AddButton("Unload", function() Library:Unload() end)
     Library.ToggleKeybind = Options.MenuKeybind
 
