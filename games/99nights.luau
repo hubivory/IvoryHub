@@ -205,7 +205,7 @@ task.spawn(function()
 	end
 end)
 
-DiscordGrp:AddButton("Copy Discord Link", function() pcall(function() setclipboard("https://discord.gg/MCWYKBdB4E") end); notify("Discord Link Copied!", "Success") end)
+DiscordGrp:AddButton("Copy Discord Link", function() pcall(function() setclipboard("https://discord.gg/ivory") end); notify("Discord Link Copied!", "Success") end)
 
 local AutoTab = Window:AddTab({ Name = "Automation", Icon = "zap" })
 local AutoGrp = AutoTab:AddLeftGroupbox("Automation", "zap")
