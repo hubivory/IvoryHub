@@ -5565,7 +5565,7 @@ local function updatesling()
             sling.enabled = false
             stopslingTP()
         end
-        if not Toggles.AntiAimUnderground.Value then
+        if Toggles.AntiAimUnderground and not Toggles.AntiAimUnderground.Value then
             if getgenv().InstanceSetUnderground then
                 getgenv().InstanceSetUnderground(false)
             end
