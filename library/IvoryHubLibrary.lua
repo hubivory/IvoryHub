@@ -3292,6 +3292,7 @@ end
 -- Flags table is the one exception permitted by the contract: this
 -- module owns it, so it is declared fresh here.
 Library.Flags = {}
+Library.Toggles = {}
 
 -- Registers a control object under a flag name so it can be saved,
 -- loaded, and looked up by other parts of the library (e.g. a
@@ -5008,9 +5009,24 @@ function Tab:CreateButton(config)
     end
 end
 
-function Tab:CreateToggle(config)
+function Tab:CreateToggle(nameOrConfig, config)
     if Elements.CreateToggle then
-        return Elements.CreateToggle(self.Content, config)
+        local flagName, cfg
+        if type(nameOrConfig) == "string" then
+            flagName = nameOrConfig
+            cfg = config or {}
+        else
+            cfg = nameOrConfig or {}
+            flagName = cfg.Flag
+        end
+        local obj = Elements.CreateToggle(self.Content, cfg)
+        if flagName and obj then
+            Library.Toggles[flagName] = obj
+            if Library._RegisterFlag then
+                Library._RegisterFlag(flagName, obj)
+            end
+        end
+        return obj
     end
 end
 
@@ -5085,8 +5101,23 @@ Tab._wrapSection = function(section)
         section.CreateButton = function(_, config)
             return Elements.CreateButton(section.Instance, config)
         end
-        section.CreateToggle = function(_, config)
-            return Elements.CreateToggle(section.Instance, config)
+        section.CreateToggle = function(_, nameOrConfig, config)
+            local flagName, cfg
+            if type(nameOrConfig) == "string" then
+                flagName = nameOrConfig
+                cfg = config or {}
+            else
+                cfg = nameOrConfig or {}
+                flagName = cfg.Flag
+            end
+            local obj = Elements.CreateToggle(section.Instance, cfg)
+            if flagName and obj then
+                Library.Toggles[flagName] = obj
+                if Library._RegisterFlag then
+                    Library._RegisterFlag(flagName, obj)
+                end
+            end
+            return obj
         end
         section.CreateSlider = function(_, config)
             return Elements.CreateSlider(section.Instance, config)
