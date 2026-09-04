@@ -46,160 +46,131 @@ local Workspace = game:GetService("Workspace")
 
 local isLobby = (game.PlaceId == 92637789841354)
 
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local function httpGet(url) return request({ Url = url, Method = "GET" }).Body end
-local Library = loadstring(httpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	local ok, src = pcall(function()
+		return request({
+			Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+			Method = "GET"
+		}).Body
+	end)
+	if ok then LIB_SRC = src end
+end
+local Library = loadstring(LIB_SRC)()
 
-local Window = Library:CreateWindow({
-    Title = "Ivory", Icon = "swords",
+local Window = Library.CreateWindow({
+    Name = "Ivory",
+    Width = 460,
+    Height = 360,
     Footer = { "v1.4 |", { Text = isLobby and "Lobby" or "Game", Copyable = true }, "|", { Text = tostring(LocalPlayer.UserId), Copyable = true } },
     CopyableFooter = true, FuzzySearch = true, SearchValues = true, Minimizable = true,
     MinimizeKeybind = Enum.KeyCode.RightBracket, MinimizedWidth = 280, NotifySide = "Right",
     ShowCustomCursor = false, SearchKeybind = Enum.KeyCode.F, CornerRadius = 4,
-    Animations = { SubTabUnderline = true },
 })
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
-
-ThemeManager:SetLibrary(Library); SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings(); SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("IvoryHub"); SaveManager:SetFolder("IvoryHub")
-SaveManager:SetSubFolder(isLobby and "lobby" or "game")
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes", 5)
 local function getRemote(name) if Remotes then return Remotes:FindFirstChild(name) end return nil end
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
-local PlayerTab = Window:AddTab({ Name = "Player", Icon = "swords" })
-local FarmTab = Window:AddTab({ Name = "Farm", Icon = "swords" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
+local MainTab = Window:CreateTab({ Name = "Main" })
+local PlayerTab = Window:CreateTab({ Name = "Player" })
+local FarmTab = Window:CreateTab({ Name = "Farm" })
+local SettingsTab = Window:CreateTab({ Name = "Settings" })
 
-local AutoSubTab = MainTab:AddSubTab("Automation", "rbxassetid://79379082636309")
-local CoreGroup = AutoSubTab:AddLeftGroupbox("Core Features", "box-icon")
-local BoostGroup = AutoSubTab:AddRightGroupbox("Boosts & Rewards", "box-icon")
+local AutoSection = MainTab:CreateSection("Automation")
+local CoreGroup = AutoSection
+local BoostGroup = AutoSection
 
-local ConfigSubTab = MainTab:AddSubTab("Config", "rbxassetid://79379082636309")
-local ConfigGroup = ConfigSubTab:AddLeftGroupbox("Settings", "box-icon")
-local InfoGroup = ConfigSubTab:AddRightGroupbox("Info", "box-icon")
+local ConfigSection = MainTab:CreateSection("Config")
+local ConfigGroup = ConfigSection
+local InfoGroup = ConfigSection
 
-local MovementSubTab = PlayerTab:AddSubTab("Movement", "rbxassetid://79379082636309")
-local SpeedGroup = MovementSubTab:AddLeftGroupbox("Speed", "box-icon")
-local JumpGroup = MovementSubTab:AddRightGroupbox("Jump", "box-icon")
+local MovementSection = PlayerTab:CreateSection("Movement")
+local SpeedGroup = MovementSection
+local JumpGroup = MovementSection
 
-local VisualsSubTab = PlayerTab:AddSubTab("Visuals", "rbxassetid://79379082636309")
-local ESPGroup = VisualsSubTab:AddLeftGroupbox("ESP", "box-icon")
+local VisualsSection = PlayerTab:CreateSection("Visuals")
+local ESPGroup = VisualsSection
 
-local LeavesSubTab = FarmTab:AddSubTab("Leaves", "rbxassetid://79379082636309")
-local FarmGroup = LeavesSubTab:AddLeftGroupbox("Auto Farm", "box-icon")
-local TeleportGroup = LeavesSubTab:AddRightGroupbox("Teleport", "box-icon")
+local LeavesSection = FarmTab:CreateSection("Leaves")
+local FarmGroup = LeavesSection
+local TeleportGroup = LeavesSection
 
-local UpgradesSubTab = FarmTab:AddSubTab("Upgrades", "rbxassetid://79379082636309")
-local UpgradesGroup = UpgradesSubTab:AddLeftGroupbox("Upgrades", "box-icon")
+local UpgradesSection = FarmTab:CreateSection("Upgrades")
+local UpgradesGroup = UpgradesSection
 
-local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "box-icon")
-
-------------------------------------------------------------------------
-CoreGroup:AddToggle("AutoFarm", { Text = "Auto Farm Leaves", Default = false,
-    Callback = function(state) _G.IvoryAutoFarm = state; Library:Notify({ Title = "Ivory", Description = state and "Auto Farm Enabled" or "Auto Farm Disabled", Type = "Info", Time = 2 }) end,
-}):AddKeyPicker("AutoFarmKey", { Default = "F", Text = "Auto Farm Key", Mode = "Toggle", SyncToggleState = true, NoUI = false })
-
-CoreGroup:AddToggle("AutoCollect", { Text = "Auto Collect Nearest", Default = false, Callback = function(s) _G.IvoryAutoCollect = s end })
-CoreGroup:AddToggle("AutoSell", { Text = "Auto Sell at Dumpster", Default = false, Callback = function(s) _G.IvoryAutoSell = s end })
-CoreGroup:AddToggle("AntiAFK", { Text = "Anti AFK", Default = false, Callback = function(s) _G.IvoryAntiAFK = s end })
-CoreGroup:AddToggle("NoClip", { Text = "NoClip", Default = false, Callback = function(s) _G.IvoryNoClip = s end })
+local MenuSection = SettingsTab:CreateSection("Menu")
 
 ------------------------------------------------------------------------
-BoostGroup:AddToggle("AutoDailyClaim", { Text = "Auto Daily Claim", Default = false, Callback = function(s) _G.IvoryAutoDailyClaim = s end })
-BoostGroup:AddButton("Claim Daily", function() pcall(function() getRemote("DailyClaim"):FireServer() end); Library:Notify({ Title = "Ivory", Description = "Daily Claimed!", Type = "Success", Time = 3 }) end)
-BoostGroup:AddButton("Claim Free Gift", function() pcall(function() getRemote("FreeGiftClaim"):InvokeServer() end); Library:Notify({ Title = "Ivory", Description = "Free Gift Claimed!", Type = "Success", Time = 3 }) end)
-BoostGroup:AddButton("Use Double Leaves", function() pcall(function() getRemote("UseBoost"):FireServer("DoubleLeaves") end); Library:Notify({ Title = "Ivory", Description = "Double Leaves!", Type = "Success", Time = 3 }) end)
-BoostGroup:AddButton("Use Double Cash", function() pcall(function() getRemote("UseBoost"):FireServer("DoubleCash") end); Library:Notify({ Title = "Ivory", Description = "Double Cash!", Type = "Success", Time = 3 }) end)
-BoostGroup:AddButton("Toggle Music", function() pcall(function() getRemote("ToggleSetting"):FireServer("Music") end) end)
+CoreGroup:CreateToggle({ Name = "Auto Farm Leaves", CurrentValue = false,
+    Callback = function(state) _G.IvoryAutoFarm = state; Library.Notify({ Title = "Ivory", Content = state and "Auto Farm Enabled" or "Auto Farm Disabled", Type = "Info", Duration = 2 }) end })
+CoreGroup:CreateKeybind({ Name = "Auto Farm Key", CurrentKeybind = "F" })
+
+CoreGroup:CreateToggle({ Name = "Auto Collect Nearest", CurrentValue = false, Callback = function(s) _G.IvoryAutoCollect = s end })
+CoreGroup:CreateToggle({ Name = "Auto Sell at Dumpster", CurrentValue = false, Callback = function(s) _G.IvoryAutoSell = s end })
+CoreGroup:CreateToggle({ Name = "Anti AFK", CurrentValue = false, Callback = function(s) _G.IvoryAntiAFK = s end })
+CoreGroup:CreateToggle({ Name = "NoClip", CurrentValue = false, Callback = function(s) _G.IvoryNoClip = s end })
 
 ------------------------------------------------------------------------
-ConfigGroup:AddToggle("AutoSave", { Text = "Auto Save Settings", Default = true, Callback = function(s) _G.IvoryAutoSave = s end })
-ConfigGroup:AddButton("Reset All Settings", function()
+BoostGroup:CreateToggle({ Name = "Auto Daily Claim", CurrentValue = false, Callback = function(s) _G.IvoryAutoDailyClaim = s end })
+BoostGroup:CreateButton({ Name = "Claim Daily", Callback = function() pcall(function() getRemote("DailyClaim"):FireServer() end); Library.Notify({ Title = "Ivory", Content = "Daily Claimed!", Type = "Success", Duration = 3 }) end })
+BoostGroup:CreateButton({ Name = "Claim Free Gift", Callback = function() pcall(function() getRemote("FreeGiftClaim"):InvokeServer() end); Library.Notify({ Title = "Ivory", Content = "Free Gift Claimed!", Type = "Success", Duration = 3 }) end })
+BoostGroup:CreateButton({ Name = "Use Double Leaves", Callback = function() pcall(function() getRemote("UseBoost"):FireServer("DoubleLeaves") end); Library.Notify({ Title = "Ivory", Content = "Double Leaves!", Type = "Success", Duration = 3 }) end })
+BoostGroup:CreateButton({ Name = "Use Double Cash", Callback = function() pcall(function() getRemote("UseBoost"):FireServer("DoubleCash") end); Library.Notify({ Title = "Ivory", Content = "Double Cash!", Type = "Success", Duration = 3 }) end })
+BoostGroup:CreateButton({ Name = "Toggle Music", Callback = function() pcall(function() getRemote("ToggleSetting"):FireServer("Music") end) end })
+
+------------------------------------------------------------------------
+ConfigGroup:CreateToggle({ Name = "Auto Save Settings", CurrentValue = true, Callback = function(s) _G.IvoryAutoSave = s end })
+ConfigGroup:CreateButton({ Name = "Reset All Settings", Callback = function()
     for k, v in pairs(_G) do if type(v) == "boolean" and string.find(k, "Ivory") then _G[k] = false elseif type(v) == "number" and string.find(k, "Ivory") then _G[k] = nil end end
-    Library:Notify({ Title = "Ivory", Description = "All settings reset", Type = "Success", Time = 3 })
-end)
-ConfigGroup:AddButton("Load Config", function() SaveManager:LoadConfig(); Library:Notify({ Title = "Ivory", Description = "Config loaded", Type = "Success", Time = 3 }) end)
-ConfigGroup:AddButton("Save Config", function() SaveManager:SaveConfig(); Library:Notify({ Title = "Ivory", Description = "Config saved", Type = "Success", Time = 3 }) end)
-InfoGroup:AddLabel("Ivory Hub v1.4")
-InfoGroup:AddLabel("PlaceId: " .. tostring(game.PlaceId))
-InfoGroup:AddLabel("UserId: " .. tostring(LocalPlayer.UserId))
-InfoGroup:AddButton("Copy PlaceId", function() setclipboard(tostring(game.PlaceId)); Library:Notify({ Title = "Ivory", Description = "PlaceId copied!", Type = "Success", Time = 2 }) end)
+    Library.Notify({ Title = "Ivory", Content = "All settings reset", Type = "Success", Duration = 3 })
+end })
+ConfigGroup:CreateLabel("Ivory Hub v1.4")
+ConfigGroup:CreateLabel("PlaceId: " .. tostring(game.PlaceId))
+ConfigGroup:CreateLabel("UserId: " .. tostring(LocalPlayer.UserId))
+ConfigGroup:CreateButton({ Name = "Copy PlaceId", Callback = function() setclipboard(tostring(game.PlaceId)); Library.Notify({ Title = "Ivory", Content = "PlaceId copied!", Type = "Success", Duration = 2 }) end })
 
 ------------------------------------------------------------------------
-SpeedGroup:AddToggle("SpeedHack", { Text = "Speed Hack", Default = false, Callback = function(s) _G.IvorySpeedHack = s end })
-SpeedGroup:AddSlider("SpeedValue", { Text = "Walk Speed", Default = 16, Min = 16, Max = 500, Rounding = 0, Callback = function(v) _G.IvorySpeedValue = v end })
-SpeedGroup:AddButton("Reset Speed", function() pcall(function() LocalPlayer.Character.Humanoid.WalkSpeed = 16 end); _G.IvorySpeedHack = false; Library:Notify({ Title = "Ivory", Description = "Speed Reset", Type = "Success", Time = 2 }) end)
+SpeedGroup:CreateToggle({ Name = "Speed Hack", CurrentValue = false, Callback = function(s) _G.IvorySpeedHack = s end })
+SpeedGroup:CreateSlider({ Name = "Walk Speed", Range = {16, 500}, Increment = 1, CurrentValue = 16, Callback = function(v) _G.IvorySpeedValue = v end })
+SpeedGroup:CreateButton({ Name = "Reset Speed", Callback = function() pcall(function() LocalPlayer.Character.Humanoid.WalkSpeed = 16 end); _G.IvorySpeedHack = false; Library.Notify({ Title = "Ivory", Content = "Speed Reset", Type = "Success", Duration = 2 }) end })
 
-JumpGroup:AddToggle("JumpHack", { Text = "Jump Hack", Default = false, Callback = function(s) _G.IvoryJumpHack = s end })
-JumpGroup:AddSlider("JumpValue", { Text = "Jump Power", Default = 50, Min = 50, Max = 500, Rounding = 0, Callback = function(v) _G.IvoryJumpValue = v end })
-JumpGroup:AddButton("Reset Jump", function() pcall(function() LocalPlayer.Character.Humanoid.JumpPower = 50 end); _G.IvoryJumpHack = false; Library:Notify({ Title = "Ivory", Description = "Jump Reset", Type = "Success", Time = 2 }) end)
-
-------------------------------------------------------------------------
-ESPGroup:AddLabel("ESP Color"):AddColorPicker("ESPColor", { Default = Color3.fromRGB(255, 0, 0), Title = "ESP Color", Callback = function(v) _G.IvoryESPColor = v end })
-ESPGroup:AddToggle("PlayerESP", { Text = "Player ESP", Default = false, Callback = function(s) _G.IvoryPlayerESP = s end })
-ESPGroup:AddToggle("LeafESP", { Text = "Leaf Pile ESP", Default = false, Callback = function(s) _G.IvoryLeafESP = s end })
-ESPGroup:AddToggle("BoxESP", { Text = "Box ESP", Default = false, Callback = function(s) _G.IvoryBoxESP = s end })
-ESPGroup:AddToggle("NameESP", { Text = "Name ESP", Default = false, Callback = function(s) _G.IvoryNameESP = s end })
-ESPGroup:AddToggle("HealthESP", { Text = "Health ESP", Default = false, Callback = function(s) _G.IvoryHealthESP = s end })
-ESPGroup:AddToggle("DistanceESP", { Text = "Distance ESP", Default = false, Callback = function(s) _G.IvoryDistanceESP = s end })
-ESPGroup:AddToggle("VentESP", { Text = "Vent ESP", Default = false, Callback = function(s) _G.IvoryVentESP = s end })
-ESPGroup:AddToggle("ZoneProgressESP", { Text = "Zone Progress ESP", Default = false, Callback = function(s) _G.IvoryZoneProgressESP = s end })
-ESPGroup:AddSlider("ESPRange", { Text = "ESP Range", Default = 1000, Min = 100, Max = 5000, Rounding = 0, Callback = function(v) _G.IvoryESPRange = v end })
+JumpGroup:CreateToggle({ Name = "Jump Hack", CurrentValue = false, Callback = function(s) _G.IvoryJumpHack = s end })
+JumpGroup:CreateSlider({ Name = "Jump Power", Range = {50, 500}, Increment = 1, CurrentValue = 50, Callback = function(v) _G.IvoryJumpValue = v end })
+JumpGroup:CreateButton({ Name = "Reset Jump", Callback = function() pcall(function() LocalPlayer.Character.Humanoid.JumpPower = 50 end); _G.IvoryJumpHack = false; Library.Notify({ Title = "Ivory", Content = "Jump Reset", Type = "Success", Duration = 2 }) end })
 
 ------------------------------------------------------------------------
-FarmGroup:AddDropdown("FarmMode", { Text = "Farm Mode", Values = {"Teleport to Leaves", "Collect In Range"}, Default = "Teleport to Leaves", Multi = false, Callback = function(v) _G.IvoryFarmMode = v end })
-FarmGroup:AddDropdown("TargetZone", { Text = "Target Zone", Values = {"All", "Frontyard", "Porch", "Garage", "Shed", "Court", "Rooftop", "Backyard", "Maze", "Pool", "Farm", "Basement"}, Default = "All", Multi = false, Callback = function(v) _G.IvoryTargetZone = v end })
-FarmGroup:AddSlider("FarmSpeed", { Text = "Farm Speed (ms)", Default = 100, Min = 50, Max = 500, Rounding = 0, Callback = function(v) _G.IvoryFarmSpeed = v end })
-FarmGroup:AddSlider("FarmRadius", { Text = "Farm Radius", Default = 100, Min = 10, Max = 500, Rounding = 0, Callback = function(v) _G.IvoryFarmRadius = v end })
-FarmGroup:AddToggle("AutoEquipTool", { Text = "Auto Equip Tool", Default = false, Callback = function(s) _G.IvoryAutoEquipTool = s end })
-FarmGroup:AddToggle("AutoZoneProgress", { Text = "Auto Zone Progression", Default = false, Callback = function(s) _G.IvoryAutoZoneProgress = s end })
+ESPGroup:CreateColorPicker({ Name = "ESP Color", Color = Color3.fromRGB(255, 0, 0), Callback = function(v) _G.IvoryESPColor = v end })
+ESPGroup:CreateToggle({ Name = "Player ESP", CurrentValue = false, Callback = function(s) _G.IvoryPlayerESP = s end })
+ESPGroup:CreateToggle({ Name = "Leaf Pile ESP", CurrentValue = false, Callback = function(s) _G.IvoryLeafESP = s end })
+ESPGroup:CreateToggle({ Name = "Box ESP", CurrentValue = false, Callback = function(s) _G.IvoryBoxESP = s end })
+ESPGroup:CreateToggle({ Name = "Name ESP", CurrentValue = false, Callback = function(s) _G.IvoryNameESP = s end })
+ESPGroup:CreateToggle({ Name = "Health ESP", CurrentValue = false, Callback = function(s) _G.IvoryHealthESP = s end })
+ESPGroup:CreateToggle({ Name = "Distance ESP", CurrentValue = false, Callback = function(s) _G.IvoryDistanceESP = s end })
+ESPGroup:CreateToggle({ Name = "Vent ESP", CurrentValue = false, Callback = function(s) _G.IvoryVentESP = s end })
+ESPGroup:CreateToggle({ Name = "Zone Progress ESP", CurrentValue = false, Callback = function(s) _G.IvoryZoneProgressESP = s end })
+ESPGroup:CreateSlider({ Name = "ESP Range", Range = {100, 5000}, Increment = 1, CurrentValue = 1000, Callback = function(v) _G.IvoryESPRange = v end })
 
 ------------------------------------------------------------------------
-TeleportGroup:AddDropdown("TeleportLocation", { Text = "Teleport To", Values = {"Spawn", "Shop", "Upgrades", "Dumpster"}, Default = "Spawn", Multi = false, Callback = function(v) _G.IvoryTeleportLocation = v end })
-TeleportGroup:AddButton("Teleport", function()
+FarmGroup:CreateDropdown({ Name = "Farm Mode", Options = {"Teleport to Leaves", "Collect In Range"}, CurrentOption = "Teleport to Leaves", Callback = function(v) _G.IvoryFarmMode = v end })
+FarmGroup:CreateDropdown({ Name = "Target Zone", Options = {"All", "Frontyard", "Porch", "Garage", "Shed", "Court", "Rooftop", "Backyard", "Maze", "Pool", "Farm", "Basement"}, CurrentOption = "All", Callback = function(v) _G.IvoryTargetZone = v end })
+FarmGroup:CreateSlider({ Name = "Farm Speed (ms)", Range = {50, 500}, Increment = 1, CurrentValue = 100, Callback = function(v) _G.IvoryFarmSpeed = v end })
+FarmGroup:CreateSlider({ Name = "Farm Radius", Range = {10, 500}, Increment = 1, CurrentValue = 100, Callback = function(v) _G.IvoryFarmRadius = v end })
+FarmGroup:CreateToggle({ Name = "Auto Equip Tool", CurrentValue = false, Callback = function(s) _G.IvoryAutoEquipTool = s end })
+FarmGroup:CreateToggle({ Name = "Auto Zone Progression", CurrentValue = false, Callback = function(s) _G.IvoryAutoZoneProgress = s end })
+
+------------------------------------------------------------------------
+TeleportGroup:CreateDropdown({ Name = "Teleport To", Options = {"Spawn", "Shop", "Upgrades", "Dumpster"}, CurrentOption = "Spawn", Callback = function(v) _G.IvoryTeleportLocation = v end })
+TeleportGroup:CreateButton({ Name = "Teleport", Callback = function()
     local loc = _G.IvoryTeleportLocation or "Spawn"
     pcall(function()
         local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         if hrp then
             local locs = { ["Spawn"] = CFrame.new(-69, 5, -16), ["Shop"] = CFrame.new(85, 5, -18), ["Upgrades"] = CFrame.new(85, 5, 40), ["Dumpster"] = CFrame.new(-23, 5, -65) }
             hrp.CFrame = locs[loc] or CFrame.new(-69, 5, -16)
-            Library:Notify({ Title = "Ivory", Description = "Teleported to " .. loc, Type = "Success", Time = 2 })
+            Library.Notify({ Title = "Ivory", Content = "Teleported to " .. loc, Type = "Success", Duration = 2 })
         end
     end)
-end)
+end })
 
 ------------------------------------------------------------------------
 --// UPGRADE HELPERS
@@ -212,7 +183,7 @@ pcall(function() BagConfig = require(ReplicatedStorage:WaitForChild("BagConfig")
 local function getCash() return LocalPlayer:GetAttribute("Cash") or 0 end
 
 local function notify(desc, kind)
-    Library:Notify({ Title = "Ivory", Description = desc, Type = kind or "Info", Time = 2.5 })
+    Library.Notify({ Title = "Ivory", Content = desc, Type = kind or "Info", Duration = 2.5 })
 end
 
 local function inGameGuard(silent)
@@ -380,43 +351,39 @@ local function buyAllVents(silent)
 end
 
 ------------------------------------------------------------------------
-UpgradesGroup:AddButton("Buy Rake", function() pcall(buyTool, "Rake") end)
-UpgradesGroup:AddButton("Buy Leaf Blower", function() pcall(buyTool, "LeafBlower") end)
-UpgradesGroup:AddButton("Buy Molotov", function() pcall(buyTool, "Molotov") end)
-UpgradesGroup:AddButton("Upgrade Bag", function() pcall(buyBag) end)
+UpgradesGroup:CreateButton({ Name = "Buy Rake", Callback = function() pcall(buyTool, "Rake") end })
+UpgradesGroup:CreateButton({ Name = "Buy Leaf Blower", Callback = function() pcall(buyTool, "LeafBlower") end })
+UpgradesGroup:CreateButton({ Name = "Buy Molotov", Callback = function() pcall(buyTool, "Molotov") end })
+UpgradesGroup:CreateButton({ Name = "Upgrade Bag", Callback = function() pcall(buyBag) end })
 
 --// Vent Purchasing
-UpgradesGroup:AddLabel("--- Vents ---")
-UpgradesGroup:AddButton("Buy All Vents", function() pcall(buyAllVents) end)
-UpgradesGroup:AddToggle("AutoBuyVents", { Text = "Auto Buy Vents", Default = false, Callback = function(s) _G.IvoryAutoBuyVents = s end })
+UpgradesGroup:CreateLabel("--- Vents ---")
+UpgradesGroup:CreateButton({ Name = "Buy All Vents", Callback = function() pcall(buyAllVents) end })
+UpgradesGroup:CreateToggle({ Name = "Auto Buy Vents", CurrentValue = false, Callback = function(s) _G.IvoryAutoBuyVents = s end })
 
 --// Tool Upgrades
-UpgradesGroup:AddLabel("--- Hand Upgrades ---")
-UpgradesGroup:AddButton("Hand: Hold (Auto Collect)", function() pcall(buyUpgrade, "Hand", "Hold") end)
-UpgradesGroup:AddButton("Hand: Dexterity (Speed)", function() pcall(buyUpgrade, "Hand", "Dexterity") end)
-UpgradesGroup:AddButton("Hand: Grasp (Multi-Collect)", function() pcall(buyUpgrade, "Hand", "Grasp") end)
+UpgradesGroup:CreateLabel("--- Hand Upgrades ---")
+UpgradesGroup:CreateButton({ Name = "Hand: Hold (Auto Collect)", Callback = function() pcall(buyUpgrade, "Hand", "Hold") end })
+UpgradesGroup:CreateButton({ Name = "Hand: Dexterity (Speed)", Callback = function() pcall(buyUpgrade, "Hand", "Dexterity") end })
+UpgradesGroup:CreateButton({ Name = "Hand: Grasp (Multi-Collect)", Callback = function() pcall(buyUpgrade, "Hand", "Grasp") end })
 
-UpgradesGroup:AddLabel("--- Rake Upgrades ---")
-UpgradesGroup:AddButton("Rake: Radius", function() pcall(buyUpgrade, "Rake", "Radius") end)
-UpgradesGroup:AddButton("Rake: Range", function() pcall(buyUpgrade, "Rake", "Range") end)
-UpgradesGroup:AddButton("Rake: Stickiness", function() pcall(buyUpgrade, "Rake", "Stickiness") end)
+UpgradesGroup:CreateLabel("--- Rake Upgrades ---")
+UpgradesGroup:CreateButton({ Name = "Rake: Radius", Callback = function() pcall(buyUpgrade, "Rake", "Radius") end })
+UpgradesGroup:CreateButton({ Name = "Rake: Range", Callback = function() pcall(buyUpgrade, "Rake", "Range") end })
+UpgradesGroup:CreateButton({ Name = "Rake: Stickiness", Callback = function() pcall(buyUpgrade, "Rake", "Stickiness") end })
 
-UpgradesGroup:AddLabel("--- Leaf Blower Upgrades ---")
-UpgradesGroup:AddButton("Blower: Width", function() pcall(buyUpgrade, "LeafBlower", "Width") end)
-UpgradesGroup:AddButton("Blower: Power", function() pcall(buyUpgrade, "LeafBlower", "Power") end)
-UpgradesGroup:AddButton("Blower: Spread", function() pcall(buyUpgrade, "LeafBlower", "Spread") end)
+UpgradesGroup:CreateLabel("--- Leaf Blower Upgrades ---")
+UpgradesGroup:CreateButton({ Name = "Blower: Width", Callback = function() pcall(buyUpgrade, "LeafBlower", "Width") end })
+UpgradesGroup:CreateButton({ Name = "Blower: Power", Callback = function() pcall(buyUpgrade, "LeafBlower", "Power") end })
+UpgradesGroup:CreateButton({ Name = "Blower: Spread", Callback = function() pcall(buyUpgrade, "LeafBlower", "Spread") end })
 
-UpgradesGroup:AddLabel("--- Auto Buy ---")
-UpgradesGroup:AddToggle("AutoBuyBag", { Text = "Auto Buy Bag Upgrades", Default = false, Callback = function(s) _G.IvoryAutoBuyBag = s end })
-UpgradesGroup:AddToggle("AutoBuyHand", { Text = "Auto Buy Hand Upgrades", Default = false, Callback = function(s) _G.IvoryAutoBuyHand = s end })
+UpgradesGroup:CreateLabel("--- Auto Buy ---")
+UpgradesGroup:CreateToggle({ Name = "Auto Buy Bag Upgrades", CurrentValue = false, Callback = function(s) _G.IvoryAutoBuyBag = s end })
+UpgradesGroup:CreateToggle({ Name = "Auto Buy Hand Upgrades", CurrentValue = false, Callback = function(s) _G.IvoryAutoBuyHand = s end })
 
 ------------------------------------------------------------------------
-local CreditGroup = SettingsTab:AddLeftGroupbox("Credits", "heart")
-local CreditLabel = CreditGroup:AddLabel({ Text = "", Size = 26, DoesWrap = true })
-local CreditTL = CreditLabel.TextLabel
-CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-CreditTL.Font = Enum.Font.GothamBold
-CreditTL.TextSize = 26
+local CreditGroup = SettingsTab:CreateSection("Credits")
+local CreditLabel = CreditGroup:CreateLabel("")
 
 task.spawn(function()
 	local full = "Made by mommy Crow"
@@ -426,28 +393,26 @@ task.spawn(function()
 		for i = 1, #full do
 			shown = shown .. full:sub(i, i)
 			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
 			task.wait(math.random(4, 9) / 100)
 		end
 		task.wait(2)
 		for i = #full, 1, -1 do
 			shown = full:sub(1, i - 1)
 			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
 			task.wait(math.random(2, 5) / 100)
 		end
 		task.wait(0.8)
 	end
 end)
 
-ThemeManager:ApplyToTab(SettingsTab); SaveManager:BuildConfigSection(SettingsTab)
-MenuGroup:AddToggle("MenuToggle", { Text = "Toggle Menu", Default = true }):AddKeyPicker("MenuKeybind", { Default = "RightShift", Text = "Menu Keybind", Mode = "Toggle", SyncToggleState = false, NoUI = false })
-MenuGroup:AddToggle("CustomCursor", { Text = "Custom Cursor", Default = false, Callback = function(s) Library.ShowCustomCursor = s end })
-MenuGroup:AddButton("Test Notification", function() Library:Notify({ Title = "Ivory", Description = "Test Notification!", Type = "Success", Time = 5 }) end)
-MenuGroup:AddDropdown("NotifySide", { Text = "Notification Side", Values = {"Left", "Right"}, Default = "Right", Multi = false, Callback = function(v) Library.NotifySide = v end })
-MenuGroup:AddSlider("CornerRadius", { Text = "Corner Radius", Default = 4, Min = 0, Max = 20, Rounding = 0, Callback = function(v) Library.CornerRadius = v end })
-MenuGroup:AddButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 }) end)
-MenuGroup:AddButton("Unload Script", function() Library:Notify({ Title = "Ivory", Description = "Unloading...", Type = "Info", Time = 2 }); task.wait(0.5); for k in pairs(_G) do if string.find(k, "Ivory") then _G[k] = nil end end; pcall(function() Library:ToggleWindow() end) end)
+MenuSection:CreateToggle({ Name = "Toggle Menu", CurrentValue = true })
+MenuSection:CreateKeybind({ Name = "Menu Keybind", CurrentKeybind = "RightShift" })
+MenuSection:CreateToggle({ Name = "Custom Cursor", CurrentValue = false, Callback = function(s) Library.ShowCustomCursor = s end })
+MenuSection:CreateButton({ Name = "Test Notification", Callback = function() Library.Notify({ Title = "Ivory", Content = "Test Notification!", Type = "Success", Duration = 5 }) end })
+MenuSection:CreateDropdown({ Name = "Notification Side", Options = {"Left", "Right"}, CurrentOption = "Right", Callback = function(v) Library.NotifySide = v end })
+MenuSection:CreateSlider({ Name = "Corner Radius", Range = {0, 20}, Increment = 1, CurrentValue = 4, Callback = function(v) Library.CornerRadius = v end })
+MenuSection:CreateButton({ Name = "Join Discord", Callback = function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3 }) end })
+MenuSection:CreateButton({ Name = "Unload Script", Callback = function() Library.Notify({ Title = "Ivory", Content = "Unloading...", Type = "Info", Duration = 2 }); task.wait(0.5); for k in pairs(_G) do if string.find(k, "Ivory") then _G[k] = nil end end; pcall(function() Library.ToggleWindow() end) end })
 
 --// Helper: Get LeafSim module
 local LeafSim = nil
@@ -621,7 +586,7 @@ task.spawn(function()
                                 local nextZone = getNextUnlockedZone()
                                 if nextZone then
                                     _G.IvoryTargetZone = nextZone
-                                    Library:Notify({ Title = "Ivory", Description = targetZone .. " complete! Moving to " .. nextZone, Type = "Info", Time = 3 })
+                                    Library.Notify({ Title = "Ivory", Content = targetZone .. " complete! Moving to " .. nextZone, Type = "Info", Duration = 3 })
                                 end
                             elseif prog and not prog.completed then
                                 local center = getZoneCenter(targetZone)
@@ -651,7 +616,7 @@ task.spawn(function()
                                             if (LocalPlayer:GetAttribute("Leaves") or 0) < before then break end
                                         end
                                         if (LocalPlayer:GetAttribute("Leaves") or 0) < before then
-                                            Library:Notify({ Title = "Ivory", Description = "Sold leaves!", Type = "Success", Time = 2 })
+                                            Library.Notify({ Title = "Ivory", Content = "Sold leaves!", Type = "Success", Duration = 2 })
                                         end
                                         task.wait(1); break
                                     end
@@ -729,7 +694,7 @@ task.spawn(function()
                                             if (LocalPlayer:GetAttribute("Leaves") or 0) < before then break end
                                         end
                                         if (LocalPlayer:GetAttribute("Leaves") or 0) < before then
-                                            Library:Notify({ Title = "Ivory", Description = "Sold leaves!", Type = "Success", Time = 2 })
+                                            Library.Notify({ Title = "Ivory", Content = "Sold leaves!", Type = "Success", Duration = 2 })
                                         end
                                         task.wait(1); break
                                     end
@@ -947,5 +912,5 @@ task.spawn(function() local VirtualUser = game:GetService("VirtualUser"); LocalP
 task.spawn(function() while true do if _G.IvoryAutoSave then pcall(function() SaveManager:SaveConfig() end) end; task.wait(30) end end)
 
 ------------------------------------------------------------------------
-Library:Notify({ Title = "Ivory", Description = "Ivory Hub Loaded! PlaceId: " .. tostring(game.PlaceId), Type = "Success", Time = 5 })
+Library.Notify({ Title = "Ivory", Content = "Ivory Hub Loaded! PlaceId: " .. tostring(game.PlaceId), Type = "Success", Duration = 5 })
 print("[Ivory] Clean All The Leaves loaded | PlaceId: " .. tostring(game.PlaceId) .. " | v1.4")

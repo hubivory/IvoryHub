@@ -5,60 +5,31 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local hitboxsafe = true
-local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/refs/heads/main/"
 
-local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	local ok, src = pcall(function()
+		return request({
+			Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+			Method = "GET"
+		}).Body
+	end)
+	if ok then LIB_SRC = src end
+end
+local Library = loadstring(LIB_SRC)()
 
-local Options = Library.Options
-local Toggles = Library.Toggles
-
-local Window = Library:CreateWindow({
-    Title = 'Ivory | Bloxstrike',
-    Icon = "swords",
-    Center = true,
-    AutoShow = true,
-    TabPadding = 8,
-    MenuFadeTime = 0.2,
-    Footer = "made by Veqxoo"
+local Window = Library.CreateWindow({
+    Name = 'Ivory | Bloxstrike',
+    Width = 460,
+    Height = 360,
 })
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
 
 local Tabs = {
-    Combat = Window:AddTab('Combat', 'swords'),
-    Visuals = Window:AddTab('Visuals', 'eye'),
-    Weapons = Window:AddTab('Weapons', 'crosshair'),
-    StyleChanger = Window:AddTab('StyleChanger', 'paintbrush'),
-    Settings = Window:AddTab('Settings', 'settings'),
+    Combat = Window:CreateTab({ Name = 'Combat' }),
+    Visuals = Window:CreateTab({ Name = 'Visuals' }),
+    Weapons = Window:CreateTab({ Name = 'Weapons' }),
+    StyleChanger = Window:CreateTab({ Name = 'StyleChanger' }),
+    Settings = Window:CreateTab({ Name = 'Settings' }),
 }
 
 local CharactersFolder = Workspace:WaitForChild("Characters", 10)
@@ -91,167 +62,146 @@ end
 -- COMBAT TAB
 -- ═══════════════════════════════════════════
 
-local DiscordBox = Tabs.Combat:AddLeftGroupbox("Discord", "users")
-DiscordBox:AddLabel("JOIN DISCORD FOR DUPE")
-DiscordBox:AddButton("Copy Link", function()
+local DiscordSection = Tabs.Combat:CreateSection("Discord")
+DiscordSection:CreateLabel("JOIN DISCORD FOR DUPE")
+DiscordSection:CreateButton({Name = "Copy Link", Callback = function()
     if setclipboard then setclipboard("https://discord.gg/ivory") end
-    Library:Notify({ Title = "Discord", Description = "Copied to clipboard!", Time = 3 })
-end)
+    Library.Notify({ Title = "Discord", Content = "Copied to clipboard!", Duration = 3 })
+end})
 
-local CombatSilentBox = Tabs.Combat:AddLeftGroupbox("Silent Aim", "target")
+local CombatSilentSection = Tabs.Combat:CreateSection("Silent Aim")
 
-CombatSilentBox:AddToggle("SilentAim", {
-    Text = "Enable Silent Aim",
-    Default = false,
-    Disabled = typeof(hookfunction) ~= "function",
-    DisabledTooltip = "This feature is not available on your executor.",
+CombatSilentSection:CreateToggle({
+    Name = "Enable Silent Aim",
+    CurrentValue = false,
 })
 
-Toggles.SilentAim:AddKeyPicker("SilentAimHoldkey", {
-    Text = "Hold Key",
-    Default = "MB2",
-    Mode = "Hold",
+CombatSilentSection:CreateKeybind({
+    Name = "Hold Key",
+    CurrentKeybind = "MB2",
 })
 
-local BlatantDependencyBox = CombatSilentBox:AddDependencyBox()
-
-BlatantDependencyBox:AddDropdown("SilentHitPart", {
-    Text = "Hit Selection",
-    Values = {
+CombatSilentSection:CreateDropdown({
+    Name = "Hit Selection",
+    Options = {
         "HumanoidRootPart", "Head", "LeftLowerArm", "LowerTorso",
         "RightHand", "RightLowerArm", "LeftFoot", "LeftHand",
         "RightFoot", "RightLowerLeg", "LeftLowerLeg", "RightUpperArm",
         "LeftUpperArm", "UpperTorso", "RightUpperLeg", "LeftUpperLeg"
     },
-    Default = "HumanoidRootPart",
+    CurrentOption = "HumanoidRootPart",
 })
 
-BlatantDependencyBox:AddToggle("SilentTeamCheck", {
-    Text = "Enable Team Check",
-    Default = true,
+CombatSilentSection:CreateToggle({
+    Name = "Enable Team Check",
+    CurrentValue = true,
 })
 
-BlatantDependencyBox:AddToggle("SilentWallbang", {
-    Text = "Wallbang",
-    Default = false,
+CombatSilentSection:CreateToggle({
+    Name = "Wallbang",
+    CurrentValue = false,
 })
 
-CombatSilentBox:AddDivider()
+CombatSilentSection:CreateDivider()
 
-CombatSilentBox:AddToggle("SilentAimVisibleCheck", {
-    Text = "Visibility Check",
-    Default = true,
+CombatSilentSection:CreateToggle({
+    Name = "Visibility Check",
+    CurrentValue = true,
 })
 
-local CombatRageBox = Tabs.Combat:AddRightGroupbox("Rage", "bolt")
+local CombatRageSection = Tabs.Combat:CreateSection("Rage")
 
-CombatRageBox:AddToggle("Ragebot", {
-    Text = "Enable Ragebot",
-    Default = false,
-    Disabled = typeof(hookfunction) ~= "function",
-    DisabledTooltip = "This feature is not available on your executor.",
+CombatRageSection:CreateToggle({
+    Name = "Enable Ragebot",
+    CurrentValue = false,
 })
 
-CombatRageBox:AddDropdown("RageHitPart", {
-    Text = "Hit Selection",
-    Values = {"HumanoidRootPart", "Head", "UpperTorso", "LowerTorso"},
-    Default = "HumanoidRootPart",
+CombatRageSection:CreateDropdown({
+    Name = "Hit Selection",
+    Options = {"HumanoidRootPart", "Head", "UpperTorso", "LowerTorso"},
+    CurrentOption = "HumanoidRootPart",
 })
 
-CombatRageBox:AddSlider("RageDelay", {
-    Text = "Shoot Delay",
-    Default = 0.02,
-    Min = 0.01,
-    Max = 0.5,
-    Rounding = 2,
-    Compact = true,
+CombatRageSection:CreateSlider({
+    Name = "Shoot Delay",
+    Range = {0.01, 0.5},
+    Increment = 0.01,
+    CurrentValue = 0.02,
 })
 
-local RageDependencyBox = CombatRageBox:AddDependencyBox()
-
-RageDependencyBox:AddToggle("RagebotTeamCheck", {
-    Text = "Enable Team Check",
-    Default = true,
+CombatRageSection:CreateToggle({
+    Name = "Enable Team Check",
+    CurrentValue = true,
 })
 
-RageDependencyBox:SetupDependencies({
-    {Toggles.Ragebot, true}
+local CombatTriggerSection = Tabs.Combat:CreateSection("Triggerbot")
+
+CombatTriggerSection:CreateToggle({
+    Name = "Enable Triggerbot",
+    CurrentValue = false,
 })
 
-local CombatTriggerBox = Tabs.Combat:AddRightGroupbox("Triggerbot", "zap")
-
-CombatTriggerBox:AddToggle("Triggerbot", {
-    Text = "Enable Triggerbot",
-    Default = false,
+CombatTriggerSection:CreateSlider({
+    Name = "Trigger Delay",
+    Range = {0, 0.5},
+    Increment = 0.01,
+    CurrentValue = 0,
 })
 
-CombatTriggerBox:AddSlider("TriggerbotDelay", {
-    Text = "Trigger Delay",
-    Default = 0,
-    Min = 0,
-    Max = 0.5,
-    Rounding = 2,
-    Compact = true,
+local HitboxSection = Tabs.Combat:CreateSection("Hitbox Expander")
+
+HitboxSection:CreateToggle({
+    Name = "Enable Hitbox Expander",
+    CurrentValue = false,
 })
 
-local HitboxBox = Tabs.Combat:AddLeftGroupbox("Hitbox Expander", "expand")
-
-HitboxBox:AddToggle("Hitbox", {
-    Text = "Enable Hitbox Expander",
-    Default = false,
+HitboxSection:CreateSlider({
+    Name = "Hitbox Size",
+    Range = {2, 100},
+    Increment = 1,
+    CurrentValue = 50,
 })
 
-HitboxBox:AddSlider("HitboxSize", {
-    Text = "Hitbox Size",
-    Default = 50,
-    Min = 2,
-    Max = 100,
-    Rounding = 0,
-})
-
-HitboxBox:AddSlider("HitboxTransparency", {
-    Text = "Hitbox Transparency",
-    Default = 0.5,
-    Min = 0,
-    Max = 1,
-    Rounding = 1,
+HitboxSection:CreateSlider({
+    Name = "Hitbox Transparency",
+    Range = {0, 1},
+    Increment = 0.1,
+    CurrentValue = 0.5,
 })
 
 -- ═══════════════════════════════════════════
 -- VISUALS TAB
 -- ═══════════════════════════════════════════
 
-local HighlightESPBox = Tabs.Visuals:AddLeftGroupbox("Highlight ESP", "eye")
+local HighlightESPSection = Tabs.Visuals:CreateSection("Highlight ESP")
 
-HighlightESPBox:AddToggle("HighlightESP", {
-    Text = "Enable Highlight",
-    Default = false,
+HighlightESPSection:CreateToggle({
+    Name = "Enable Highlight",
+    CurrentValue = false,
 })
 
-HighlightESPBox:AddLabel("Fill Color"):AddColorPicker("HighlightFillColor", {
-    Default = Color3.fromRGB(255, 0, 0),
-    Title = "Fill Color",
+HighlightESPSection:CreateColorPicker({
+    Name = "Fill Color",
+    Color = Color3.fromRGB(255, 0, 0),
 })
 
-HighlightESPBox:AddSlider("HighlightFillTransparency", {
-    Text = "Fill Transparency",
-    Default = 50,
-    Min = 0,
-    Max = 100,
-    Rounding = 0,
+HighlightESPSection:CreateSlider({
+    Name = "Fill Transparency",
+    Range = {0, 100},
+    Increment = 1,
+    CurrentValue = 50,
 })
 
-HighlightESPBox:AddLabel("Outline Color"):AddColorPicker("HighlightOutlineColor", {
-    Default = Color3.fromRGB(255, 255, 255),
-    Title = "Outline Color",
+HighlightESPSection:CreateColorPicker({
+    Name = "Outline Color",
+    Color = Color3.fromRGB(255, 255, 255),
 })
 
-HighlightESPBox:AddSlider("HighlightOutlineTransparency", {
-    Text = "Outline Transparency",
-    Default = 0,
-    Min = 0,
-    Max = 100,
-    Rounding = 0,
+HighlightESPSection:CreateSlider({
+    Name = "Outline Transparency",
+    Range = {0, 100},
+    Increment = 1,
+    CurrentValue = 0,
 })
 
 -- ═══════════════════════════════════════════
@@ -305,8 +255,8 @@ end
 -- SKIN CHANGER
 -- ═══════════════════════════════════════════
 
-local SkinsBox = Tabs.StyleChanger:AddLeftGroupbox("Skins", "palette")
-local Skins2Box = Tabs.StyleChanger:AddRightGroupbox("Skins 2", "brush")
+local SkinsSection = Tabs.StyleChanger:CreateSection("Skins")
+local Skins2Section = Tabs.StyleChanger:CreateSection("Skins 2")
 
 local ApplySkinTextures = nil
 
@@ -332,21 +282,19 @@ local midPoint = math.ceil(#skinList / 2)
 
 for i = 1, midPoint do
     local skin = skinList[i]
-    SkinsBox:AddDropdown(tostring(skin), {
-        Text = tostring(skin),
-        Values = skin:GetChildren(),
-        Default = 1,
-        Multi = false,
+    SkinsSection:CreateDropdown({
+        Name = tostring(skin),
+        Options = skin:GetChildren(),
+        CurrentOption = 1,
     })
 end
 
 for i = midPoint + 1, #skinList do
     local skin = skinList[i]
-    Skins2Box:AddDropdown(tostring(skin), {
-        Text = tostring(skin),
-        Values = skin:GetChildren(),
-        Default = 1,
-        Multi = false,
+    Skins2Section:CreateDropdown({
+        Name = tostring(skin),
+        Options = skin:GetChildren(),
+        CurrentOption = 1,
     })
 end
 
@@ -381,39 +329,38 @@ end)
 -- ═══════════════════════════════════════════
 
 local WeaponsTab = Tabs.Weapons
-local WeaponsBox = WeaponsTab:AddLeftGroupbox("Weapons", "crosshair")
+local WeaponsSection = WeaponsTab:CreateSection("Weapons")
 
-WeaponsBox:AddToggle("Firerate", {
-    Text = "Enable Firerate",
-    Default = false,
+WeaponsSection:CreateToggle({
+    Name = "Enable Firerate",
+    CurrentValue = false,
 })
 
-WeaponsBox:AddSlider("FirerateSlider", {
-    Text = "Firerate",
-    Default = 0.05,
-    Min = 0.01,
-    Max = 0.5,
-    Rounding = 2,
+WeaponsSection:CreateSlider({
+    Name = "Firerate",
+    Range = {0.01, 0.5},
+    Increment = 0.01,
+    CurrentValue = 0.05,
 })
 
-WeaponsBox:AddToggle("NoRecoil", {
-    Text = "No Recoil",
-    Default = false,
+WeaponsSection:CreateToggle({
+    Name = "No Recoil",
+    CurrentValue = false,
 })
 
-WeaponsBox:AddToggle("NoSpread", {
-    Text = "No Spread",
-    Default = false,
+WeaponsSection:CreateToggle({
+    Name = "No Spread",
+    CurrentValue = false,
 })
 
-WeaponsBox:AddToggle("Antiflashbang", {
-    Text = "Anti Flashbang",
-    Default = false,
+WeaponsSection:CreateToggle({
+    Name = "Anti Flashbang",
+    CurrentValue = false,
 })
 
-WeaponsBox:AddToggle("Antismoke", {
-    Text = "Anti Smoke",
-    Default = false,
+WeaponsSection:CreateToggle({
+    Name = "Anti Smoke",
+    CurrentValue = false,
 })
 
 -- ═══════════════════════════════════════════
@@ -576,7 +523,7 @@ end)
 
 task.spawn(function()
     repeat wait() until hitboxsafe
-    Library:Notify({ Title = "Success", Description = "Hitbox will now work", Time = 4 })
+    Library.Notify({ Title = "Success", Content = "Hitbox will now work", Duration = 4 })
 end)
 
 task.spawn(function()
@@ -653,53 +600,27 @@ end)
 -- SETTINGS
 -- ═══════════════════════════════════════════
 
-local CreditGroup = Tabs.Settings:AddLeftGroupbox("Credits", "heart")
-CreditGroup:AddLabel("CREDIT_PLACEHOLDER")
+local CreditSection = Tabs.Settings:CreateSection("Credits")
+CreditSection:CreateLabel("Made by Mommy Veqxoo < / 3")
 
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("Ivoryhub")
-SaveManager:SetFolder("Ivoryhub/bloxstrike")
-SaveManager:SetSubFolder("bloxstrike")
-SaveManager:BuildConfigSection(Tabs.Settings)
-ThemeManager:ApplyToTab(Tabs.Settings)
-
-local MenuGroup = Tabs.Settings:AddLeftGroupbox("Menu", "settings")
+local MenuSection = Tabs.Settings:CreateSection("Menu")
 local originalParent = Library.ScreenGui.Parent
 
-MenuGroup:AddLabel("Menu Keybind"):AddKeyPicker("MenuKeybind", {
-    Default = "RightShift",
-    Text = "Menu Keybind",
-    SyncToggleState = false,
-    Mode = "Toggle",
-    Callback = function(state)
-        if not Library or not Library.ScreenGui then return end
-        Library.Toggled = state
-        if state then
-            Library.ScreenGui.Parent = originalParent
-            UserInputService.MouseIconEnabled = not Library.ShowCustomCursor
-        else
-            pcall(function() Library.ScreenGui.Parent = game:GetService("Lighting") end)
-            UserInputService.MouseIconEnabled = true
-        end
-    end,
+MenuSection:CreateKeybind({
+    Name = "Menu Keybind",
+    CurrentKeybind = "RightShift",
 })
 
-MenuGroup:AddDivider()
+MenuSection:CreateDivider()
 
-MenuGroup:AddButton("Unload", function()
+MenuSection:CreateButton({Name = "Unload", Callback = function()
     Library:Unload()
-end)
+end})
 
-MenuGroup:AddButton("Join Discord", function()
+MenuSection:CreateButton({Name = "Join Discord", Callback = function()
     if setclipboard then setclipboard("https://discord.gg/ivory") end
-    Library:Notify({ Title = "Discord", Description = "Copied to clipboard!", Time = 3 })
-end)
-
-SaveManager:Load()
-SaveManager:LoadAutoloadConfig()
+    Library.Notify({ Title = "Discord", Content = "Copied to clipboard!", Duration = 3 })
+end})
 
 task.spawn(function()
     task.wait(1)

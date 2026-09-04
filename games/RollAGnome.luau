@@ -12,17 +12,21 @@ local CoreGui           = game:GetService("CoreGui")
 
 local LocalPlayer = Players.LocalPlayer
 
-----------------------------------------------------------------------------
+ ----------------------------------------------------------------------------
 -- UI Library
-----------------------------------------------------------------------------
+ ----------------------------------------------------------------------------
 
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local function httpGet(url)
-    return request({ Url = url, Method = "GET" }).Body
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	local ok, src = pcall(function()
+		return request({
+			Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+			Method = "GET"
+		}).Body
+	end)
+	if ok then LIB_SRC = src end
 end
-local Library = loadstring(httpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
+local Library = loadstring(LIB_SRC)()
 
 ----------------------------------------------------------------------------
 -- Module access
@@ -1291,9 +1295,10 @@ loop("census", 1, census)
 
 local isLobby = false
 
-local Window = Library:CreateWindow({
-    Title = "Ivory",
-    Icon = "swords",
+local Window = Library.CreateWindow({
+    Name = "Ivory",
+    Width = 460,
+    Height = 360,
     Footer = {
         "v1.4 |",
         { Text = isLobby and "Lobby" or "Game", Copyable = true },
@@ -1310,324 +1315,241 @@ local Window = Library:CreateWindow({
     ShowCustomCursor = true,
     SearchKeybind = Enum.KeyCode.F,
     CornerRadius = 4,
-    Animations = {
-        ToggleWindow = false,
-        TabSwitch = false,
-        Groupbox = false,
-        Dropdown = false,
-        KeyPicker = false,
-        SubTabUnderline = true,
-    },
 })
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
-
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub")
-SaveManager:SetSubFolder("game")
 
 ----------------------------------------------------------------------------
 -- Tabs
 ----------------------------------------------------------------------------
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
-local FarmingTab = Window:AddTab({ Name = "Farming", Icon = "swords" })
-local ShopTab = Window:AddTab({ Name = "Shop", Icon = "swords" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
+local MainTab = Window:CreateTab({ Name = "Main" })
+local FarmingTab = Window:CreateTab({ Name = "Farming" })
+local ShopTab = Window:CreateTab({ Name = "Shop" })
+local SettingsTab = Window:CreateTab({ Name = "Settings" })
 
 -- Main Tab
-local MainSubTab = MainTab:AddSubTab("Overview", "rbxassetid://79379082636309")
-local MainLeft = MainSubTab:AddLeftGroupbox("Discord", "users")
-local MainRight = MainSubTab:AddRightGroupbox("Status", "info")
+local MainSection = MainTab:CreateSection("Overview")
+local MainLeft = MainSection
+local MainRight = MainSection
 
-MainLeft:AddButton("Join Discord For Dupe", function()
+MainLeft:CreateButton({ Name = "Join Discord For Dupe", Callback = function()
     if setclipboard then
         setclipboard("https://discord.gg/ivory")
-        Library:Notify({ Title = "Ivory", Description = "Discord link copied to clipboard!", Type = "Success", Time = 3 })
+        Library.Notify({ Title = "Ivory", Content = "Discord link copied to clipboard!", Type = "Success", Duration = 3 })
     else
-        Library:Notify({ Title = "Ivory", Description = "setclipboard not available", Type = "Error", Time = 3 })
+        Library.Notify({ Title = "Ivory", Content = "setclipboard not available", Type = "Error", Duration = 3 })
     end
-end)
+end })
 
-local StatusLabel = MainRight:AddLabel("Status: Idle")
-local CashLabel = MainRight:AddLabel("Cash: $0")
-local GnomesLabel = MainRight:AddLabel("Gnomes: 0")
-local PetsLabel = MainRight:AddLabel("Pets: 0/3")
+local StatusLabel = MainRight:CreateLabel("Status: Idle")
+local CashLabel = MainRight:CreateLabel("Cash: $0")
+local GnomesLabel = MainRight:CreateLabel("Gnomes: 0")
+local PetsLabel = MainRight:CreateLabel("Pets: 0/3")
 
 -- Farming Tab
-local AutoSubTab = FarmingTab:AddSubTab("Automation", "rbxassetid://79379082636309")
-local GardenGroup = AutoSubTab:AddLeftGroupbox("Garden", "box-icon")
-local RollGroup = AutoSubTab:AddRightGroupbox("Rolling", "refresh-cw")
+local AutoSection = FarmingTab:CreateSection("Automation")
+local GardenGroup = AutoSection
+local RollGroup = AutoSection
 
-GardenGroup:AddToggle("AutoFarm", {
-    Text = "Auto Farm (Master)",
-    Default = CONFIG.auto,
+GardenGroup:CreateToggle({
+    Name = "Auto Farm (Master)",
+    CurrentValue = CONFIG.auto,
     Callback = function(v) CONFIG.auto = v end
 })
-GardenGroup:AddToggle("AutoHarvest", {
-    Text = "Auto Harvest",
-    Default = CONFIG.autoCollect,
+GardenGroup:CreateToggle({
+    Name = "Auto Harvest",
+    CurrentValue = CONFIG.autoCollect,
     Callback = function(v) CONFIG.autoCollect = v end
 })
-GardenGroup:AddToggle("AutoSell", {
-    Text = "Auto Sell",
-    Default = CONFIG.autoSell,
+GardenGroup:CreateToggle({
+    Name = "Auto Sell",
+    CurrentValue = CONFIG.autoSell,
     Callback = function(v) CONFIG.autoSell = v end
 })
-GardenGroup:AddToggle("AutoPlace", {
-    Text = "Auto Place",
-    Default = CONFIG.autoPlace,
+GardenGroup:CreateToggle({
+    Name = "Auto Place",
+    CurrentValue = CONFIG.autoPlace,
     Callback = function(v) CONFIG.autoPlace = v end
 })
-GardenGroup:AddToggle("AutoPlacePets", {
-    Text = "Auto Place Pets",
-    Default = CONFIG.autoPets,
+GardenGroup:CreateToggle({
+    Name = "Auto Place Pets",
+    CurrentValue = CONFIG.autoPets,
     Callback = function(v) CONFIG.autoPets = v end
 })
-GardenGroup:AddSlider("HarvestGap", {
-    Text = "Harvest Gap (ms)",
-    Min = 40,
-    Max = 300,
-    Default = math.floor(CONFIG.collectGap * 1000),
+GardenGroup:CreateSlider({
+    Name = "Harvest Gap (ms)",
+    Range = {40, 300},
+    Increment = 1,
+    CurrentValue = math.floor(CONFIG.collectGap * 1000),
     Callback = function(v) CONFIG.collectGap = v / 1000 end
 })
-GardenGroup:AddSlider("SellAt", {
-    Text = "Sell At %",
-    Min = 40,
-    Max = 100,
-    Default = math.floor(CONFIG.sellAt * 100),
+GardenGroup:CreateSlider({
+    Name = "Sell At %",
+    Range = {40, 100},
+    Increment = 1,
+    CurrentValue = math.floor(CONFIG.sellAt * 100),
     Callback = function(v) CONFIG.sellAt = v / 100 end
 })
-GardenGroup:AddSlider("PlacementClearance", {
-    Text = "Placement Clearance",
-    Min = 2,
-    Max = 8,
-    Default = math.floor(CONFIG.placeClear),
+GardenGroup:CreateSlider({
+    Name = "Placement Clearance",
+    Range = {2, 8},
+    Increment = 1,
+    CurrentValue = math.floor(CONFIG.placeClear),
     Callback = function(v) CONFIG.placeClear = v end
 })
 
-RollGroup:AddToggle("AutoRoll", {
-    Text = "Auto Roll",
-    Default = CONFIG.autoRoll,
+RollGroup:CreateToggle({
+    Name = "Auto Roll",
+    CurrentValue = CONFIG.autoRoll,
     Callback = function(v) CONFIG.autoRoll = v end
 })
-RollGroup:AddToggle("AutoBuyGnome", {
-    Text = "Auto Buy Gnome",
-    Default = CONFIG.autoBuy,
+RollGroup:CreateToggle({
+    Name = "Auto Buy Gnome",
+    CurrentValue = CONFIG.autoBuy,
     Callback = function(v) CONFIG.autoBuy = v end
 })
-RollGroup:AddSlider("BuyMargin", {
-    Text = "Buy Margin",
-    Min = 100,
-    Max = 300,
-    Default = math.floor(CONFIG.buyMargin * 100),
+RollGroup:CreateSlider({
+    Name = "Buy Margin",
+    Range = {100, 300},
+    Increment = 1,
+    CurrentValue = math.floor(CONFIG.buyMargin * 100),
     Callback = function(v) CONFIG.buyMargin = v / 100 end
 })
 
-local SpendSubTab = FarmingTab:AddSubTab("Spending", "rbxassetid://79379082636309")
-local UpgradeGroup = SpendSubTab:AddLeftGroupbox("Upgrades", "arrow-up-circle")
-local ExpandGroup = SpendSubTab:AddRightGroupbox("Expansion", "maximize-2")
+local SpendSection = FarmingTab:CreateSection("Spending")
+local UpgradeGroup = SpendSection
+local ExpandGroup = SpendSection
 
-UpgradeGroup:AddToggle("AutoUpgrades", {
-    Text = "Auto Upgrades",
-    Default = CONFIG.autoUpgrade,
+UpgradeGroup:CreateToggle({
+    Name = "Auto Upgrades",
+    CurrentValue = CONFIG.autoUpgrade,
     Callback = function(v) CONFIG.autoUpgrade = v end
 })
-UpgradeGroup:AddToggle("AutoFreeGnome", {
-    Text = "Auto Free Gnome",
-    Default = CONFIG.autoFreeGnome,
+UpgradeGroup:CreateToggle({
+    Name = "Auto Free Gnome",
+    CurrentValue = CONFIG.autoFreeGnome,
     Callback = function(v) CONFIG.autoFreeGnome = v end
 })
-UpgradeGroup:AddToggle("AutoRebirth", {
-    Text = "Auto Rebirth",
-    Default = CONFIG.autoRebirth,
-    Callback = function(v) CONFIG.autoRebirth = v end,
-    Tooltip = "UNVERIFIED - never tested on a real save"
+UpgradeGroup:CreateToggle({
+    Name = "Auto Rebirth",
+    CurrentValue = CONFIG.autoRebirth,
+    Callback = function(v) CONFIG.autoRebirth = v end
 })
 
-ExpandGroup:AddToggle("AutoExpandPlot", {
-    Text = "Auto Expand Plot",
-    Default = CONFIG.autoExpand,
+ExpandGroup:CreateToggle({
+    Name = "Auto Expand Plot",
+    CurrentValue = CONFIG.autoExpand,
     Callback = function(v) CONFIG.autoExpand = v end
 })
-ExpandGroup:AddSlider("ExpandKeep", {
-    Text = "Expand Cash Multiple",
-    Min = 1,
-    Max = 10,
-    Default = math.floor(CONFIG.expandKeep),
+ExpandGroup:CreateSlider({
+    Name = "Expand Cash Multiple",
+    Range = {1, 10},
+    Increment = 1,
+    CurrentValue = math.floor(CONFIG.expandKeep),
     Callback = function(v) CONFIG.expandKeep = v end
 })
 
 -- Shop Tab
-local GearSubTab = ShopTab:AddSubTab("Gear", "rbxassetid://79379082636309")
-local GearGroup = GearSubTab:AddLeftGroupbox("Item Shop", "shopping-cart")
-local PetShopGroup = GearSubTab:AddRightGroupbox("Pet Field", "heart")
+local GearSection = ShopTab:CreateSection("Gear")
+local GearGroup = GearSection
+local PetShopGroup = GearSection
 
-GearGroup:AddToggle("AutoBuyGear", {
-    Text = "Auto Buy Gear",
-    Default = CONFIG.autoGear,
+GearGroup:CreateToggle({
+    Name = "Auto Buy Gear",
+    CurrentValue = CONFIG.autoGear,
     Callback = function(v) CONFIG.autoGear = v end
 })
-GearGroup:AddToggle("AutoUseGear", {
-    Text = "Auto Use Gear",
-    Default = CONFIG.autoGearUse,
+GearGroup:CreateToggle({
+    Name = "Auto Use Gear",
+    CurrentValue = CONFIG.autoGearUse,
     Callback = function(v) CONFIG.autoGearUse = v end
 })
-GearGroup:AddDropdown("GearMode", {
-    Text = "Gear Mode",
-    Values = { "Sprinklers + fertilizer", "Sprinklers only", "Everything" },
-    Default = CONFIG.gearMode,
+GearGroup:CreateDropdown({
+    Name = "Gear Mode",
+    Options = { "Sprinklers + fertilizer", "Sprinklers only", "Everything" },
+    CurrentOption = CONFIG.gearMode,
     Callback = function(v) CONFIG.gearMode = v end
 })
-GearGroup:AddSlider("GearKeep", {
-    Text = "Gear Cash Multiple",
-    Min = 1,
-    Max = 10,
-    Default = math.floor(CONFIG.gearKeep),
+GearGroup:CreateSlider({
+    Name = "Gear Cash Multiple",
+    Range = {1, 10},
+    Increment = 1,
+    CurrentValue = math.floor(CONFIG.gearKeep),
     Callback = function(v) CONFIG.gearKeep = v end
 })
 
-PetShopGroup:AddToggle("AutoBuyPets", {
-    Text = "Auto Buy Pets",
-    Default = CONFIG.autoBuyPets,
+PetShopGroup:CreateToggle({
+    Name = "Auto Buy Pets",
+    CurrentValue = CONFIG.autoBuyPets,
     Callback = function(v) CONFIG.autoBuyPets = v end
 })
-PetShopGroup:AddDropdown("LowestRarity", {
-    Text = "Lowest Rarity",
-    Values = PET_CHOICES,
-    Default = CONFIG.petRarity,
+PetShopGroup:CreateDropdown({
+    Name = "Lowest Rarity",
+    Options = PET_CHOICES,
+    CurrentOption = CONFIG.petRarity,
     Callback = function(v) CONFIG.petRarity = v end
 })
-PetShopGroup:AddSlider("PetKeep", {
-    Text = "Pet Cash Multiple",
-    Min = 1,
-    Max = 10,
-    Default = math.floor(CONFIG.petKeep),
+PetShopGroup:CreateSlider({
+    Name = "Pet Cash Multiple",
+    Range = {1, 10},
+    Increment = 1,
+    CurrentValue = math.floor(CONFIG.petKeep),
     Callback = function(v) CONFIG.petKeep = v end
 })
 
-local StatusSubTab = ShopTab:AddSubTab("Status", "rbxassetid://79379082636309")
-local StatusGroup = StatusSubTab:AddLeftGroupbox("Shop Stock", "package")
-local PetStatusGroup = StatusSubTab:AddRightGroupbox("Pet Status", "heart")
+local StatusSection = ShopTab:CreateSection("Status")
+local StatusGroup = StatusSection
+local PetStatusGroup = StatusSection
 
-StatusGroup:AddLabel("Loading...")
-PetStatusGroup:AddLabel("Loading...")
+StatusGroup:CreateLabel("Loading...")
+PetStatusGroup:CreateLabel("Loading...")
 
 -- Settings Tab
-local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "box-icon")
+local MenuSection = SettingsTab:CreateSection("Menu")
 
-local CreditGroup = SettingsTab:AddLeftGroupbox("Credits", "heart")
-local CreditLabel = CreditGroup:AddLabel({ Text = "", Size = 26, DoesWrap = true })
-local CreditTL = CreditLabel.TextLabel
-CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-CreditTL.Font = Enum.Font.GothamBold
-CreditTL.TextSize = 26
-
-task.spawn(function()
-	local full = "Made by mommy Crow"
-	local cursor = "_"
-	while true do
-		local shown = ""
-		for i = 1, #full do
-			shown = shown .. full:sub(i, i)
-			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-			task.wait(math.random(4, 9) / 100)
-		end
-		task.wait(2)
-		for i = #full, 1, -1 do
-			shown = full:sub(1, i - 1)
-			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-			task.wait(math.random(2, 5) / 100)
-		end
-		task.wait(0.8)
-	end
-end)
-
-ThemeManager:ApplyToTab(SettingsTab)
-SaveManager:BuildConfigSection(SettingsTab)
-
-MenuGroup:AddToggle("CustomCursor", {
-    Text = "Custom Cursor",
-    Default = true,
+MenuSection:CreateToggle({
+    Name = "Custom Cursor",
+    CurrentValue = true,
     Callback = function(v) Library.ShowCustomCursor = v end
 })
 
-MenuGroup:AddDropdown("NotifSide", {
-    Text = "Notification Side",
-    Values = { "Left", "Right" },
-    Default = "Right",
+MenuSection:CreateDropdown({
+    Name = "Notification Side",
+    Options = { "Left", "Right" },
+    CurrentOption = "Right",
     Callback = function(v) Library.NotifySide = v end
 })
 
-MenuGroup:AddButton("Test Notification", function()
-    Library:Notify({ Title = "Ivory", Description = "This is a test notification!", Type = "Info", Time = 3 })
-end)
+MenuSection:CreateButton({ Name = "Test Notification", Callback = function()
+    Library.Notify({ Title = "Ivory", Content = "This is a test notification!", Type = "Info", Duration = 3 })
+end })
 
-MenuGroup:AddSlider("DPIScale", {
-    Text = "DPI Scale",
-    Min = 50,
-    Max = 200,
-    Default = 100,
+MenuSection:CreateSlider({
+    Name = "DPI Scale",
+    Range = {50, 200},
+    Increment = 1,
+    CurrentValue = 100,
     Callback = function(v) Library:SetDPIScale(v) end
 })
 
-MenuGroup:AddSlider("CornerRadius", {
-    Text = "Corner Radius",
-    Min = 0,
-    Max = 20,
-    Default = 4,
+MenuSection:CreateSlider({
+    Name = "Corner Radius",
+    Range = {0, 20},
+    Increment = 1,
+    CurrentValue = 4,
     Callback = function(v) Library.CornerRadius = v end
 })
 
-local MenuKeybind = MenuGroup:AddToggle("MenuKeybindToggle", {
-    Text = "Menu Keybind",
-    Default = false,
+MenuSection:CreateToggle({
+    Name = "Menu Keybind",
+    CurrentValue = false,
 })
-MenuKeybind:AddKeyPicker("MenuKeybind", {
-    Default = "RightShift",
-    Text = "Menu Toggle",
-    Mode = "Toggle",
-    SyncToggleState = true
-})
+MenuSection:CreateKeybind({ Name = "Menu Toggle", CurrentKeybind = "RightShift" })
 
-MenuGroup:AddButton("Unload", function()
+MenuSection:CreateButton({ Name = "Unload", Callback = function()
     _G.__IVORY = (_G.__IVORY or 0) + 1
     pcall(function() Window:Destroy() end)
-    Library:Notify({ Title = "Ivory", Description = "Script unloaded!", Type = "Info", Time = 2 })
-end)
+    Library.Notify({ Title = "Ivory", Content = "Script unloaded!", Type = "Info", Duration = 2 })
+end })
 
 ----------------------------------------------------------------------------
 -- Status Updates
@@ -1650,4 +1572,4 @@ end)
 ----------------------------------------------------------------------------
 
 census()
-Library:Notify({ Title = "Ivory", Description = "Loaded successfully! Press ] to toggle menu.", Type = "Success", Time = 5 })
+Library.Notify({ Title = "Ivory", Content = "Loaded successfully! Press ] to toggle menu.", Type = "Success", Duration = 5 })

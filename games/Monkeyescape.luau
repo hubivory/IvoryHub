@@ -1,11 +1,17 @@
 -- +1 Speed Monkey Escape | Ivory Hub | Hybrid: fixed loop + all old features
 -- Loop: treadmill (best unlocked, no Robux) -> wins (best farmable, yellow only) -> tails (no Stop, fix buy/equip) -> rebirth (just fire) + all GAME_FEATURES
--- ObsidianUltra + UI_STYLE tokens + GAME_FEATURES mapping
 
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	local ok, src = pcall(function()
+		return request({
+			Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+			Method = "GET"
+		}).Body
+	end)
+	if ok then LIB_SRC = src end
+end
+local Library = loadstring(LIB_SRC)()
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -14,16 +20,6 @@ local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
 local CollectionService = game:GetService("CollectionService")
 
-local Options = Library.Options
-local Toggles = Library.Toggles
-
-Library.Scheme.BackgroundColor = Color3.fromRGB(13,13,13)
-Library.Scheme.MainColor = Color3.fromRGB(40,40,40)
-Library.Scheme.OutlineColor = Color3.fromRGB(58,58,58)
-Library.Scheme.AccentColor = Color3.fromRGB(255,0,255)
-Library.Scheme.FontColor = Color3.fromRGB(255,255,255)
-Library.CornerRadius = 10
-
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local LocalPlayer = Players.LocalPlayer
 local Data = LocalPlayer:WaitForChild("Data")
@@ -31,42 +27,14 @@ local Data = LocalPlayer:WaitForChild("Data")
 local isLobby = false
 pcall(function() isLobby = workspace:FindFirstChild("Lobby") ~= nil end)
 
-local Window = Library:CreateWindow({
-    Title = "Ivory",
-    Icon = "swords",
-    Footer = {"v1.4 |", {Text=isLobby and "Lobby" or "Game", Copyable=true}, "|", {Text=tostring(LocalPlayer.UserId), Copyable=true}},
-    CopyableFooter=true, Center=true, AutoShow=true, Resizable=true, ShowCustomCursor=true, NotifySide="Right",
-    SearchbarSize=UDim2.fromScale(0.35,1), FuzzySearch=true, SearchValues=true, Minimizable=true, CornerRadius=10, ToggleKeybind=Enum.KeyCode.RightShift,
+local Window = Library.CreateWindow({
+    Name = "Ivory",
+    Width = 460,
+    Height = 360,
+    FuzzySearch = true,
+    SearchValues = true,
+    Minimizable = true,
 })
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
 
 -- Embedded configs (avoid Plugin require)
 local UpgradesCfg = {
@@ -104,30 +72,27 @@ local BigNum = {
 }
 
 local Tabs = {
-    Main = Window:AddTab({Name="Main", Icon = "swords", Description="Dashboard"}),
-    Farming = Window:AddTab({Name="Farming", Icon = "swords", Description="Train & Wins & Collect"}),
-    Inventory = Window:AddTab({Name="Inventory", Icon = "swords", Description="Tails, Trails, Auras, Charms"}),
-    Rebirth = Window:AddTab({Name="Rebirth", Icon = "swords", Description="Rebirth"}),
-    Settings = Window:AddTab({Name="Settings", Icon = "swords", Description="Config"}),
+    Main = Window:CreateTab({Name="Main"}),
+    Farming = Window:CreateTab({Name="Farming"}),
+    Inventory = Window:CreateTab({Name="Inventory"}),
+    Rebirth = Window:CreateTab({Name="Rebirth"}),
+    Settings = Window:CreateTab({Name="Settings"}),
 }
-Tabs.Farming:SetSubTabAlignment("Center")
-local FarmTrain = Tabs.Farming:AddSubTab("Train")
-local FarmWins = Tabs.Farming:AddSubTab("Wins")
-local FarmCollect = Tabs.Farming:AddSubTab("Collecting")
-local FarmRace = Tabs.Farming:AddSubTab("Race")
-local FarmRewards = Tabs.Farming:AddSubTab("Rewards")
+local FarmTrain = Tabs.Farming:CreateSection("Train")
+local FarmWins = Tabs.Farming:CreateSection("Wins")
+local FarmCollect = Tabs.Farming:CreateSection("Collecting")
+local FarmRace = Tabs.Farming:CreateSection("Race")
+local FarmRewards = Tabs.Farming:CreateSection("Rewards")
 
-Tabs.Inventory:SetSubTabAlignment("Center")
-local InvTails = Tabs.Inventory:AddSubTab("Tails")
-local InvTrails = Tabs.Inventory:AddSubTab("Trails")
-local InvAuras = Tabs.Inventory:AddSubTab("Auras")
-local InvCharmsBuy = Tabs.Inventory:AddSubTab("Charms - Shop")
-local InvCharmsManage = Tabs.Inventory:AddSubTab("Charms - Manage")
-local InvConsumables = Tabs.Inventory:AddSubTab("Consumables")
+local InvTails = Tabs.Inventory:CreateSection("Tails")
+local InvTrails = Tabs.Inventory:CreateSection("Trails")
+local InvAuras = Tabs.Inventory:CreateSection("Auras")
+local InvCharmsBuy = Tabs.Inventory:CreateSection("Charms - Shop")
+local InvCharmsManage = Tabs.Inventory:CreateSection("Charms - Manage")
+local InvConsumables = Tabs.Inventory:CreateSection("Consumables")
 
-Tabs.Rebirth:SetSubTabAlignment("Center")
-local RebirthAuto = Tabs.Rebirth:AddSubTab("Auto")
-local RebirthInfo = Tabs.Rebirth:AddSubTab("Info")
+local RebirthAuto = Tabs.Rebirth:CreateSection("Auto")
+local RebirthInfo = Tabs.Rebirth:CreateSection("Info")
 
 local function safeFire(remote,...)
     if not remote then return false end
@@ -139,8 +104,8 @@ local function safeFire(remote,...)
     if not ok then warn("[FireFailed] "..remote.Name..": "..tostring(err)) end
     return ok
 end
-local function createIntervalSlider(group,id,text,def)
-    return group:AddSlider(id, {Text=text, Default=def or 0.5, Min=0.01, Max=10, Rounding=2, Suffix="s"})
+local function createIntervalSlider(section,id,text,def)
+    return section:CreateSlider({Name=text, Range={0.01, 10}, Increment=0.01, CurrentValue=def or 0.5})
 end
 local Loops={}
 local function runLoop(id,toggleId,intervalId,fn)
@@ -173,11 +138,11 @@ end
 
 -- MAIN
 do
-    local L=Tabs.Main:AddLeftGroupbox("Info")
-    L:AddLabel("PlaceId: "..tostring(game.PlaceId), true)
-    L:AddDivider()
+    local L=Tabs.Main:CreateSection("Info")
+    L:CreateLabel("PlaceId: "..tostring(game.PlaceId))
+    L:CreateDivider()
     local start=tick()
-    L:AddLabel("Session: 00:00:00", true, "SessionTime")
+    L:CreateLabel("Session: 00:00:00")
     task.spawn(function()
         while true do task.wait(1)
             local e=math.floor(tick()-start)
@@ -185,32 +150,32 @@ do
             if Options.SessionTime then Options.SessionTime:SetText(string.format("Session: %02d:%02d:%02d",h,m,s)) end
         end
     end)
-    L:AddLabel("Train -> Wins (yellow) -> Rebirth -> Tails", true)
-    L:AddDivider()
-    L:AddButton({Text="JOIN DISCORD FOR DUPE", Func=function()
+    L:CreateLabel("Train -> Wins (yellow) -> Rebirth -> Tails")
+    L:CreateDivider()
+    L:CreateButton({Name="JOIN DISCORD FOR DUPE", Callback=function()
         if setclipboard then setclipboard("https://discord.gg/ivory") end
-        Library:Notify({Title="Ivory", Description="Discord link copied!", Time=3})
+        Library.Notify({Title="Ivory", Content="Discord link copied!", Duration=3})
     end})
-    local R=Tabs.Main:AddRightGroupbox("Quick Status")
+    local R=Tabs.Main:CreateSection("Quick Status")
     local function upd() return string.format("Lvl %d | Rebirths %d | Wins %s", Data.Level.Value, Data.Rebirths.Value, Data.Wins:FindFirstChild("Digits") and Data.Wins.Digits.Value or "?") end
-    R:AddLabel(upd(), true)
+    R:CreateLabel(upd())
     Data.Level.Changed:Connect(function() end)
 end
 
 -- FARMING > TRAIN (best unlocked, no Robux)
 do
-    local G=FarmTrain:AddLeftGroupbox("Treadmill Train")
+    local G=FarmTrain
     local TreadmillTypes={"Basic","Golden","Diamond","Galaxy","Void","Celestial","Sunken","Quantum","Reward","Emerald"}
     pcall(function()
         TreadmillTypes={}
         for k,_ in pairs(TreadmillCfg.Multis) do table.insert(TreadmillTypes,k) end
         table.sort(TreadmillTypes)
     end)
-    G:AddDropdown("TrainTreadmill_Select", {Values=TreadmillTypes, Default=1, Multi=false, Text="Manual Treadmill (if not Best)", Searchable=true})
-    G:AddToggle("AutoTrain", {Text="Auto Train on Treadmill", Default=false})
-    G:AddSlider("AutoTrain_Interval", {Text="Interval", Default=5, Min=5, Max=10, Rounding=1, Suffix="s"})
-    G:AddToggle("AutoTrain_Best", {Text="Use Best UNLOCKED (no Robux)", Default=true, Tooltip="Skips GamePass treadmills you don't own (Golden, Diamond etc)"})
-    G:AddLabel("Checks CollectionService Tagged 'Treadmill' + 'TreadmillLabel' + Data.Passes. Free = Basic, Sunken, Quantum etc", true)
+    G:CreateDropdown({Name="Manual Treadmill (if not Best)", Options=TreadmillTypes, CurrentOption=1})
+    G:CreateToggle({Name="Auto Train on Treadmill", CurrentValue=false})
+    G:CreateSlider({Name="Interval", Range={5, 10}, Increment=0.1, CurrentValue=5})
+    G:CreateToggle({Name="Use Best UNLOCKED (no Robux)", CurrentValue=true})
+    G:CreateLabel("Checks CollectionService Tagged 'Treadmill' + 'TreadmillLabel' + Data.Passes. Free = Basic, Sunken, Quantum etc")
 
     local function isTreadmillUnlocked(ttype)
         if ttype=="Sunken" then local s=Data:FindFirstChild("CollectedShards") if not s or #s:GetChildren()<9 then return false end end
@@ -259,14 +224,14 @@ do
     Toggles.AutoTrain:OnChanged(function() if Toggles.AutoTrain.Value then startTrain() else stopLoop("AutoTrain") end end)
     if Toggles.AutoTrain_Best then Toggles.AutoTrain_Best:OnChanged(function() if Toggles.AutoTrain.Value then stopLoop("AutoTrain"); task.wait(0.2); startTrain() end end) end
 
-    local G2=FarmTrain:AddRightGroupbox("Train Info")
-    G2:AddLabel("SpeedMulti: "..tostring(Data.SpeedMulti.Value), true)
-    G2:AddLabel("Level: "..tostring(Data.Level.Value), true)
-    G2:AddButton({Text="TP to Best Unlocked Treadmill", Func=function()
+    local G2=FarmTrain
+    G2:CreateLabel("SpeedMulti: "..tostring(Data.SpeedMulti.Value))
+    G2:CreateLabel("Level: "..tostring(Data.Level.Value))
+    G2:CreateButton({Name="TP to Best Unlocked Treadmill", Callback=function()
         local p=getTreadmillPart(nil)
         if p and LocalPlayer.Character then LocalPlayer.Character.HumanoidRootPart.CFrame = p.CFrame + Vector3.new(0,5,0) end
     end})
-    G2:AddButton({Text="List Treadmills + Unlock", Func=function()
+    G2:CreateButton({Name="List Treadmills + Unlock", Callback=function()
         local s=""
         for _,p in CollectionService:GetTagged("Treadmill") do
             local t=p:GetAttribute("Type") or p.Name
@@ -274,14 +239,14 @@ do
             local unlocked=isTreadmillUnlocked(t)
             s=s..t.." multi "..multi.." unlocked "..tostring(unlocked).."\n"
         end
-        print(s); Library:Notify({Title="Ivory", Description=s:sub(1,300), Time=5})
+        print(s); Library.Notify({Title="Ivory", Content=s:sub(1,300), Duration=5})
     end})
 end
 
 -- FARMING > WINS (map all worlds, best farmable)
 do
-    local G=FarmWins:AddLeftGroupbox("Win Farming")
-    G:AddToggle("AutoWins", {Text="Auto Farm Wins (Yellow Only)", Default=false})
+    local G=FarmWins
+    G:CreateToggle({Name="Auto Farm Wins (Yellow Only)", CurrentValue=false})
     createIntervalSlider(G, "AutoWins_Interval", "Interval", 0.6)
     local winOptions={}
     for world, stages in pairs(MainCfg.StageWins) do
@@ -291,9 +256,9 @@ do
     end
     table.sort(winOptions)
     local FixedWinPos={World1={[1]=Vector3.new(-682.16,23.04,-255.05),[2]=Vector3.new(-935.66,23.04,-255.05),[3]=Vector3.new(-1214.16,23.04,-255.05),[4]=Vector3.new(-1569.16,23.04,-255.05),[5]=Vector3.new(-2183.16,118.04,-255.05),[6]=Vector3.new(-3046.41,118.04,-255.05),[7]=Vector3.new(-4318.16,277.04,-255.05),[8]=Vector3.new(-6158.66,277.04,-254.66),[9]=Vector3.new(-9459,399,-255)}, World2={[1]=Vector3.new(-735.16,23.04,-2565.05),[2]=Vector3.new(-1095.01,38.04,-2565.05),[3]=Vector3.new(-1880.16,-51.96,-2565.05),[4]=Vector3.new(-2400.16,55.34,-2565.05),[5]=Vector3.new(-3247.16,55.34,-2565.05),[6]=Vector3.new(-3605.38,55.34,-3697.49),[7]=Vector3.new(-3605.38,55.34,-4607.49),[8]=Vector3.new(-3605.38,55.34,-5827.49),[9]=Vector3.new(-3603,164,-9379)}, World3={[1]=Vector3.new(-684.16,22.54,2740.95),[2]=Vector3.new(-953.63,22.54,2740.95),[3]=Vector3.new(-1286.63,22.54,2740.95),[4]=Vector3.new(-1684.63,22.54,2740.95),[5]=Vector3.new(-2240.63,22.54,2740.95),[6]=Vector3.new(-2560.63,278.54,2740.95),[7]=Vector3.new(-4208.63,278.54,2740.95),[8]=Vector3.new(-5420.63,278.54,2740.95),[9]=Vector3.new(-8077.63,278.54,2740.95)}, World4={[1]=Vector3.new(-684.16,22.54,5740.95),[2]=Vector3.new(-892.16,22.54,5740.95),[3]=Vector3.new(-1206.66,22.54,5740.95),[4]=Vector3.new(-1592.66,22.54,5740.95),[5]=Vector3.new(-1852.06,172.54,5740.95),[6]=Vector3.new(-2718.06,172.54,5740.95),[7]=Vector3.new(-3933.06,172.54,5740.95),[8]=Vector3.new(-5663.06,17.50,5740.95),[9]=Vector3.new(-7760.11,17.50,5740.95)}, World5={[1]=Vector3.new(-684.16,22.54,7561.95),[2]=Vector3.new(-1005.16,22.54,7561.95),[3]=Vector3.new(-1333.16,22.54,7561.95),[4]=Vector3.new(-1778.15,103.54,7444.95),[5]=Vector3.new(-2369.24,103.54,7444.95),[6]=Vector3.new(-2828.45,283.54,7801.31)}}
-    G:AddDropdown("AutoWins_Manual", {Values=winOptions, Default=1, Multi=false, Text="Manual Win Pad", Searchable=true, Expandable=true, ExpandColumns=2})
-    G:AddDropdown("AutoWins_WorldFilter", {Values={"World1","World2","World3","World4","World5","All"}, Default=6, Multi=false, Text="World Filter"})
-    G:AddLabel("Yellow = NormalWin.Button New Yeller. Red VipWin skipped.", true)
+    G:CreateDropdown({Name="Manual Win Pad", Options=winOptions, CurrentOption=1})
+    G:CreateDropdown({Name="World Filter", Options={"World1","World2","World3","World4","World5","All"}, CurrentOption=6})
+    G:CreateLabel("Yellow = NormalWin.Button New Yeller. Red VipWin skipped.")
 
     local function parseWinOption(opt)
         local world, stage = opt:match("(%w+) Stage(%d+)")
@@ -449,28 +414,28 @@ do
         else stopLoop("AutoWins") end
     end)
 
-    local G2=FarmWins:AddRightGroupbox("Wins Tools")
-    G2:AddButton({Text="List All NormalWins", Func=function()
+    local G2=FarmWins
+    G2:CreateButton({Name="List All NormalWins", Callback=function()
         local list=getAllNormalWins("All")
         local s=""
         for _,e in ipairs(list) do s=s..e.world.." Stage"..e.stage.." "..Formatter.Format(e.wins)..(isWorldUnlocked(e.world) and " [unlocked]" or " [locked]").."\n" end
         print(s)
-        Library:Notify({Title="Ivory", Description="See console F9", Time=3})
+        Library.Notify({Title="Ivory", Content="See console F9", Duration=3})
     end})
-    G2:AddButton({Text="Show World Requirements", Func=function()
+    G2:CreateButton({Name="Show World Requirements", Callback=function()
         local s=""
         for w,req in pairs(MainCfg.WorldRebirthsRequired) do s=s..w.." needs "..req.." rebirths\n" end
-        Library:Notify({Title="Ivory", Description=s, Time=4})
+        Library.Notify({Title="Ivory", Content=s, Duration=4})
     end})
 end
 
 -- FARMING > COLLECTING (Bananas + Shards)
 do
-    local G=FarmCollect:AddLeftGroupbox("Collecting")
-    G:AddToggle("AutoCollectBananas", {Text="Auto Collect Bananas", Default=false})
+    local G=FarmCollect
+    G:CreateToggle({Name="Auto Collect Bananas", CurrentValue=false})
     createIntervalSlider(G, "AutoCollectBananas_Interval", "Interval", 0.5)
-    G:AddDropdown("AutoCollectShards_Select", {Values={"Shard1","Shard2","Shard3","Shard4","Shard5","Shard6","Shard7","Shard8","Shard9"}, Default=1, Multi=true, Text="Auto Collect Sunken Shards", Searchable=true, SelectAllButtons=true, Expandable=true, ExpandColumns=3})
-    G:AddToggle("AutoCollectShards", {Text="Auto Collect Sunken Shards", Default=false})
+    G:CreateDropdown({Name="Auto Collect Sunken Shards", Options={"Shard1","Shard2","Shard3","Shard4","Shard5","Shard6","Shard7","Shard8","Shard9"}, CurrentOption=1})
+    G:CreateToggle({Name="Auto Collect Sunken Shards", CurrentValue=false})
     createIntervalSlider(G, "AutoCollectShards_Interval", "Interval", 0.8)
 
     Toggles.AutoCollectBananas:OnChanged(function()
@@ -506,8 +471,8 @@ end
 
 -- FARMING > RACE
 do
-    local G=FarmRace:AddLeftGroupbox("Race")
-    G:AddToggle("AutoJoinRace", {Text="Auto Join Race", Default=false})
+    local G=FarmRace
+    G:CreateToggle({Name="Auto Join Race", CurrentValue=false})
     createIntervalSlider(G, "AutoJoinRace_Interval", "Interval", 2)
     Toggles.AutoJoinRace:OnChanged(function()
         if Toggles.AutoJoinRace.Value then
@@ -520,16 +485,16 @@ end
 
 -- FARMING > REWARDS (claims + redeem + spin etc)
 do
-    local G=FarmRewards:AddLeftGroupbox("Rewards")
-    G:AddToggle("AutoClaimFreeReward", {Text="Auto Claim Free Reward", Default=false})
+    local G=FarmRewards
+    G:CreateToggle({Name="Auto Claim Free Reward", CurrentValue=false})
     createIntervalSlider(G, "AutoClaimFreeReward_Interval", "Interval", 5)
-    G:AddToggle("AutoClaimStreakReward", {Text="Auto Claim Streak Reward", Default=false})
+    G:CreateToggle({Name="Auto Claim Streak Reward", CurrentValue=false})
     createIntervalSlider(G, "AutoClaimStreakReward_Interval", "Interval", 5)
-    G:AddToggle("AutoClaimOfflineEarnings", {Text="Auto Claim Offline Earnings", Default=false})
+    G:CreateToggle({Name="Auto Claim Offline Earnings", CurrentValue=false})
     createIntervalSlider(G, "AutoClaimOfflineEarnings_Interval", "Interval", 5)
-    G:AddToggle("AutoRedeemCode", {Text="Auto Redeem Code", Default=false})
+    G:CreateToggle({Name="Auto Redeem Code", CurrentValue=false})
     createIntervalSlider(G, "AutoRedeemCode_Interval", "Interval", 3)
-    G:AddToggle("AutoRedeemDiscordCode", {Text="Auto Redeem Discord Code", Default=false})
+    G:CreateToggle({Name="Auto Redeem Discord Code", CurrentValue=false})
     createIntervalSlider(G, "AutoRedeemDiscordCode_Interval", "Interval", 3)
 
     local map={AutoClaimFreeReward="ClaimFreeReward", AutoClaimStreakReward="ClaimStreakReward", AutoClaimOfflineEarnings="ClaimOfflineEarnings"}
@@ -556,16 +521,16 @@ do
         else stopLoop("AutoRedeemDiscordCode") end
     end)
 
-    local G2=FarmRewards:AddRightGroupbox("Other")
-    G2:AddToggle("AutoSpinWheel", {Text="Auto Spin Wheel", Default=false})
+    local G2=FarmRewards
+    G2:CreateToggle({Name="Auto Spin Wheel", CurrentValue=false})
     createIntervalSlider(G2, "AutoSpinWheel_Interval", "Interval", 3)
-    G2:AddToggle("AutoOpenSkullChest", {Text="Auto Open Skull Chest", Default=false})
+    G2:CreateToggle({Name="Auto Open Skull Chest", CurrentValue=false})
     createIntervalSlider(G2, "AutoOpenSkullChest_Interval", "Interval", 1)
-    G2:AddToggle("AutoOpenSecretChest", {Text="Auto Open Secret Chest", Default=false})
+    G2:CreateToggle({Name="Auto Open Secret Chest", CurrentValue=false})
     createIntervalSlider(G2, "AutoOpenSecretChest_Interval", "Interval", 1)
-    G2:AddToggle("AutoEnterSecretDoor", {Text="Auto Enter Secret Door", Default=false})
+    G2:CreateToggle({Name="Auto Enter Secret Door", CurrentValue=false})
     createIntervalSlider(G2, "AutoEnterSecretDoor_Interval", "Interval", 2)
-    G2:AddToggle("AutoSetGiftTarget", {Text="Auto Set Gift Target", Default=false})
+    G2:CreateToggle({Name="Auto Set Gift Target", CurrentValue=false})
     createIntervalSlider(G2, "AutoSetGiftTarget_Interval", "Interval", 5)
 
     Toggles.AutoSpinWheel:OnChanged(function()
@@ -608,12 +573,12 @@ end
 
 -- INVENTORY > TAILS (fixed, no Stop, buy + equip best)
 do
-    local G=InvTails:AddLeftGroupbox("Monkey Tails")
-    G:AddToggle("AutoBuyTails", {Text="Auto Buy Best Tail", Default=false, Tooltip="Fires SelectUpgrade for highest affordable wins"})
+    local G=InvTails
+    G:CreateToggle({Name="Auto Buy Best Tail", CurrentValue=false})
     createIntervalSlider(G, "AutoBuyTails_Interval", "Interval", 1)
-    G:AddToggle("AutoEquipBestTails", {Text="Auto Equip Best Owned Tail", Default=false})
+    G:CreateToggle({Name="Auto Equip Best Owned Tail", CurrentValue=false})
     createIntervalSlider(G, "AutoEquipBestTails_Interval", "Interval", 1)
-    G:AddLabel("No Stop dropdown. Uses SelectUpgrade remote + UnlockedUpgrades check.", true)
+    G:CreateLabel("No Stop dropdown. Uses SelectUpgrade remote + UnlockedUpgrades check.")
 
     local function getBestAffordableLocked()
         local BN=nil
@@ -689,17 +654,17 @@ do
         else stopLoop("AutoEquipBestTails") end
     end)
 
-    local G2=InvTails:AddRightGroupbox("Tails Info")
-    G2:AddLabel("Current: "..tostring(UpgradesCfg[Data.SelectedUpgrade.Value] and UpgradesCfg[Data.SelectedUpgrade.Value].Skin or "?").." idx "..tostring(Data.SelectedUpgrade.Value), true)
+    local G2=InvTails
+    G2:CreateLabel("Current: "..tostring(UpgradesCfg[Data.SelectedUpgrade.Value] and UpgradesCfg[Data.SelectedUpgrade.Value].Skin or "?").." idx "..tostring(Data.SelectedUpgrade.Value))
     Data.SelectedUpgrade.Changed:Connect(function()
         local cur=UpgradesCfg[Data.SelectedUpgrade.Value]
-        if cur then Library:Notify({Title="Ivory", Description=cur.Skin.." (+"..Formatter.Format(cur.Multi)..")", Time=2}) end
+        if cur then Library.Notify({Title="Ivory", Content=cur.Skin.." (+"..Formatter.Format(cur.Multi)..")", Duration=2}) end
     end)
-    G2:AddButton({Text="Equip Best Now", Func=function()
+    G2:CreateButton({Name="Equip Best Now", Callback=function()
         local best=getBestOwned()
         safeFire(Remotes.SelectUpgrade, best)
     end})
-    G2:AddButton({Text="Buy Best Affordable Now", Func=function()
+    G2:CreateButton({Name="Buy Best Affordable Now", Callback=function()
         local best=getBestAffordable()
         safeFire(Remotes.SelectUpgrade, best)
     end})
@@ -708,11 +673,11 @@ end
 -- INVENTORY > TRAILS (fixed: Buy Next + Equip Best, no Stop, no duplicate)
 do
     local Trails={"Red","Blue","Green","Rainbow","Galaxy","Divine","Fairy","Spectral","Yin Yang","Bloodmoon","Sakura","Flash","Void","Steampunk"}
-    local G=InvTrails:AddLeftGroupbox("Trail Buy")
-    G:AddToggle("AutoBuyTrail", {Text="Auto Buy Next Trail", Default=false, Tooltip="Buys next affordable trail"})
+    local G=InvTrails
+    G:CreateToggle({Name="Auto Buy Next Trail", CurrentValue=false})
     createIntervalSlider(G, "AutoBuyTrail_Interval", "Interval", 1)
-    local G2=InvTrails:AddRightGroupbox("Trail Equip")
-    G2:AddToggle("AutoEquipBestTrail", {Text="Auto Equip Best Trail", Default=false})
+    local G2=InvTrails
+    G2:CreateToggle({Name="Auto Equip Best Trail", CurrentValue=false})
     createIntervalSlider(G2, "AutoEquipBestTrail_Interval", "Interval", 1)
     Toggles.AutoBuyTrail:OnChanged(function()
         if Toggles.AutoBuyTrail.Value then
@@ -740,11 +705,11 @@ end
 -- INVENTORY > AURAS
 do
     local Auras={"Amber","Ice Cold","Nature","Rainbow","Lunar","Sparkle","Fairy","Spectral","Yin Yang","Bloodmoon","Sakura","Electric","Void","Steampunk"}
-    local G=InvAuras:AddLeftGroupbox("Aura Buy")
-    G:AddToggle("AutoBuyAura", {Text="Auto Buy Next Aura", Default=false, Tooltip="Buys next affordable aura"})
+    local G=InvAuras
+    G:CreateToggle({Name="Auto Buy Next Aura", CurrentValue=false})
     createIntervalSlider(G, "AutoBuyAura_Interval", "Interval", 1)
-    local G2=InvAuras:AddRightGroupbox("Aura Equip")
-    G2:AddToggle("AutoEquipAura", {Text="Auto Equip Best Aura", Default=false, Tooltip="Equips best owned"})
+    local G2=InvAuras
+    G2:CreateToggle({Name="Auto Equip Best Aura", CurrentValue=false})
     createIntervalSlider(G2, "AutoEquipAura_Interval", "Interval", 1)
     Toggles.AutoBuyAura:OnChanged(function()
         if Toggles.AutoBuyAura.Value then
@@ -774,9 +739,9 @@ end
 -- INVENTORY > CHARMS SHOP (multi-select)
 do
     local Charms={"Lucky Key","Treasure Coin","Emerald Talisman","Royal Crown","Lucky Idol","Monkey Paw","Banana Peel","Jungle Gem","Wind Feather","Vine Bracelet","Cheetah Totem","Swift Mask","Lava Drop","Hot Coal","Flame Skull","Magma Crystal","Phoenix Feather","Inferno Crown","Fire Boot","Flame Roller","Rocket Ember","Lava Lightning Bolt","Flaming Wing","Inferno Jetpack","Coconut","Starfish","Treasure Chest","Beach Bucket","Golden Pineapple","Sun Idol","Flip Flop","Sunglasses","Surfboard","Seagull Wing","Rocket Surfboard","Rainbow Wave","Gummy Bear","Candy Corn","Chocolate Bar","Lollipop","Giant Cupcake","Candy Castle","Peppermint","Candy Cane","Bubblegum Rocket","Sugar Star","Rainbow Candy Wing","Chocolate Mask","Snowflake","Ice Crystal","Frozen Chest","Snow Globe","Ice Crown","Glacier Core","Ice Skate","Frozen Feather","Blizzard Arrow","Snowboard","Frost Wing","Aurora Crystal"}
-    local G=InvCharmsBuy:AddLeftGroupbox("Charm Shop")
-    G:AddDropdown("AutoBuyCharm_Select", {Values=Charms, Default=1, Multi=true, Text="Charms to Buy", Searchable=true, SelectAllButtons=true, Expandable=true, ExpandColumns=3})
-    G:AddToggle("AutoBuyCharm", {Text="Auto Buy Selected Charms", Default=false})
+    local G=InvCharmsBuy
+    G:CreateDropdown({Name="Charms to Buy", Options=Charms, CurrentOption=1})
+    G:CreateToggle({Name="Auto Buy Selected Charms", CurrentValue=false})
     createIntervalSlider(G, "AutoBuyCharm_Interval", "Interval", 1)
     Toggles.AutoBuyCharm:OnChanged(function()
         if Toggles.AutoBuyCharm.Value then
@@ -808,17 +773,17 @@ end
 -- INVENTORY > CHARMS MANAGE
 do
     local Rarities={"Rare","Epic","Legendary","Mythic"}
-    local G=InvCharmsManage:AddLeftGroupbox("Charm Equip")
-    G:AddDropdown("AutoEquipBestCharms_Mode", {Values={"Wins","Speed"}, Default=1, Multi=false, Text="Equip Best Mode"})
-    G:AddToggle("AutoEquipBestCharms", {Text="Auto Equip Best Charms", Default=false})
+    local G=InvCharmsManage
+    G:CreateDropdown({Name="Equip Best Mode", Options={"Wins","Speed"}, CurrentOption=1})
+    G:CreateToggle({Name="Auto Equip Best Charms", CurrentValue=false})
     createIntervalSlider(G, "AutoEquipBestCharms_Interval", "Interval", 1)
-    G:AddToggle("AutoToggleLockCharms", {Text="Auto Toggle Lock Charms", Default=false})
+    G:CreateToggle({Name="Auto Toggle Lock Charms", CurrentValue=false})
     createIntervalSlider(G, "AutoToggleLockCharms_Interval", "Interval", 1)
-    local G2=InvCharmsManage:AddRightGroupbox("Delete/Fuse")
-    G2:AddDropdown("AutoDeleteCharms_StopOn", {Values=Rarities, Default=3, Multi=false, Text="Stop on Rarity (Delete)"})
-    G2:AddToggle("AutoDeleteCharms", {Text="Auto Delete Charms", Default=false})
+    local G2=InvCharmsManage
+    G2:CreateDropdown({Name="Stop on Rarity (Delete)", Options=Rarities, CurrentOption=3})
+    G2:CreateToggle({Name="Auto Delete Charms", CurrentValue=false})
     createIntervalSlider(G2, "AutoDeleteCharms_Interval", "Interval", 1)
-    G2:AddToggle("AutoFuseCharms", {Text="Auto Fuse Charms (to Max)", Default=false, Tooltip="Fuses 3 same charms to next star"})
+    G2:CreateToggle({Name="Auto Fuse Charms (to Max)", CurrentValue=false})
     createIntervalSlider(G2, "AutoFuseCharms_Interval", "Interval", 1)
     Toggles.AutoEquipBestCharms:OnChanged(function()
         if Toggles.AutoEquipBestCharms.Value then
@@ -877,11 +842,11 @@ end
 
 -- INVENTORY > CONSUMABLES
 do
-    local G=InvConsumables:AddLeftGroupbox("Potions")
+    local G=InvConsumables
     local Potions={"Speed 10m","Speed 30m","Speed 1h","Wins 10m","Wins 30m","Wins 1h"}
     for _,potion in ipairs(Potions) do
         local id="AutoUsePotion_"..potion:gsub(" ",""):gsub("10m","10"):gsub("30m","30"):gsub("1h","60")
-        G:AddToggle(id, {Text="Auto Use Potion: "..potion, Default=false})
+        G:CreateToggle({Name="Auto Use Potion: "..potion, CurrentValue=false})
         createIntervalSlider(G, id.."_Interval", potion.." Interval", 2)
     end
     task.spawn(function()
@@ -900,15 +865,15 @@ do
         end
     end)
     do
-        local G2=InvConsumables:AddRightGroupbox("Info")
-        G2:AddLabel("Limited Tails are Robux GamePasses - not farmable.", true)
+        local G2=InvConsumables
+        G2:CreateLabel("Limited Tails are Robux GamePasses - not farmable.")
     end
 end
 
 -- REBIRTH (just fire, no level mapping)
 do
-    local G=RebirthAuto:AddLeftGroupbox("Auto Rebirth")
-    G:AddToggle("AutoRebirth", {Text="Auto Rebirth", Default=false, Tooltip="Just fires Rebirth remote"})
+    local G=RebirthAuto
+    G:CreateToggle({Name="Auto Rebirth", CurrentValue=false})
     createIntervalSlider(G, "AutoRebirth_Interval", "Interval", 1)
     Toggles.AutoRebirth:OnChanged(function()
         if Toggles.AutoRebirth.Value then
@@ -917,22 +882,22 @@ do
             end)
         else stopLoop("AutoRebirth") end
     end)
-    local G2=RebirthInfo:AddLeftGroupbox("Rebirth Status")
+    local G2=RebirthInfo
     local txt=string.format("Rebirths: %d | Level %d", Data.Rebirths.Value, Data.Level.Value)
-    G2:AddLabel(txt, true, "RebirthInfoLabel")
+    G2:CreateLabel(txt)
     Data.Level.Changed:Connect(function()
         if Options.RebirthInfoLabel then Options.RebirthInfoLabel:SetText(string.format("Rebirths: %d | Level %d", Data.Rebirths.Value, Data.Level.Value)) end
     end)
     Data.Rebirths.Changed:Connect(function()
         if Options.RebirthInfoLabel then Options.RebirthInfoLabel:SetText(string.format("Rebirths: %d | Level %d", Data.Rebirths.Value, Data.Level.Value)) end
     end)
-    G2:AddButton({Text="Rebirth Now", Func=function() if Remotes:FindFirstChild("Rebirth") then safeFire(Remotes.Rebirth) end end})
+    G2:CreateButton({Name="Rebirth Now", Callback=function() if Remotes:FindFirstChild("Rebirth") then safeFire(Remotes.Rebirth) end end})
 end
 
 -- SETTINGS (always last)
 do
-    local G=Tabs.Settings:AddLeftGroupbox("Menu")
-    G:AddToggle("AntiAFK", {Text="Anti-AFK", Default=true})
+    local G=Tabs.Settings:CreateSection("Menu")
+    G:CreateToggle({Name="Anti-AFK", CurrentValue=true})
     Toggles.AntiAFK:OnChanged(function() setAntiAFK(Toggles.AntiAFK.Value) end)
     setAntiAFK(true)
     do
@@ -975,20 +940,23 @@ do
             end
         end)
     end
-    G:AddButton({Text="Join Discord", Func=function()
+    G:CreateButton({Name="Join Discord", Callback=function()
         if setclipboard then setclipboard("https://discord.gg/ivory") end
-        Library:Notify({Title="Ivory", Description="Discord link copied!", Time=3})
+        Library.Notify({Title="Ivory", Content="Discord link copied!", Duration=3})
     end})
-    G:AddLabel("Menu Keybind (RightShift)"):AddKeyPicker("MenuKeybind", {Default="RightShift", NoUI=false, Text="Menu Keybind"})
+    G:CreateKeybind({
+        Name = "Menu Keybind",
+        CurrentKeybind = "RightShift",
+    })
     Library.ToggleKeybind=Options.MenuKeybind
-    G:AddDivider()
-    G:AddButton({Text="Unload", Func=function() Library:Unload() end})
+    G:CreateDivider()
+    G:CreateButton({Name="Unload", Callback=function() Library:Unload() end})
 end
 
 do
-    local GC = Tabs.Settings:AddLeftGroupbox("Credits")
-    GC:AddLabel("Made by Mommy")
-    GC:AddLabel("Veqxoo < / 3")
+    local GC = Tabs.Settings:CreateSection("Credits")
+    GC:CreateLabel("Made by Mommy")
+    GC:CreateLabel("Veqxoo < / 3")
     task.spawn(function()
         task.wait(2)
         pcall(function()
@@ -1005,24 +973,7 @@ do
     end)
 end
 
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({"MenuKeybind"})
-ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub")
-if isLobby then
-    SaveManager:SetSubFolder("lobby")
-else
-    SaveManager:SetSubFolder("game")
-end
-SaveManager:BuildConfigSection(Tabs.Settings)
-ThemeManager:ApplyToTab(Tabs.Settings)
-SaveManager:LoadAutoloadConfig()
-
-Library:Notify({Title="Ivory", Description="Ivory Hub loaded. Best unlocked train + best win + tails fixed.", Time=5})
-Library:OnUnload(function()
-    for id,_ in pairs(Loops) do stopLoop(id) end
-    if AntiAFKConn then AntiAFKConn:Disconnect() end
-    print("Ivory unloaded")
-end)
+Library.Notify({Title="Ivory", Content="Ivory Hub loaded. Best unlocked train + best win + tails fixed.", Duration=5})
+for id,_ in pairs(Loops) do stopLoop(id) end
+if AntiAFKConn then AntiAFKConn:Disconnect() end
+print("Ivory unloaded")

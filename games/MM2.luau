@@ -1,12 +1,17 @@
--- Murder Mystery 2 | ObsidianUltra UI
+-- Murder Mystery 2 | Ivory Hub Sakura Edition
 -- Pink Neon Theme | v4.0
 
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
-
-local Options = Library.Options
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	local ok, src = pcall(function()
+		return request({
+			Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+			Method = "GET"
+		}).Body
+	end)
+	if ok then LIB_SRC = src end
+end
+local Library = loadstring(LIB_SRC)()
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -14,67 +19,25 @@ local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
-Library.Scheme.MainColor = Color3.fromRGB(30, 20, 30)
-Library.Scheme.AccentColor = Color3.fromRGB(255, 105, 180)
-Library.Scheme.AcccentDark = Color3.fromRGB(200, 80, 150)
-Library.Scheme.OutlineColor = Color3.fromRGB(80, 40, 70)
-Library.Scheme.FontColor = Color3.fromRGB(255, 220, 240)
-Library.Scheme.SubText = Color3.fromRGB(180, 140, 170)
-Library.Scheme.Bright = Color3.fromRGB(45, 30, 50)
-Library.Scheme.Dark = Color3.fromRGB(20, 12, 22)
-Library.Scheme.Risky = Color3.fromRGB(255, 50, 100)
-
-Library.ShowToggleFrameInKeybinds = true
-
-local Window = Library:CreateWindow({
-	Title = "Ivory | MM2",
-	Icon = "swords",
+local Window = Library.CreateWindow({
+	Name = "Ivory | MM2",
+	Width = 460,
+	Height = 360,
 	NotifySide = "Right",
 	ShowCustomCursor = false,
 	Minimizable = true,
 	MinimizeKeybind = Enum.KeyCode.RightBracket,
 	MinimizedWidth = 280,
-	Footer = { "MM2 |", { Text = "v4.0", Copyable = true } },
-	CopyableFooter = true,
 	FuzzySearch = true,
 	SearchValues = true,
 	SearchKeybind = Enum.KeyCode.F,
 })
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
 
 local Tabs = {
-	Main = Window:AddTab({ Name = "ESP", Icon = "swords", Description = "Boxes, Names, Roles" }),
-	Visuals = Window:AddTab({ Name = "Visuals", Icon = "swords", Description = "Highlights & X-Ray" }),
-	Aim = Window:AddTab({ Name = "Aim", Icon = "swords", Description = "Aimbot" }),
-	Settings = Window:AddTab({ Name = "Settings", Icon = "swords", Description = "UI & Config" }),
+	Main = Window:CreateTab({ Name = "ESP" }),
+	Visuals = Window:CreateTab({ Name = "Visuals" }),
+	Aim = Window:CreateTab({ Name = "Aim" }),
+	Settings = Window:CreateTab({ Name = "Settings" }),
 }
 
 local State = {
@@ -152,88 +115,110 @@ local function worldToScreen(position)
 	return Vector2.new(screenPos.X, screenPos.Y), onScreen, screenPos.Z
 end
 
-local DiscordGroup = Tabs.Main:AddLeftGroupbox("Community", "users")
-DiscordGroup:AddButton("Join Discord For Dupe", function()
+local DiscordSection = Tabs.Main:CreateSection("Community")
+DiscordSection:CreateButton({Name = "Join Discord For Dupe", Callback = function()
 	pcall(function() game:GetService("GuiService"):OpenBrowserWindow("https://discord.gg/ivory") end)
-end)
-DiscordGroup:AddLabel("Click above to join our Discord for dupes, updates & more!")
+end})
+DiscordSection:CreateLabel("Click above to join our Discord for dupes, updates & more!")
 
-local ESPGroup = Tabs.Main:AddLeftGroupbox("ESP Controls", "eye")
+local ESPSection = Tabs.Main:CreateSection("ESP Controls")
 
-ESPGroup:AddToggle("ESP Enabled", {
-	Text = "Enable ESP", Default = false,
+ESPSection:CreateToggle({
+	Name = "Enable ESP",
+	CurrentValue = false,
 	Callback = function(v) State.ESP_Enabled = v end,
 })
-ESPGroup:AddToggle("ESP Box", {
-	Text = "Show Box", Default = true,
+ESPSection:CreateToggle({
+	Name = "Show Box",
+	CurrentValue = true,
 	Callback = function(v) State.ESP_Box = v end,
 })
-ESPGroup:AddToggle("ESP Name", {
-	Text = "Show Name", Default = true,
+ESPSection:CreateToggle({
+	Name = "Show Name",
+	CurrentValue = true,
 	Callback = function(v) State.ESP_Name = v end,
 })
-ESPGroup:AddToggle("ESP Distance", {
-	Text = "Show Distance", Default = true,
+ESPSection:CreateToggle({
+	Name = "Show Distance",
+	CurrentValue = true,
 	Callback = function(v) State.ESP_Distance = v end,
 })
-ESPGroup:AddToggle("ESP Role", {
-	Text = "Show Role", Default = true,
+ESPSection:CreateToggle({
+	Name = "Show Role",
+	CurrentValue = true,
 	Callback = function(v) State.ESP_Role = v end,
 })
-ESPGroup:AddToggle("ESP Tracer", {
-	Text = "Show Tracer Line", Default = false,
+ESPSection:CreateToggle({
+	Name = "Show Tracer Line",
+	CurrentValue = false,
 	Callback = function(v) State.ESP_Tracer = v end,
 })
-ESPGroup:AddToggle("ESP XRay", {
-	Text = "X-Ray (Through Walls)", Default = false,
+ESPSection:CreateToggle({
+	Name = "X-Ray (Through Walls)",
+	CurrentValue = false,
 	Callback = function(v) State.ESP_XRay = v end,
 })
 
-local ESPStyle = Tabs.Main:AddLeftGroupbox("ESP Style", "sliders")
+local ESPStyleSection = Tabs.Main:CreateSection("ESP Style")
 
-ESPStyle:AddSlider("BoxThickness", {
-	Text = "Box Thickness", Default = 2, Min = 1, Max = 5, Rounding = 0,
+ESPStyleSection:CreateSlider({
+	Name = "Box Thickness",
+	Range = {1, 5},
+	Increment = 1,
+	CurrentValue = 2,
 	Callback = function(v) State.BoxThickness = v end,
 })
-ESPStyle:AddSlider("TextSize", {
-	Text = "Text Size", Default = 16, Min = 10, Max = 30, Rounding = 0,
+ESPStyleSection:CreateSlider({
+	Name = "Text Size",
+	Range = {10, 30},
+	Increment = 1,
+	CurrentValue = 16,
 	Callback = function(v) State.TextSize = v end,
 })
-ESPStyle:AddSlider("BoxWidthScale", {
-	Text = "Box Width", Default = 65, Min = 40, Max = 100, Rounding = 0,
+ESPStyleSection:CreateSlider({
+	Name = "Box Width",
+	Range = {40, 100},
+	Increment = 1,
+	CurrentValue = 65,
 	Callback = function(v) State.BoxWidthScale = v / 100 end,
 })
 
-local ESPColors = Tabs.Main:AddRightGroupbox("ESP Colors", "palette")
+local ESPColorsSection = Tabs.Main:CreateSection("ESP Colors")
 
-ESPColors:AddLabel("Box Color"):AddColorPicker("ColorBox", {
-	Default = Color3.fromRGB(255, 105, 180), Title = "Box",
+ESPColorsSection:CreateColorPicker({
+	Name = "Box",
+	Color = Color3.fromRGB(255, 105, 180),
 	Callback = function(v) State.Color_Box = v end,
 })
-ESPColors:AddLabel("Name Color"):AddColorPicker("ColorName", {
-	Default = Color3.fromRGB(255, 220, 240), Title = "Name",
+ESPColorsSection:CreateColorPicker({
+	Name = "Name",
+	Color = Color3.fromRGB(255, 220, 240),
 	Callback = function(v) State.Color_Name = v end,
 })
-ESPColors:AddLabel("Distance Color"):AddColorPicker("ColorDistance", {
-	Default = Color3.fromRGB(180, 140, 170), Title = "Distance",
+ESPColorsSection:CreateColorPicker({
+	Name = "Distance",
+	Color = Color3.fromRGB(180, 140, 170),
 	Callback = function(v) State.Color_Distance = v end,
 })
-ESPColors:AddLabel("Tracer Color"):AddColorPicker("ColorTracer", {
-	Default = Color3.fromRGB(255, 105, 180), Title = "Tracer",
+ESPColorsSection:CreateColorPicker({
+	Name = "Tracer",
+	Color = Color3.fromRGB(255, 105, 180),
 	Callback = function(v) State.Color_Tracer = v end,
 })
 
-local RolesGroup = Tabs.Main:AddRightGroupbox("Role Revealer", "users")
-RolesGroup:AddToggle("RoleRevealer", {
-	Text = "Show Roles", Default = false,
+local RolesSection = Tabs.Main:CreateSection("Role Revealer")
+RolesSection:CreateToggle({
+	Name = "Show Roles",
+	CurrentValue = false,
 	Callback = function(v) State.RoleRevealer = v end,
 })
-RolesGroup:AddLabel("Shows each player's role above their head.")
+RolesSection:CreateLabel("Shows each player's role above their head.")
 
-local HighlightGroup = Tabs.Visuals:AddLeftGroupbox("Highlights", "highlighter")
+local HighlightSection = Tabs.Visuals:CreateSection("Highlights")
 
-HighlightGroup:AddToggle("Highlight Enabled", {
-	Text = "Enable Highlights", Default = false,
+HighlightSection:CreateToggle({
+	Name = "Enable Highlights",
+	CurrentValue = false,
 	Callback = function(v)
 		State.Highlight_Enabled = v
 		if not v then
@@ -246,61 +231,82 @@ HighlightGroup:AddToggle("Highlight Enabled", {
 		end
 	end,
 })
-HighlightGroup:AddDropdown("HighlightMode", {
-	Values = { "Full Body", "Outline Only" }, Default = "Full Body", Text = "Highlight Mode",
+HighlightSection:CreateDropdown({
+	Name = "Highlight Mode",
+	Options = { "Full Body", "Outline Only" },
+	CurrentOption = "Full Body",
 	Callback = function(v) State.Highlight_Mode = v end,
 })
-HighlightGroup:AddToggle("Highlight Depth", {
-	Text = "Occluded (Through Walls)", Default = false,
+HighlightSection:CreateToggle({
+	Name = "Occluded (Through Walls)",
+	CurrentValue = false,
 	Callback = function(v) State.Highlight_Depth = v end,
 })
-HighlightGroup:AddToggle("Highlight Self", {
-	Text = "Highlight Yourself", Default = false,
+HighlightSection:CreateToggle({
+	Name = "Highlight Yourself",
+	CurrentValue = false,
 	Callback = function(v) State.Highlight_Self = v end,
 })
 
-local HighlightStyle = Tabs.Visuals:AddRightGroupbox("Highlight Colors", "palette")
+local HighlightColorsSection = Tabs.Visuals:CreateSection("Highlight Colors")
 
-HighlightStyle:AddLabel("Innocent Color"):AddColorPicker("ColorInnocent", {
-	Default = Color3.fromRGB(255, 105, 180), Title = "Innocent",
+HighlightColorsSection:CreateColorPicker({
+	Name = "Innocent",
+	Color = Color3.fromRGB(255, 105, 180),
 	Callback = function(v) State.Color_Innocent = v end,
 })
-HighlightStyle:AddLabel("Sheriff Color"):AddColorPicker("ColorSheriff", {
-	Default = Color3.fromRGB(255, 230, 50), Title = "Sheriff",
+HighlightColorsSection:CreateColorPicker({
+	Name = "Sheriff",
+	Color = Color3.fromRGB(255, 230, 50),
 	Callback = function(v) State.Color_Sheriff = v end,
 })
-HighlightStyle:AddLabel("Murderer Color"):AddColorPicker("ColorMurderer", {
-	Default = Color3.fromRGB(255, 50, 50), Title = "Murderer",
+HighlightColorsSection:CreateColorPicker({
+	Name = "Murderer",
+	Color = Color3.fromRGB(255, 50, 50),
 	Callback = function(v) State.Color_Murderer = v end,
 })
-HighlightStyle:AddSlider("FillTransparency", {
-	Text = "Fill Transparency", Default = 50, Min = 0, Max = 100, Rounding = 0,
+HighlightColorsSection:CreateSlider({
+	Name = "Fill Transparency",
+	Range = {0, 100},
+	Increment = 1,
+	CurrentValue = 50,
 	Callback = function(v) State.Highlight_FillTransparency = v / 100 end,
 })
-HighlightStyle:AddSlider("OutlineTransparency", {
-	Text = "Outline Transparency", Default = 0, Min = 0, Max = 100, Rounding = 0,
+HighlightColorsSection:CreateSlider({
+	Name = "Outline Transparency",
+	Range = {0, 100},
+	Increment = 1,
+	CurrentValue = 0,
 	Callback = function(v) State.Highlight_OutlineTransparency = v / 100 end,
 })
 
-local AimbotGroup = Tabs.Aim:AddLeftGroupbox("Aimbot", "crosshair")
+local AimbotSection = Tabs.Aim:CreateSection("Aimbot")
 
-AimbotGroup:AddToggle("Aimbot", {
-	Text = "Enable Aimbot", Default = false,
+AimbotSection:CreateToggle({
+	Name = "Enable Aimbot",
+	CurrentValue = false,
 	Callback = function(v) State.Aimbot = v end,
 })
-AimbotGroup:AddToggle("Aimbot Hold", {
-	Text = "Hold Aimbot", Default = false,
+AimbotSection:CreateToggle({
+	Name = "Hold Aimbot",
+	CurrentValue = false,
 	Callback = function(v) State.Aimbot = v end,
 })
-AimbotGroup:AddLabel("Aimbot Keybind"):AddKeyPicker("AimbotKeybind", {
-	Default = "MouseButton2", NoUI = true, Text = "Aimbot Key",
+AimbotSection:CreateKeybind({
+	Name = "Aimbot Key",
+	CurrentKeybind = "MouseButton2",
 })
-AimbotGroup:AddSlider("AimbotFOV", {
-	Text = "FOV (px)", Default = 100, Min = 20, Max = 500, Rounding = 0,
+AimbotSection:CreateSlider({
+	Name = "FOV (px)",
+	Range = {20, 500},
+	Increment = 1,
+	CurrentValue = 100,
 	Callback = function(v) State.Aimbot_FOV = v end,
 })
-AimbotGroup:AddInput("AimbotFOVInput", {
-	Text = "FOV Value", Default = "100", Placeholder = "Type a number",
+AimbotSection:CreateTextBox({
+	Name = "FOV Value",
+	CurrentValue = "100",
+	Placeholder = "Type a number",
 	Callback = function(v)
 		local num = tonumber(v)
 		if num then
@@ -308,74 +314,75 @@ AimbotGroup:AddInput("AimbotFOVInput", {
 		end
 	end,
 })
-AimbotGroup:AddSlider("AimbotSmooth", {
-	Text = "Smoothing", Default = 5, Min = 1, Max = 20, Rounding = 0,
+AimbotSection:CreateSlider({
+	Name = "Smoothing",
+	Range = {1, 20},
+	Increment = 1,
+	CurrentValue = 5,
 	Callback = function(v) State.Aimbot_Smooth = v end,
 })
-AimbotGroup:AddToggle("AimbotOnlyMurderer", {
-	Text = "Only Target Murderer", Default = true,
+AimbotSection:CreateToggle({
+	Name = "Only Target Murderer",
+	CurrentValue = true,
 	Callback = function(v) State.Aimbot_OnlyMurderer = v end,
 })
-AimbotGroup:AddToggle("AimbotWallCheck", {
-	Text = "Wall Check", Default = true,
+AimbotSection:CreateToggle({
+	Name = "Wall Check",
+	CurrentValue = true,
 	Callback = function(v) State.Aimbot_WallCheck = v end,
 })
-AimbotGroup:AddToggle("AimbotPrediction", {
-	Text = "Predict Movement", Default = true,
+AimbotSection:CreateToggle({
+	Name = "Predict Movement",
+	CurrentValue = true,
 	Callback = function(v) State.Aimbot_Prediction = v end,
 })
-AimbotGroup:AddSlider("AimbotPredOffset", {
-	Text = "Prediction Lead", Default = 5, Min = 0, Max = 50, Rounding = 0,
+AimbotSection:CreateSlider({
+	Name = "Prediction Lead",
+	Range = {0, 50},
+	Increment = 1,
+	CurrentValue = 5,
 	Callback = function(v) State.Aimbot_PredictionOffset = v / 10 end,
 })
-AimbotGroup:AddToggle("AimbotFOVCircle", {
-	Text = "Show FOV Circle", Default = true,
+AimbotSection:CreateToggle({
+	Name = "Show FOV Circle",
+	CurrentValue = true,
 	Callback = function(v) State.Aimbot_FOV_Circle = v end,
 })
 
-local MenuGroup = Tabs.Settings:AddLeftGroupbox("Menu", "wrench")
+local MenuSection = Tabs.Settings:CreateSection("Menu")
 
-MenuGroup:AddToggle("KeybindMenuOpen", {
-	Default = Library.KeybindFrame.Visible, Text = "Open Keybind Menu",
+MenuSection:CreateToggle({
+	Name = "Open Keybind Menu",
+	CurrentValue = Library.KeybindFrame.Visible,
 	Callback = function(value) Library.KeybindFrame.Visible = value end,
 })
-MenuGroup:AddToggle("ShowCustomCursor", {
-	Text = "Custom Cursor", Default = Library.ShowCustomCursor,
+MenuSection:CreateToggle({
+	Name = "Custom Cursor",
+	CurrentValue = Library.ShowCustomCursor,
 	Callback = function(Value) Library.ShowCustomCursor = Value end,
 })
-MenuGroup:AddDropdown("DPIDropdown", {
-	Values = { "75%", "100%", "125%", "150%" }, Default = "100%", Text = "DPI Scale",
+MenuSection:CreateDropdown({
+	Name = "DPI Scale",
+	Options = { "75%", "100%", "125%", "150%" },
+	CurrentOption = "100%",
 	Callback = function(Value) Library:SetDPIScale(tonumber(Value:gsub("%%", ""))) end,
 })
-MenuGroup:AddSlider("UICornerSlider", {
-	Text = "Corner Radius", Default = 8, Min = 0, Max = 20, Rounding = 0,
+MenuSection:CreateSlider({
+	Name = "Corner Radius",
+	Range = {0, 20},
+	Increment = 1,
+	CurrentValue = 8,
 	Callback = function(value) Window:SetCornerRadius(value) end,
 })
-MenuGroup:AddDivider()
-MenuGroup:AddLabel("Menu: RightShift (default)"):AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
-MenuGroup:AddButton("Unload", function() Library:Unload() end)
-local creditLabel = MenuGroup:AddLabel("Made by mommy Veqxo < / 3")
-pcall(function()
-	local tl = creditLabel.TextLabel
-	if tl then
-		tl.TextColor3 = Color3.fromRGB(255, 20, 147)
-		tl.TextSize = 18
-		tl.Font = Enum.Font.GothamBold
-		tl.TextXAlignment = Enum.TextXAlignment.Center
-	end
-end)
+MenuSection:CreateDivider()
+MenuSection:CreateKeybind({
+	Name = "Menu keybind",
+	CurrentKeybind = "RightShift",
+})
+MenuSection:CreateButton({Name = "Unload", Callback = function() Library:Unload() end})
+MenuSection:CreateLabel("Made by mommy Veqxo < / 3")
 
 Library.ToggleKeybind = Options.MenuKeybind
-
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("MM2Script")
-SaveManager:SetFolder("MM2Script/configs")
-SaveManager:BuildConfigSection(Tabs["Settings"])
-ThemeManager:ApplyToTab(Tabs["Settings"])
-SaveManager:LoadAutoloadConfig()
 
 local espObjects = {}
 
@@ -638,13 +645,11 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
-Library:OnUnload(function()
-	FOVCircle:Remove()
-	disableXRay()
-	for player, _ in pairs(espObjects) do removeESP(player) end
-	espObjects = {}
-	for _, player in ipairs(Players:GetPlayers()) do removeHighlight(player) end
-	removeHighlight(LocalPlayer)
-end)
+FOVCircle:Remove()
+disableXRay()
+for player, _ in pairs(espObjects) do removeESP(player) end
+espObjects = {}
+for _, player in ipairs(Players:GetPlayers()) do removeHighlight(player) end
+removeHighlight(LocalPlayer)
 
 print("[Ivory] v4.0 loaded")

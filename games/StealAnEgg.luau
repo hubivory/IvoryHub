@@ -2438,89 +2438,31 @@ FX.autoStealOn = autoStealOn
 end
 
 -- -------------------------------------------------------
---  OBSIDIANULTRA UI
+--  UI (Ivory Hub Sakura Edition)
 -- -------------------------------------------------------
 do
-	local genv = getgenv()
-	local ls, ts, ss = genv._IvoryLibSrc, genv._IvoryTMSrc, genv._IvorySMSrc
-	local Library, ThemeManager, SaveManager
-	if ls then
-		Library = loadstring(ls)()
-		ThemeManager = loadstring(ts)()
-		SaveManager = loadstring(ss)()
-	else
-		local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-		Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-		ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-		SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+	local LIB_SRC = getgenv()._IvoryLibSrc
+	if not LIB_SRC then
+		local ok, src = pcall(function()
+			return request({
+				Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+				Method = "GET"
+			}).Body
+		end)
+		if ok then LIB_SRC = src end
 	end
-	if not Library then warn("[Ivory] ObsidianUltra load failed"); return end
+	local Library = loadstring(LIB_SRC)()
+	if not Library then warn("[Ivory] Library load failed"); return end
 
-	local Window = Library:CreateWindow({
-		Title = "Ivory",
-		Icon = "swords",
-		Footer = {
-			"v2.1 |",
-			{ Text = "Steal An Egg", Copyable = true },
-			"|",
-			{ Text = tostring(LocalPlayer.UserId), Copyable = true },
-		},
-		CopyableFooter = true,
-		FuzzySearch = true,
-		SearchValues = true,
-		Minimizable = true,
-		MinimizeKeybind = Enum.KeyCode.RightBracket,
-		MinimizedWidth = 280,
-		NotifySide = "Right",
-		ShowCustomCursor = true,
-		SearchKeybind = Enum.KeyCode.F,
-		CornerRadius = 4,
-		Animations = {
-			ToggleWindow = false,
-			TabSwitch = false,
-			Groupbox = false,
-			Dropdown = false,
-			KeyPicker = false,
-			SubTabUnderline = true,
-		},
-	})
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
+	local Window = Library.CreateWindow({Name = "Ivory", Width = 460, Height = 360, Minimizable = true, NotifySide = "Right", ShowCustomCursor = true, CornerRadius = 4})
 
-	local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
+	local MainTab = Window:CreateTab({Name = "Main"})
 
 	do
-		local Sub = MainTab:AddSubTab("Steal", "rbxassetid://79379082636309")
-		local L = Sub:AddLeftGroupbox("Egg Steal", "crosshair")
-		local R = Sub:AddRightGroupbox("Base & Utility", "home")
-		L:AddToggle("AutoSteal", { Text = "Auto Steal", Default = false, Callback = function(v)
+		local Sub = MainTab:CreateSection("Steal")
+		local L = Sub:CreateSection("Egg Steal")
+		local R = Sub:CreateSection("Base & Utility")
+		L:CreateToggle({Name = "Auto Steal", CurrentValue = false, Callback = function(v)
 			Config.AutoSteal = v
 			if v then
 				Config.PerfMode = true
@@ -2534,77 +2476,67 @@ end)
 				cancelTravel()
 				releaseRoot()
 			end
-		end })
-		L:AddDropdown("FarmMethod", { Text = "Farm Method", Values = { "Teleport", "TP Walk" }, Default = "TP Walk", Callback = function(v) Config.FarmMethod = v end })
-		L:AddDropdown("AreaFocus", { Text = "Area Focus", Values = FX.areaLabels(), Multi = true, Callback = function(v) table.clear(Config.AreaFocus); for _, item in ipairs(v) do Config.AreaFocus[item] = true end end })
-		L:AddDropdown("RarityFilter", { Text = "Rarity Filter", Values = FX.Rarities, Multi = true, Callback = function(v) table.clear(Config.RarityFilter); for _, item in ipairs(v) do Config.RarityFilter[item] = true end end })
-		L:AddToggle("SecretPriority", { Text = "Secret Priority", Default = true, Callback = function(v) Config.SecretPriority = v end })
-		L:AddToggle("AntiTrap", { Text = "Anti Trap", Default = true, Callback = function(v) Config.AntiTrap = v end })
-		R:AddButton("Set Base Here", function() Config.ManualBase = (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) and LocalPlayer.Character.HumanoidRootPart.Position or nil; FX.warnToast(Config.ManualBase and "Base set!" or "No character.", 3) end)
-		R:AddButton("Go Home", function() FX.goHome(20) end)
-		R:AddButton("Void Drop", function() FX.voidDrop() end)
-		R:AddButton("Sell Pets", function() FX.sellPets(false) end)
-		R:AddButton("Sell All Eggs", function()
+		end})
+		L:CreateDropdown({Name = "Farm Method", Options = { "Teleport", "TP Walk" }, CurrentOption = "TP Walk", Callback = function(v) Config.FarmMethod = v end})
+		L:CreateDropdown({Name = "Area Focus", Options = FX.areaLabels(), CurrentOption = {}, Callback = function(v) table.clear(Config.AreaFocus); for _, item in ipairs(v) do Config.AreaFocus[item] = true end end})
+		L:CreateDropdown({Name = "Rarity Filter", Options = FX.Rarities, CurrentOption = {}, Callback = function(v) table.clear(Config.RarityFilter); for _, item in ipairs(v) do Config.RarityFilter[item] = true end end})
+		L:CreateToggle({Name = "Secret Priority", CurrentValue = true, Callback = function(v) Config.SecretPriority = v end})
+		L:CreateToggle({Name = "Anti Trap", CurrentValue = true, Callback = function(v) Config.AntiTrap = v end})
+		R:CreateButton({Name = "Set Base Here", Callback = function() Config.ManualBase = (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) and LocalPlayer.Character.HumanoidRootPart.Position or nil; FX.warnToast(Config.ManualBase and "Base set!" or "No character.", 3) end})
+		R:CreateButton({Name = "Go Home", Callback = function() FX.goHome(20) end})
+		R:CreateButton({Name = "Void Drop", Callback = function() FX.voidDrop() end})
+		R:CreateButton({Name = "Sell Pets", Callback = function() FX.sellPets(false) end})
+		R:CreateButton({Name = "Sell All Eggs", Callback = function()
 			local rarities = {}
 			for _, name in ipairs(Rarities) do rarities[name] = true end
 			callNet(Remotes.WriteAutoSell, rarities)
 			callNet(Remotes.SatchelSale)
 			FX.warnToast("Eggs sold!", 3)
-		end)
-		R:AddToggle("AutoSellEggs", { Text = "Auto Sell Eggs", Default = false, Callback = function(v)
+		end})
+		R:CreateToggle({Name = "Auto Sell Eggs", CurrentValue = false, Callback = function(v)
 			Config.AutoSellEggs = v
 			if v then
 				callNet(Remotes.WriteAutoSell, Config.SellEggRarities)
 			else
 				callNet(Remotes.WriteAutoSell, {})
 			end
-		end })
-		R:AddDropdown("SellEggRarities", { Text = "Sell Egg Rarities", Values = FX.Rarities, Multi = true, Callback = function(v) table.clear(Config.SellEggRarities); for _, item in ipairs(v) do Config.SellEggRarities[item] = true end end })
+		end})
+		R:CreateDropdown({Name = "Sell Egg Rarities", Options = FX.Rarities, CurrentOption = {}, Callback = function(v) table.clear(Config.SellEggRarities); for _, item in ipairs(v) do Config.SellEggRarities[item] = true end end})
 	end
 
 	do
-		local Sub = MainTab:AddSubTab("Hatch & ESP", "rbxassetid://79379082636309")
-		local L = Sub:AddLeftGroupbox("Hatching", "egg")
-		local R = Sub:AddRightGroupbox("Visuals", "eye")
-		L:AddToggle("AutoHatch", { Text = "Auto Hatch", Default = false, Callback = function(v) Config.AutoHatch = v end })
-		L:AddButton("Hatch All (Walk)", function() FX._hatchAll(true) end)
-		L:AddButton("Hatch All (TP)", function() FX._hatchAll(false) end)
-		R:AddToggle("EggESP", { Text = "Egg ESP", Default = false, Callback = function(v) Config.EggESP = v end })
+		local Sub = MainTab:CreateSection("Hatch & ESP")
+		local L = Sub:CreateSection("Hatching")
+		local R = Sub:CreateSection("Visuals")
+		L:CreateToggle({Name = "Auto Hatch", CurrentValue = false, Callback = function(v) Config.AutoHatch = v end})
+		L:CreateButton({Name = "Hatch All (Walk)", Callback = function() FX._hatchAll(true) end})
+		L:CreateButton({Name = "Hatch All (TP)", Callback = function() FX._hatchAll(false) end})
+		R:CreateToggle({Name = "Egg ESP", CurrentValue = false, Callback = function(v) Config.EggESP = v end})
 	end
 
 	do
-		local Sub = MainTab:AddSubTab("Automation", "rbxassetid://79379082636309")
-		local L = Sub:AddLeftGroupbox("Farming", "sprout")
-		local R = Sub:AddRightGroupbox("Performance", "zap")
-		L:AddToggle("AutoEquipBest", { Text = "Auto Equip Best", Default = false, Callback = function(v) Config.AutoEquipBest = v end })
-		L:AddToggle("ParasiteFarm", { Text = "Parasite Farm", Default = false, Callback = function(v) Config.ParasiteFarm = v end })
-		L:AddToggle("AutoTreadmill", { Text = "Auto Treadmill", Default = false, Callback = function(v) Config.AutoTreadmill = v end })
-		L:AddToggle("AutoFireProx", { Text = "Auto Fire Prox", Default = false, Callback = function(v) Config.AutoFireProx = v end })
-		L:AddToggle("AntiAFK", { Text = "Anti AFK", Default = false, Callback = function(v) Config.AntiAFK = v end })
-		R:AddToggle("FpsBoost", { Text = "FPS Boost", Default = false, Callback = function(v) if v then FX.fpsOn() else FX.fpsOff() end end })
-		R:AddButton("Server Hop", function() FX.serverHop() end)
-		R:AddButton("Join Discord For Dupe", function()
+		local Sub = MainTab:CreateSection("Automation")
+		local L = Sub:CreateSection("Farming")
+		local R = Sub:CreateSection("Performance")
+		L:CreateToggle({Name = "Auto Equip Best", CurrentValue = false, Callback = function(v) Config.AutoEquipBest = v end})
+		L:CreateToggle({Name = "Parasite Farm", CurrentValue = false, Callback = function(v) Config.ParasiteFarm = v end})
+		L:CreateToggle({Name = "Auto Treadmill", CurrentValue = false, Callback = function(v) Config.AutoTreadmill = v end})
+		L:CreateToggle({Name = "Auto Fire Prox", CurrentValue = false, Callback = function(v) Config.AutoFireProx = v end})
+		L:CreateToggle({Name = "Anti AFK", CurrentValue = false, Callback = function(v) Config.AntiAFK = v end})
+		R:CreateToggle({Name = "FPS Boost", CurrentValue = false, Callback = function(v) if v then FX.fpsOn() else FX.fpsOff() end end})
+		R:CreateButton({Name = "Server Hop", Callback = function() FX.serverHop() end})
+		R:CreateButton({Name = "Join Discord For Dupe", Callback = function()
 			if setclipboard then setclipboard("https://discord.gg/ivory") end
 			FX.warnToast("Discord link copied!", 3)
-		end)
+		end})
 	end
 
 	do
-		local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
-		ThemeManager:SetLibrary(Library)
-		SaveManager:SetLibrary(Library)
-		SaveManager:IgnoreThemeSettings()
-		SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-		ThemeManager:SetFolder("IvoryHub")
-		SaveManager:SetFolder("IvoryHub")
-		SaveManager:SetSubFolder("game")
-		ThemeManager:ApplyToTab(SettingsTab)
-		SaveManager:BuildConfigSection(SettingsTab)
-		local G = SettingsTab:AddLeftGroupbox("Menu", "settings")
-		G:AddSlider("MenuKeybind", { Text = "Menu Keybind", Default = Enum.KeyCode.RightBracket.Value, Min = 0, Max = 400, Rounding = 0 })
-		G:AddButton("Destroy UI", function() pcall(function() Library:Destroy() end) end)
-		local AG = SettingsTab:AddLeftGroupbox("Anti-Cheat", "shield")
-		AG:AddToggle("PerfMode", { Text = "Enable Anti-Cheat Bypass", Default = false, Callback = function(v)
+		local SettingsTab = Window:CreateTab({Name = "Settings"})
+		local G = SettingsTab:CreateSection("Menu")
+		G:CreateButton({Name = "Destroy UI", Callback = function() pcall(function() Library:Destroy() end) end})
+		local AG = SettingsTab:CreateSection("Anti-Cheat")
+		AG:CreateToggle({Name = "Enable Anti-Cheat Bypass", CurrentValue = false, Callback = function(v)
 			Config.PerfMode = v
 			if v then
 				Config.PhysReady = false
@@ -2617,7 +2549,7 @@ end)
 				Config.PhysReady = false
 				FX.warnToast("AC bypass disabled.", 3)
 			end
-		end })
+		end})
 	end
 end
 

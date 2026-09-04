@@ -11,81 +11,28 @@ local Lighting = game:GetService("Lighting")
 local StarterGui = game:GetService("StarterGui")
 local LocalPlayer = Players.LocalPlayer
 
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local function httpGet(url)
-	return request({ Url = url, Method = "GET" }).Body
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	local ok, src = pcall(function()
+		return request({
+			Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+			Method = "GET"
+		}).Body
+	end)
+	if ok then LIB_SRC = src end
 end
-local Library = loadstring(httpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
+local Library = loadstring(LIB_SRC)()
 
-local Window = Library:CreateWindow({
-	Title = "Ivory",
-	Icon = "swords",
-	Footer = {
-		"v1.4 |",
-		{ Text = "99 Nights", Copyable = true },
-		"|",
-		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
-	},
-	CopyableFooter = true,
-	FuzzySearch = true,
-	SearchValues = true,
-	Minimizable = true,
-	MinimizeKeybind = Enum.KeyCode.RightBracket,
-	MinimizedWidth = 280,
-	NotifySide = "Right",
-	ShowCustomCursor = true,
-	SearchKeybind = Enum.KeyCode.F,
-	CornerRadius = 4,
-	Animations = {SubTabUnderline = true},
+local Window = Library.CreateWindow({
+	Name = "Ivory",
+	Width = 460,
+	Height = 360,
 })
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
-
-if Library.ScreenGui and Library.ScreenGui.Parent and Library.ScreenGui.Parent ~= game:GetService("CoreGui") then
-	Library.ScreenGui.Parent = game:GetService("CoreGui")
-end
-
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub")
-SaveManager:SetSubFolder("99Nights")
 
 local function getChar() return LocalPlayer.Character end
 local function getHRP() local c = getChar() return c and c:FindFirstChild("HumanoidRootPart") end
 local function getHumanoid() local c = getChar() return c and c:FindFirstChildOfClass("Humanoid") end
-local function notify(title, msg) pcall(function() Library:Notify({ Title = title, Description = msg, Type = "Info", Time = 3 }) end) end
+local function notify(title, msg) pcall(function() Library.Notify({ Title = title, Content = msg, Type = "Info", Duration = 3 }) end) end
 
 local function getRemoteEvents()
 	local ok, folder = pcall(function() return ReplicatedStorage:WaitForChild("RemoteEvents", 10) end)
@@ -155,8 +102,8 @@ local function stopAllBrings()
 	notify("Collection", "Stopped all bring functions.")
 end
 
-local function makeBringToggle(grp, label, stateKey, filter, singleName)
-	grp:AddToggle("bring_" .. stateKey, { Text = "Bring " .. label, Default = false, Callback = function(val)
+local function makeBringToggle(sec, label, stateKey, filter, singleName)
+	sec:CreateToggle({Name = "Bring " .. label, CurrentValue = false, Callback = function(val)
 		bringState[stateKey] = val
 		if val then local hrp = getHRP() if hrp then savedCFrame = hrp.CFrame end; bringLoop(stateKey, filter, singleName); notify("Collection", "Bring " .. label .. " Activated")
 		else notify("Collection", "Bring " .. label .. " Deactivated") end
@@ -215,9 +162,9 @@ local function stopAntiWolfLoop() if antiWolfLoopConn then antiWolfLoopConn:Disc
 local function restoreAllWolves() for model in pairs(antiWolfOriginals) do pcall(function() restoreWolf(model) end) end; antiWolfOriginals = {} end
 local function setupAntiWolfDescendant() local folder = workspace:FindFirstChild("Characters") or workspace; antiWolfConn = folder.DescendantAdded:Connect(function(desc) if not antiWolfEnabled then return end; if desc:IsA("Model") and isWolf(desc) then saveWolfState(desc); for part in pairs(antiWolfOriginals[desc].parts) do pcall(function() part.Anchored = true; part.CanCollide = false end) end else local parent = desc.Parent; while parent and parent ~= workspace and parent ~= folder do if isWolf(parent) then saveWolfState(parent); for part in pairs(antiWolfOriginals[parent].parts) do pcall(function() part.Anchored = true; part.CanCollide = false end) end; break end; parent = parent.Parent end end end) end
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
-local DiscordGrp = MainTab:AddLeftGroupbox("Discord", "link")
-local DiscordLabel = DiscordGrp:AddLabel({ Text = "Join discord for free keys!", DoesWrap = true, Size = 26 })
+local MainTab = Window:CreateTab({Name = "Main"})
+local DiscordSection = MainTab:CreateSection("Discord")
+local DiscordLabel = DiscordSection:CreateLabel({Name = "Join discord for free keys!"})
 
 task.spawn(function()
 	task.wait(0.5)
@@ -234,58 +181,58 @@ task.spawn(function()
 	end
 end)
 
-DiscordGrp:AddButton("Copy Discord Link", function() pcall(function() setclipboard("https://discord.gg/ivory") end); notify("Discord Link Copied!", "Success") end)
+DiscordSection:CreateButton({Name = "Copy Discord Link", Callback = function() pcall(function() setclipboard("https://discord.gg/ivory") end); notify("Discord Link Copied!", "Success") end})
 
-local AutoTab = Window:AddTab({ Name = "Automation", Icon = "swords" })
-local AutoGrp = AutoTab:AddLeftGroupbox("Automation", "zap")
-AutoGrp:AddToggle("auto_days", { Text = "Auto Days", Default = false, Callback = function(val) autoDaysEnabled = val; notify("Automation", val and "Auto Days Enabled" or "Auto Days Disabled") end })
-AutoGrp:AddToggle("auto_kill_bunny", { Text = "Auto Kill Bunny", Default = false, Callback = function(val) autoKillBunny = val; local hrp = getHRP() if val then if hrp then bunnyCFrame = hrp.CFrame end; updateBunnyTarget() else if bunnyCFrame and hrp then hrp.CFrame = bunnyCFrame end end; notify("Automation", val and "Auto Kill Bunny Enabled" or "Auto Kill Bunny Disabled") end })
-AutoGrp:AddButton("Open All Chests", function() local items = workspace:FindFirstChild("Items") if items then for _, item in ipairs(items:GetChildren()) do if item.Name == "Item Chest" or item.Name == "Item Chest2" or item.Name == "Item Chest3" or item.Name == "Item Chest4" or item.Name == "Item Chest5" or item.Name == "Item Chest6" or item.Name == "Alien Chest" then if REMOTES.RequestOpenItemChest then REMOTES.RequestOpenItemChest:FireServer(item) end end end; notify("Automation", "Opened all chests!") else notify("Automation", "Items folder not found") end end)
+local AutoTab = Window:CreateTab({Name = "Automation"})
+local AutoSection = AutoTab:CreateSection("Automation")
+AutoSection:CreateToggle({Name = "Auto Days", CurrentValue = false, Callback = function(val) autoDaysEnabled = val; notify("Automation", val and "Auto Days Enabled" or "Auto Days Disabled") end })
+AutoSection:CreateToggle({Name = "Auto Kill Bunny", CurrentValue = false, Callback = function(val) autoKillBunny = val; local hrp = getHRP() if val then if hrp then bunnyCFrame = hrp.CFrame end; updateBunnyTarget() else if bunnyCFrame and hrp then hrp.CFrame = bunnyCFrame end end; notify("Automation", val and "Auto Kill Bunny Enabled" or "Auto Kill Bunny Disabled") end })
+AutoSection:CreateButton({Name = "Open All Chests", Callback = function() local items = workspace:FindFirstChild("Items") if items then for _, item in ipairs(items:GetChildren()) do if item.Name == "Item Chest" or item.Name == "Item Chest2" or item.Name == "Item Chest3" or item.Name == "Item Chest4" or item.Name == "Item Chest5" or item.Name == "Item Chest6" or item.Name == "Alien Chest" then if REMOTES.RequestOpenItemChest then REMOTES.RequestOpenItemChest:FireServer(item) end end end; notify("Automation", "Opened all chests!") else notify("Automation", "Items folder not found") end end })
 
-local function addTweenLostChild(name) AutoGrp:AddButton("Tween to " .. name, function() local hrp = getHRP() if not hrp then return end; local origCF = hrp.CFrame; local function findChild() local chars = workspace:WaitForChild("Characters") for _, child in pairs(chars:GetChildren()) do if child.Name == name then local part = child:FindFirstChild("HumanoidRootPart") or child:FindFirstChildWhichIsA("BasePart") if part then return part end end end; return nil end; local target = findChild() if not target then notify("Error", "Cannot find " .. name); return end; notify("Lost Children", "Tweening to " .. name .. "..."); local dist = (hrp.Position - target.Position).Magnitude; local tween = TweenService:Create(hrp, TweenInfo.new(dist / 500, Enum.EasingStyle.Linear), { CFrame = target.CFrame + Vector3.new(0,3,0) }); tween:Play(); tween.Completed:Wait(); task.wait(15); TweenService:Create(hrp, TweenInfo.new(1, Enum.EasingStyle.Linear), { CFrame = origCF }):Play() end) end
+local function addTweenLostChild(name) AutoSection:CreateButton({Name = "Tween to " .. name, Callback = function() local hrp = getHRP() if not hrp then return end; local origCF = hrp.CFrame; local function findChild() local chars = workspace:WaitForChild("Characters") for _, child in pairs(chars:GetChildren()) do if child.Name == name then local part = child:FindFirstChild("HumanoidRootPart") or child:FindFirstChildWhichIsA("BasePart") if part then return part end end end; return nil end; local target = findChild() if not target then notify("Error", "Cannot find " .. name); return end; notify("Lost Children", "Tweening to " .. name .. "..."); local dist = (hrp.Position - target.Position).Magnitude; local tween = TweenService:Create(hrp, TweenInfo.new(dist / 500, Enum.EasingStyle.Linear), { CFrame = target.CFrame + Vector3.new(0,3,0) }); tween:Play(); tween.Completed:Wait(); task.wait(15); TweenService:Create(hrp, TweenInfo.new(1, Enum.EasingStyle.Linear), { CFrame = origCF }):Play() end }) end
 addTweenLostChild("Lost Child"); addTweenLostChild("Lost Child2"); addTweenLostChild("Lost Child3"); addTweenLostChild("Lost Child4")
 
-AutoGrp:AddToggle("auto_eat", { Text = "Auto Eat Cooked Morsel", Default = false, Callback = function(val) if val then local function eatMorsel() local items = workspace:FindFirstChild("Items") if items then for _, item in ipairs(items:GetChildren()) do if item.Name == "Cooked Morsel" then if REMOTES.RequestConsumeItem then REMOTES.RequestConsumeItem:InvokeServer(item) end; break end end end end; pcall(function() local hungerBar = LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("Interface"):WaitForChild("StatBars"):WaitForChild("HungerBar"):WaitForChild("Bar"); autoEatConn = hungerBar:GetPropertyChangedSignal("Size"):Connect(function() if hungerBar.Size.X.Scale < 0.9 then eatMorsel() end end); if hungerBar.Size.X.Scale < 0.9 then eatMorsel() end end); notify("Food", "Auto Eat Active") else if autoEatConn then autoEatConn:Disconnect(); autoEatConn = nil end; notify("Food", "Auto Eat Disabled") end end })
-AutoGrp:AddButton("Cook Foods", function() local hrp = getHRP() if not hrp then return end; local campfire = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Campground") and workspace.Map.Campground:FindFirstChild("MainFire") if not campfire or not campfire:IsA("Model") or not campfire.PrimaryPart then notify("Food", "Campfire not found"); return end; local items = workspace:FindFirstChild("Items") if items then for _, item in ipairs(items:GetChildren()) do if item:IsA("Model") and item.PrimaryPart and (string.find(item.Name, "Morsel") or string.find(item.Name, "Steak")) then if REMOTES.RequestStartDraggingItem and REMOTES.StopDraggingItem then REMOTES.RequestStartDraggingItem:FireServer(item); item:PivotTo(campfire.PrimaryPart.CFrame * CFrame.new(0,8,0)); REMOTES.StopDraggingItem:FireServer(item) else item:PivotTo(campfire.PrimaryPart.CFrame * CFrame.new(0,8,0)) end end end; notify("Food", "Cooked raw foods!") end end)
+AutoSection:CreateToggle({Name = "Auto Eat Cooked Morsel", CurrentValue = false, Callback = function(val) if val then local function eatMorsel() local items = workspace:FindFirstChild("Items") if items then for _, item in ipairs(items:GetChildren()) do if item.Name == "Cooked Morsel" then if REMOTES.RequestConsumeItem then REMOTES.RequestConsumeItem:InvokeServer(item) end; break end end end end; pcall(function() local hungerBar = LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("Interface"):WaitForChild("StatBars"):WaitForChild("HungerBar"):WaitForChild("Bar"); autoEatConn = hungerBar:GetPropertyChangedSignal("Size"):Connect(function() if hungerBar.Size.X.Scale < 0.9 then eatMorsel() end end); if hungerBar.Size.X.Scale < 0.9 then eatMorsel() end end); notify("Food", "Auto Eat Active") else if autoEatConn then autoEatConn:Disconnect(); autoEatConn = nil end; notify("Food", "Auto Eat Disabled") end end })
+AutoSection:CreateButton({Name = "Cook Foods", Callback = function() local hrp = getHRP() if not hrp then return end; local campfire = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Campground") and workspace.Map.Campground:FindFirstChild("MainFire") if not campfire or not campfire:IsA("Model") or not campfire.PrimaryPart then notify("Food", "Campfire not found"); return end; local items = workspace:FindFirstChild("Items") if items then for _, item in ipairs(items:GetChildren()) do if item:IsA("Model") and item.PrimaryPart and (string.find(item.Name, "Morsel") or string.find(item.Name, "Steak")) then if REMOTES.RequestStartDraggingItem and REMOTES.StopDraggingItem then REMOTES.RequestStartDraggingItem:FireServer(item); item:PivotTo(campfire.PrimaryPart.CFrame * CFrame.new(0,8,0)); REMOTES.StopDraggingItem:FireServer(item) else item:PivotTo(campfire.PrimaryPart.CFrame * CFrame.new(0,8,0)) end end end; notify("Food", "Cooked raw foods!") end end })
 
-local CollTab = Window:AddTab({ Name = "Item Collection", Icon = "swords" })
-local CollGrp = CollTab:AddLeftGroupbox("Item Collection", "package")
-CollGrp:AddButton("Stop All Brings", function() stopAllBrings() end)
-makeBringToggle(CollGrp, "Fuel Items", "Fuel", FUEL_ITEMS, nil)
-makeBringToggle(CollGrp, "Metal Items", "Metal", METAL_ITEMS, nil)
-makeBringToggle(CollGrp, "Food Items", "Food", FOOD_ITEMS, nil)
-makeBringToggle(CollGrp, "Ammo Items", "Ammo", AMMO_ITEMS, nil)
-makeBringToggle(CollGrp, "Tools & Weapons", "Tools", TOOL_ITEMS, nil)
-makeBringToggle(CollGrp, "Saplings", "Sapling", nil, "Sapling")
-makeBringToggle(CollGrp, "Logs Only", "LogSingle", nil, "Log")
-makeBringToggle(CollGrp, "Coal Only", "CoalSingle", nil, "Coal")
-makeBringToggle(CollGrp, "Microwaves Only", "MicrowaveSingle", nil, "Broken Microwave")
-makeBringToggle(CollGrp, "Steaks Only", "SteakSingle", nil, "Steak")
+local CollTab = Window:CreateTab({Name = "Item Collection"})
+local CollSection = CollTab:CreateSection("Item Collection")
+CollSection:CreateButton({Name = "Stop All Brings", Callback = function() stopAllBrings() end })
+makeBringToggle(CollSection, "Fuel Items", "Fuel", FUEL_ITEMS, nil)
+makeBringToggle(CollSection, "Metal Items", "Metal", METAL_ITEMS, nil)
+makeBringToggle(CollSection, "Food Items", "Food", FOOD_ITEMS, nil)
+makeBringToggle(CollSection, "Ammo Items", "Ammo", AMMO_ITEMS, nil)
+makeBringToggle(CollSection, "Tools & Weapons", "Tools", TOOL_ITEMS, nil)
+makeBringToggle(CollSection, "Saplings", "Sapling", nil, "Sapling")
+makeBringToggle(CollSection, "Logs Only", "LogSingle", nil, "Log")
+makeBringToggle(CollSection, "Coal Only", "CoalSingle", nil, "Coal")
+makeBringToggle(CollSection, "Microwaves Only", "MicrowaveSingle", nil, "Broken Microwave")
+makeBringToggle(CollSection, "Steaks Only", "SteakSingle", nil, "Steak")
 
-local CombatTab = Window:AddTab({ Name = "Combat & Farming", Icon = "swords" })
-local CombatGrp = CombatTab:AddLeftGroupbox("Combat", "swords")
-CombatGrp:AddToggle("kill_aura", { Text = "Kill Aura", Default = false, Callback = function(val) killAuraEnabled = val; notify("Combat", val and "Kill Aura Active" or "Kill Aura Disabled") end })
-CombatGrp:AddSlider("kill_aura_range", { Text = "Kill Aura Distance", Default = 70, Min = 20, Max = 1200, Rounding = 0, Callback = function(val) killAuraRange = val end })
-CombatGrp:AddToggle("auto_chop", { Text = "Auto Chop Tree", Default = false, Callback = function(val) autoChopEnabled = val; notify("Combat", val and "Tree Aura Active" or "Tree Aura Disabled") end })
-CombatGrp:AddSlider("auto_chop_range", { Text = "Tree Aura Distance", Default = 100, Min = 20, Max = 100, Rounding = 0, Callback = function(val) autoChopRange = val end })
+local CombatTab = Window:CreateTab({Name = "Combat & Farming"})
+local CombatSection = CombatTab:CreateSection("Combat")
+CombatSection:CreateToggle({Name = "Kill Aura", CurrentValue = false, Callback = function(val) killAuraEnabled = val; notify("Combat", val and "Kill Aura Active" or "Kill Aura Disabled") end })
+CombatSection:CreateSlider({Name = "Kill Aura Distance", Range = {20, 1200}, Increment = 1, CurrentValue = 70, Callback = function(val) killAuraRange = val end })
+CombatSection:CreateToggle({Name = "Auto Chop Tree", CurrentValue = false, Callback = function(val) autoChopEnabled = val; notify("Combat", val and "Tree Aura Active" or "Tree Aura Disabled") end })
+CombatSection:CreateSlider({Name = "Tree Aura Distance", Range = {20, 100}, Increment = 1, CurrentValue = 100, Callback = function(val) autoChopRange = val end })
 
-local EspTab = Window:AddTab({ Name = "Visuals & ESP", Icon = "swords" })
-local EspGrp = EspTab:AddLeftGroupbox("Item ESP", "eye")
-EspGrp:AddToggle("esp_fuel", { Text = "Fuel ESP", Default = false, Callback = function(val) espState.Fuel = val; if val then setupESP("Fuel", FUEL_ITEMS, Color3.fromRGB(255,215,0)) else stopESP("Fuel") end end })
-EspGrp:AddToggle("esp_metal", { Text = "Metal ESP", Default = false, Callback = function(val) espState.Metal = val; if val then setupESP("Metal", METAL_ITEMS, Color3.fromRGB(255,0,0)) else stopESP("Metal") end end })
-EspGrp:AddToggle("esp_food", { Text = "Food ESP", Default = false, Callback = function(val) espState.Food = val; if val then setupESP("Food", FOOD_ITEMS, Color3.fromRGB(0,255,0)) else stopESP("Food") end end })
+local EspTab = Window:CreateTab({Name = "Visuals & ESP"})
+local EspSection = EspTab:CreateSection("Item ESP")
+EspSection:CreateToggle({Name = "Fuel ESP", CurrentValue = false, Callback = function(val) espState.Fuel = val; if val then setupESP("Fuel", FUEL_ITEMS, Color3.fromRGB(255,215,0)) else stopESP("Fuel") end end })
+EspSection:CreateToggle({Name = "Metal ESP", CurrentValue = false, Callback = function(val) espState.Metal = val; if val then setupESP("Metal", METAL_ITEMS, Color3.fromRGB(255,0,0)) else stopESP("Metal") end end })
+EspSection:CreateToggle({Name = "Food ESP", CurrentValue = false, Callback = function(val) espState.Food = val; if val then setupESP("Food", FOOD_ITEMS, Color3.fromRGB(0,255,0)) else stopESP("Food") end end })
 
-local PlayerTab = Window:AddTab({ Name = "Player & Utilities", Icon = "swords" })
-local SpeedGrp = PlayerTab:AddLeftGroupbox("Movement", "bar-chart-2")
-local MiscGrp = PlayerTab:AddRightGroupbox("Utilities", "sliders")
+local PlayerTab = Window:CreateTab({Name = "Player & Utilities"})
+local SpeedSection = PlayerTab:CreateSection("Movement")
+local MiscSection = PlayerTab:CreateSection("Utilities")
 local customSpeed = 70; local defaultSpeed = 16; local speedEnabled = false
-SpeedGrp:AddSlider("walk_speed", { Text = "WalkSpeed", Default = 70, Min = 20, Max = 1200, Rounding = 0, Callback = function(val) customSpeed = val; if speedEnabled then local hum = getHumanoid() if hum then hum.WalkSpeed = customSpeed end end end })
-SpeedGrp:AddToggle("toggle_speed", { Text = "Toggle Speed", Default = false, Callback = function(val) speedEnabled = val; local hum = getHumanoid() if hum then hum.WalkSpeed = val and customSpeed or defaultSpeed end end })
-MiscGrp:AddToggle("god_mode", { Text = "God Mode", Default = false, Callback = function(val) if val then pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/ProBaconHub/DATABASE/refs/heads/main/99%20Nights%20in%20the%20Forest/Infinite%20Health.lua"))() end); notify("Player", "Infinite Health script loaded!") end end })
-MiscGrp:AddToggle("full_bright", { Text = "Full Bright", Default = false, Callback = function(val) if val then fullBrightConn = RunService.RenderStepped:Connect(function() Lighting.Ambient = Color3.fromRGB(255,255,255); Lighting.ColorShift_Bottom = Color3.fromRGB(255,255,255); Lighting.ColorShift_Top = Color3.fromRGB(255,255,255); Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.FogEnd = 1 end); notify("Visuals", "Fullbright Enabled") else if fullBrightConn then fullBrightConn:Disconnect(); fullBrightConn = nil end; Lighting.Ambient = Color3.fromRGB(127,127,127); Lighting.ColorShift_Bottom = Color3.fromRGB(0,0,0); Lighting.ColorShift_Top = Color3.fromRGB(127,127,127); Lighting.Brightness = 1; Lighting.ClockTime = 12; Lighting.FogEnd = 1000; notify("Visuals", "Fullbright Disabled") end end })
-MiscGrp:AddButton("Teleport to Campfire", function() local hrp = getHRP(); local campfire = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Campground") and workspace.Map.Campground:FindFirstChild("MainFire") if hrp and campfire and campfire:IsA("Model") and campfire.PrimaryPart then hrp.CFrame = campfire.PrimaryPart.CFrame + Vector3.new(0,5,0); notify("Utilities", "Teleported to campfire!") else notify("Utilities", "Campfire not found") end end)
+SpeedSection:CreateSlider({Name = "WalkSpeed", Range = {20, 1200}, Increment = 1, CurrentValue = 70, Callback = function(val) customSpeed = val; if speedEnabled then local hum = getHumanoid() if hum then hum.WalkSpeed = customSpeed end end end })
+SpeedSection:CreateToggle({Name = "Toggle Speed", CurrentValue = false, Callback = function(val) speedEnabled = val; local hum = getHumanoid() if hum then hum.WalkSpeed = val and customSpeed or defaultSpeed end end })
+MiscSection:CreateToggle({Name = "God Mode", CurrentValue = false, Callback = function(val) if val then pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/ProBaconHub/DATABASE/refs/heads/main/99%20Nights%20in%20the%20Forest/Infinite%20Health.lua"))() end); notify("Player", "Infinite Health script loaded!") end end })
+MiscSection:CreateToggle({Name = "Full Bright", CurrentValue = false, Callback = function(val) if val then fullBrightConn = RunService.RenderStepped:Connect(function() Lighting.Ambient = Color3.fromRGB(255,255,255); Lighting.ColorShift_Bottom = Color3.fromRGB(255,255,255); Lighting.ColorShift_Top = Color3.fromRGB(255,255,255); Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.FogEnd = 1 end); notify("Visuals", "Fullbright Enabled") else if fullBrightConn then fullBrightConn:Disconnect(); fullBrightConn = nil end; Lighting.Ambient = Color3.fromRGB(127,127,127); Lighting.ColorShift_Bottom = Color3.fromRGB(0,0,0); Lighting.ColorShift_Top = Color3.fromRGB(127,127,127); Lighting.Brightness = 1; Lighting.ClockTime = 12; Lighting.FogEnd = 1000; notify("Visuals", "Fullbright Disabled") end end })
+MiscSection:CreateButton({Name = "Teleport to Campfire", Callback = function() local hrp = getHRP(); local campfire = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Campground") and workspace.Map.Campground:FindFirstChild("MainFire") if hrp and campfire and campfire:IsA("Model") and campfire.PrimaryPart then hrp.CFrame = campfire.PrimaryPart.CFrame + Vector3.new(0,5,0); notify("Utilities", "Teleported to campfire!") else notify("Utilities", "Campfire not found") end end })
 
-MiscGrp:AddButton("Anti-Wolf GUI", function()
+MiscSection:CreateButton({Name = "Anti-Wolf GUI", Callback = function()
 	local gui = Instance.new("ScreenGui"); gui.Name = "AntiWolfBringGUI"; gui.ResetOnSpawn = false; gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 	local frame = Instance.new("Frame", gui); frame.Size = UDim2.new(0,300,0,140); frame.Position = UDim2.new(0,12,0,12); frame.BackgroundColor3 = Color3.fromRGB(30,30,30); frame.BackgroundTransparency = 0.12; frame.BorderSizePixel = 0; frame.Draggable = true
 	local title = Instance.new("TextLabel", frame); title.Size = UDim2.new(1,-12,0,28); title.Position = UDim2.new(0,6,0,6); title.BackgroundTransparency = 1; title.Text = "Anti-Wolf: Bring & Hold"; title.TextColor3 = Color3.new(1,1,1); title.Font = Enum.Font.SourceSansBold; title.TextSize = 18; title.TextXAlignment = Enum.TextXAlignment.Left
@@ -299,12 +246,12 @@ MiscGrp:AddButton("Anti-Wolf GUI", function()
 	scanBtn.MouseButton1Click:Connect(function() bringAllWolves(); StarterGui:SetCore("SendNotification", { Title = "Anti-Wolf", Text = "Manual scan executed", Duration = 1.6 }) end)
 	closeBtn.MouseButton1Click:Connect(function() frame.Visible = false end)
 	setupAntiWolfDescendant()
-end)
+end })
 
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
+local SettingsTab = Window:CreateTab({Name = "Settings"})
 
-local CreditsGrp = SettingsTab:AddLeftGroupbox("Credits", "heart")
-local CreditsLabel = CreditsGrp:AddLabel({ Text = " ", DoesWrap = true, Size = 26 })
+local CreditsSection = SettingsTab:CreateSection("Credits")
+local CreditsLabel = CreditsSection:CreateLabel({Name = " "})
 
 task.spawn(function()
 	task.wait(0.5)
@@ -349,9 +296,6 @@ task.spawn(function()
 		task.wait(0.5)
 	end
 end)
-
-ThemeManager:ApplyToTab(SettingsTab)
-SaveManager:BuildConfigSection(SettingsTab)
 
 local menuOpen = true
 UserInputService.InputBegan:Connect(function(input, gpe) if gpe then return end; if input.KeyCode == Enum.KeyCode.RightShift then menuOpen = not menuOpen; if Library.ScreenGui then Library.ScreenGui.Enabled = menuOpen end end end)

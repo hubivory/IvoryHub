@@ -2,105 +2,34 @@
 -- IVORY HUB - TOWER OF HELL
 -- ---------------------------------------------------------------
 
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = loadstring(request({ Url = repo .. "Library.lua", Method = "GET" }).Body)()
-local ThemeManager = loadstring(request({ Url = repo .. "addons/ThemeManager.lua", Method = "GET" }).Body)()
-local SaveManager = loadstring(request({ Url = repo .. "addons/SaveManager.lua", Method = "GET" }).Body)()
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	local ok, src = pcall(function()
+		return request({
+			Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+			Method = "GET"
+		}).Body
+	end)
+	if ok then LIB_SRC = src end
+end
+local Library = loadstring(LIB_SRC)()
+
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
-local Options = Library.Options
-local Toggles = Library.Toggles
-local Tokens = {
-    primary = Color3.fromRGB(255, 105, 180),
-    background = Color3.fromRGB(30, 20, 30),
-    surface = Color3.fromRGB(45, 30, 50),
-    text = Color3.fromRGB(255, 220, 240),
-    cornerRadius = 8,
-}
-Library.Scheme.BackgroundColor = Tokens.background
-Library.Scheme.MainColor = Tokens.surface
-Library.Scheme.AccentColor = Tokens.primary
-Library.Scheme.FontColor = Tokens.text
 
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub")
-SaveManager:SetSubFolder("toh")
-
-local Window = Library:CreateWindow({
-    Title = "Ivory",
-    Icon = "swords",
-    Footer = {
-        "v1.4 |",
-        { Text = "Game", Copyable = true },
-        "|",
-        { Text = tostring(LocalPlayer.UserId), Copyable = true },
-    },
-    CopyableFooter = true,
-    FuzzySearch = true,
-    SearchValues = true,
-    Minimizable = true,
-    MinimizeKeybind = Enum.KeyCode.RightBracket,
-    MinimizedWidth = 280,
-    NotifySide = "Right",
-    ShowCustomCursor = false,
-    SearchKeybind = Enum.KeyCode.F,
-    CornerRadius = 4,
-    Animations = {
-        ToggleWindow = false,
-        TabSwitch = false,
-        Groupbox = false,
-        Dropdown = false,
-        KeyPicker = false,
-        SubTabUnderline = true,
-    },
-})
-Window:SetCornerRadius(Tokens.cornerRadius)
+local Window = Library.CreateWindow({Name = "Ivory", Width = 460, Height = 360, Minimizable = true, NotifySide = "Right", ShowCustomCursor = false, CornerRadius = 4})
 
 local Tabs = {
-    Main = Window:AddTab({ Name = "Tower", Icon = "swords" }),
-    Movement = Window:AddTab({ Name = "Movement", Icon = "swords" }),
-    Settings = Window:AddTab({ Name = "Settings", Icon = "swords" }),
+    Main = Window:CreateTab({Name = "Tower"}),
+    Movement = Window:CreateTab({Name = "Movement"}),
+    Settings = Window:CreateTab({Name = "Settings"}),
 }
 
-Tabs.Main:SetSubTabAlignment("Center")
-local AutoSubTab = Tabs.Main:AddSubTab({ Name = "Auto Win", Icon = "swords" })
-local SkipSubTab = Tabs.Main:AddSubTab({ Name = "Skip", Icon = "swords" })
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
+local AutoSubTab = Tabs.Main:CreateSection("Auto Win")
+local SkipSubTab = Tabs.Main:CreateSection("Skip")
 
 local State = { AutoWinEnabled = false, AutoWinDelay = 1.2, InfiniteJump = false, JumpHeight = 50 }
 
@@ -161,56 +90,35 @@ end
 -- ---------------------------------------------------------------
 
 do
-    local left = AutoSubTab:AddLeftGroupbox("Auto Win", "trophy")
-    left:AddToggle("AutoWinEnabled", {
-        Text = "Auto Win (loop)",
-        Default = State.AutoWinEnabled,
-    }):OnChanged(function()
-        State.AutoWinEnabled = Toggles.AutoWinEnabled.Value
-    end)
-    left:AddSlider("AutoWinDelay", {
-        Text = "Delay",
-        Default = State.AutoWinDelay,
-        Min = 0.3,
-        Max = 5,
-        Rounding = 1,
-        Suffix = "s",
-    }):OnChanged(function()
-        State.AutoWinDelay = Options.AutoWinDelay.Value
-    end)
-    left:AddButton({
-        Text = "Win Now",
-        Func = function()
-            local hrp = getHRP()
-            local offset
-            if hrp.Position.Z < getTopCFrame().Position.Z then
-                offset = Vector3.new(0, 0, -1)
-            elseif hrp.Position.Z > getTopCFrame().Position.Z then
-                offset = Vector3.new(0, 0, 1)
-            else 
-                offset = Vector3.new(0, 0, 0)
-            end
-            local cf = getTopCFrame() + offset
-            if cf then
-                safeTeleport(cf)
-                Library:Notify({ Title = "Ivory", Description = "Teleported!", Time = 2, Type = "Success" })
-            else
-                Library:Notify({ Title = "Ivory", Description = "Top not found", Time = 3, Type = "Error" })
-            end
-        end,
-    })
+    local left = AutoSubTab:CreateSection("Auto Win")
+    left:CreateToggle({Name = "Auto Win (loop)", CurrentValue = State.AutoWinEnabled, Callback = function(v)
+        State.AutoWinEnabled = v
+    end})
+    left:CreateSlider({Name = "Delay", Range = {0.3, 5}, Increment = 0.1, CurrentValue = State.AutoWinDelay, Callback = function(v)
+        State.AutoWinDelay = v
+    end})
+    left:CreateButton({Name = "Win Now", Callback = function()
+        local hrp = getHRP()
+        local offset
+        if hrp.Position.Z < getTopCFrame().Position.Z then
+            offset = Vector3.new(0, 0, -1)
+        elseif hrp.Position.Z > getTopCFrame().Position.Z then
+            offset = Vector3.new(0, 0, 1)
+        else
+            offset = Vector3.new(0, 0, 0)
+        end
+        local cf = getTopCFrame() + offset
+        if cf then
+            safeTeleport(cf)
+            Library.Notify({Title = "Ivory", Content = "Teleported!", Duration = 2, Type = "Success"})
+        else
+            Library.Notify({Title = "Ivory", Content = "Top not found", Duration = 3, Type = "Error"})
+        end
+    end})
 
-    local right = AutoSubTab:AddRightGroupbox("Info", "info")
-    right:AddLabel("Flies UP then DOWN to finish — avoids all kill bricks", true)
-    right:AddLabel("Key N toggle"):AddKeyPicker("AutoWinKey", {
-        Default = "N",
-        Mode = "Toggle",
-        Text = "Toggle Auto Win",
-        Callback = function(v)
-            State.AutoWinEnabled = v
-            Toggles.AutoWinEnabled:SetValue(v)
-        end,
-    })
+    local right = AutoSubTab:CreateSection("Info")
+    right:CreateLabel("Flies UP then DOWN to finish - avoids all kill bricks")
+    right:CreateKeybind({Name = "Toggle Auto Win", CurrentKeybind = "N"})
 end
 
 -- ---------------------------------------------------------------
@@ -218,47 +126,30 @@ end
 -- ---------------------------------------------------------------
 
 do
-    local left = SkipSubTab:AddLeftGroupbox("Skip Level", "skip-forward")
-    left:AddButton({
-        Text = "Skip 35 studs",
-        Func = function()
-            local hrp = getHRP()
-            if hrp then
-                safeTeleport(hrp.CFrame + Vector3.new(0, 35, 0))
-                Library:Notify({ Title = "Ivory", Description = "Skipped 35", Time = 1.5 })
-            end
-        end,
-    })
-    left:AddSlider("SkipAmount", {
-        Text = "Custom Skip Height",
-        Default = 35,
-        Min = 10,
-        Max = 100,
-        Rounding = 0,
-        Suffix = " studs",
-    })
-    left:AddButton({
-        Text = "Custom Skip",
-        Func = function()
-            local amt = Options.SkipAmount and Options.SkipAmount.Value or 35
-            local hrp = getHRP()
-            if hrp then safeTeleport(hrp.CFrame + Vector3.new(0, amt, 0)) end
-        end,
-    })
+    local left = SkipSubTab:CreateSection("Skip Level")
+    left:CreateButton({Name = "Skip 35 studs", Callback = function()
+        local hrp = getHRP()
+        if hrp then
+            safeTeleport(hrp.CFrame + Vector3.new(0, 35, 0))
+            Library.Notify({Title = "Ivory", Content = "Skipped 35", Duration = 1.5})
+        end
+    end})
+    left:CreateSlider({Name = "Custom Skip Height", Range = {10, 100}, Increment = 1, CurrentValue = 35})
+    left:CreateButton({Name = "Custom Skip", Callback = function()
+        local hrp = getHRP()
+        if hrp then safeTeleport(hrp.CFrame + Vector3.new(0, 35, 0)) end
+    end})
 
-    local right = SkipSubTab:AddRightGroupbox("Teleport", "map-pinned")
-    right:AddButton({
-        Text = "To Lobby",
-        Func = function()
-            local spawn = Workspace:FindFirstChildOfClass("SpawnLocation")
-            if spawn then
-                safeTeleport(spawn.CFrame + Vector3.new(0, 3, 0))
-            else
-                local hrp = getHRP()
-                if hrp then safeTeleport(CFrame.new(11, 9, 25)) end
-            end
-        end,
-    })
+    local right = SkipSubTab:CreateSection("Teleport")
+    right:CreateButton({Name = "To Lobby", Callback = function()
+        local spawn = Workspace:FindFirstChildOfClass("SpawnLocation")
+        if spawn then
+            safeTeleport(spawn.CFrame + Vector3.new(0, 3, 0))
+        else
+            local hrp = getHRP()
+            if hrp then safeTeleport(CFrame.new(11, 9, 25)) end
+        end
+    end})
 end
 
 -- ---------------------------------------------------------------
@@ -266,57 +157,27 @@ end
 -- ---------------------------------------------------------------
 
 do
-    local left = Tabs.Movement:AddLeftGroupbox("Infinite Jump", "arrow-up")
-    left:AddToggle("InfiniteJump", {
-        Text = "Infinite Jump",
-        Default = State.InfiniteJump,
-    }):OnChanged(function()
-        State.InfiniteJump = Toggles.InfiniteJump.Value
-    end)
-    left:AddSlider("JumpHeight", {
-        Text = "Jump Power",
-        Default = State.JumpHeight,
-        Min = 20,
-        Max = 120,
-        Rounding = 0,
-        Suffix = " pw",
-    }):OnChanged(function()
-        State.JumpHeight = Options.JumpHeight.Value
-    end)
+    local left = Tabs.Movement:CreateSection("Infinite Jump")
+    left:CreateToggle({Name = "Infinite Jump", CurrentValue = State.InfiniteJump, Callback = function(v)
+        State.InfiniteJump = v
+    end})
+    left:CreateSlider({Name = "Jump Power", Range = {20, 120}, Increment = 1, CurrentValue = State.JumpHeight, Callback = function(v)
+        State.JumpHeight = v
+    end})
 
-    local right = Tabs.Movement:AddRightGroupbox("Movement Helpers", "activity")
-    right:AddSlider("WalkSpeed", {
-        Text = "WalkSpeed",
-        Default = 16,
-        Min = 16,
-        Max = 40,
-        Rounding = 0,
-        Suffix = " stud/s",
-        Callback = function(v)
-            local hum = getHumanoid()
-            if hum then hum.WalkSpeed = v end
-        end,
-    })
-    right:AddSlider("Gravity", {
-        Text = "Gravity",
-        Default = Workspace.Gravity,
-        Min = 30,
-        Max = 196,
-        Rounding = 0,
-        Callback = function(v)
-            Workspace.Gravity = v
-        end,
-    })
-    right:AddButton({
-        Text = "Reset",
-        Func = function()
-            local hum = getHumanoid()
-            if hum then hum.WalkSpeed = 16; hum.JumpPower = 50 end
-            Workspace.Gravity = 196.2
-            Options.WalkSpeed:SetValue(16)
-            Options.Gravity:SetValue(196)
-        end,
-    })
+    local right = Tabs.Movement:CreateSection("Movement Helpers")
+    right:CreateSlider({Name = "WalkSpeed", Range = {16, 40}, Increment = 1, CurrentValue = 16, Callback = function(v)
+        local hum = getHumanoid()
+        if hum then hum.WalkSpeed = v end
+    end})
+    right:CreateSlider({Name = "Gravity", Range = {30, 196}, Increment = 1, CurrentValue = Workspace.Gravity, Callback = function(v)
+        Workspace.Gravity = v
+    end})
+    right:CreateButton({Name = "Reset", Callback = function()
+        local hum = getHumanoid()
+        if hum then hum.WalkSpeed = 16; hum.JumpPower = 50 end
+        Workspace.Gravity = 196.2
+    end})
 end
 
 -- ---------------------------------------------------------------
@@ -324,29 +185,12 @@ end
 -- ---------------------------------------------------------------
 
 do
-    local menu = Tabs.Settings:AddLeftGroupbox("Menu", "menu")
-    menu:AddToggle("KeybindMenuOpen", {
-        Default = Library.KeybindFrame.Visible,
-        Text = "Open Keybind Menu",
-        Callback = function(v) Library.KeybindFrame.Visible = v end,
-    })
-    menu:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", {
-        Default = "RightShift",
-        NoUI = true,
-        Text = "Menu keybind",
-    })
-    menu:AddButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 }) end)
-    menu:AddButton("Unload", function() Library:Unload() end)
-    Library.ToggleKeybind = Options.MenuKeybind
+    local menu = Tabs.Settings:CreateSection("Menu")
+    menu:CreateButton({Name = "Join Discord", Callback = function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library.Notify({Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3}) end})
+    menu:CreateButton({Name = "Unload", Callback = function() Library:Unload() end})
 
-    local creditBox = Tabs.Settings:AddLeftGroupbox("Credits", "heart")
-    creditBox:AddLabel('<font color="#FF69B4" size="18"><b>Made by mommy veqxo &lt;3</b></font>', true)
-
-    local theme = Tabs.Settings:AddRightGroupbox("Theme", "palette")
-    theme:AddLabel("Pink Neon: " .. tostring(Tokens.background) .. " / " .. tostring(Tokens.surface), true)
-    ThemeManager:ApplyToTab(Tabs.Settings)
-    SaveManager:BuildConfigSection(Tabs.Settings)
-    SaveManager:LoadAutoloadConfig()
+    local creditBox = Tabs.Settings:CreateSection("Credits")
+    creditBox:CreateLabel("Made by mommy veqxo <3")
 end
 
 -- ---------------------------------------------------------------
@@ -362,14 +206,6 @@ local jumpConn = UserInputService.JumpRequest:Connect(function()
         end
     end
 end)
-
-if Options.JumpHeight then
-    Options.JumpHeight:OnChanged(function()
-        State.JumpHeight = Options.JumpHeight.Value
-        local hum = getHumanoid()
-        if hum then hum.JumpPower = State.JumpHeight end
-    end)
-end
 
 task.spawn(function()
     while true do
@@ -393,15 +229,12 @@ LocalPlayer.CharacterAdded:Connect(function(char)
     if State.JumpHeight then hum.JumpPower = State.JumpHeight end
 end)
 
-Library:OnUnload(function()
-    if jumpConn then jumpConn:Disconnect() end
-    print("Ivory Hub unloaded")
-end)
+if jumpConn then jumpConn:Disconnect() end
+print("Ivory Hub unloaded")
 
-Library:Notify({
+Library.Notify({
     Title = "Ivory",
-    Description = "Tower of Hell loaded. RightShift to open menu.",
+    Content = "Tower of Hell loaded. RightShift to open menu.",
     Type = "Success",
-    Time = 4,
+    Duration = 4,
 })
-Window:SetMinimizedSubtitle("Ivory | Auto Win + Movement")

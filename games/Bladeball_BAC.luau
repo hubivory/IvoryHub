@@ -55,114 +55,75 @@ end
 
 wait(0.5)
 
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
-
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	local ok, src = pcall(function()
+		return request({
+			Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+			Method = "GET"
+		}).Body
+	end)
+	if ok then LIB_SRC = src end
+end
+local Library = loadstring(LIB_SRC)()
 local Options = Library.Options
 local Toggles = Library.Toggles
 
-Library.ForceCheckbox = false
-Library.ShowToggleFrameInKeybinds = true
-
-local Window = Library:CreateWindow({
-	Title = "Ivory",
-	NotifySide = "Right",
-	ShowCustomCursor = false,
-	Footer = {
-		"v1.9-BAC |",
-		{ Text = "Blade Ball", Copyable = true },
-		"|",
-		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
-	},
-	CopyableFooter = true,
-	FuzzySearch = true,
-	SearchValues = true,
-	Minimizable = true,
-	MinimizeKeybind = Enum.KeyCode.RightBracket,
-})
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
+local Window = Library.CreateWindow({Name = "Ivory", Width = 460, Height = 360})
 
 local Tabs = {
-	Combat = Window:AddTab({ Name = "Combat", Icon = "swords", Description = "Auto parry & clash" }),
-	ESP = Window:AddTab({ Name = "ESP", Icon = "swords", Description = "Ball & player ESP" }),
-	Settings = Window:AddTab({ Name = "Settings", Icon = "swords", Description = "UI settings" }),
+	Combat = Window:CreateTab({Name = "Combat"}),
+	ESP = Window:CreateTab({Name = "ESP"}),
+	Settings = Window:CreateTab({Name = "Settings"}),
 }
 
 -- ═══════════════════════════════════════════════════════════
 -- COMBAT TAB
 -- ═══════════════════════════════════════════════════════════
 
-local Disclaimer1Group = Tabs.Combat:AddLeftGroupbox("Disclaimer!", "alert-triangle")
-Disclaimer1Group:AddLabel('<font color="#FFB7C5"><b>!! Works best at 50 ping or under !!</b></font>', true)
-Disclaimer1Group:AddLabel('<font color="#FFB7C5"><b>!! BAC is behavioral - vary everything !!</b></font>', true)
+local Disclaimer1Section = Tabs.Combat:CreateSection("Disclaimer!")
+Disclaimer1Section:CreateLabel('<font color="#FFB7C5"><b>!! Works best at 50 ping or under !!</b></font>')
+Disclaimer1Section:CreateLabel('<font color="#FFB7C5"><b>!! BAC is behavioral - vary everything !!</b></font>')
 
-local Disclaimer2Group = Tabs.Combat:AddRightGroupbox("Disclaimer!", "alert-triangle")
-Disclaimer2Group:AddLabel('<font color="#FFB7C5"><b>!! Keep Roblox focused for auto parry !!</b></font>', true)
+local Disclaimer2Section = Tabs.Combat:CreateSection("Disclaimer!")
+Disclaimer2Section:CreateLabel('<font color="#FFB7C5"><b>!! Keep Roblox focused for auto parry !!</b></font>')
 
-local ParryGroup = Tabs.Combat:AddLeftGroupbox("Auto Parry", "shield")
+local ParrySection = Tabs.Combat:CreateSection("Auto Parry")
 
-ParryGroup:AddToggle("AutoParry", {
-	Text = "Auto Parry",
-	Default = true,
-	Tooltip = "Clicks when ball targets you, adapts to ping",
+ParrySection:CreateToggle({
+	Name = "Auto Parry",
+	CurrentValue = true,
+	Callback = function(v)
+		-- Callback will be handled by game logic via Toggles table
+	end,
 })
 
-ParryGroup:AddSlider("ParryDist", {
-	Text = "Parry Distance",
-	Default = 30,
-	Min = 8,
-	Max = 60,
-	Rounding = 0,
+ParrySection:CreateSlider({
+	Name = "Parry Distance",
+	Range = {8, 60},
+	Increment = 1,
+	CurrentValue = 30,
+	Callback = function(v) end,
 })
 
-ParryGroup:AddSlider("ParryCooldown", {
-	Text = "Cooldown (ms)",
-	Default = 350,
-	Min = 100,
-	Max = 600,
-	Rounding = 0,
+ParrySection:CreateSlider({
+	Name = "Cooldown (ms)",
+	Range = {100, 600},
+	Increment = 1,
+	CurrentValue = 350,
+	Callback = function(v) end,
 })
 
-ParryGroup:AddDropdown("PingPreset", {
-	Text = "Your Ping Range",
-	Values = {"50", "75", "100", "125", "150", "175", "200+"},
-	Default = "50",
-	Tooltip = "Tell it your ping so it calibrates better",
+ParrySection:CreateDropdown({
+	Name = "Your Ping Range",
+	Options = {"50", "75", "100", "125", "150", "175", "200+"},
+	CurrentOption = "50",
+	Callback = function(v) end,
 })
 
-ParryGroup:AddButton({
-	Text = "Apply Preset",
-	Func = function()
+ParrySection:CreateButton({
+	Name = "Apply Preset",
+	Callback = function()
 		local ping = Options.PingPreset.Value
 		local presets = {
 			["50"]   = { dist = 30, cd = 350 },
@@ -182,154 +143,157 @@ ParryGroup:AddButton({
 })
 
 -- ─── BAC HUMANIZER ───
-local HumanizerGroup = Tabs.Combat:AddLeftGroupbox("BAC Humanizer", "shield")
+local HumanizerSection = Tabs.Combat:CreateSection("BAC Humanizer")
 
-HumanizerGroup:AddToggle("HumanizeParry", {
-	Text = "Humanize Parry",
-	Default = true,
-	Tooltip = "Jitter + reaction floor + whiffs. Turn this OFF at your own risk.",
+HumanizerSection:CreateToggle({
+	Name = "Humanize Parry",
+	CurrentValue = true,
+	Callback = function(v) end,
 })
 
-HumanizerGroup:AddSlider("JitterPct", {
-	Text = "Cooldown Jitter %",
-	Default = 20,
-	Min = 0,
-	Max = 50,
-	Rounding = 0,
-	Tooltip = "Randomizes cooldown by +- this %. Metronomic clicks = bot signature.",
+HumanizerSection:CreateSlider({
+	Name = "Cooldown Jitter %",
+	Range = {0, 50},
+	Increment = 1,
+	CurrentValue = 20,
+	Callback = function(v) end,
 })
 
-HumanizerGroup:AddSlider("MinReaction", {
-	Text = "Min Reaction (ms)",
-	Default = 180,
-	Min = 80,
-	Max = 400,
-	Rounding = 0,
-	Tooltip = "Hard floor for parry spacing. Never parry faster than your ping allows.",
+HumanizerSection:CreateSlider({
+	Name = "Min Reaction (ms)",
+	Range = {80, 400},
+	Increment = 1,
+	CurrentValue = 180,
+	Callback = function(v) end,
 })
 
-HumanizerGroup:AddSlider("WhiffRate", {
-	Text = "Whiff Rate %",
-	Default = 5,
-	Min = 0,
-	Max = 20,
-	Rounding = 0,
-	Tooltip = "Chance to hesitate and be late on purpose. A 100% success rate is a flag.",
+HumanizerSection:CreateSlider({
+	Name = "Whiff Rate %",
+	Range = {0, 20},
+	Increment = 1,
+	CurrentValue = 5,
+	Callback = function(v) end,
 })
 
-HumanizerGroup:AddToggle("GameInputChannel", {
-	Text = "Native Parry Input",
-	Default = true,
-	Tooltip = "Fires the game's own ParryButtonPress bindable instead of mouse clicks. Cleaner, no VIM latency.",
+HumanizerSection:CreateToggle({
+	Name = "Native Parry Input",
+	CurrentValue = true,
+	Callback = function(v) end,
 })
 
 -- ─── CLASH ───
-local ClashGroup = Tabs.Combat:AddRightGroupbox("Clash", "zap")
+local ClashSection = Tabs.Combat:CreateSection("Clash")
 
-local ClashToggle = ClashGroup:AddToggle("ClashMode", {
-	Text = "Clash Mode",
-	Default = false,
-	Tooltip = "Spams clicks when ON",
+ClashSection:CreateToggle({
+	Name = "Clash Mode",
+	CurrentValue = false,
+	Callback = function(v) end,
 })
 
-ClashToggle:AddKeyPicker("ClashKeybind", { Default = "V", Text = "Clash keybind" })
-
-ClashGroup:AddSlider("ClashCPS", {
-	Text = "Clash CPS",
-	Default = 30,
-	Min = 10,
-	Max = 60,
-	Rounding = 0,
-	Tooltip = "Clicks per second during clash mode",
+ClashSection:CreateKeybind({
+	Name = "Clash keybind",
+	CurrentKeybind = "V",
 })
 
-ClashGroup:AddToggle("HumanizeClash", {
-	Text = "Humanize Clash",
-	Default = true,
-	Tooltip = "Jittered intervals + micro-pauses. A metronomic 60 CPS is a bot signature.",
+ClashSection:CreateSlider({
+	Name = "Clash CPS",
+	Range = {10, 60},
+	Increment = 1,
+	CurrentValue = 30,
+	Callback = function(v) end,
+})
+
+ClashSection:CreateToggle({
+	Name = "Humanize Clash",
+	CurrentValue = true,
+	Callback = function(v) end,
 })
 
 -- ═══════════════════════════════════════════════════════════
 -- ESP TAB
 -- ═══════════════════════════════════════════════════════════
 
-local BallGroup = Tabs.ESP:AddLeftGroupbox("Ball ESP", "circle")
+local BallSection = Tabs.ESP:CreateSection("Ball ESP")
 
-BallGroup:AddToggle("BallESP", {
-	Text = "Ball ESP",
-	Default = true,
+BallSection:CreateToggle({
+	Name = "Ball ESP",
+	CurrentValue = true,
+	Callback = function(v) end,
 })
 
-BallGroup:AddToggle("TargetTag", {
-	Text = "Target Nametag",
-	Default = true,
+BallSection:CreateToggle({
+	Name = "Target Nametag",
+	CurrentValue = true,
+	Callback = function(v) end,
 })
 
-BallGroup:AddToggle("VelocityTag", {
-	Text = "Velocity Display",
-	Default = true,
+BallSection:CreateToggle({
+	Name = "Velocity Display",
+	CurrentValue = true,
+	Callback = function(v) end,
 })
 
-BallGroup:AddSlider("BoxThickness", {
-	Text = "Box Thickness",
-	Default = 5,
-	Min = 1,
-	Max = 10,
-	Rounding = 0,
+BallSection:CreateSlider({
+	Name = "Box Thickness",
+	Range = {1, 10},
+	Increment = 1,
+	CurrentValue = 5,
+	Callback = function(v) end,
 })
 
-BallGroup:AddSlider("BoxPadding", {
-	Text = "Box Padding",
-	Default = 10,
-	Min = 0,
-	Max = 30,
-	Rounding = 0,
+BallSection:CreateSlider({
+	Name = "Box Padding",
+	Range = {0, 30},
+	Increment = 1,
+	CurrentValue = 10,
+	Callback = function(v) end,
 })
 
-local PlayerGroup = Tabs.ESP:AddLeftGroupbox("Player ESP", "users")
+local PlayerSection = Tabs.ESP:CreateSection("Player ESP")
 
-PlayerGroup:AddToggle("PlayerESP", {
-	Text = "Player ESP",
-	Default = true,
-	Tooltip = "Highlights all players blueish-purple",
+PlayerSection:CreateToggle({
+	Name = "Player ESP",
+	CurrentValue = true,
+	Callback = function(v) end,
 })
 
 -- ═══════════════════════════════════════════════════════════
 -- SETTINGS TAB
 -- ═══════════════════════════════════════════════════════════
 
-local MenuGroup = Tabs.Settings:AddLeftGroupbox("Menu", "wrench")
-MenuGroup:AddLabel("Menu bind")
-	:AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
+local MenuSection = Tabs.Settings:CreateSection("Menu")
+MenuSection:CreateKeybind({
+	Name = "Menu keybind",
+	CurrentKeybind = "RightShift",
+})
 
-local CreditsGroup = Tabs.Settings:AddLeftGroupbox("Credits", "heart")
-CreditsGroup:AddLabel('<font size="18" color="#FF69B4"><b>Made by Mommy Veqxoo &lt; / 3</b></font>', true)
-CreditsGroup:AddLabel('<font size="12" color="#FFB7C5"><b>BAC-hardened by ENI</b></font>', true)
+local CreditsSection = Tabs.Settings:CreateSection("Credits")
+CreditsSection:CreateLabel('<font size="18" color="#FF69B4"><b>Made by Mommy Veqxoo &lt; / 3</b></font>')
+CreditsSection:CreateLabel('<font size="12" color="#FFB7C5"><b>BAC-hardened by ENI</b></font>')
 
-MenuGroup:AddButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 }) end)
-MenuGroup:AddButton("Unload", function()
-	pcall(function()
-		DestroyIvoryGuis()
-		for _, plr in ipairs(Players:GetPlayers()) do
-			if plr.Character then
-				local hl = plr.Character:FindFirstChild("IvoryHighlight")
-				if hl then hl:Destroy() end
+MenuSection:CreateButton({
+	Name = "Join Discord",
+	Callback = function()
+		pcall(function() setclipboard("https://discord.gg/ivory") end)
+		Library.Notify({Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3})
+	end,
+})
+MenuSection:CreateButton({
+	Name = "Unload",
+	Callback = function()
+		pcall(function()
+			DestroyIvoryGuis()
+			for _, plr in ipairs(Players:GetPlayers()) do
+				if plr.Character then
+					local hl = plr.Character:FindFirstChild("IvoryHighlight")
+					if hl then hl:Destroy() end
+				end
 			end
-		end
-	end)
-	Library:Unload()
-end)
+		end)
+		Library:Unload()
+	end,
+})
 Library.ToggleKeybind = Options.MenuKeybind
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub/bladeball")
-SaveManager:SetSubFolder("place")
-ThemeManager:ApplyToTab(Tabs["Settings"])
-SaveManager:BuildConfigSection(Tabs["Settings"])
-SaveManager:LoadAutoloadConfig()
 
 -- ═══════════════════════════════════════════════════════════
 -- HELPERS
@@ -459,26 +423,6 @@ end)
 -- PlayerGui, where the game keeps 250+ of its own ScreenGuis and where
 -- the key system GUI already sits undetected.
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-
--- ObsidianUltra parents its window into CoreGui - move it into PlayerGui.
-spawn(function()
-	wait(2)
-	pcall(function()
-		for _, gui in ipairs(CoreGui:GetDescendants()) do
-			if gui:IsA("ScreenGui") then
-				for _, d in ipairs(gui:GetDescendants()) do
-					if (d:IsA("TextLabel") or d:IsA("TextButton")) and (tostring(d.Text or ""):find("BAC") or tostring(d.Text or ""):find("Ivory Hub")) then
-						if gui.Parent ~= PlayerGui then
-							gui.Parent = PlayerGui
-							print("[Ivory Hub BAC] window relocated to PlayerGui")
-						end
-						return
-					end
-				end
-			end
-		end
-	end)
-end)
 
 local BallGui = Instance.new("BillboardGui")
 BallGui.Name = "IvoryBallESP"

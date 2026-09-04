@@ -44,36 +44,22 @@ end)
 --// UI LIBRARY
 --// ═══════════════════════════════════════════════════════════
 
-local Library = nil
-local ThemeManager = nil
-local SaveManager = nil
-
-local libSrc = genv._IvoryLibSrc
-local tmSrc = genv._IvoryTMSrc
-local smSrc = genv._IvorySMSrc
-
-if libSrc then
-	Library = loadstring(libSrc)()
-	ThemeManager = loadstring(tmSrc)()
-	SaveManager = loadstring(smSrc)()
-	print("[Ivory] Loaded ObsidianUltra from loader cache")
-else
-	local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-	local function httpGet(url)
-		return request({ Url = url, Method = "GET" }).Body
-	end
-	pcall(function() Library = loadstring(httpGet(repo .. "Library.lua"))() end)
-	pcall(function() ThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))() end)
-	pcall(function() SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))() end)
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	local ok, src = pcall(function()
+		return request({
+			Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+			Method = "GET"
+		}).Body
+	end)
+	if ok then LIB_SRC = src end
 end
+local Library = loadstring(LIB_SRC)()
 
 if not Library then
-	warn("[Ivory] ObsidianUltra failed to load - aborting")
+	warn("[Ivory] Ivory Hub failed to load - aborting")
 	return
 end
-
-local Options = Library.Options
-local Toggles = Library.Toggles
 
 --// ═══════════════════════════════════════════════════════════
 --// GAME DATA
@@ -110,8 +96,7 @@ local CurrentPadIndex = 0
 local function DoAutoPick()
 	local char = LocalPlayer.Character
 	if not char then
-		--// Wait for character to spawn
-		Library:Notify({ Title = "Ivory", Description = "Waiting for character...", Type = "Info", Time = 3 })
+		Library.Notify({ Title = "Ivory", Content = "Waiting for character...", Type = "Info", Duration = 3 })
 		local waited = 0
 		repeat
 			task.wait(0.5)
@@ -119,25 +104,24 @@ local function DoAutoPick()
 			char = LocalPlayer.Character
 		until char or waited > 15
 		if not char then
-			Library:Notify({ Title = "Ivory", Description = "No character - spawn first", Type = "Error", Time = 3 })
+			Library.Notify({ Title = "Ivory", Content = "No character - spawn first", Type = "Error", Duration = 3 })
 			return
 		end
 	end
 	local hrp = char:FindFirstChild("HumanoidRootPart")
 	if not hrp then
-		Library:Notify({ Title = "Ivory", Description = "No HumanoidRootPart", Type = "Error", Time = 3 })
+		Library.Notify({ Title = "Ivory", Content = "No HumanoidRootPart", Type = "Error", Duration = 3 })
 		return
 	end
 
 	local tpsFolder = Workspace:FindFirstChild("TPS")
 	if not tpsFolder then
-		Library:Notify({ Title = "Ivory", Description = "Could not find TPS folder", Type = "Error", Time = 3 })
+		Library.Notify({ Title = "Ivory", Content = "Could not find TPS folder", Type = "Error", Duration = 3 })
 		return
 	end
 
 	local teleporters = tpsFolder:GetChildren()
 
-	--// Move to next pad
 	CurrentPadIndex = CurrentPadIndex + 1
 	if CurrentPadIndex > #teleporters then
 		CurrentPadIndex = 1
@@ -157,11 +141,11 @@ local function DoAutoPick()
 		warn("[Ivory] Pad " .. CurrentPadIndex .. " failed: " .. tostring(err))
 	end
 
-	Library:Notify({
+	Library.Notify({
 		Title = "Ivory",
-		Description = "Teleported to pad " .. CurrentPadIndex .. "/" .. #teleporters,
+		Content = "Teleported to pad " .. CurrentPadIndex .. "/" .. #teleporters,
 		Type = "Success",
-		Time = 3,
+		Duration = 3,
 	})
 end
 local function GetWarthofGodModule()
@@ -258,94 +242,40 @@ local State = {
 --// WINDOW
 --// ═══════════════════════════════════════════════════════════
 
-local Window = Library:CreateWindow({
-	Title = "Ivory",
-	Icon = "swords",
-	Footer = {
-		"v1.4 |",
-		{ Text = isLobby and "Lobby" or "Game", Copyable = true },
-		"|",
-		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
-	},
-	CopyableFooter = true,
-	FuzzySearch = true,
-	SearchValues = true,
-	Minimizable = true,
-	MinimizeKeybind = Enum.KeyCode.RightBracket,
-	MinimizedWidth = 280,
-	NotifySide = "Right",
-	ShowCustomCursor = false,
-	SearchKeybind = Enum.KeyCode.F,
-	CornerRadius = 4,
-	Animations = {
-		ToggleWindow = false,
-		TabSwitch = false,
-		Groupbox = false,
-		Dropdown = false,
-		KeyPicker = false,
-		SubTabUnderline = true,
-	},
+local Window = Library.CreateWindow({
+	Name = "Ivory",
+	Width = 460,
+	Height = 360,
 })
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
 
 --// ═══════════════════════════════════════════════════════════
 --// TABS
 --// ═══════════════════════════════════════════════════════════
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
-local PlayerTab = Window:AddTab({ Name = "Player", Icon = "swords" })
-local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "swords" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
+local MainTab = Window:CreateTab({ Name = "Main" })
+local PlayerTab = Window:CreateTab({ Name = "Player" })
+local VisualsTab = Window:CreateTab({ Name = "Visuals" })
+local SettingsTab = Window:CreateTab({ Name = "Settings" })
 
 --// ═══════════════════════════════════════════════════════════
 --// MAIN TAB
 --// ═══════════════════════════════════════════════════════════
 
-local AutoSub = MainTab:AddSubTab("Automation", "rbxassetid://79379082636309")
-local CombatSub = MainTab:AddSubTab("Combat", "rbxassetid://79379082636309")
-local UtilitySub = MainTab:AddSubTab("Utility", "rbxassetid://79379082636309")
+local AutoSub = MainTab:CreateSection("Automation")
+local CombatSub = MainTab:CreateSection("Combat")
+local UtilitySub = MainTab:CreateSection("Utility")
 
 --// Automation: Auto Pick
-local PickGroup = AutoSub:AddLeftGroupbox("Auto Pick Class", "person-standing")
-PickGroup:AddToggle("AutoPickOnSpawn", {
-	Text = "Auto Pick On Spawn",
-	Default = false,
-	Tooltip = "Teleports to the selected pad whenever you're not spawned",
+local PickGroup = AutoSub:CreateSection("Auto Pick Class")
+PickGroup:CreateToggle({
+	Name = "Auto Pick On Spawn",
+	CurrentValue = false,
 })
 
-PickGroup:AddDropdown("AutoPickPad", {
-	Text = "Teleporter Pad",
-	Values = {"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39"},
-	Default = "1",
-	Tooltip = "Which teleporter pad to use",
+PickGroup:CreateDropdown({
+	Name = "Teleporter Pad",
+	Options = {"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39"},
+	CurrentOption = "1",
 	Callback = function(v)
 		local idx = tonumber(v)
 		local char = LocalPlayer.Character
@@ -357,7 +287,7 @@ PickGroup:AddDropdown("AutoPickPad", {
 		local teleporters = tpsFolder:GetChildren()
 		local pad = teleporters[idx]
 		if not pad then
-			Library:Notify({ Title = "Ivory", Description = "Pad " .. idx .. " not found", Type = "Error", Time = 3 })
+			Library.Notify({ Title = "Ivory", Content = "Pad " .. idx .. " not found", Type = "Error", Duration = 3 })
 			return
 		end
 		pcall(function()
@@ -370,123 +300,106 @@ PickGroup:AddDropdown("AutoPickPad", {
 			end
 		end)
 		State.LockedPad = idx
-		Library:Notify({ Title = "Ivory", Description = "Teleported to pad " .. idx, Type = "Success", Time = 3 })
+		Library.Notify({ Title = "Ivory", Content = "Teleported to pad " .. idx, Type = "Success", Duration = 3 })
 	end,
 })
 
 --// Automation: Collectibles
-local CollectGroup = AutoSub:AddLeftGroupbox("Collectibles", "gem")
-CollectGroup:AddToggle("AutoDiamonds", {
-	Text = "Auto Collect Diamonds",
-	Default = false,
-	Tooltip = "Teleports to the nearest diamond",
+local CollectGroup = AutoSub:CreateSection("Collectibles")
+CollectGroup:CreateToggle({
+	Name = "Auto Collect Diamonds",
+	CurrentValue = false,
 })
-CollectGroup:AddToggle("AutoSouls", {
-	Text = "Auto Collect Souls",
-	Default = false,
-	Tooltip = "Teleports to dropped souls",
+CollectGroup:CreateToggle({
+	Name = "Auto Collect Souls",
+	CurrentValue = false,
 })
-CollectGroup:AddSlider("CollectDelay", {
-	Text = "Collect Delay",
-	Default = 0.4,
-	Min = 0.05,
-	Max = 2,
-	Rounding = 2,
-	Suffix = "s",
+CollectGroup:CreateSlider({
+	Name = "Collect Delay",
+	Range = {0.05, 2},
+	Increment = 0.01,
+	CurrentValue = 0.4,
 })
-CollectGroup:AddSlider("CollectRadius", {
-	Text = "Collect Radius",
-	Default = 0,
-	Min = 0,
-	Max = 2000,
-	Rounding = 0,
-	Suffix = " (0 = inf)",
+CollectGroup:CreateSlider({
+	Name = "Collect Radius",
+	Range = {0, 2000},
+	Increment = 1,
+	CurrentValue = 0,
 })
 
 --// Automation: Farming
-local FarmGroup = AutoSub:AddRightGroupbox("Farming", "zap")
-FarmGroup:AddToggle("AutoM1", {
-	Text = "Auto M1",
-	Default = false,
-	Tooltip = "Fires the legit M1 on cooldown (10s server cooldown)",
+local FarmGroup = AutoSub:CreateSection("Farming")
+FarmGroup:CreateToggle({
+	Name = "Auto M1",
+	CurrentValue = false,
 })
-FarmGroup:AddSlider("M1Delay", {
-	Text = "M1 Interval",
-	Default = 0.5,
-	Min = 0.1,
-	Max = 11,
-	Rounding = 1,
-	Suffix = "s",
+FarmGroup:CreateSlider({
+	Name = "M1 Interval",
+	Range = {0.1, 11},
+	Increment = 0.1,
+	CurrentValue = 0.5,
 })
 
 --// Combat: Skill spam
-local SpamGroup = CombatSub:AddLeftGroupbox("Skill Spam", "swords")
-SpamGroup:AddToggle("SkillSpam", {
-	Text = "Skill Spam",
-	Default = false,
-	Tooltip = "Rains WarthofGod arrows at the target - no cooldown bypass",
+local SpamGroup = CombatSub:CreateSection("Skill Spam")
+SpamGroup:CreateToggle({
+	Name = "Skill Spam",
+	CurrentValue = false,
 })
-SpamGroup:AddSlider("SpamDelay", {
-	Text = "Spam Interval",
-	Default = 0.25,
-	Min = 0.05,
-	Max = 2,
-	Rounding = 2,
-	Suffix = "s",
+SpamGroup:CreateSlider({
+	Name = "Spam Interval",
+	Range = {0.05, 2},
+	Increment = 0.01,
+	CurrentValue = 0.25,
 })
-SpamGroup:AddDropdown("SpamTarget", {
-	Text = "Target",
-	Values = { "Nearest Enemy", "Self (Defense)" },
-	Default = "Nearest Enemy",
+SpamGroup:CreateDropdown({
+	Name = "Target",
+	Options = { "Nearest Enemy", "Self (Defense)" },
+	CurrentOption = "Nearest Enemy",
 })
-SpamGroup:AddSlider("HitboxSize", {
-	Text = "Hitbox Size",
-	Default = 150,
-	Min = 32,
-	Max = 400,
-	Rounding = 0,
-	Tooltip = "Size of the client-trusted hitbox (32 = legit)",
+SpamGroup:CreateSlider({
+	Name = "Hitbox Size",
+	Range = {32, 400},
+	Increment = 1,
+	CurrentValue = 150,
 	Callback = function(v)
 		ApplyHitboxSize(v)
 	end,
 })
 
 --// Combat: Bang
-local BangGroup = CombatSub:AddRightGroupbox("Bang", "target")
-local BangToggle = BangGroup:AddToggle("AutoBang", {
-	Text = "Auto Bang",
-	Default = false,
-	Tooltip = "Keeps teleporting behind the nearest enemy",
+local BangGroup = CombatSub:CreateSection("Bang")
+BangGroup:CreateToggle({
+	Name = "Auto Bang",
+	CurrentValue = false,
 })
-BangToggle:AddKeyPicker("BangKeybind", {
-	Default = "V",
-	Text = "Bang keybind",
-	Mode = "Toggle",
-	SyncToggleState = true,
+BangGroup:CreateKeybind({
+	Name = "Bang keybind",
+	CurrentKeybind = "V",
 })
-BangGroup:AddSlider("BangDelay", {
-	Text = "Bang Interval",
-	Default = 0.8,
-	Min = 0.1,
-	Max = 5,
-	Rounding = 2,
-	Suffix = "s",
+BangGroup:CreateSlider({
+	Name = "Bang Interval",
+	Range = {0.1, 5},
+	Increment = 0.01,
+	CurrentValue = 0.8,
 })
-BangGroup:AddSlider("BangDist", {
-	Text = "Distance Behind",
-	Default = 4,
-	Min = 1,
-	Max = 15,
-	Rounding = 0,
+BangGroup:CreateSlider({
+	Name = "Distance Behind",
+	Range = {1, 15},
+	Increment = 1,
+	CurrentValue = 4,
 })
 
 --// Utility
-local UtilGroup = UtilitySub:AddLeftGroupbox("Server", "globe")
-UtilGroup:AddToggle("AntiAFK", { Text = "Anti AFK", Default = false })
-UtilGroup:AddButton("Rejoin", function()
+local UtilGroup = UtilitySub:CreateSection("Server")
+UtilGroup:CreateToggle({
+	Name = "Anti AFK",
+	CurrentValue = false,
+})
+UtilGroup:CreateButton({ Name = "Rejoin", Callback = function()
 	pcall(function() TeleportService:Teleport(PlaceId, LocalPlayer) end)
-end)
-UtilGroup:AddButton("Server Hop", function()
+end })
+UtilGroup:CreateButton({ Name = "Server Hop", Callback = function()
 	pcall(function()
 		local servers = HttpService:JSONDecode(request({
 			Url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100",
@@ -501,179 +414,188 @@ UtilGroup:AddButton("Server Hop", function()
 			end
 		end
 	end)
-end)
+end })
 
-local ExtraGroup = UtilitySub:AddRightGroupbox("Protection", "shield")
-ExtraGroup:AddToggle("AntiKnockback", {
-	Text = "Anti Knockback",
-	Default = false,
-	Tooltip = "Instantly clears PlatformStand stuns",
+local ExtraGroup = UtilitySub:CreateSection("Protection")
+ExtraGroup:CreateToggle({
+	Name = "Anti Knockback",
+	CurrentValue = false,
 })
-ExtraGroup:AddToggle("NoFallDamage", {
-	Text = "No Fall Damage",
-	Default = false,
+ExtraGroup:CreateToggle({
+	Name = "No Fall Damage",
+	CurrentValue = false,
 })
 
 --// ═══════════════════════════════════════════════════════════
 --// PLAYER TAB
 --// ═══════════════════════════════════════════════════════════
 
-local MoveSub = PlayerTab:AddSubTab("Movement", "rbxassetid://79379082636309")
-local MiscSub = PlayerTab:AddSubTab("Misc", "rbxassetid://79379082636309")
+local MoveSub = PlayerTab:CreateSection("Movement")
+local MiscSub = PlayerTab:CreateSection("Misc")
 
-local SpeedGroup = MoveSub:AddLeftGroupbox("Speed", "zap")
-SpeedGroup:AddToggle("WalkSpeedEnabled", {
-	Text = "Enable Walk Speed",
-	Default = false,
+local SpeedGroup = MoveSub:CreateSection("Speed")
+SpeedGroup:CreateToggle({
+	Name = "Enable Walk Speed",
+	CurrentValue = false,
 	Callback = function(v)
 		State.WalkSpeedEnabled = v
 		if not v then pcall(function() LocalPlayer.Character.Humanoid.WalkSpeed = 16 end) end
 	end,
 })
-SpeedGroup:AddSlider("WalkSpeedValue", {
-	Text = "Walk Speed",
-	Default = 40,
-	Min = 16,
-	Max = 200,
-	Rounding = 0,
+SpeedGroup:CreateSlider({
+	Name = "Walk Speed",
+	Range = {16, 200},
+	Increment = 1,
+	CurrentValue = 40,
 })
 
-local JumpGroup = MoveSub:AddRightGroupbox("Jump", "arrow-up")
-JumpGroup:AddToggle("JumpPowerEnabled", {
-	Text = "Enable Jump Power",
-	Default = false,
+local JumpGroup = MoveSub:CreateSection("Jump")
+JumpGroup:CreateToggle({
+	Name = "Enable Jump Power",
+	CurrentValue = false,
 	Callback = function(v)
 		State.JumpPowerEnabled = v
 		if not v then pcall(function() LocalPlayer.Character.Humanoid.JumpPower = 50 end) end
 	end,
 })
-JumpGroup:AddSlider("JumpPowerValue", {
-	Text = "Jump Power",
-	Default = 100,
-	Min = 50,
-	Max = 300,
-	Rounding = 0,
+JumpGroup:CreateSlider({
+	Name = "Jump Power",
+	Range = {50, 300},
+	Increment = 1,
+	CurrentValue = 100,
 })
-JumpGroup:AddToggle("InfiniteJump", { Text = "Infinite Jump", Default = false })
+JumpGroup:CreateToggle({
+	Name = "Infinite Jump",
+	CurrentValue = false,
+})
 
-local ModsGroup = MiscSub:AddLeftGroupbox("Player Mods", "user")
-ModsGroup:AddToggle("Noclip", { Text = "Noclip", Default = false })
+local ModsGroup = MiscSub:CreateSection("Player Mods")
+ModsGroup:CreateToggle({
+	Name = "Noclip",
+	CurrentValue = false,
+})
 
-local FlyGroup = MiscSub:AddRightGroupbox("Fly", "wind")
-FlyGroup:AddToggle("FlyEnabled", { Text = "Enable Fly", Default = false })
-FlyGroup:AddSlider("FlySpeed", {
-	Text = "Fly Speed",
-	Default = 50,
-	Min = 10,
-	Max = 200,
-	Rounding = 0,
+local FlyGroup = MiscSub:CreateSection("Fly")
+FlyGroup:CreateToggle({
+	Name = "Enable Fly",
+	CurrentValue = false,
+})
+FlyGroup:CreateSlider({
+	Name = "Fly Speed",
+	Range = {10, 200},
+	Increment = 1,
+	CurrentValue = 50,
 })
 
 --// ═══════════════════════════════════════════════════════════
 --// VISUALS TAB
 --// ═══════════════════════════════════════════════════════════
 
-local ESPSub = VisualsTab:AddSubTab("ESP", "rbxassetid://79379082636309")
-local ChamsSub = VisualsTab:AddSubTab("Chams", "rbxassetid://79379082636309")
+local ESPSub = VisualsTab:CreateSection("ESP")
+local ChamsSub = VisualsTab:CreateSection("Chams")
 
-local ESPControls = ESPSub:AddLeftGroupbox("ESP", "eye")
-ESPControls:AddToggle("ESPEnabled", { Text = "Enable ESP", Default = false })
-ESPControls:AddToggle("ESPBox", { Text = "Show Box", Default = true })
-ESPControls:AddToggle("ESPName", { Text = "Show Name", Default = true })
-ESPControls:AddToggle("ESPDistance", { Text = "Show Distance", Default = true })
-ESPControls:AddToggle("ESPHealth", { Text = "Show Health Bar", Default = true })
-ESPControls:AddToggle("ESPTracer", { Text = "Show Tracer", Default = false })
-ESPControls:AddToggle("ESPTeamCheck", { Text = "Team Check", Default = false })
-ESPControls:AddSlider("ESPMaxDist", {
-	Text = "Max Distance",
-	Default = 1500,
-	Min = 100,
-	Max = 5000,
-	Rounding = 0,
+local ESPControls = ESPSub:CreateSection("ESP")
+ESPControls:CreateToggle({
+	Name = "Enable ESP",
+	CurrentValue = false,
 })
-
-local ESPStyle = ESPSub:AddRightGroupbox("ESP Style", "sliders")
-ESPStyle:AddSlider("BoxThickness", {
-	Text = "Box Thickness",
-	Default = 2,
-	Min = 1,
-	Max = 5,
-	Rounding = 0,
+ESPControls:CreateToggle({
+	Name = "Show Box",
+	CurrentValue = true,
 })
-ESPStyle:AddSlider("TextSize", {
-	Text = "Text Size",
-	Default = 14,
-	Min = 10,
-	Max = 24,
-	Rounding = 0,
+ESPControls:CreateToggle({
+	Name = "Show Name",
+	CurrentValue = true,
 })
-
-local ESPColors = ESPSub:AddLeftGroupbox("ESP Colors", "palette")
-ESPColors:AddLabel("Box Color"):AddColorPicker("ColorBox", {
-	Default = Color3.fromRGB(140, 110, 220),
-	Title = "Box",
+ESPControls:CreateToggle({
+	Name = "Show Distance",
+	CurrentValue = true,
 })
-ESPColors:AddLabel("Name Color"):AddColorPicker("ColorName", {
-	Default = Color3.fromRGB(225, 215, 245),
-	Title = "Name",
+ESPControls:CreateToggle({
+	Name = "Show Health Bar",
+	CurrentValue = true,
 })
-ESPColors:AddLabel("Distance Color"):AddColorPicker("ColorDistance", {
-	Default = Color3.fromRGB(155, 135, 185),
-	Title = "Distance",
+ESPControls:CreateToggle({
+	Name = "Show Tracer",
+	CurrentValue = false,
 })
-ESPColors:AddLabel("Tracer Color"):AddColorPicker("ColorTracer", {
-	Default = Color3.fromRGB(140, 110, 220),
-	Title = "Tracer",
+ESPControls:CreateToggle({
+	Name = "Team Check",
+	CurrentValue = false,
+})
+ESPControls:CreateSlider({
+	Name = "Max Distance",
+	Range = {100, 5000},
+	Increment = 1,
+	CurrentValue = 1500,
 })
 
-local ChamsGroup = ChamsSub:AddLeftGroupbox("Chams", "highlighter")
-ChamsGroup:AddToggle("ChamsEnabled", {
-	Text = "Enable Chams",
-	Default = false,
-	Tooltip = "See players through walls",
+local ESPStyle = ESPSub:CreateSection("ESP Style")
+ESPStyle:CreateSlider({
+	Name = "Box Thickness",
+	Range = {1, 5},
+	Increment = 1,
+	CurrentValue = 2,
 })
-ChamsGroup:AddToggle("ChamsSelf", { Text = "Highlight Yourself", Default = false })
-ChamsGroup:AddSlider("ChamsFill", {
-	Text = "Fill Transparency",
-	Default = 50,
-	Min = 0,
-	Max = 100,
-	Rounding = 0,
-	Suffix = "%",
-})
-ChamsGroup:AddSlider("ChamsOutline", {
-	Text = "Outline Transparency",
-	Default = 0,
-	Min = 0,
-	Max = 100,
-	Rounding = 0,
-	Suffix = "%",
+ESPStyle:CreateSlider({
+	Name = "Text Size",
+	Range = {10, 24},
+	Increment = 1,
+	CurrentValue = 14,
 })
 
-local ChamsColors = ChamsSub:AddRightGroupbox("Chams Colors", "palette")
-ChamsColors:AddLabel("Chams Color"):AddColorPicker("ChamsColor", {
-	Default = Color3.fromRGB(140, 110, 220),
-	Title = "Chams",
+local ESPColors = ESPSub:CreateSection("ESP Colors")
+ESPColors:CreateColorPicker({
+	Name = "Box Color",
+	Color = Color3.fromRGB(140, 110, 220),
+})
+ESPColors:CreateColorPicker({
+	Name = "Name Color",
+	Color = Color3.fromRGB(225, 215, 245),
+})
+ESPColors:CreateColorPicker({
+	Name = "Distance Color",
+	Color = Color3.fromRGB(155, 135, 185),
+})
+ESPColors:CreateColorPicker({
+	Name = "Tracer Color",
+	Color = Color3.fromRGB(140, 110, 220),
+})
+
+local ChamsGroup = ChamsSub:CreateSection("Chams")
+ChamsGroup:CreateToggle({
+	Name = "Enable Chams",
+	CurrentValue = false,
+})
+ChamsGroup:CreateToggle({
+	Name = "Highlight Yourself",
+	CurrentValue = false,
+})
+ChamsGroup:CreateSlider({
+	Name = "Fill Transparency",
+	Range = {0, 100},
+	Increment = 1,
+	CurrentValue = 50,
+})
+ChamsGroup:CreateSlider({
+	Name = "Outline Transparency",
+	Range = {0, 100},
+	Increment = 1,
+	CurrentValue = 0,
+})
+
+local ChamsColors = ChamsSub:CreateSection("Chams Colors")
+ChamsColors:CreateColorPicker({
+	Name = "Chams Color",
+	Color = Color3.fromRGB(140, 110, 220),
 })
 
 --// ═══════════════════════════════════════════════════════════
 --// SETTINGS TAB (always last)
 --// ═══════════════════════════════════════════════════════════
 
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub")
-if isLobby then SaveManager:SetSubFolder("lobby") else SaveManager:SetSubFolder("game") end
-local CreditGroup = SettingsTab:AddLeftGroupbox("Credits", "heart")
-local CreditLabel = CreditGroup:AddLabel({ Text = "", Size = 26, DoesWrap = true })
-local CreditTL = CreditLabel.TextLabel
-CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-CreditTL.Font = Enum.Font.GothamBold
-CreditTL.TextSize = 26
-
+local CreditGroup = SettingsTab:CreateSection("Credits")
+local CreditLabel = CreditGroup:CreateLabel("")
 task.spawn(function()
 	local full = "Made by mommy Crow"
 	local cursor = "_"
@@ -682,69 +604,53 @@ task.spawn(function()
 		for i = 1, #full do
 			shown = shown .. full:sub(i, i)
 			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
 			task.wait(math.random(4, 9) / 100)
 		end
 		task.wait(2)
 		for i = #full, 1, -1 do
 			shown = full:sub(1, i - 1)
 			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
 			task.wait(math.random(2, 5) / 100)
 		end
 		task.wait(0.8)
 	end
 end)
 
-ThemeManager:ApplyToTab(SettingsTab)
-SaveManager:BuildConfigSection(SettingsTab)
-
-local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "wrench")
-MenuGroup:AddToggle("KeybindMenuOpen", {
-	Default = Library.KeybindFrame.Visible,
-	Text = "Open Keybind Menu",
-	Callback = function(value) Library.KeybindFrame.Visible = value end,
+local MenuGroup = SettingsTab:CreateSection("Menu")
+MenuGroup:CreateToggle({
+	Name = "Open Keybind Menu",
+	CurrentValue = false,
 })
-MenuGroup:AddToggle("ShowCustomCursor", {
-	Text = "Custom Cursor",
-	Default = Library.ShowCustomCursor,
-	Callback = function(Value) Library.ShowCustomCursor = Value end,
+MenuGroup:CreateToggle({
+	Name = "Custom Cursor",
+	CurrentValue = false,
 })
-MenuGroup:AddButton("Test Notification", function()
-	Library:Notify({ Title = "Ivory", Description = "This is a test notification!", Type = "Info", Time = 3 })
-end)
-MenuGroup:AddDropdown("NotifySide", {
-	Values = { "Left", "Right" },
-	Default = "Right",
-	Text = "Notification Side",
-	Callback = function(Value) Library.NotifySide = Value end,
+MenuGroup:CreateButton({ Name = "Test Notification", Callback = function()
+	Library.Notify({ Title = "Ivory", Content = "This is a test notification!", Type = "Info", Duration = 3 })
+end })
+MenuGroup:CreateDropdown({
+	Name = "Notification Side",
+	Options = { "Left", "Right" },
+	CurrentOption = "Right",
 })
-MenuGroup:AddDropdown("DPIDropdown", {
-	Values = { "50%", "75%", "100%", "125%", "150%", "175%", "200%" },
-	Default = "100%",
-	Text = "DPI Scale",
-	Callback = function(Value) Library:SetDPIScale(tonumber(Value:gsub("%%", ""))) end,
+MenuGroup:CreateDropdown({
+	Name = "DPI Scale",
+	Options = { "50%", "75%", "100%", "125%", "150%", "175%", "200%" },
+	CurrentOption = "100%",
 })
-MenuGroup:AddSlider("UICornerSlider", {
-	Text = "Corner Radius",
-	Default = 4,
-	Min = 0,
-	Max = 20,
-	Rounding = 0,
-	Callback = function(value) Window:SetCornerRadius(value) end,
+MenuGroup:CreateSlider({
+	Name = "Corner Radius",
+	Range = {0, 20},
+	Increment = 1,
+	CurrentValue = 4,
 })
-MenuGroup:AddDivider()
-MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", {
-	Default = "RightShift",
-	NoUI = true,
-	Text = "Menu keybind",
-})
-MenuGroup:AddButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 }) end)
-MenuGroup:AddButton("Unload", function()
+MenuGroup:CreateDivider()
+MenuGroup:CreateLabel("Menu bind")
+MenuGroup:CreateKeybind({ Name = "Menu keybind", CurrentKeybind = "RightShift" })
+MenuGroup:CreateButton({ Name = "Join Discord", Callback = function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3 }) end })
+MenuGroup:CreateButton({ Name = "Unload", Callback = function()
 	Library:Unload()
-end)
-Library.ToggleKeybind = Options.MenuKeybind
-SaveManager:LoadAutoloadConfig()
+end })
 
 --// ═══════════════════════════════════════════════════════════
 --// HELPERS
@@ -845,7 +751,6 @@ local function DoSkillSpam()
 			targetPos = myRoot.Position
 		end
 
-		-- Server trusts the sent hitbox: send the ORIGINAL part (resized by the Hitbox Size slider)
 		CombatRemote:FireServer(
 			{ skill = "WarthofGod", Function = "Shoot" },
 			WGModule.Hitboxes.Hitbox,
@@ -863,7 +768,7 @@ end
 local lastAutoPick = 0
 
 local function TeleportToPad()
-	local padIndex = tonumber(Options.AutoPickPad and Options.AutoPickPad.Value or State.LockedPad or 1)
+	local padIndex = tonumber(State.LockedPad or 1)
 	local tpsFolder = Workspace:FindFirstChild("TPS")
 	if not tpsFolder or not padIndex then return end
 	local teleporters = tpsFolder:GetChildren()
@@ -891,11 +796,11 @@ local function TeleportToPad()
 	if not part or not part:IsA("BasePart") then return end
 
 	hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0)
-	Library:Notify({
+	Library.Notify({
 		Title = "Ivory",
-		Description = "Auto teleported to pad " .. padIndex,
+		Content = "Auto teleported to pad " .. padIndex,
 		Type = "Success",
-		Time = 3,
+		Duration = 3,
 	})
 end
 
@@ -956,8 +861,6 @@ local function FindNearestCollectible(names, requireDirectChild)
 	local best, bestDist
 	for _, obj in ipairs(Workspace:GetDescendants()) do
 		if obj:IsA("BasePart") and table.find(names, obj.Name) and obj.Transparency < 0.9 then
-			-- Only real drops: skip lobby/shop decorations and statues.
-			-- Diamonds must be direct workspace children (platform drops).
 			if IsStatueOrDecoration(obj) then continue end
 			if requireDirectChild and obj.Parent ~= Workspace then continue end
 			local skip = CollectBlacklist[obj]
@@ -997,7 +900,6 @@ task.spawn(function()
 			end
 
 			if target and target.Parent then
-				-- Stuck protection: if we keep landing on the same uncollectible part, skip it a while
 				local entry = CollectBlacklist[target]
 				if not entry then
 					entry = { attempts = 0, skipUntil = 0 }
@@ -1030,11 +932,8 @@ end)
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
 	pcall(function()
-		local kp = Options.BangKeybind
-		if kp and kp.Value and typeof(kp.Value) == "string" and kp.Value ~= "None" and kp.Value ~= "Unknown" then
-			if input.KeyCode == Enum.KeyCode[kp.Value] then
-				DoBang()
-			end
+		if input.KeyCode == Enum.KeyCode.V then
+			DoBang()
 		end
 	end)
 end)
@@ -1202,24 +1101,8 @@ end
 --// MAIN LOOP
 --// ═══════════════════════════════════════════════════════════
 
-local function SyncState()
-	pcall(function()
-		for name, toggle in pairs(Toggles) do
-			if State[name] ~= nil and toggle.Value ~= nil and typeof(toggle.Value) ~= "table" then
-				State[name] = toggle.Value
-			end
-		end
-		for name, opt in pairs(Options) do
-			if State[name] ~= nil and opt.Value ~= nil and typeof(opt.Value) ~= "table" then
-				State[name] = opt.Value
-			end
-		end
-	end)
-end
-
 RunService.RenderStepped:Connect(function()
 	Camera = Workspace.CurrentCamera
-	SyncState()
 
 	pcall(function()
 		local hum = GetHum()
@@ -1339,7 +1222,7 @@ end)
 --// UNLOAD
 --// ═══════════════════════════════════════════════════════════
 
-Library:OnUnload(function()
+do
 	StopFly()
 	StopNoclip()
 	if WGOriginalSize then ApplyHitboxSize(WGOriginalSize.X) end
@@ -1352,13 +1235,13 @@ Library:OnUnload(function()
 			hum.JumpPower = 50
 		end
 	end)
-end)
+end
 
-Library:Notify({
+Library.Notify({
 	Title = "Ivory",
-	Description = "Elemental Magic Arena loaded. RightShift to toggle menu.",
+	Content = "Elemental Magic Arena loaded. RightShift to toggle menu.",
 	Type = "Success",
-	Time = 3,
+	Duration = 3,
 })
 
 print("[Ivory] Elemental Magic Arena loaded!")

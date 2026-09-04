@@ -8,64 +8,28 @@ local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local function httpGet(url) return request({ Url = url, Method = "GET" }).Body end
-local Library = loadstring(httpGet(repo .. "Library.lua"))()
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	local ok, src = pcall(function()
+		return request({
+			Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+			Method = "GET"
+		}).Body
+	end)
+	if ok then LIB_SRC = src end
+end
+local Library = loadstring(LIB_SRC)()
 
 _G.ESPColor = _G.ESPColor or Color3.new(1, 1, 1)
 _G.espSkeletons = false
 _G.ESP_ENABLED = false
 
-local Window = Library:CreateWindow({
-	Title = "Ivory", Icon = "swords",
-	Footer = {"Operation One |", {Text = tostring(LocalPlayer.UserId), Copyable = true}},
-	CopyableFooter = true, FuzzySearch = true, SearchValues = true,
-	Minimizable = true,
-	MinimizedWidth = 280, NotifySide = "Right",
-	ShowCustomCursor = false, SearchKeybind = Enum.KeyCode.F,
-	CornerRadius = 4, Animations = {SubTabUnderline = true},
-})
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
-
-if Library.ScreenGui and Library.ScreenGui.Parent and Library.ScreenGui.Parent ~= game:GetService("CoreGui") then
-	Library.ScreenGui.Parent = game:GetService("CoreGui")
-end
-
 local function notify(desc, kind)
-	Library:Notify({ Title = "Ivory", Description = desc, Type = kind or "Info", Time = 3 })
+	Library.Notify({Title = "Ivory", Content = desc, Type = kind or "Info", Duration = 3})
 end
 
 notify("Operation One Script Loaded!", "Success")
 
--- ==================== CONFIG SYSTEM ====================
 local CONFIG_ROOT  = "Bread_"
 local CONFIG_SUBDIR = "Bread_/Op1"
 local AUTOLOAD_PATH = "Bread_/Op1/autoload.txt"
@@ -210,56 +174,22 @@ end
 
 local function applyConfig(data)
 	if not data then return end
-
 	if data.NoRecoil_Enabled ~= nil then
 		NoRecoilSettings.Enabled = data.NoRecoil_Enabled
-		if NoRecoilToggleRef then pcall(function() NoRecoilToggleRef.Value = data.NoRecoil_Enabled; NoRecoilToggleRef:FireChanged() end) end
 		if data.NoRecoil_Enabled then syncCamera() end
 	end
-	if data.NoRecoil_Sens ~= nil then
-		NoRecoilSettings.Sens = data.NoRecoil_Sens
-		if NoRecoilSensRef then pcall(function() NoRecoilSensRef.Value = data.NoRecoil_Sens; NoRecoilSensRef:FireChanged() end) end
-	end
-	if data.NoRecoil_Smoothness ~= nil then
-		NoRecoilSettings.Smoothness = data.NoRecoil_Smoothness
-		if NoRecoilSmoothRef then pcall(function() NoRecoilSmoothRef.Value = data.NoRecoil_Smoothness; NoRecoilSmoothRef:FireChanged() end) end
-	end
-
-	if data.ESP_Main ~= nil then
-		_G.ESP_SETTINGS.MainEnabled = data.ESP_Main
-		if ESPToggleRef then pcall(function() ESPToggleRef.Value = data.ESP_Main; ESPToggleRef:FireChanged() end) end
-	end
-	if data.ESP_Team ~= nil then
-		_G.ESP_SETTINGS.TeamCheck = data.ESP_Team
-		if ESPTeamRef then pcall(function() ESPTeamRef.Value = data.ESP_Team; ESPTeamRef:FireChanged() end) end
-	end
-	if data.ESP_Tracers ~= nil then
-		_G.ESP_SETTINGS.Tracers = data.ESP_Tracers
-		if TracersRef then pcall(function() TracersRef.Value = data.ESP_Tracers; TracersRef:FireChanged() end) end
-	end
-	if data.ESP_HealthBar ~= nil then
-		_G.ESP_SETTINGS.HealthBar = data.ESP_HealthBar
-		if HealthBarRef then pcall(function() HealthBarRef.Value = data.ESP_HealthBar; HealthBarRef:FireChanged() end) end
-	end
-	if data.ESP_Skeletons ~= nil then
-		_G.ESP_SETTINGS.Skeletons = data.ESP_Skeletons
-		_G.espSkeletons = data.ESP_Skeletons
-		if SkeletonsRef then pcall(function() SkeletonsRef.Value = data.ESP_Skeletons; SkeletonsRef:FireChanged() end) end
-	end
-	if data.GadgetESP ~= nil then
-		_G.GADGET_ESP_ENABLED = data.GadgetESP
-		if GadgetESPRef then pcall(function() GadgetESPRef.Value = data.GadgetESP; GadgetESPRef:FireChanged() end) end
-	end
-
-	if data.ESP_TracerPos ~= nil then
-		_G.ESP_SETTINGS.TracerStart = data.ESP_TracerPos
-		tracerStartPos = data.ESP_TracerPos
-	end
-
+	if data.NoRecoil_Sens ~= nil then NoRecoilSettings.Sens = data.NoRecoil_Sens end
+	if data.NoRecoil_Smoothness ~= nil then NoRecoilSettings.Smoothness = data.NoRecoil_Smoothness end
+	if data.ESP_Main ~= nil then _G.ESP_SETTINGS.MainEnabled = data.ESP_Main end
+	if data.ESP_Team ~= nil then _G.ESP_SETTINGS.TeamCheck = data.ESP_Team end
+	if data.ESP_Tracers ~= nil then _G.ESP_SETTINGS.Tracers = data.ESP_Tracers end
+	if data.ESP_HealthBar ~= nil then _G.ESP_SETTINGS.HealthBar = data.ESP_HealthBar end
+	if data.ESP_Skeletons ~= nil then _G.ESP_SETTINGS.Skeletons = data.ESP_Skeletons; _G.espSkeletons = data.ESP_Skeletons end
+	if data.GadgetESP ~= nil then _G.GADGET_ESP_ENABLED = data.GadgetESP end
+	if data.ESP_TracerPos ~= nil then _G.ESP_SETTINGS.TracerStart = data.ESP_TracerPos; tracerStartPos = data.ESP_TracerPos end
 	if data.ESP_Color then
 		local col = tableToColor(data.ESP_Color)
-		_G.ESPColor = col
-		_G.ESP_SETTINGS.Color = col
+		_G.ESPColor = col; _G.ESP_SETTINGS.Color = col
 		for _, ui in pairs(_G.ESP_Table) do
 			if ui.Box then ui.Box.Color = col end
 			if ui.Tracer then ui.Tracer.Color = col end
@@ -271,107 +201,37 @@ local function applyConfig(data)
 		for _, text in pairs(_G.gadgetESP_texts) do text.Color = col end
 		updateChamsColor(col)
 	end
-
-	if data.Chams_Enabled ~= nil then
-		_G.CHAMS_SETTINGS.Enabled = data.Chams_Enabled
-		if ChamsToggleRef then pcall(function() ChamsToggleRef.Value = data.Chams_Enabled; ChamsToggleRef:FireChanged() end) end
-		rebuildChams()
-	end
-	if data.Chams_Team ~= nil then
-		_G.CHAMS_SETTINGS.TeamCheck = data.Chams_Team
-		if ChamsTeamRef then pcall(function() ChamsTeamRef.Value = data.Chams_Team; ChamsTeamRef:FireChanged() end) end
-	end
-	if data.Chams_Mode ~= nil then
-		_G.CHAMS_SETTINGS.Mode = data.Chams_Mode
-		updateChamsDepthMode()
-	end
-	if data.Chams_Trans ~= nil then
-		local t = data.Chams_Trans / 100
-		_G.CHAMS_SETTINGS.Transparency = t
-		updateChamsTransparency(t)
-	end
-
-	if data.TB_Enabled ~= nil then
-		TriggerbotSettings.Enabled = data.TB_Enabled
-		if TriggerToggleRef then pcall(function() TriggerToggleRef.Value = data.TB_Enabled; TriggerToggleRef:FireChanged() end) end
-	end
-	if data.TB_Team ~= nil then
-		TriggerbotSettings.TeamCheck = data.TB_Team
-		if TriggerTeamRef then pcall(function() TriggerTeamRef.Value = data.TB_Team; TriggerTeamRef:FireChanged() end) end
-	end
-	if data.TB_Auto ~= nil then
-		TriggerbotSettings.AutoGunMode = data.TB_Auto
-		if TriggerAutoRef then pcall(function() TriggerAutoRef.Value = data.TB_Auto; TriggerAutoRef:FireChanged() end) end
-	end
-	if data.TB_Delay ~= nil then
-		TriggerbotSettings.Delay = data.TB_Delay
-		if TriggerDelayRef then pcall(function() TriggerDelayRef.Value = data.TB_Delay; TriggerDelayRef:FireChanged() end) end
-	end
-	if data.TB_Vis ~= nil then
-		TriggerbotSettings.VisibilityCheck = data.TB_Vis
-		if TriggerVisRef then pcall(function() TriggerVisRef.Value = data.TB_Vis; TriggerVisRef:FireChanged() end) end
-	end
-	if data.TB_Soft ~= nil then
-		TriggerbotSettings.AllowSoftVisible = data.TB_Soft
-		if TriggerSoftRef then pcall(function() TriggerSoftRef.Value = data.TB_Soft; TriggerSoftRef:FireChanged() end) end
-	end
-
+	if data.Chams_Enabled ~= nil then _G.CHAMS_SETTINGS.Enabled = data.Chams_Enabled; rebuildChams() end
+	if data.Chams_Team ~= nil then _G.CHAMS_SETTINGS.TeamCheck = data.Chams_Team; rebuildChams() end
+	if data.Chams_Mode ~= nil then _G.CHAMS_SETTINGS.Mode = data.Chams_Mode; updateChamsDepthMode() end
+	if data.Chams_Trans ~= nil then local t = data.Chams_Trans / 100; _G.CHAMS_SETTINGS.Transparency = t; updateChamsTransparency(t) end
+	if data.TB_Enabled ~= nil then TriggerbotSettings.Enabled = data.TB_Enabled end
+	if data.TB_Team ~= nil then TriggerbotSettings.TeamCheck = data.TB_Team end
+	if data.TB_Auto ~= nil then TriggerbotSettings.AutoGunMode = data.TB_Auto end
+	if data.TB_Delay ~= nil then TriggerbotSettings.Delay = data.TB_Delay end
+	if data.TB_Vis ~= nil then TriggerbotSettings.VisibilityCheck = data.TB_Vis end
+	if data.TB_Soft ~= nil then TriggerbotSettings.AllowSoftVisible = data.TB_Soft end
 	if data.AB_Enabled ~= nil then
 		AimbotSettings.Enabled = data.AB_Enabled
-		if AimbotToggleRef then pcall(function() AimbotToggleRef.Value = data.AB_Enabled; AimbotToggleRef:FireChanged() end) end
 		if data.AB_Enabled then enableAimbot() else disableAimbot() end
 	end
-	if data.AB_AlwaysOn ~= nil then
-		AimbotSettings.AlwaysOn = data.AB_AlwaysOn
-		if AimbotAlwaysRef then pcall(function() AimbotAlwaysRef.Value = data.AB_AlwaysOn; AimbotAlwaysRef:FireChanged() end) end
-	end
-	if data.AB_Camera ~= nil then
-		AimbotSettings.UseCameraAim = data.AB_Camera
-		if AimbotCameraRef then pcall(function() AimbotCameraRef.Value = data.AB_Camera; AimbotCameraRef:FireChanged() end) end
-	end
-	if data.AB_Team ~= nil then
-		AimbotSettings.TeamCheck = data.AB_Team
-		if AimbotTeamRef then pcall(function() AimbotTeamRef.Value = data.AB_Team; AimbotTeamRef:FireChanged() end) end
-	end
-	if data.AB_Smoothness ~= nil then
-		AimbotSettings.Smoothness = data.AB_Smoothness
-		if AimbotSmoothnessRef then pcall(function() AimbotSmoothnessRef.Value = data.AB_Smoothness; AimbotSmoothnessRef:FireChanged() end) end
-	end
-	if data.AB_FOV ~= nil then
-		AimbotSettings.FOV = data.AB_FOV
-		if AimbotFOVRef then pcall(function() AimbotFOVRef.Value = data.AB_FOV; AimbotFOVRef:FireChanged() end) end
-		if AimbotSettings.FOVCircle then AimbotSettings.FOVCircle.Radius = data.AB_FOV end
-	end
-	if data.AB_OffsetY ~= nil then
-		AimbotSettings.AimOffsetY = data.AB_OffsetY
-		if AimbotOffsetRef then pcall(function() AimbotOffsetRef.Value = data.AB_OffsetY; AimbotOffsetRef:FireChanged() end) end
-	end
-	if data.AB_Part ~= nil then
-		AimbotSettings.AimPart = data.AB_Part
-		if AimbotPartRef then pcall(function() AimbotPartRef:Set(data.AB_Part) end) end
-	end
+	if data.AB_AlwaysOn ~= nil then AimbotSettings.AlwaysOn = data.AB_AlwaysOn end
+	if data.AB_Camera ~= nil then AimbotSettings.UseCameraAim = data.AB_Camera end
+	if data.AB_Team ~= nil then AimbotSettings.TeamCheck = data.AB_Team end
+	if data.AB_Smoothness ~= nil then AimbotSettings.Smoothness = data.AB_Smoothness end
+	if data.AB_FOV ~= nil then AimbotSettings.FOV = data.AB_FOV; if AimbotSettings.FOVCircle then AimbotSettings.FOVCircle.Radius = data.AB_FOV end end
+	if data.AB_OffsetY ~= nil then AimbotSettings.AimOffsetY = data.AB_OffsetY end
+	if data.AB_Part ~= nil then AimbotSettings.AimPart = data.AB_Part end
 end
 
 local function loadConfig(name)
-	if not name or name == "" then
-		notify("Enter a config name first!", "Warning")
-		return
-	end
+	if not name or name == "" then notify("Enter a config name first!", "Warning"); return end
 	local path = CONFIG_SUBDIR .. "/" .. name .. ".json"
-	if not isfile(path) then
-		notify(name .. " not found", "Error")
-		return
-	end
+	if not isfile(path) then notify(name .. " not found", "Error"); return end
 	local ok, raw = pcall(readfile, path)
-	if not ok then
-		notify("Could not read file", "Error")
-		return
-	end
+	if not ok then notify("Could not read file", "Error"); return end
 	local ok2, data = pcall(decodeJSON, raw)
-	if not ok2 or type(data) ~= "table" then
-		notify("Corrupt config", "Error")
-		return
-	end
+	if not ok2 or type(data) ~= "table" then notify("Corrupt config", "Error"); return end
 	applyConfig(data)
 	notify("Config Loaded: " .. name, "Success")
 end
@@ -379,19 +239,12 @@ end
 local function deleteConfig(name)
 	if not name or name == "" then return end
 	local path = CONFIG_SUBDIR .. "/" .. name .. ".json"
-	if isfile(path) then
-		pcall(delfile, path)
-		notify("Config Deleted: " .. name, "Info")
-	else
-		notify(name .. " not found", "Warning")
-	end
+	if isfile(path) then pcall(delfile, path); notify("Config Deleted: " .. name, "Info")
+	else notify(name .. " not found", "Warning") end
 end
 
 local function setAutoload(name)
-	if not name or name == "" then
-		notify("Enter a config name", "Warning")
-		return
-	end
+	if not name or name == "" then notify("Enter a config name", "Warning"); return end
 	pcall(writefile, AUTOLOAD_PATH, name)
 	notify("Autoload Set: " .. name, "Success")
 end
@@ -401,7 +254,6 @@ local function clearAutoload()
 	notify("Autoload Cleared", "Info")
 end
 
--- ==================== NO RECOIL ====================
 NoRecoilSettings = {
 	Enabled = false,
 	ActiveKey = Enum.UserInputType.MouseButton1,
@@ -447,115 +299,32 @@ RunService:BindToRenderStep("DynamicZeroRecoil", Enum.RenderPriority.Camera.Valu
 	end
 end)
 
--- ==================== TABS ====================
-local CombatTab = Window:AddTab({ Name = "Combat", Icon = "swords" })
-local CombatSub = CombatTab:AddSubTab("Combat", "rbxassetid://79379082636309")
-local DiscordGrp = CombatSub:AddLeftGroupbox("Discord", "link")
-local CombatLeft = CombatSub:AddLeftGroupbox("No Recoil", "crosshair")
-local CombatRight = CombatSub:AddRightGroupbox("Aimbot", "crosshair")
+local Window = Library.CreateWindow({Name = "Ivory", Width = 460, Height = 360, Minimizable = true, NotifySide = "Right", ShowCustomCursor = false, CornerRadius = 4})
 
-local DiscordLabel = DiscordGrp:AddLabel({ Text = "Join discord for free keys!", DoesWrap = true, Size = 26 })
+local CombatTab = Window:CreateTab({Name = "Combat"})
+local CombatSub = CombatTab:CreateSection("Combat")
+local DiscordGrp = CombatSub:CreateSection("Discord")
+local CombatLeft = CombatSub:CreateSection("No Recoil")
+local CombatRight = CombatSub:CreateSection("Aimbot")
 
-task.spawn(function()
-	task.wait(0.5)
-	local discordTextLabel = nil
-	pcall(function()
-		for _, desc in ipairs(Library.ScreenGui:GetDescendants()) do
-			if desc:IsA("TextLabel") and desc.Text:find("discord") then
-				discordTextLabel = desc
-				break
-			end
-		end
-	end)
+local DiscordLabel = DiscordGrp:CreateLabel("Join discord for free keys!")
 
-	if discordTextLabel then
-		discordTextLabel.RichText = false
-		discordTextLabel.TextColor3 = Color3.fromRGB(157, 130, 250)
-		discordTextLabel.Font = Enum.Font.GothamBold
-		discordTextLabel.TextSize = 26
-	end
-
-	task.wait(0.3)
-
-	local fullText = "Join discord for free keys!"
-	local cursor = "_"
-	while true do
-		for i = 1, #fullText do
-			pcall(function()
-				DiscordLabel:SetText(string.sub(fullText, 1, i) .. cursor)
-			end)
-			pcall(function()
-				if discordTextLabel and discordTextLabel.Parent then
-					discordTextLabel.RichText = false
-					discordTextLabel.TextColor3 = Color3.fromRGB(157, 130, 250)
-					discordTextLabel.Font = Enum.Font.GothamBold
-					discordTextLabel.TextSize = 26
-				end
-			end)
-			task.wait(0.06)
-		end
-		pcall(function()
-			DiscordLabel:SetText(fullText)
-		end)
-		pcall(function()
-			if discordTextLabel and discordTextLabel.Parent then
-				discordTextLabel.RichText = false
-				discordTextLabel.TextColor3 = Color3.fromRGB(157, 130, 250)
-				discordTextLabel.Font = Enum.Font.GothamBold
-				discordTextLabel.TextSize = 26
-			end
-		end)
-		task.wait(1.5)
-		for i = #fullText, 0, -1 do
-			pcall(function()
-				DiscordLabel:SetText(string.sub(fullText, 1, i) .. cursor)
-			end)
-			pcall(function()
-				if discordTextLabel and discordTextLabel.Parent then
-					discordTextLabel.RichText = false
-					discordTextLabel.TextColor3 = Color3.fromRGB(157, 130, 250)
-					discordTextLabel.Font = Enum.Font.GothamBold
-					discordTextLabel.TextSize = 26
-				end
-			end)
-			task.wait(0.04)
-		end
-		pcall(function()
-			DiscordLabel:SetText("")
-		end)
-		task.wait(0.5)
-	end
-end)
-
-DiscordGrp:AddButton({ Text = "Copy Discord Link", Callback = function()
+DiscordGrp:CreateButton({Name = "Copy Discord Link", Callback = function()
 	pcall(function() setclipboard("https://discord.gg/ivory") end)
 	notify("Discord Link Copied!", "Success")
-end })
+end})
 
-NoRecoilToggleRef = CombatLeft:AddToggle("NoRecoil", {
-	Text = "No Recoil",
-	Default = false,
-	Callback = function(Value) NoRecoilSettings.Enabled = Value; if Value then syncCamera() end end,
-})
+CombatLeft:CreateToggle({Name = "No Recoil", CurrentValue = false, Callback = function(Value) NoRecoilSettings.Enabled = Value; if Value then syncCamera() end end})
 
-NoRecoilSensRef = CombatLeft:AddSlider("NoRecoilSens", {
-	Text = "No Recoil Sensitivity",
-	Min = 0.1, Max = 2.0, Default = 1.0, Rounding = 1,
-	Callback = function(Value) NoRecoilSettings.Sens = Value end,
-})
+CombatLeft:CreateSlider({Name = "No Recoil Sensitivity", Range = {0.1, 2.0}, Increment = 0.1, CurrentValue = 1.0, Callback = function(Value) NoRecoilSettings.Sens = Value end})
 
-NoRecoilSmoothRef = CombatLeft:AddSlider("NoRecoilSmooth", {
-	Text = "No Recoil Smoothness",
-	Min = 0.01, Max = 0.5, Default = 0.12, Rounding = 2,
-	Callback = function(Value) NoRecoilSettings.Smoothness = Value end,
-})
+CombatLeft:CreateSlider({Name = "No Recoil Smoothness", Range = {0.01, 0.5}, Increment = 0.01, CurrentValue = 0.12, Callback = function(Value) NoRecoilSettings.Smoothness = Value end})
 
--- ==================== ESP TAB ====================
 local tracerStartPos = "bottom"
-local ESPTab = Window:AddTab({ Name = "ESP", Icon = "swords" })
-local ESPSub = ESPTab:AddSubTab("ESP", "rbxassetid://79379082636309")
-local ESPGrp = ESPSub:AddLeftGroupbox("ESP Settings", "eye")
-local ChamsGrp = ESPSub:AddRightGroupbox("Chams", "palette")
+local ESPTab = Window:CreateTab({Name = "ESP"})
+local ESPSub = ESPTab:CreateSection("ESP")
+local ESPGrp = ESPSub:CreateSection("ESP Settings")
+local ChamsGrp = ESPSub:CreateSection("Chams")
 
 _G.ESP_SETTINGS = {
 	MainEnabled = false, Tracers = true, TracerStart = "bottom",
@@ -563,7 +332,6 @@ _G.ESP_SETTINGS = {
 }
 _G.ESP_Table = {}
 
--- ==================== VIEWMODEL CACHING ====================
 local playerViewmodels = {}
 
 local function getCharacterForViewmodel(viewmodel)
@@ -622,7 +390,6 @@ Players.PlayerAdded:Connect(function(player)
 	player.CharacterAdded:Connect(function() playerViewmodels[player] = nil end)
 end)
 
--- ==================== CHAMS SYSTEM ====================
 _G.CHAMS_SETTINGS = { Enabled = false, Mode = "Visible", Transparency = 0.3, TeamCheck = true }
 _G.chams_highlights = {}
 
@@ -703,7 +470,6 @@ updateChamsDepthMode = function()
 	for _, hl in pairs(_G.chams_highlights) do hl.DepthMode = mode end
 end
 
-
 if viewmodelsFolder then
 	viewmodelsFolder.ChildAdded:Connect(function(vm)
 		if vm:IsA("Model") and _G.CHAMS_SETTINGS.Enabled then createCham(vm) end
@@ -714,7 +480,6 @@ if viewmodelsFolder then
 	end
 end
 
--- ==================== ESP FUNCTIONS ====================
 local function setupESP()
 	local ESP = _G.ESP_Table
 
@@ -857,53 +622,30 @@ end
 
 setupESP()
 
--- ==================== ESP UI ====================
-ESPToggleRef = ESPGrp:AddToggle("ESPEnabled", {
-	Text = "ESP", Default = false,
-	Callback = function(Value) _G.ESP_SETTINGS.MainEnabled = Value end,
-})
+ESPGrp:CreateToggle({Name = "ESP", CurrentValue = false, Callback = function(Value) _G.ESP_SETTINGS.MainEnabled = Value end})
 
-ESPTeamRef = ESPGrp:AddToggle("ESPTeamCheck", {
-	Text = "Hide Teammates (ESP)", Default = false,
-	Callback = function(Value) _G.ESP_SETTINGS.TeamCheck = Value end,
-})
+ESPGrp:CreateToggle({Name = "Hide Teammates (ESP)", CurrentValue = false, Callback = function(Value) _G.ESP_SETTINGS.TeamCheck = Value end})
 
-TracersRef = ESPGrp:AddToggle("Tracers", {
-	Text = "Tracers", Default = true,
-	Callback = function(Value) _G.ESP_SETTINGS.Tracers = Value end,
-})
+ESPGrp:CreateToggle({Name = "Tracers", CurrentValue = true, Callback = function(Value) _G.ESP_SETTINGS.Tracers = Value end})
 
-TracerPosRef = ESPGrp:AddSlider("TracerPos", {
-	Text = "Tracer Position (0=B,1=M,2=T,3=L,4=R)", Min = 0, Max = 4, Default = 0, Rounding = 0,
-	Callback = function(Value)
-		local positions = {"bottom","middle","top","left","right"}
-		local index = math.floor(Value + 0.5) + 1
-		tracerStartPos = positions[index] or "bottom"
-		_G.ESP_SETTINGS.TracerStart = tracerStartPos
-	end,
-})
+ESPGrp:CreateSlider({Name = "Tracer Position (0=B,1=M,2=T,3=L,4=R)", Range = {0, 4}, Increment = 1, CurrentValue = 0, Callback = function(Value)
+	local positions = {"bottom","middle","top","left","right"}
+	local index = math.floor(Value + 0.5) + 1
+	tracerStartPos = positions[index] or "bottom"
+	_G.ESP_SETTINGS.TracerStart = tracerStartPos
+end})
 
-HealthBarRef = ESPGrp:AddToggle("HealthBar", {
-	Text = "Health Bars", Default = true,
-	Callback = function(Value) _G.ESP_SETTINGS.HealthBar = Value end,
-})
+ESPGrp:CreateToggle({Name = "Health Bars", CurrentValue = true, Callback = function(Value) _G.ESP_SETTINGS.HealthBar = Value end})
 
-GadgetESPRef = ESPGrp:AddToggle("GadgetESP", {
-	Text = "Gadget ESP", Default = false,
-	Callback = function(Value)
-		_G.GADGET_ESP_ENABLED = Value
-		if not Value then for _,text in pairs(_G.gadgetESP_texts) do text.Visible=false end end
-	end,
-})
+ESPGrp:CreateToggle({Name = "Gadget ESP", CurrentValue = false, Callback = function(Value)
+	_G.GADGET_ESP_ENABLED = Value
+	if not Value then for _,text in pairs(_G.gadgetESP_texts) do text.Visible=false end end
+end})
 
-SkeletonsRef = ESPGrp:AddToggle("Skeletons", {
-	Text = "Skeletons", Default = false,
-	Callback = function(Value)
-		_G.espSkeletons=Value; _G.ESP_ENABLED=Value; _G.ESP_SETTINGS.Skeletons=Value
-	end,
-})
+ESPGrp:CreateToggle({Name = "Skeletons", CurrentValue = false, Callback = function(Value)
+	_G.espSkeletons=Value; _G.ESP_ENABLED=Value; _G.ESP_SETTINGS.Skeletons=Value
+end})
 
--- ==================== GADGET ESP ====================
 _G.GADGET_ESP_ENABLED = false
 local gadgetNames = {
 	"NeedleMine","Drone","RemoteC4","ToxicCharge","StickyCamera",
@@ -957,7 +699,6 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- ==================== SKELETONS ====================
 local bones = {
 	{"torso","head"},{"torso","shoulder1"},{"torso","shoulder2"},
 	{"shoulder1","arm1"},{"shoulder2","arm2"},{"torso","hip1"},
@@ -1100,82 +841,60 @@ if viewmodels then
 	end)
 end
 
--- ==================== ESP COLOR ====================
-ESPColorRef = ESPGrp:AddLabel("ESP Color"):AddColorPicker("ESPColor", {
-	Default = _G.ESPColor,
-	Title = "ESP Color",
-	Callback = function(Value)
-		_G.ESPColor=Value; _G.ESP_SETTINGS.Color=Value
-		for _,ui in pairs(_G.ESP_Table) do
-			if ui.Box then ui.Box.Color=Value end
-			if ui.Tracer then ui.Tracer.Color=Value end
-		end
-		for _,skel in pairs(_G.skeleton_list) do
-			for _,line in ipairs(skel.lines) do line.Color=Value end
-		end
-		for _,d in pairs(_G.esp_list) do d.box.UIStroke.Color=Value end
-		for _,text in pairs(_G.gadgetESP_texts) do text.Color=Value end
-		updateChamsColor(Value)
-	end,
-})
+ESPGrp:CreateColorPicker({Name = "ESP Color", Color = _G.ESPColor, Callback = function(Value)
+	_G.ESPColor=Value; _G.ESP_SETTINGS.Color=Value
+	for _,ui in pairs(_G.ESP_Table) do
+		if ui.Box then ui.Box.Color=Value end
+		if ui.Tracer then ui.Tracer.Color=Value end
+	end
+	for _,skel in pairs(_G.skeleton_list) do
+		for _,line in ipairs(skel.lines) do line.Color=Value end
+	end
+	for _,d in pairs(_G.esp_list) do d.box.UIStroke.Color=Value end
+	for _,text in pairs(_G.gadgetESP_texts) do text.Color=Value end
+	updateChamsColor(Value)
+end})
 
--- ==================== CHAMS ====================
-ChamsGrp:AddLabel("--- Chams ---")
+ChamsGrp:CreateLabel("--- Chams ---")
 
-ChamsToggleRef = ChamsGrp:AddToggle("ChamsEnabled", {
-	Text = "Chams", Default = false,
-	Callback = function(Value)
-		_G.CHAMS_SETTINGS.Enabled = Value
-		if Value then rebuildChams()
-		else for _,hl in pairs(_G.chams_highlights) do hl.Enabled=false end end
-	end,
-})
+ChamsGrp:CreateToggle({Name = "Chams", CurrentValue = false, Callback = function(Value)
+	_G.CHAMS_SETTINGS.Enabled = Value
+	if Value then rebuildChams()
+	else for _,hl in pairs(_G.chams_highlights) do hl.Enabled=false end end
+end})
 
-ChamsTeamRef = ChamsGrp:AddToggle("ChamsTeamCheck", {
-	Text = "Hide Teammates (Chams)", Default = true,
-	Callback = function(Value) _G.CHAMS_SETTINGS.TeamCheck=Value; rebuildChams() end,
-})
+ChamsGrp:CreateToggle({Name = "Hide Teammates (Chams)", CurrentValue = true, Callback = function(Value) _G.CHAMS_SETTINGS.TeamCheck=Value; rebuildChams() end})
 
-ChamsModeRef = ChamsGrp:AddDropdown("ChamsMode", {
-	Text = "Chams Mode", Values = {"Visible","Not Visible"}, Default = "Visible",
-	Callback = function(Value)
-		_G.CHAMS_SETTINGS.Mode = (Value=="Not Visible") and "NotVisible" or "Visible"
-		updateChamsDepthMode()
-	end,
-})
+ChamsGrp:CreateDropdown({Name = "Chams Mode", Options = {"Visible","Not Visible"}, CurrentOption = "Visible", Callback = function(Value)
+	_G.CHAMS_SETTINGS.Mode = (Value=="Not Visible") and "NotVisible" or "Visible"
+	updateChamsDepthMode()
+end})
 
-ChamsTransRef = ChamsGrp:AddSlider("ChamsTrans", {
-	Text = "Chams Transparency", Min = 0, Max = 100, Default = 30, Rounding = 0,
-	Callback = function(Value)
-		local t = Value/100
-		_G.CHAMS_SETTINGS.Transparency = t
-		updateChamsTransparency(t)
-	end,
-})
+ChamsGrp:CreateSlider({Name = "Chams Transparency", Range = {0, 100}, Increment = 1, CurrentValue = 30, Callback = function(Value)
+	local t = Value/100
+	_G.CHAMS_SETTINGS.Transparency = t
+	updateChamsTransparency(t)
+end})
 
--- ==================== OPTIMIZATIONS TAB ====================
-local OptTab = Window:AddTab({ Name = "Optimizations", Icon = "swords" })
-local OptGrp = OptTab:AddSubTab("Performance", "rbxassetid://79379082636309"):AddLeftGroupbox("Performance", "zap")
+local OptTab = Window:CreateTab({Name = "Optimizations"})
+local OptGrp = OptTab:CreateSection("Performance")
 
-OptGrp:AddLabel("Warning: Optimize will break scoped weapons!")
+OptGrp:CreateLabel("Warning: Optimize will break scoped weapons!")
 
 local fullbrightBrightness = 2
 
-OptGrp:AddSlider("FullbrightBrightness", {
-	Text = "Fullbright Brightness", Min = 0, Max = 4, Default = 2, Rounding = 0,
-	Callback = function(Value) fullbrightBrightness = Value end,
-})
+OptGrp:CreateSlider({Name = "Fullbright Brightness", Range = {0, 4}, Increment = 1, CurrentValue = 2, Callback = function(Value) fullbrightBrightness = Value end})
 
-OptGrp:AddButton({ Text = "Fullbright", Callback = function()
+OptGrp:CreateButton({Name = "Fullbright", Callback = function()
 	Lighting.Brightness=fullbrightBrightness; Lighting.ClockTime=14
 	Lighting.FogEnd=100000; Lighting.GlobalShadows=false
 	Lighting.OutdoorAmbient=Color3.fromRGB(128,128,128)
 	notify("Brightness set to: "..fullbrightBrightness, "Success")
-end })
+end})
 
 local optimizeConnection = nil
 
-OptGrp:AddButton({ Text = "Optimize", Callback = function()
+OptGrp:CreateButton({Name = "Optimize", Callback = function()
 	notify("This WILL break scoped weapons! Proceeding...", "Warning")
 	task.wait(1)
 	if optimizeConnection then optimizeConnection:Disconnect(); optimizeConnection=nil end
@@ -1210,11 +929,9 @@ OptGrp:AddButton({ Text = "Optimize", Callback = function()
 		end)
 	end)
 	notify("Game optimized! (Scopes may be broken)", "Success")
-end })
+end})
 
--- ==================== TRIGGERBOT ====================
-
-CombatLeft:AddLabel("--- Triggerbot ---")
+CombatLeft:CreateLabel("--- Triggerbot ---")
 
 TriggerbotSettings = {
 	Enabled = false, TeamCheck = false, AutoGunMode = false, Delay = 0,
@@ -1348,48 +1065,29 @@ local function triggerbotLoop()
 	end)
 end
 
-TriggerToggleRef = CombatLeft:AddToggle("Triggerbot", {
-	Text = "Triggerbot", Default = false,
-	Callback = function(Value)
-		TriggerbotSettings.Enabled=Value
-		if Value then
-			if not TriggerbotSettings.Connection then triggerbotLoop() end
-		else
-			if TriggerbotSettings.Connection then TriggerbotSettings.Connection:Disconnect(); TriggerbotSettings.Connection=nil end
-			releaseMouse(); TriggerbotSettings.IsWaiting=false; TriggerbotSettings.IsFiring=false
-		end
-	end,
-})
+CombatLeft:CreateToggle({Name = "Triggerbot", CurrentValue = false, Callback = function(Value)
+	TriggerbotSettings.Enabled=Value
+	if Value then
+		if not TriggerbotSettings.Connection then triggerbotLoop() end
+	else
+		if TriggerbotSettings.Connection then TriggerbotSettings.Connection:Disconnect(); TriggerbotSettings.Connection=nil end
+		releaseMouse(); TriggerbotSettings.IsWaiting=false; TriggerbotSettings.IsFiring=false
+	end
+end})
 
-TriggerTeamRef = CombatLeft:AddToggle("TriggerTeam", {
-	Text = "Don't Shoot Teammates", Default = false,
-	Callback = function(Value) TriggerbotSettings.TeamCheck=Value end,
-})
+CombatLeft:CreateToggle({Name = "Don't Shoot Teammates", CurrentValue = false, Callback = function(Value) TriggerbotSettings.TeamCheck=Value end})
 
-TriggerAutoRef = CombatLeft:AddToggle("TriggerAuto", {
-	Text = "Automatic or Semi gun", Default = false,
-	Callback = function(Value)
-		TriggerbotSettings.AutoGunMode=Value
-		releaseMouse(); TriggerbotSettings.IsFiring=false; TriggerbotSettings.IsWaiting=false
-	end,
-})
+CombatLeft:CreateToggle({Name = "Automatic or Semi gun", CurrentValue = false, Callback = function(Value)
+	TriggerbotSettings.AutoGunMode=Value
+	releaseMouse(); TriggerbotSettings.IsFiring=false; TriggerbotSettings.IsWaiting=false
+end})
 
-TriggerDelayRef = CombatLeft:AddSlider("TriggerDelay", {
-	Text = "Delay (MS)", Min = 0, Max = 400, Default = 0, Rounding = 0,
-	Callback = function(Value) TriggerbotSettings.Delay=Value end,
-})
+CombatLeft:CreateSlider({Name = "Delay (MS)", Range = {0, 400}, Increment = 1, CurrentValue = 0, Callback = function(Value) TriggerbotSettings.Delay=Value end})
 
-TriggerVisRef = CombatLeft:AddToggle("TriggerVis", {
-	Text = "Visibility Check", Default = false,
-	Callback = function(Value) TriggerbotSettings.VisibilityCheck=Value end,
-})
+CombatLeft:CreateToggle({Name = "Visibility Check", CurrentValue = false, Callback = function(Value) TriggerbotSettings.VisibilityCheck=Value end})
 
-TriggerSoftRef = CombatLeft:AddToggle("TriggerSoft", {
-	Text = "Allow Soft Visible", Default = false,
-	Callback = function(Value) TriggerbotSettings.AllowSoftVisible=Value end,
-})
+CombatLeft:CreateToggle({Name = "Allow Soft Visible", CurrentValue = false, Callback = function(Value) TriggerbotSettings.AllowSoftVisible=Value end})
 
--- ==================== AIMBOT ====================
 local isMobile = UserInputService.TouchEnabled
 
 AimbotSettings = {
@@ -1606,53 +1304,29 @@ buildConfigSnapshot = function()
 	}
 end
 
-CombatRight:AddLabel("--- Aimbot ---")
+CombatRight:CreateLabel("--- Aimbot ---")
 
-AimbotToggleRef = CombatRight:AddToggle("AimbotEnabled", {
-	Text = "Aimbot", Default = false,
-	Callback = function(Value) if Value then enableAimbot() else disableAimbot() end end,
-})
+CombatRight:CreateToggle({Name = "Aimbot", CurrentValue = false, Callback = function(Value) if Value then enableAimbot() else disableAimbot() end end})
 
-AimbotAlwaysRef = CombatRight:AddToggle("AimbotAlways", {
-	Text = "Always On", Default = false,
-	Callback = function(Value) AimbotSettings.AlwaysOn=Value; updateAimbotIndicator() end,
-})
+CombatRight:CreateToggle({Name = "Always On", CurrentValue = false, Callback = function(Value) AimbotSettings.AlwaysOn=Value; updateAimbotIndicator() end})
 
-AimbotCameraRef = CombatRight:AddToggle("AimbotCamera", {
-	Text = "Camera Aim (Silent)", Default = false,
-	Callback = function(Value) AimbotSettings.UseCameraAim=Value; updateAimbotIndicator() end,
-})
+CombatRight:CreateToggle({Name = "Camera Aim (Silent)", CurrentValue = false, Callback = function(Value) AimbotSettings.UseCameraAim=Value; updateAimbotIndicator() end})
 
-AimbotTeamRef = CombatRight:AddToggle("AimbotTeam", {
-	Text = "Don't Target Teammates", Default = false,
-	Callback = function(Value) AimbotSettings.TeamCheck=Value; updateAimbotIndicator() end,
-})
+CombatRight:CreateToggle({Name = "Don't Target Teammates", CurrentValue = false, Callback = function(Value) AimbotSettings.TeamCheck=Value; updateAimbotIndicator() end})
 
-AimbotPartRef = CombatRight:AddDropdown("AimPart", {
-	Text = "Aim Part", Values = {"Head","Torso","Random"}, Default = "Head",
-	Callback = function(Value)
-		AimbotSettings.AimPart = Value
-		if Value ~= "Random" then AimbotSettings.RandomPart=nil end
-	end,
-})
+CombatRight:CreateDropdown({Name = "Aim Part", Options = {"Head","Torso","Random"}, CurrentOption = "Head", Callback = function(Value)
+	AimbotSettings.AimPart = Value
+	if Value ~= "Random" then AimbotSettings.RandomPart=nil end
+end})
 
-AimbotSmoothnessRef = CombatRight:AddSlider("AimbotSmooth", {
-	Text = "Smoothness", Min = 0, Max = 20, Default = 0, Rounding = 0,
-	Callback = function(Value) AimbotSettings.Smoothness=Value end,
-})
+CombatRight:CreateSlider({Name = "Smoothness", Range = {0, 20}, Increment = 1, CurrentValue = 0, Callback = function(Value) AimbotSettings.Smoothness=Value end})
 
-AimbotFOVRef = CombatRight:AddSlider("AimbotFOV", {
-	Text = "FOV", Min = 30, Max = 750, Default = 150, Rounding = 0,
-	Callback = function(Value)
-		AimbotSettings.FOV=Value
-		if AimbotSettings.FOVCircle then AimbotSettings.FOVCircle.Radius=Value end
-	end,
-})
+CombatRight:CreateSlider({Name = "FOV", Range = {30, 750}, Increment = 1, CurrentValue = 150, Callback = function(Value)
+	AimbotSettings.FOV=Value
+	if AimbotSettings.FOVCircle then AimbotSettings.FOVCircle.Radius=Value end
+end})
 
-AimbotOffsetRef = CombatRight:AddSlider("AimbotOffset", {
-	Text = "Aim Offset Y", Min = -60, Max = 60, Default = 40, Rounding = 0,
-	Callback = function(Value) AimbotSettings.AimOffsetY=Value end,
-})
+CombatRight:CreateSlider({Name = "Aim Offset Y", Range = {-60, 60}, Increment = 1, CurrentValue = 40, Callback = function(Value) AimbotSettings.AimOffsetY=Value end})
 
 RunService.RenderStepped:Connect(function()
 	if AimbotSettings.FOVCircle and AimbotSettings.FOVCircle.Visible then
@@ -1660,12 +1334,11 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- ==================== UTILITY TAB ====================
-local UtilityTab = Window:AddTab({ Name = "Utilities", Icon = "swords" })
-local UtilSub = UtilityTab:AddSubTab("Utilities", "rbxassetid://79379082636309")
-local UtilGrp = UtilSub:AddLeftGroupbox("Tools", "wrench")
+local UtilityTab = Window:CreateTab({Name = "Utilities"})
+local UtilSub = UtilityTab:CreateSection("Utilities")
+local UtilGrp = UtilSub:CreateSection("Tools")
 
-UtilGrp:AddButton({ Text = "Check Account Ages", Callback = function()
+UtilGrp:CreateButton({Name = "Check Account Ages", Callback = function()
 	local allPlayers = Players:GetPlayers()
 	if #allPlayers==0 then notify("No players in the server.", "Warning"); return end
 	for _,player in ipairs(allPlayers) do
@@ -1678,18 +1351,15 @@ UtilGrp:AddButton({ Text = "Check Account Ages", Callback = function()
 		notify(player.Name..": "..ageDisplay..classification, "Info")
 		task.wait(2)
 	end
-end })
+end})
 
 local transparencyValue = 50
 
-UtilGrp:AddLabel("Warning: Applying transparency to breakables may lag.")
+UtilGrp:CreateLabel("Warning: Applying transparency to breakables may lag.")
 
-UtilGrp:AddSlider("BreakableTrans", {
-	Text = "Breakable Transparency", Min = 0, Max = 100, Default = 50, Rounding = 0,
-	Callback = function(Value) transparencyValue=Value end,
-})
+UtilGrp:CreateSlider({Name = "Breakable Transparency", Range = {0, 100}, Increment = 1, CurrentValue = 50, Callback = function(Value) transparencyValue=Value end})
 
-UtilGrp:AddButton({ Text = "Apply Transparency to Breakables", Callback = function()
+UtilGrp:CreateButton({Name = "Apply Transparency to Breakables", Callback = function()
 	local count=0
 	for _,obj in ipairs(workspace:GetDescendants()) do
 		if obj:IsA("BasePart") and obj:FindFirstChild("Breakable") then
@@ -1697,38 +1367,17 @@ UtilGrp:AddButton({ Text = "Apply Transparency to Breakables", Callback = functi
 		end
 	end
 	notify("Updated "..count.." breakable objects.", "Success")
-end })
+end})
 
--- ==================== SETTINGS TAB ====================
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
-local SettingsSub = SettingsTab:AddSubTab("Settings", "rbxassetid://79379082636309")
-local SettingsLeft = SettingsSub:AddLeftGroupbox("Credits", "heart")
-local SettingsRight = SettingsSub:AddRightGroupbox("Configuration", "save")
+local SettingsTab = Window:CreateTab({Name = "Settings"})
+local SettingsSub = SettingsTab:CreateSection("Settings")
+local SettingsLeft = SettingsSub:CreateSection("Credits")
+local SettingsRight = SettingsSub:CreateSection("Configuration")
 
--- ==================== LEFT: CREDITS ====================
-local CreditLabel = SettingsLeft:AddLabel({ Text = "Made by Mommy Veqxoo", DoesWrap = true, Size = 26 })
+local CreditLabel = SettingsLeft:CreateLabel("Made by Mommy Veqxoo")
 
 task.spawn(function()
 	task.wait(0.5)
-
-	local creditTextLabel = nil
-	pcall(function()
-		for _, desc in ipairs(Library.ScreenGui:GetDescendants()) do
-			if desc:IsA("TextLabel") and desc.Text:find("Veqxoo") then
-				creditTextLabel = desc
-				break
-			end
-		end
-	end)
-
-	if creditTextLabel then
-		creditTextLabel.RichText = false
-		creditTextLabel.TextColor3 = Color3.fromRGB(255, 105, 180)
-		creditTextLabel.Font = Enum.Font.GothamBold
-		creditTextLabel.TextSize = 26
-	end
-
-	task.wait(0.3)
 
 	local fullText = "Made by Mommy Veqxoo </3"
 	local cursor = "_"
@@ -1737,39 +1386,15 @@ task.spawn(function()
 			pcall(function()
 				CreditLabel:SetText(string.sub(fullText, 1, i) .. cursor)
 			end)
-			pcall(function()
-				if creditTextLabel and creditTextLabel.Parent then
-					creditTextLabel.RichText = false
-					creditTextLabel.TextColor3 = Color3.fromRGB(255, 105, 180)
-					creditTextLabel.Font = Enum.Font.GothamBold
-					creditTextLabel.TextSize = 26
-				end
-			end)
 			task.wait(0.06)
 		end
 		pcall(function()
 			CreditLabel:SetText(fullText)
 		end)
-		pcall(function()
-			if creditTextLabel and creditTextLabel.Parent then
-				creditTextLabel.RichText = false
-				creditTextLabel.TextColor3 = Color3.fromRGB(255, 105, 180)
-				creditTextLabel.Font = Enum.Font.GothamBold
-				creditTextLabel.TextSize = 26
-			end
-		end)
 		task.wait(1.5)
 		for i = #fullText, 0, -1 do
 			pcall(function()
 				CreditLabel:SetText(string.sub(fullText, 1, i) .. cursor)
-			end)
-			pcall(function()
-				if creditTextLabel and creditTextLabel.Parent then
-					creditTextLabel.RichText = false
-					creditTextLabel.TextColor3 = Color3.fromRGB(255, 105, 180)
-					creditTextLabel.Font = Enum.Font.GothamBold
-					creditTextLabel.TextSize = 26
-				end
 			end)
 			task.wait(0.03)
 		end
@@ -1777,177 +1402,140 @@ task.spawn(function()
 	end
 end)
 
--- ==================== LEFT: THEMES ====================
-SettingsLeft:AddLabel("Theme Colors")
+SettingsLeft:CreateLabel("Theme Colors")
 
-SettingsLeft:AddLabel("Background"):AddColorPicker("ThemeBG", {
-	Default = Color3.fromRGB(20, 20, 30),
-	Title = "Background Color",
-	Callback = function(Value)
-		pcall(function()
-			local gui = Library.ScreenGui
-			if gui then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("Frame") and obj.BackgroundTransparency < 0.5 then
-						obj.BackgroundColor3 = Value
-					end
+SettingsLeft:CreateColorPicker({Name = "Background", Color = Color3.fromRGB(20, 20, 30), Callback = function(Value)
+	pcall(function()
+		local gui = Library.ScreenGui
+		if gui then
+			for _, obj in ipairs(gui:GetDescendants()) do
+				if obj:IsA("Frame") and obj.BackgroundTransparency < 0.5 then
+					obj.BackgroundColor3 = Value
 				end
 			end
-		end)
-	end,
-})
+		end
+	end)
+end})
 
-SettingsLeft:AddLabel("Main"):AddColorPicker("ThemeMain", {
-	Default = Color3.fromRGB(30, 30, 45),
-	Title = "Main Color",
-	Callback = function(Value)
-		pcall(function()
-			local gui = Library.ScreenGui
-			if gui then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("Frame") and obj.BackgroundTransparency < 0.5 then
-						obj.BackgroundColor3 = Value
-					end
+SettingsLeft:CreateColorPicker({Name = "Main", Color = Color3.fromRGB(30, 30, 45), Callback = function(Value)
+	pcall(function()
+		local gui = Library.ScreenGui
+		if gui then
+			for _, obj in ipairs(gui:GetDescendants()) do
+				if obj:IsA("Frame") and obj.BackgroundTransparency < 0.5 then
+					obj.BackgroundColor3 = Value
 				end
 			end
-		end)
-	end,
-})
+		end
+	end)
+end})
 
-SettingsLeft:AddLabel("Accent"):AddColorPicker("ThemeAccent", {
-	Default = Color3.fromRGB(128, 0, 255),
-	Title = "Accent Color",
-	Callback = function(Value)
-		if Library.SetAccent then pcall(function() Library:SetAccent(Value) end) end
-	end,
-})
+SettingsLeft:CreateColorPicker({Name = "Accent", Color = Color3.fromRGB(128, 0, 255), Callback = function(Value)
+	if Library.SetAccent then pcall(function() Library:SetAccent(Value) end) end
+end})
 
-SettingsLeft:AddLabel("Outline"):AddColorPicker("ThemeOutline", {
-	Default = Color3.fromRGB(60, 60, 80),
-	Title = "Outline Color",
-	Callback = function(Value)
-		pcall(function()
-			local gui = Library.ScreenGui
-			if gui then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("UIStroke") then
-						obj.Color = Value
-					end
+SettingsLeft:CreateColorPicker({Name = "Outline", Color = Color3.fromRGB(60, 60, 80), Callback = function(Value)
+	pcall(function()
+		local gui = Library.ScreenGui
+		if gui then
+			for _, obj in ipairs(gui:GetDescendants()) do
+				if obj:IsA("UIStroke") then
+					obj.Color = Value
 				end
 			end
-		end)
-	end,
-})
+		end
+	end)
+end})
 
-SettingsLeft:AddLabel("Font"):AddColorPicker("ThemeFont", {
-	Default = Color3.fromRGB(255, 255, 255),
-	Title = "Font Color",
-	Callback = function(Value)
-		pcall(function()
-			local gui = Library.ScreenGui
-			if gui then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("TextLabel") or obj:IsA("TextButton") then
-						obj.TextColor3 = Value
-					end
+SettingsLeft:CreateColorPicker({Name = "Font", Color = Color3.fromRGB(255, 255, 255), Callback = function(Value)
+	pcall(function()
+		local gui = Library.ScreenGui
+		if gui then
+			for _, obj in ipairs(gui:GetDescendants()) do
+				if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+					obj.TextColor3 = Value
 				end
 			end
-		end)
-	end,
-})
+		end
+	end)
+end})
 
-SettingsLeft:AddDropdown("ThemeFontFace", {
-	Text = "Font Face", Values = {"Code", "Gotham", "GothamBold", "GothamMedium", "Legacy", "SourceSans", "SourceSansBold"}, Default = "Code",
-	Callback = function(Value)
-		pcall(function()
-			local gui = Library.ScreenGui
-			if gui then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
-						obj.Font = Enum.Font[Value] or Enum.Font.Code
-					end
+SettingsLeft:CreateDropdown({Name = "Font Face", Options = {"Code", "Gotham", "GothamBold", "GothamMedium", "Legacy", "SourceSans", "SourceSansBold"}, CurrentOption = "Code", Callback = function(Value)
+	pcall(function()
+		local gui = Library.ScreenGui
+		if gui then
+			for _, obj in ipairs(gui:GetDescendants()) do
+				if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
+					obj.Font = Enum.Font[Value] or Enum.Font.Code
 				end
 			end
-		end)
-	end,
-})
+		end
+	end)
+end})
 
-SettingsLeft:AddDropdown("ThemeList", {
-	Text = "Theme List", Values = {"Default", "Midnight", "Ocean", "Sunset", "Matrix"}, Default = "Default",
-	Callback = function(Value) notify("Theme: " .. Value, "Info") end,
-})
+SettingsLeft:CreateDropdown({Name = "Theme List", Options = {"Default", "Midnight", "Ocean", "Sunset", "Matrix"}, CurrentOption = "Default", Callback = function(Value) notify("Theme: " .. Value, "Info") end})
 
-SettingsLeft:AddButton({ Text = "Set as Default", Callback = function()
+SettingsLeft:CreateButton({Name = "Set as Default", Callback = function()
 	notify("Default theme saved", "Success")
-end })
+end})
 
--- ==================== RIGHT: CONFIGURATION ====================
-SettingsRight:AddLabel("Config Manager")
+SettingsRight:CreateLabel("Config Manager")
 
 configNameValue = ""
-ConfigNameInput = SettingsRight:AddInput("ConfigName", {
-	Text = "Config Name", Default = "", Placeholder = "myconfig",
-	Callback = function(v) configNameValue = v end,
-})
+ConfigNameInput = SettingsRight:CreateInput({Name = "Config Name", Default = "", Placeholder = "myconfig", Callback = function(v) configNameValue = v end})
 
-SettingsRight:AddButton({ Text = "Create Config", Callback = function() saveConfig(configNameValue) end })
+SettingsRight:CreateButton({Name = "Create Config", Callback = function() saveConfig(configNameValue) end})
 
 local initialNames = listConfigs()
 initialNames[#initialNames+1] = "---"
 
-ConfigListRef = SettingsRight:AddDropdown("ConfigList", {
-	Text = "Config List", Values = initialNames, Default = "---",
-	Callback = function(Value)
-		if Value ~= "---" then
-			configNameValue = Value
-			pcall(function() ConfigNameInput:Set(Value) end)
-		end
-	end,
-})
+ConfigListRef = SettingsRight:CreateDropdown({Name = "Config List", Options = initialNames, CurrentOption = "---", Callback = function(Value)
+	if Value ~= "---" then
+		configNameValue = Value
+		pcall(function() ConfigNameInput:Set(Value) end)
+	end
+end})
 
-SettingsRight:AddButton({ Text = "Load Config", Callback = function() loadConfig(configNameValue) end })
+SettingsRight:CreateButton({Name = "Load Config", Callback = function() loadConfig(configNameValue) end})
 
-SettingsRight:AddButton({ Text = "Overwrite Config", Callback = function()
+SettingsRight:CreateButton({Name = "Overwrite Config", Callback = function()
 	if not configNameValue or configNameValue == "" then
 		notify("Enter a config name first!", "Warning")
 		return
 	end
 	saveConfig(configNameValue)
-end })
+end})
 
-SettingsRight:AddButton({ Text = "Delete Config", Callback = function()
+SettingsRight:CreateButton({Name = "Delete Config", Callback = function()
 	deleteConfig(configNameValue)
 	local names = listConfigs()
 	names[#names+1] = "---"
 	if ConfigListRef then pcall(function() ConfigListRef:Refresh(names, "---") end) end
-end })
+end})
 
-SettingsRight:AddButton({ Text = "Refresh List", Callback = function()
+SettingsRight:CreateButton({Name = "Refresh List", Callback = function()
 	local names = listConfigs()
 	names[#names+1] = "---"
 	pcall(function() ConfigListRef:Refresh(names, "---") end)
 	notify("List refreshed ("..tostring(#names-1).." configs)", "Info")
-end })
+end})
 
-SettingsRight:AddButton({ Text = "Set as Autoload", Callback = function()
+SettingsRight:CreateButton({Name = "Set as Autoload", Callback = function()
 	setAutoload(configNameValue)
-	if autoloadLabel then pcall(function() autoloadLabel:Set("Current autoload config: " .. configNameValue) end) end
-end })
+	if autoloadLabel then pcall(function() autoloadLabel:SetText("Current autoload config: " .. configNameValue) end) end
+end})
 
-SettingsRight:AddButton({ Text = "Reset Autoload", Callback = function()
+SettingsRight:CreateButton({Name = "Reset Autoload", Callback = function()
 	clearAutoload()
-	if autoloadLabel then pcall(function() autoloadLabel:Set("Current autoload config: none") end) end
-end })
+	if autoloadLabel then pcall(function() autoloadLabel:SetText("Current autoload config: none") end) end
+end})
 
-autoloadLabel = SettingsRight:AddLabel("Current autoload config: none")
+autoloadLabel = SettingsRight:CreateLabel("Current autoload config: none")
 
 configJSONValue = ""
-SettingsRight:AddInput("ConfigJSON", {
-	Text = "Config JSON", Default = "", Placeholder = "paste config JSON here",
-	Callback = function(v) configJSONValue = v end,
-})
+SettingsRight:CreateInput({Name = "Config JSON", Default = "", Placeholder = "paste config JSON here", Callback = function(v) configJSONValue = v end})
 
-SettingsRight:AddButton({ Text = "Import Config", Callback = function()
+SettingsRight:CreateButton({Name = "Import Config", Callback = function()
 	if not configNameValue or configNameValue == "" then
 		notify("Enter a config name first!", "Warning")
 		return
@@ -1964,9 +1552,9 @@ SettingsRight:AddButton({ Text = "Import Config", Callback = function()
 	local path = CONFIG_SUBDIR .. "/" .. configNameValue .. ".json"
 	pcall(writefile, path, configJSONValue)
 	notify("Config imported: " .. configNameValue, "Success")
-end })
+end})
 
-SettingsRight:AddButton({ Text = "Export Current Config", Callback = function()
+SettingsRight:CreateButton({Name = "Export Current Config", Callback = function()
 	if not configNameValue or configNameValue == "" then
 		notify("Enter a config name first!", "Warning")
 		return
@@ -1981,9 +1569,9 @@ SettingsRight:AddButton({ Text = "Export Current Config", Callback = function()
 		pcall(setclipboard, raw)
 		notify("Config JSON copied to clipboard", "Success")
 	end
-end })
+end})
 
-SettingsRight:AddButton({ Text = "Unload Cheat", Callback = function()
+SettingsRight:CreateButton({Name = "Unload Cheat", Callback = function()
 	notify("Unloading...", "Warning")
 	NoRecoilSettings.Enabled=false
 	pcall(function() RunService:UnbindFromRenderStep("DynamicZeroRecoil") end)
@@ -2013,9 +1601,8 @@ SettingsRight:AddButton({ Text = "Unload Cheat", Callback = function()
 	screen_gui:Destroy()
 	pcall(function() Library.ScreenGui:Destroy() end)
 	notify("Cheat fully unloaded", "Info")
-end })
+end})
 
--- ==================== RIGHTSHIFT TOGGLE ====================
 local menuOpen = true
 
 UserInputService.InputBegan:Connect(function(input, gpe)
@@ -2044,7 +1631,6 @@ RunService.Heartbeat:Connect(function()
 	end
 end)
 
--- ==================== AUTOLOAD ON INJECT ====================
 task.delay(0.5, function()
 	if isfile(AUTOLOAD_PATH) then
 		local ok, name = pcall(readfile, AUTOLOAD_PATH)

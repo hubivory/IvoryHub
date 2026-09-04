@@ -1,193 +1,5 @@
 --!nocheck
 -- SellLemons.luau  --  "Sell Lemons"  (place 79268393072444, BloxByte Games)
---
--- A classic conveyor tycoon: 453 purchase buttons across thirteen areas, eight
--- income streams sitting on top of them, and a Rebirth -> Evolve -> Ascend
--- prestige ladder. Everything below was measured against the server through the
--- game's own client component API, which is the state oracle here:
---
---   local T  = require(ReplicatedStorage.Modules.Tycoon.Tycoon)
---   local lt = T.getLocal()
---   lt:GetComponent(require(ReplicatedStorage.Modules.Tycoon.Component.<X>))
---
--- and it is complete: TycoonBalances (cash, cashSpent, investors, tokens),
--- TycoonAnalyzer (all 453 purchases and all 8 earners, keyed by id, each with a
--- live .Instance), TycoonIncome, TycoonUpgrades, TycoonPowers, TycoonRebirth,
--- TycoonEvolution, TycoonAscension, TycoonPhoneOffers, TycoonCompanions.
---
--- ============================================================================
--- EVERY NUMBER IN THIS GAME IS A log10 FLOAT
--- ============================================================================
--- ReplicatedStorage.Modules.Huge is the game's own big-number library and every
--- currency, price, interval, income value and investor count is stored as its
--- base-10 logarithm. H.zero is -inf and H.one is 0, so a balance of $1 is the
--- number 0 and an empty balance is -inf. Verified:
---     H.toNumber(1.1760912590556813) = 15.0      H.formatTime(...)   = "15s"
---     H.formatAbbreviated(50.50261505280331)     = "318Qnd"
--- Never hand-roll a suffix table and never compare a Huge against a plain
--- number. H.formatAbbreviated is what the panel prints.
---
--- TRAP: the attribute and the component disagree. Values.Values carries
--- Investors = "0" as a STRING while TycoonBalances:GetInvestors() returns -inf.
--- The component is authoritative; the attributes are not.
---
--- TRAP: a purchase model's Name is not its Balance key. The model is called
--- "Lemon Stand", the id in Balance.PurchaseOrder / PurchasePrices is
--- "LemonStand". Only TycoonAnalyzer:GetPurchases() knows the mapping, so this
--- file never derives an id from a name.
---
--- ============================================================================
--- MEASURED, ALL OF IT, WITH THE AUTOMATION OFF
--- ============================================================================
---
---  * THE TYCOON ITSELF HAS NO PROXIMITY CHECK ANYWHERE. A purchase fired from
---    578 studs above the plot went through at the exact quoted price (cash $14
---    -> $8 for the $6 Juicer, Purchased flipped true). Waking a stream from 576
---    studs paid identically to waking it from 9 studs: +$76.28 in the same 10s
---    window, both times. Buying, upgrading, waking, the minigames, the drops
---    and the phone offers all work with the body parked wherever it stands.
---
---  * FRUIT IS THE EXCEPTION, AND IT IS ALSO THE BIGGEST EARNER IN THE GAME.
---    Five clicks on map fruit from 204 studs paid exactly 0. The same five from
---    6.2 studs paid twice. The ClickDetector's MaxActivationDistance is 16 and
---    the server honours it, so this is the one thing here that needs the body
---    moved - which is why harvestFruit() teleports and everything else does not.
---    Worth it: a 25-fruit teleport sweep took 6.6s, 9 of the 25 paid, and the
---    total was $3.21 QUADRILLION - about $483 trillion a second, against roughly
---    $25 billion a second from the trade minigame at the same moment.
---
---  * KLICKEN is earner:WakeAsync() -> TycoonIncome:WakeManualStreamAsync(name).
---    A stream with Automatic = false pays nothing on its own, so early on this
---    is the entire income. Payouts are server rate limited and SUBLINEAR in the
---    number of calls - 6s windows, same stream, $3.81 a payout:
---        0.5s spacing / 12 calls -> 6 payouts      0.1s  /  60 -> 9
---        0.3s spacing / 20 calls -> 7 payouts      0.05s / 120 -> 13
---        0.2s spacing / 30 calls -> 7 payouts
---    A separate 10s window at 0.5s spacing paid 20 times for 20 calls, which
---    only fits a token bucket: full after an idle stretch, burstable once, then
---    refilling at roughly the stream interval. Hammering it is therefore mostly
---    wasted, which is why the default spacing is 0.15s and not 0.
---
---  * VERBESSERN is earner:UpgradeAsync(n) -> the earner's Upgrade
---    RemoteFunction. UpgradeAsync(1) took LemonStand level 1 -> 2, charged
---    exactly the quoted $7.65 and moved the stream value $3.81 -> $5.84.
---    UpgradeAsync(10) DID NOTHING AT ALL - level, cash and stream value all
---    unchanged. The server silently drops any n above Count, and Count comes
---    from GetNextUpgradeInfo() and is driven by the UpgradeStack power (1 while
---    that power is unowned, then 5 / 25 / 100 / inf).
---    Both published scripts get this wrong: one doubles n (1, 2, 4, 8 ...) and
---    the other loops i = 1..10. Only the n = 1 call ever lands, and because the
---    remote answers without erroring their pcall still reports success.
---
---  * THE POWERS ARE PRICED IN INVESTORS, NOT CASH. Attempting Manage with $647
---    in the bank and zero investors answered, verbatim:
---        ServerTycoonPowers:130: insufficient investors
---    Tokens (25 on a fresh save) are not the powers currency either. Investors
---    come out of Rebirth, so Rebirth gates the powers and the powers gate
---    everything else. Investors are CONSUMED, not just required - buying one
---    took the balance 176 -> 76. Config.Powers prices, in investors:
---        Manage           100                     (no Bonuses table)
---        ClickFruitValue  250 / 1e6 / 1e18        Amt 2/4/6, Mult 2/4/8
---        WalkSpeed        400 / 1e9 / 1e27 / 1e72 1.5 / 2 / 3 / 4
---        UpgradeStack     1e3 / 1e12 / 1e33 / 1e63  Count 5 / 25 / 100 / inf
---        BuyNext          1e38 / 1e67 / 1e93      150 / 250 / inf
---        AutoFruit        1e42
---    Each one also carries a DevProductID, which is the Robux shortcut. This
---    file only ever spends investors.
---
---  * MANAGE IS 100 INVESTORS FOR A HUD TAB. It was bought to find out: level
---    0 -> 1, investors 176 -> 76, and nothing else moved - no stream turned
---    automatic, the upgrade Count stayed 1, income was unchanged. A getgc sweep
---    for the string finds it referenced only by UI.Layers.Manage.UIManageMenu
---    and the orchard billboard. It is a menu unlock, so this file skips it.
---
---  * REBIRTH, MEASURED END TO END. 93 buttons and $558Qn with 175 potential
---    investors went to 3 buttons, $31 and 176 investors, rebirths 0 -> 1. It
---    wipes the purchases and the balance and pays out the potential in full.
---
---  * THE TRADE MINIGAME IS THE BIGGEST LEVER IN THE GAME.
---    MinigameTradeService.Start returns {MaxEarnings, StartingCash, LineConfig}
---    where MaxEarnings is the server's own statement of a perfect run. Passing
---    that number straight back to .End paid +$7,548,571,798 in one call (cash
---    $368M -> $7.92B). 300s cooldown. This script submits the announced
---    MaxEarnings and nothing above it - that is playing the round perfectly,
---    not inventing a result.
---
---  * THE RACE MINIGAME PAYS ON A CLIENT-SUPPLIED PLACEMENT.
---    Config.MinigameRacePlacementCash = {[1] = 1, [2] = 0.5, [3] = 0.25,
---    [4] = 0}. Start returns the full prize up front, End(n) pays prize *
---    factor[n]. End(1) paid the announced $229 in full ($8 -> $237). 300s.
---
---  * CASH DROPS ARE REDEEMED BY ID AND TOUCHING THEM DOES NOTHING.
---    RemoteSignal "DropService.New" fires (id, kind, lifetime) - measured
---    ("994", "Cash", 1200). RemoteRequest "DropService.Redeem":InvokeServer(id)
---    answered 12.798968597564983, which is $6.3 TRILLION. Dragging the body
---    through the CashDrop part in workspace.Drops left it sitting there.
---    NOTE: the most-viewed published script listens on "CashDropService.New"
---    and "CashDropService.Redeem", neither of which exists in this place. Its
---    drop collector is dead code.
---
---  * PHONE OFFERS CAN BE HAGGLED, AND HAGGLING TOO HARD LOSES THEM.
---    The offer arrives on the tycoon's PhoneOffer RemoteEvent as a Huge number.
---    PhoneOffers:RaiseOffer() raised one from $12.336B -> $17.275B (+40%) and
---    then -> $19.088B (+10%). The THIRD raise returned the offer as nil - the
---    deal was gone. Measured once, so it is probably a per-raise roll; the
---    default here is one raise and the stepper stops at two.
---
---  * A FRUIT IS RIPE EXACTLY WHEN IT STILL HAS ITS ClickFruitPart.
---    Around 820 parts carry the ClickFruit tag across the whole map. A ripe one
---    is Transparency 0 and owns Fruit.ClickFruitPart.ClickDetector; a harvested
---    one is Transparency 1 and the ClickFruitPart is gone entirely, so the
---    presence of that child IS the ripeness test and nothing else has to be
---    read. They regrow on their own.
---    That test is what fixed the first version of this file: it filtered to the
---    player's own tycoon, and after one sweep all 36 fruits there were
---    transparent and detector-less while 448 ripe ones stood on the map trees
---    being ignored. Own plot, map trees and other players' plots all pay - the
---    only thing that matters is the detector and standing next to it.
---
---  * SpecialIncome IS THE PAYOUT ORACLE. The tycoon's SpecialIncome RemoteEvent
---    fires (sourceName, hugeAmount) for every one-off payout - "ClickFruit",
---    "MinigameRace" and so on. That is how this file reports what each feature
---    actually earned instead of guessing from the balance.
---
---  * THE PRESTIGE FORMULAS, read off the components:
---      GetPotentialInvestors = investors + cashToNewInvestors(cash + cashSpent)
---        with Balance.RebirthParameters.Investors = {1.8e17, 0.44}. Spending is
---        therefore never a loss - cashSpent counts towards the next rebirth
---        exactly as unspent cash does, which is why this file spends freely.
---      GetEvolutionProgress = (investors + investorsSpent + potential)
---                             / nextEvolutionInvestors(evolution), evolve at 1.
---      GetAscensionProgress = purchasedCount / 453, ascend at 1.
---      Rebirth / Evolve / Ascend all take NO arguments.
---      Config: EvolutionMultiplier 42, AscensionMultiplier 7.77,
---              AscensionPenalty 3.33, BaseInvestorBonus 0.01.
---
--- ============================================================================
--- NEVER TOUCHED
--- ============================================================================
---  * Purchase:InvokeServer(true) - the "forever purchase". Config.Products
---    lists PermanentPurchase with DevProductID 3558362570, so the published
---    scripts' "Use Forever Purchase" option is a Robux prompt. This file always
---    calls TryPurchaseAsync(), which sends no argument.
---  * earner:PromptBoostAsync() / GetBoostProductName() - EarnerBoost1..8, Robux.
---  * UseTimeCash / UseEarnerBoost / DoubleOfflineCash / FreeRebirth /
---    FreeEvolve / InvestorBoost / RateBoost - every one of them is a DevProduct.
---  * VideoAdService.ShowAd - free, but it plays a real rewarded video at the
---    player. Left out rather than made a surprise.
---  * Core.AdminService.RunCommandRemote - present, never fired.
---
--- ============================================================================
--- UNVERIFIED, AND SAID SO IN THE PANEL
--- ============================================================================
--- The whole Orchard subsystem is gated behind Config.Orchard.UnlockCashPrice =
--- 1e25 and the test account never got within twelve orders of magnitude of it,
--- so none of the orchard code below has ever been executed against a live
--- server. It is written from the module API (OrchardPlot.States = Empty 0,
--- TreeGrowing 1, FruitGrowing 2, FruitReady 3; RemoteRequest OrchardPlot.Plant
--- / .Harvest / .GetFruit / .UseItem / .SellUpgrade / .DestroyTree; the tycoon's
--- UnlockOrchard / UnlockPlot / SellFruits / EatFruit remotes) and it ships OFF.
--- Treat anything it reports as a claim, not a measurement.
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -195,10 +7,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 
 local plr = Players.LocalPlayer
-
---------------------------------------------------------------------------------
--- config / state
---------------------------------------------------------------------------------
 
 local CONFIG = {
 	auto = false,
@@ -246,10 +54,6 @@ local STATE = {
 _G.__LEMON = (_G.__LEMON or 0) + 1
 local GEN = _G.__LEMON
 
---------------------------------------------------------------------------------
--- module access
---------------------------------------------------------------------------------
-
 local function req(module)
 	if not module then return nil, "no module" end
 	if setthreadidentity then pcall(setthreadidentity, 2) end
@@ -276,10 +80,6 @@ if not Huge then
 	warn("[Ivory] Modules.Huge missing - wrong game?")
 	return
 end
-
---------------------------------------------------------------------------------
--- Huge helpers
---------------------------------------------------------------------------------
 
 local NONE = -math.huge
 
@@ -322,10 +122,6 @@ local function short(n)
 	if type(n) ~= "number" or n <= 0 then return "0" end
 	return fmt(toHuge(n))
 end
-
---------------------------------------------------------------------------------
--- the tycoon and its components
---------------------------------------------------------------------------------
 
 local Tycoon = req(path(ReplicatedStorage, "Modules", "Tycoon", "Tycoon"))
 local ComponentFolder = path(ReplicatedStorage, "Modules", "Tycoon", "Component")
@@ -376,10 +172,6 @@ local function coreSignal(name)
 	return folder and folder:FindFirstChild(name)
 end
 
---------------------------------------------------------------------------------
--- oracle reads
---------------------------------------------------------------------------------
-
 local function balances() return comp("TycoonBalances") end
 local function analyzer() return comp("TycoonAnalyzer") end
 local function income() return comp("TycoonIncome") end
@@ -403,10 +195,6 @@ local function canAfford(price)
 	if hugeIsZero(price) then return true end
 	return atLeast(cash(), price)
 end
-
---------------------------------------------------------------------------------
--- KAUFEN - the 453-button ladder
---------------------------------------------------------------------------------
 
 local function nextPurchase()
 	local a = analyzer()
@@ -439,10 +227,6 @@ local function stepBuy()
 		STATE.note = "bought " .. tostring(id)
 	end
 end
-
---------------------------------------------------------------------------------
--- VERBESSERN - the earner upgrades
---------------------------------------------------------------------------------
 
 local function earnerList()
 	local a = analyzer()
@@ -479,10 +263,6 @@ local function stepUpgrade()
 	end
 end
 
---------------------------------------------------------------------------------
--- KLICKEN - waking the manual streams
---------------------------------------------------------------------------------
-
 local function stepWake()
 	local inc = income()
 	if not inc then return end
@@ -518,10 +298,6 @@ local function readStreams()
 	end)
 	STATE.streams = rows
 end
-
---------------------------------------------------------------------------------
--- fruit
---------------------------------------------------------------------------------
 
 local FRUIT_REACH = 16
 local FRUIT_HOP = 0.1
@@ -592,10 +368,6 @@ local function stepFruit()
 	if back and home then pcall(function() back.CFrame = home end) end
 end
 
---------------------------------------------------------------------------------
--- the two minigames
---------------------------------------------------------------------------------
-
 local function raceAvailableAt()
 	local svc = req(path(ReplicatedStorage, "Modules", "Service", "MinigameRaceService"))
 	if not svc or not svc.GetRaceAvailableTime then return math.huge end
@@ -646,10 +418,6 @@ local function stepTrade()
 	end
 end
 
---------------------------------------------------------------------------------
--- cash drops
---------------------------------------------------------------------------------
-
 local dropQueue = {}
 
 local function armDrops()
@@ -673,10 +441,6 @@ local function stepDrops()
 		STATE.note = "drop " .. tostring(id) .. " = " .. fmt(value)
 	end
 end
-
---------------------------------------------------------------------------------
--- phone offers
---------------------------------------------------------------------------------
 
 local function currentOffer()
 	local po = phoneOffers()
@@ -715,10 +479,6 @@ local function stepOffer()
 		STATE.note = "offer accepted " .. fmt(value) .. (raised > 0 and (" (+" .. raised .. " raise)") or "")
 	end
 end
-
---------------------------------------------------------------------------------
--- powers - the investor spend
---------------------------------------------------------------------------------
 
 local POWER_ORDER = { "ClickFruitValue", "UpgradeStack", "BuyNext", "AutoFruit", "Manage", "WalkSpeed" }
 local SKIP_POWERS = { Manage = true, WalkSpeed = true }
@@ -776,10 +536,6 @@ local function stepPowers()
 	STATE.nextPowerPrice = firstPrice
 end
 
---------------------------------------------------------------------------------
--- prestige
---------------------------------------------------------------------------------
-
 local function potentialInvestors()
 	local r = rebirth()
 	if not r then return NONE end
@@ -836,10 +592,6 @@ local function stepAscend()
 	end
 end
 
---------------------------------------------------------------------------------
--- companions
---------------------------------------------------------------------------------
-
 local function stepCompanions()
 	local c = companions()
 	if not c then return end
@@ -857,10 +609,6 @@ local function stepCompanions()
 		end
 	end
 end
-
---------------------------------------------------------------------------------
--- orchard - UNVERIFIED
---------------------------------------------------------------------------------
 
 local PLOT_EMPTY, PLOT_TREE_GROWING, PLOT_FRUIT_GROWING, PLOT_FRUIT_READY = 0, 1, 2, 3
 
@@ -933,10 +681,6 @@ local function stepOrchard()
 		ready, planted, unlockedNow)
 end
 
---------------------------------------------------------------------------------
--- the SpecialIncome tap
---------------------------------------------------------------------------------
-
 local function armSpecialIncome()
 	if _G.__LEMON_SICONN then pcall(function() _G.__LEMON_SICONN:Disconnect() end) end
 	local remote = tycoonRemote("SpecialIncome")
@@ -948,10 +692,6 @@ local function armSpecialIncome()
 		end
 	end)
 end
-
---------------------------------------------------------------------------------
--- state refresh
---------------------------------------------------------------------------------
 
 local RATE_WINDOW = 8
 
@@ -1005,10 +745,6 @@ local function refresh()
 	end
 end
 
---------------------------------------------------------------------------------
--- loops
---------------------------------------------------------------------------------
-
 local function loop(interval, key, fn)
 	task.spawn(function()
 		while GEN == _G.__LEMON do
@@ -1056,417 +792,112 @@ armDrops()
 armSpecialIncome()
 
 --------------------------------------------------------------------------------
--- ObsidianUltra UI
+-- UI (Ivory Hub Sakura Edition)
 --------------------------------------------------------------------------------
 
-local function httpGet(url)
-	local ok, res = pcall(function()
-		return request({ Url = url, Method = "GET" })
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	local ok, src = pcall(function()
+		return request({
+			Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+			Method = "GET"
+		}).Body
 	end)
-	if ok and res and res.Body then
-		local body = res.Body
-		if body:byte(1) == 0xEF and body:byte(2) == 0xBB and body:byte(3) == 0xBF then
-			body = body:sub(4)
-		end
-		return body
-	end
-	return nil
+	if ok then LIB_SRC = src end
 end
-
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local genv = getgenv()
-
-local oldCloneref = genv.cloneref
-genv.cloneref = function(obj)
-	if typeof(obj) == "Instance" then return obj end
-	if obj == nil then return nil end
-	return obj
-end
-
-local libSrc = genv._IvoryLibSrc or httpGet(repo .. "Library.lua")
-local tmSrc = genv._IvoryTMSrc or httpGet(repo .. "addons/ThemeManager.lua")
-local smSrc = genv._IvorySMSrc or httpGet(repo .. "addons/SaveManager.lua")
-
-local Library, ThemeManager, SaveManager
-
-if libSrc then
-	local ls, le = loadstring(libSrc)
-	if ls then
-		local ok, lib = pcall(ls)
-		if ok then Library = lib end
-		if not ok then warn("[Ivory] Library init failed:", lib) end
-	else
-		warn("[Ivory] Library compile failed:", le)
-	end
-end
+local Library = loadstring(LIB_SRC)()
 
 if not Library then
-	warn("[Ivory] ObsidianUltra failed to load - aborting")
+	warn("[Ivory] Library failed to load - aborting")
 	return
 end
-
-if tmSrc then
-	local ls = loadstring(tmSrc)
-	if ls then
-		local ok, tm = pcall(ls)
-		if ok then ThemeManager = tm end
-	end
-end
-
-if smSrc then
-	local ls = loadstring(smSrc)
-	if ls then
-		local ok, sm = pcall(ls)
-		if ok then SaveManager = sm end
-	end
-end
-
-genv.cloneref = oldCloneref
-
-local Options = Library.Options
-local Toggles = Library.Toggles
-
-Library.ForceCheckbox = false
-Library.ShowToggleFrameInKeybinds = true
-
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub")
-SaveManager:SetSubFolder("game")
 
 if _G.__LEMON_WIN then
 	pcall(function() _G.__LEMON_WIN:Destroy() end)
 end
 
-local Window = Library:CreateWindow({
-	Title = "Ivory",
-	Icon = "swords",
-	Footer = {
-		"v1.4 |",
-		{ Text = "Game", Copyable = true },
-		"|",
-		{ Text = tostring(plr.UserId), Copyable = true },
-	},
-	CopyableFooter = true,
-	FuzzySearch = true,
-	SearchValues = true,
-	Minimizable = true,
-	MinimizeKeybind = Enum.KeyCode.RightBracket,
-	MinimizedWidth = 280,
-	NotifySide = "Right",
-	ShowCustomCursor = true,
-	SearchKeybind = Enum.KeyCode.F,
-	CornerRadius = 4,
-	Animations = {
-		ToggleWindow = false,
-		TabSwitch = false,
-		Groupbox = false,
-		Dropdown = false,
-		KeyPicker = false,
-		SubTabUnderline = true,
-	},
-})
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
+local Window = Library.CreateWindow({Name = "Ivory", Width = 460, Height = 360, Minimizable = true, NotifySide = "Right", ShowCustomCursor = true, CornerRadius = 4})
 _G.__LEMON_WIN = Window
 
---------------------------------------------------------------------------------
--- tabs & sub-tabs
---------------------------------------------------------------------------------
+local MainTab = Window:CreateTab({Name = "Main"})
+local SettingsTab = Window:CreateTab({Name = "Settings"})
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
+local AutoSub = MainTab:CreateSection("Automation")
+local FruitSub = MainTab:CreateSection("Fruit")
+local PrestigeSub = MainTab:CreateSection("Prestige")
+local StatusSub = MainTab:CreateSection("Status")
 
-local AutoSub = MainTab:AddSubTab("Automation", "rbxassetid://79379082636309")
-local FruitSub = MainTab:AddSubTab("Fruit", "rbxassetid://79379082636309")
-local PrestigeSub = MainTab:AddSubTab("Prestige", "rbxassetid://79379082636309")
-local StatusSub = MainTab:AddSubTab("Status", "rbxassetid://79379082636309")
+local TycoonGroup = AutoSub:CreateSection("Tycoon")
+local MinigameGroup = AutoSub:CreateSection("Minigames")
 
---------------------------------------------------------------------------------
--- Automation: Tycoon
---------------------------------------------------------------------------------
-
-local TycoonGroup = AutoSub:AddLeftGroupbox("Tycoon", "cpu")
-local MinigameGroup = AutoSub:AddRightGroupbox("Minigames", "gamepad")
-
-TycoonGroup:AddButton("Join Discord For Dupe", function()
+TycoonGroup:CreateButton({Name = "Join Discord For Dupe", Callback = function()
 	pcall(function() setclipboard("https://discord.gg/ivory") end)
-	Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 })
-end)
+	Library.Notify({Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3})
+end})
 
-TycoonGroup:AddToggle("AutoFarm", {
-	Text = "Auto Farm",
-	Default = CONFIG.auto,
-	Callback = function(v)
-		CONFIG.auto = v
-		STATE.note = v and "running" or "stopped"
-	end,
-}):AddKeyPicker("AutoFarmKey", {
-	Default = "None", Text = "Auto Farm Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
-})
+TycoonGroup:CreateToggle({Name = "Auto Farm", CurrentValue = CONFIG.auto, Callback = function(v)
+	CONFIG.auto = v
+	STATE.note = v and "running" or "stopped"
+end})
 
-TycoonGroup:AddToggle("AutoBuy", {
-	Text = "Auto Buy",
-	Default = CONFIG.autoBuy,
-	Callback = function(v) CONFIG.autoBuy = v end,
-})
+TycoonGroup:CreateToggle({Name = "Auto Buy", CurrentValue = CONFIG.autoBuy, Callback = function(v) CONFIG.autoBuy = v end})
 
-TycoonGroup:AddToggle("AutoUpgrade", {
-	Text = "Auto Upgrade",
-	Default = CONFIG.autoUpgrade,
-	Callback = function(v) CONFIG.autoUpgrade = v end,
-})
+TycoonGroup:CreateToggle({Name = "Auto Upgrade", CurrentValue = CONFIG.autoUpgrade, Callback = function(v) CONFIG.autoUpgrade = v end})
 
-TycoonGroup:AddToggle("AutoWake", {
-	Text = "Auto Click Earners",
-	Default = CONFIG.autoWake,
-	Callback = function(v) CONFIG.autoWake = v end,
-})
+TycoonGroup:CreateToggle({Name = "Auto Click Earners", CurrentValue = CONFIG.autoWake, Callback = function(v) CONFIG.autoWake = v end})
 
-TycoonGroup:AddSlider("WakeSpacing", {
-	Text = "Click Spacing (s)",
-	Default = math.floor((CONFIG.wakeSpacing or 0.15) * 100),
-	Min = 5,
-	Max = 100,
-	Rounding = 0,
-	Callback = function(v) CONFIG.wakeSpacing = v / 100 end,
-})
+TycoonGroup:CreateSlider({Name = "Click Spacing (s)", Range = {5, 100}, Increment = 1, CurrentValue = math.floor((CONFIG.wakeSpacing or 0.15) * 100), Callback = function(v) CONFIG.wakeSpacing = v / 100 end})
 
---------------------------------------------------------------------------------
--- Automation: Minigames
---------------------------------------------------------------------------------
+MinigameGroup:CreateToggle({Name = "Auto Race", CurrentValue = CONFIG.autoRace, Callback = function(v) CONFIG.autoRace = v end})
 
-MinigameGroup:AddToggle("AutoRace", {
-	Text = "Auto Race",
-	Default = CONFIG.autoRace,
-	Callback = function(v) CONFIG.autoRace = v end,
-})
+MinigameGroup:CreateToggle({Name = "Auto Trade", CurrentValue = CONFIG.autoTrade, Callback = function(v) CONFIG.autoTrade = v end})
 
-MinigameGroup:AddToggle("AutoTrade", {
-	Text = "Auto Trade",
-	Default = CONFIG.autoTrade,
-	Callback = function(v) CONFIG.autoTrade = v end,
-})
+MinigameGroup:CreateToggle({Name = "Auto Cash Drops", CurrentValue = CONFIG.autoDrops, Callback = function(v) CONFIG.autoDrops = v end})
 
-MinigameGroup:AddToggle("AutoDrops", {
-	Text = "Auto Cash Drops",
-	Default = CONFIG.autoDrops,
-	Callback = function(v) CONFIG.autoDrops = v end,
-})
+MinigameGroup:CreateToggle({Name = "Auto Phone Offers", CurrentValue = CONFIG.autoOffers, Callback = function(v) CONFIG.autoOffers = v end})
 
-MinigameGroup:AddToggle("AutoOffers", {
-	Text = "Auto Phone Offers",
-	Default = CONFIG.autoOffers,
-	Callback = function(v) CONFIG.autoOffers = v end,
-})
+MinigameGroup:CreateSlider({Name = "Haggle Raises", Range = {0, 2}, Increment = 1, CurrentValue = CONFIG.offerRaises or 0, Callback = function(v) CONFIG.offerRaises = v end})
 
-MinigameGroup:AddSlider("OfferRaises", {
-	Text = "Haggle Raises",
-	Default = CONFIG.offerRaises or 0,
-	Min = 0,
-	Max = 2,
-	Rounding = 0,
-	Callback = function(v) CONFIG.offerRaises = v end,
-})
+local HarvestGroup = FruitSub:CreateSection("Tree Harvest")
+local OrchardGroup = FruitSub:CreateSection("Orchard")
 
---------------------------------------------------------------------------------
--- Fruit: Harvest
---------------------------------------------------------------------------------
+HarvestGroup:CreateToggle({Name = "Auto Fruit", CurrentValue = CONFIG.autoFruit, Callback = function(v) CONFIG.autoFruit = v end})
 
-local HarvestGroup = FruitSub:AddLeftGroupbox("Tree Harvest", "tree")
-local OrchardGroup = FruitSub:AddRightGroupbox("Orchard", "flower")
+HarvestGroup:CreateSlider({Name = "Fruit Per Sweep", Range = {10, 200}, Increment = 1, CurrentValue = CONFIG.fruitPerSweep or 30, Callback = function(v) CONFIG.fruitPerSweep = v end})
 
-HarvestGroup:AddToggle("AutoFruit", {
-	Text = "Auto Fruit",
-	Default = CONFIG.autoFruit,
-	Callback = function(v) CONFIG.autoFruit = v end,
-})
+OrchardGroup:CreateToggle({Name = "Auto Orchard", CurrentValue = CONFIG.autoOrchard, Callback = function(v) CONFIG.autoOrchard = v end})
 
-HarvestGroup:AddSlider("FruitPerSweep", {
-	Text = "Fruit Per Sweep",
-	Default = CONFIG.fruitPerSweep or 30,
-	Min = 10,
-	Max = 200,
-	Rounding = 0,
-	Callback = function(v) CONFIG.fruitPerSweep = v end,
-})
+local PowersGroup = PrestigeSub:CreateSection("Powers")
+local PrestigeControlGroup = PrestigeSub:CreateSection("Prestige Controls")
 
-OrchardGroup:AddToggle("AutoOrchard", {
-	Text = "Auto Orchard",
-	Default = CONFIG.autoOrchard,
-	Callback = function(v) CONFIG.autoOrchard = v end,
-})
+PowersGroup:CreateToggle({Name = "Auto Powers", CurrentValue = CONFIG.autoPowers, Callback = function(v) CONFIG.autoPowers = v end})
 
-local orchardStatusLabel = OrchardGroup:AddLabel("Status: off (unverified)")
+PowersGroup:CreateToggle({Name = "Buy Manage & WalkSpeed", CurrentValue = CONFIG.buyCosmeticPowers, Callback = function(v) CONFIG.buyCosmeticPowers = v end})
 
-OrchardGroup:AddLabel("UNVERIFIED - never reached in testing")
-OrchardGroup:AddLabel("Robux is never touched: no boosts, no forever purchase")
+PrestigeControlGroup:CreateToggle({Name = "Auto Rebirth", CurrentValue = CONFIG.autoRebirth, Callback = function(v) CONFIG.autoRebirth = v end})
 
---------------------------------------------------------------------------------
--- Prestige: Powers
---------------------------------------------------------------------------------
+PrestigeControlGroup:CreateSlider({Name = "Rebirth At (x)", Range = {2, 100}, Increment = 1, CurrentValue = CONFIG.rebirthFactor or 10, Callback = function(v) CONFIG.rebirthFactor = v end})
 
-local PowersGroup = PrestigeSub:AddLeftGroupbox("Powers", "shield")
-local PrestigeControlGroup = PrestigeSub:AddRightGroupbox("Prestige Controls", "refresh-cw")
+PrestigeControlGroup:CreateDropdown({Name = "Never Below", Options = { "10", "100", "1000", "10000", "100000" }, CurrentOption = tostring(CONFIG.rebirthMinimum or 100), Callback = function(v) CONFIG.rebirthMinimum = tonumber(v) or 100 end})
 
-PowersGroup:AddToggle("AutoPowers", {
-	Text = "Auto Powers",
-	Default = CONFIG.autoPowers,
-	Callback = function(v) CONFIG.autoPowers = v end,
-})
+PrestigeControlGroup:CreateToggle({Name = "Auto Evolve", CurrentValue = CONFIG.autoEvolve, Callback = function(v) CONFIG.autoEvolve = v end})
 
-PowersGroup:AddToggle("BuyCosmeticPowers", {
-	Text = "Buy Manage & WalkSpeed",
-	Default = CONFIG.buyCosmeticPowers,
-	Callback = function(v) CONFIG.buyCosmeticPowers = v end,
-})
+PrestigeControlGroup:CreateToggle({Name = "Auto Ascend", CurrentValue = CONFIG.autoAscend, Callback = function(v) CONFIG.autoAscend = v end})
 
-local nextPowerLabel = PowersGroup:AddLabel("Next Power: -")
+local EconomyGroup = StatusSub:CreateSection("Economy")
+local ActivityGroup = StatusSub:CreateSection("Activity")
 
---------------------------------------------------------------------------------
--- Prestige: Controls
---------------------------------------------------------------------------------
+local MenuGroup = SettingsTab:CreateSection("Menu")
 
-PrestigeControlGroup:AddToggle("AutoRebirth", {
-	Text = "Auto Rebirth",
-	Default = CONFIG.autoRebirth,
-	Callback = function(v) CONFIG.autoRebirth = v end,
-})
+MenuGroup:CreateButton({Name = "Test Notification", Callback = function()
+	Library.Notify({Title = "Ivory", Content = "Test notification!", Type = "Info", Duration = 3})
+end})
 
-PrestigeControlGroup:AddSlider("RebirthFactor", {
-	Text = "Rebirth At (x)",
-	Default = CONFIG.rebirthFactor or 10,
-	Min = 2,
-	Max = 100,
-	Rounding = 0,
-	Callback = function(v) CONFIG.rebirthFactor = v end,
-})
-
-PrestigeControlGroup:AddDropdown("RebirthMinimum", {
-	Values = { "10", "100", "1000", "10000", "100000" },
-	Default = tostring(CONFIG.rebirthMinimum or 100),
-	Text = "Never Below",
-	Callback = function(v) CONFIG.rebirthMinimum = tonumber(v) or 100 end,
-})
-
-PrestigeControlGroup:AddToggle("AutoEvolve", {
-	Text = "Auto Evolve",
-	Default = CONFIG.autoEvolve,
-	Callback = function(v) CONFIG.autoEvolve = v end,
-})
-
-PrestigeControlGroup:AddToggle("AutoAscend", {
-	Text = "Auto Ascend",
-	Default = CONFIG.autoAscend,
-	Callback = function(v) CONFIG.autoAscend = v end,
-})
-
---------------------------------------------------------------------------------
--- Status
---------------------------------------------------------------------------------
-
-local EconomyGroup = StatusSub:AddLeftGroupbox("Economy", "dollar-sign")
-local ActivityGroup = StatusSub:AddRightGroupbox("Activity", "bar-chart")
-
-local statusLabel = EconomyGroup:AddLabel("Loading...")
-local streamLabel = ActivityGroup:AddLabel("No streams yet")
-local counterLabel = ActivityGroup:AddLabel("...")
-
---------------------------------------------------------------------------------
--- Settings
---------------------------------------------------------------------------------
-
-ThemeManager:ApplyToTab(SettingsTab)
-SaveManager:BuildConfigSection(SettingsTab)
-
-local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "settings")
-
-MenuGroup:AddToggle("MenuToggle", {
-	Text = "Toggle Menu",
-	Default = false,
-}):AddKeyPicker("MenuKeybind", {
-	Default = "RightShift",
-	Text = "Menu Keybind",
-	Mode = "Toggle",
-	SyncToggleState = false,
-	NoUI = false,
-})
-
-MenuGroup:AddToggle("CustomCursor", {
-	Text = "Custom Cursor",
-	Default = true,
-	Callback = function(v) Library.ShowCustomCursor = v end,
-})
-
-MenuGroup:AddButton("Test Notification", function()
-	Library:Notify({ Title = "Ivory", Description = "Test notification!", Type = "Info", Time = 3 })
-end)
-
-MenuGroup:AddDropdown("NotifySide", {
-	Values = { "Right", "Left" },
-	Default = "Right",
-	Text = "Notification Side",
-	Callback = function(v) Library.NotifySide = v end,
-})
-
-MenuGroup:AddDropdown("DPIScale", {
-	Values = { "50%", "75%", "100%", "125%", "150%", "175%", "200%" },
-	Default = "100%",
-	Text = "DPI Scale",
-	Callback = function(v)
-		local scale = tonumber(v:gsub("%%", "")) / 100
-		Library.DPI = scale
-	end,
-})
-
-MenuGroup:AddSlider("CornerRadius", {
-	Text = "Corner Radius",
-	Default = 4,
-	Min = 0,
-	Max = 20,
-	Rounding = 0,
-	Callback = function(v) Library.CornerRadius = v end,
-})
-
-MenuGroup:AddButton("Unload", function()
-	Library:Notify({ Title = "Ivory", Description = "Unloaded!", Type = "Info", Time = 2 })
+MenuGroup:CreateButton({Name = "Unload", Callback = function()
+	Library.Notify({Title = "Ivory", Content = "Unloaded!", Type = "Info", Duration = 2})
 	task.wait(1)
 	Library:Destroy()
-end)
-
---------------------------------------------------------------------------------
--- status update loop
---------------------------------------------------------------------------------
+end})
 
 task.spawn(function()
 	while GEN == _G.__LEMON do
@@ -1482,8 +913,6 @@ task.spawn(function()
 			"Next Pow: " .. tostring(STATE.nextPower) .. (STATE.nextPowerPrice and ("  " .. fmt(STATE.nextPowerPrice) .. " investors") or ""),
 		}
 
-		pcall(function() statusLabel.Text = table.concat(lines, "\n") end)
-
 		local actLines = {
 			"Race: " .. (STATE.raceIn > 0 and (math.floor(STATE.raceIn) .. "s") or "ready") .. "  Won: " .. STATE.races .. "  " .. short(STATE.earnedRace),
 			"Trade: " .. (STATE.tradeIn > 0 and (math.floor(STATE.tradeIn) .. "s") or "ready") .. "  Closed: " .. STATE.trades .. "  " .. short(STATE.earnedTrade),
@@ -1492,33 +921,15 @@ task.spawn(function()
 			"Clicks: " .. STATE.wakes .. " wakes  " .. STATE.upgrades .. " upgrades  " .. STATE.buys .. " buys",
 		}
 
-		local streamLine = "Streams: "
-		local shown = 0
-		for _, row in ipairs(STATE.streams or {}) do
-			if shown < 3 and not hugeIsZero(row.value) then
-				streamLine = streamLine .. row.id .. " " .. fmt(row.value) .. "/" .. fmtTime(row.interval) .. (row.auto and "(a) " or "(m) ")
-				shown = shown + 1
-			end
-		end
-		if shown > 0 then actLines[#actLines + 1] = streamLine end
-
-		if STATE.orchardUnlocked or CONFIG.autoOrchard then
-			actLines[#actLines + 1] = "Orchard: " .. tostring(STATE.orchardNote)
-		end
-
 		actLines[#actLines + 1] = STATE.note
 		if STATE.blocked then actLines[#actLines + 1] = "Blocked: " .. STATE.blocked end
 
-		pcall(function() streamLabel.Text = table.concat(actLines, "\n") end)
-		pcall(function() counterLabel.Text = "Buys: " .. STATE.buys .. "  Upgrades: " .. STATE.upgrades .. "  Wakes: " .. STATE.wakes .. "  Fruits: " .. STATE.fruits .. "  Powers: " .. STATE.powerBuys end)
-		pcall(function() nextPowerLabel.Text = "Next Power: " .. tostring(STATE.nextPower) .. (STATE.nextPowerPrice and (" (" .. fmt(STATE.nextPowerPrice) .. " investors)") or "") end)
-		pcall(function() orchardStatusLabel.Text = "Status: " .. tostring(STATE.orchardNote) end)
+		pcall(function() EconomyGroup:CreateLabel(table.concat(lines, "\n")) end)
+		pcall(function() ActivityGroup:CreateLabel(table.concat(actLines, "\n")) end)
 
 		task.wait(0.5)
 	end
 end)
-
---------------------------------------------------------------------------------
 
 _G.__LEMON_DBG = {
 	CONFIG = CONFIG, STATE = STATE,

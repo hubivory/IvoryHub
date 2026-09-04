@@ -15,14 +15,17 @@ local plr = Players.LocalPlayer
 local PlaceId = game.PlaceId
 local isLobby = (PlaceId == 83038462357724)
 
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local function httpGet(url)
-    local r = request({ Url = url, Method = "GET" })
-    return r and r.Body
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	local ok, src = pcall(function()
+		return request({
+			Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+			Method = "GET"
+		}).Body
+	end)
+	if ok then LIB_SRC = src end
 end
-local Library = loadstring(httpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
+local Library = loadstring(LIB_SRC)()
 
 ------------------------------------------------------------------------
 --// NETWORK (from PlayerScripts.TS.network)
@@ -83,7 +86,7 @@ local CfgUpstairs = require(Const:WaitForChild("plot"):WaitForChild("UpstairsPed
 --// HELPERS
 ------------------------------------------------------------------------
 local function notify(desc, kind)
-    Library:Notify({ Title = "Ivory", Description = desc, Type = kind or "Info", Time = 2.5 })
+    Library.Notify({ Title = "Ivory", Content = desc, Type = kind or "Info", Duration = 2.5 })
 end
 
 local function short(n)
@@ -345,9 +348,10 @@ end
 ------------------------------------------------------------------------
 --// WINDOW
 ------------------------------------------------------------------------
-local Window = Library:CreateWindow({
-    Title = "Ivory",
-    Icon = "swords",
+local Window = Library.CreateWindow({
+    Name = "Ivory",
+    Width = 460,
+    Height = 360,
     Footer = {
         "v1.4 |",
         { Text = isLobby and "Lobby" or "Game", Copyable = true },
@@ -364,45 +368,7 @@ local Window = Library:CreateWindow({
     ShowCustomCursor = false,
     SearchKeybind = Enum.KeyCode.F,
     CornerRadius = 4,
-    Animations = { SubTabUnderline = true },
 })
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
-
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub")
-SaveManager:SetSubFolder(isLobby and "lobby" or "game")
 
 ------------------------------------------------------------------------
 --// CONFIG
@@ -451,156 +417,144 @@ local ST = {
 ------------------------------------------------------------------------
 --// TABS
 ------------------------------------------------------------------------
-local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
-local PlayerTab = Window:AddTab({ Name = "Player", Icon = "swords" })
-local FarmTab = Window:AddTab({ Name = "Farm", Icon = "swords" })
-local ShopTab = Window:AddTab({ Name = "Shop", Icon = "swords" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
+local MainTab = Window:CreateTab({ Name = "Main" })
+local PlayerTab = Window:CreateTab({ Name = "Player" })
+local FarmTab = Window:CreateTab({ Name = "Farm" })
+local ShopTab = Window:CreateTab({ Name = "Shop" })
+local SettingsTab = Window:CreateTab({ Name = "Settings" })
 
 ------------------------------------------------------------------------
 --// MAIN > AUTOMATION
 ------------------------------------------------------------------------
-local AutoSubTab = MainTab:AddSubTab("Automation", "rbxassetid://79379082636309")
-local CoreGroup = AutoSubTab:AddLeftGroupbox("Core Loop", "box-icon")
-local ExtraGroup = AutoSubTab:AddRightGroupbox("Extras", "box-icon")
+local AutoSection = MainTab:CreateSection("Automation")
+local CoreGroup = AutoSection
+local ExtraGroup = AutoSection
 
-CoreGroup:AddToggle("AutoFarm", { Text = "Auto Farm", Default = false,
+CoreGroup:CreateToggle({ Name = "Auto Farm", CurrentValue = false,
     Callback = function(s) CFG.auto = s; ST.note = s and "running" or "stopped"
-        notify(s and "Auto Farm Enabled" or "Auto Farm Disabled") end,
-}):AddKeyPicker("AutoFarmKey", { Default = "F", Text = "Auto Farm Key", Mode = "Toggle", SyncToggleState = true, NoUI = false })
+        notify(s and "Auto Farm Enabled" or "Auto Farm Disabled") end })
+CoreGroup:CreateKeybind({ Name = "Auto Farm Key", CurrentKeybind = "F" })
 
-CoreGroup:AddToggle("Dig", { Text = "Auto Dig", Default = true, Callback = function(s) CFG.dig = s end })
-CoreGroup:AddToggle("Clean", { Text = "Auto Clean", Default = true, Callback = function(s) CFG.clean = s end })
-CoreGroup:AddToggle("Sell", { Text = "Auto Sell", Default = true, Callback = function(s) CFG.sell = s end })
-CoreGroup:AddToggle("Display", { Text = "Auto Display", Default = true, Callback = function(s) CFG.display = s end })
-CoreGroup:AddToggle("Polish", { Text = "Auto Polish", Default = true, Callback = function(s) CFG.polish = s end })
-CoreGroup:AddToggle("Plot", { Text = "Auto Expand Plot", Default = true, Callback = function(s) CFG.plot = s end })
-CoreGroup:AddToggle("Islands", { Text = "Auto Unlock Islands", Default = true, Callback = function(s) CFG.islands = s end })
-CoreGroup:AddToggle("BuyGear", { Text = "Auto Buy Gear", Default = true, Callback = function(s) CFG.buyGear = s end })
-CoreGroup:AddToggle("ClaimFree", { Text = "Auto Claim Rewards", Default = true, Callback = function(s) CFG.claimFree = s end })
+CoreGroup:CreateToggle({ Name = "Auto Dig", CurrentValue = true, Callback = function(s) CFG.dig = s end })
+CoreGroup:CreateToggle({ Name = "Auto Clean", CurrentValue = true, Callback = function(s) CFG.clean = s end })
+CoreGroup:CreateToggle({ Name = "Auto Sell", CurrentValue = true, Callback = function(s) CFG.sell = s end })
+CoreGroup:CreateToggle({ Name = "Auto Display", CurrentValue = true, Callback = function(s) CFG.display = s end })
+CoreGroup:CreateToggle({ Name = "Auto Polish", CurrentValue = true, Callback = function(s) CFG.polish = s end })
+CoreGroup:CreateToggle({ Name = "Auto Expand Plot", CurrentValue = true, Callback = function(s) CFG.plot = s end })
+CoreGroup:CreateToggle({ Name = "Auto Unlock Islands", CurrentValue = true, Callback = function(s) CFG.islands = s end })
+CoreGroup:CreateToggle({ Name = "Auto Buy Gear", CurrentValue = true, Callback = function(s) CFG.buyGear = s end })
+CoreGroup:CreateToggle({ Name = "Auto Claim Rewards", CurrentValue = true, Callback = function(s) CFG.claimFree = s end })
 
-CoreGroup:AddSlider("ClicksPerSec", { Text = "Clicks/sec", Default = 35, Min = 4, Max = 50, Rounding = 0,
+CoreGroup:CreateSlider({ Name = "Clicks/sec", Range = {4, 50}, Increment = 1, CurrentValue = 35,
     Callback = function(v) CFG.clicksPerSec = math.floor(v) end })
-CoreGroup:AddSlider("DigSeconds", { Text = "Max Dig Time", Default = 25, Min = 4, Max = 45, Rounding = 0,
+CoreGroup:CreateSlider({ Name = "Max Dig Time", Range = {4, 45}, Increment = 1, CurrentValue = 25,
     Callback = function(v) CFG.digSeconds = math.floor(v) end })
 
-ExtraGroup:AddToggle("Scan", { Text = "Scan Field", Default = true, Callback = function(s) CFG.scan = s end })
-ExtraGroup:AddToggle("RarityAuto", { Text = "Match Shovel Power", Default = true, Callback = function(s) CFG.rarityAuto = s end })
-ExtraGroup:AddToggle("SwapExhibits", { Text = "Swap Exhibits", Default = true, Callback = function(s) CFG.swapExhibits = s end })
-ExtraGroup:AddToggle("IslandFirst", { Text = "Island Before Gear", Default = true, Callback = function(s) CFG.islandFirst = s end })
-ExtraGroup:AddSlider("SellAt", { Text = "Sell At %", Default = 30, Min = 10, Max = 100, Rounding = 0,
+ExtraGroup:CreateToggle({ Name = "Scan Field", CurrentValue = true, Callback = function(s) CFG.scan = s end })
+ExtraGroup:CreateToggle({ Name = "Match Shovel Power", CurrentValue = true, Callback = function(s) CFG.rarityAuto = s end })
+ExtraGroup:CreateToggle({ Name = "Swap Exhibits", CurrentValue = true, Callback = function(s) CFG.swapExhibits = s end })
+ExtraGroup:CreateToggle({ Name = "Island Before Gear", CurrentValue = true, Callback = function(s) CFG.islandFirst = s end })
+ExtraGroup:CreateSlider({ Name = "Sell At %", Range = {10, 100}, Increment = 1, CurrentValue = 30,
     Callback = function(v) CFG.sellAt = v / 100 end })
-ExtraGroup:AddSlider("SwapMargin", { Text = "Swap Margin %", Default = 20, Min = 5, Max = 200, Rounding = 0,
+ExtraGroup:CreateSlider({ Name = "Swap Margin %", Range = {5, 200}, Increment = 1, CurrentValue = 20,
     Callback = function(v) CFG.swapMargin = 1 + v / 100 end })
-ExtraGroup:AddButton("Unstuck", function()
+ExtraGroup:CreateButton({ Name = "Unstuck", Callback = function()
     CFG.auto = false
     local _, hrp, hum = char()
     if hrp then hrp.Anchored = false end
     if hum then hum.PlatformStand = false end
     ST.busy = false; ST.note = "unstuck"
     notify("Unstuck! Auto off.", "Info")
-end)
+end })
 
 ------------------------------------------------------------------------
 --// MAIN > DISCORD
 ------------------------------------------------------------------------
-local DiscordSubTab = MainTab:AddSubTab("Discord", "rbxassetid://79379082636309")
-local DiscordGroup = DiscordSubTab:AddLeftGroupbox("Community", "box-icon")
-
-DiscordGroup:AddButton("Join Discord For Dupe", function()
+local DiscordSection = MainTab:CreateSection("Discord")
+DiscordSection:CreateButton({ Name = "Join Discord For Dupe", Callback = function()
     setclipboard("https://discord.gg/ivory")
     notify("Discord link copied to clipboard!", "Success")
-end)
+end })
 
 ------------------------------------------------------------------------
 --// MAIN > CONFIG
 ------------------------------------------------------------------------
-local ConfigSubTab = MainTab:AddSubTab("Config", "rbxassetid://79379082636309")
-local ConfigGroup = ConfigSubTab:AddLeftGroupbox("Settings", "box-icon")
-local InfoGroup = ConfigSubTab:AddRightGroupbox("Info", "box-icon")
+local ConfigSection = MainTab:CreateSection("Config")
 
-ConfigGroup:AddToggle("AutoSave", { Text = "Auto Save Settings", Default = true,
+ConfigSection:CreateToggle({ Name = "Auto Save Settings", CurrentValue = true,
     Callback = function(s) _G.IvoryAutoSave = s end })
-ConfigGroup:AddButton("Load Config", function() SaveManager:LoadConfig(); notify("Config loaded", "Success") end)
-ConfigGroup:AddButton("Save Config", function() SaveManager:SaveConfig(); notify("Config saved", "Success") end)
 
-InfoGroup:AddLabel("Ivory Hub v1.4")
-InfoGroup:AddLabel("Game: Dig & Clean")
-InfoGroup:AddLabel("PlaceId: " .. tostring(PlaceId))
+ConfigSection:CreateLabel("Ivory Hub v1.4")
+ConfigSection:CreateLabel("Game: Dig & Clean")
+ConfigSection:CreateLabel("PlaceId: " .. tostring(PlaceId))
 
 ------------------------------------------------------------------------
 --// PLAYER > MOVEMENT
 ------------------------------------------------------------------------
-local MovementSubTab = PlayerTab:AddSubTab("Movement", "rbxassetid://79379082636309")
-local SpeedGroup = MovementSubTab:AddLeftGroupbox("Speed", "box-icon")
-local JumpGroup = MovementSubTab:AddRightGroupbox("Jump", "box-icon")
+local MovementSection = PlayerTab:CreateSection("Movement")
 
-SpeedGroup:AddToggle("SpeedHack", { Text = "Speed Hack", Default = false,
+MovementSection:CreateToggle({ Name = "Speed Hack", CurrentValue = false,
     Callback = function(s) _G.IvorySpeedHack = s end })
-SpeedGroup:AddSlider("SpeedValue", { Text = "Walk Speed", Default = 16, Min = 16, Max = 500, Rounding = 0,
+MovementSection:CreateSlider({ Name = "Walk Speed", Range = {16, 500}, Increment = 1, CurrentValue = 16,
     Callback = function(v) _G.IvorySpeedValue = v end })
-SpeedGroup:AddButton("Reset Speed", function()
+MovementSection:CreateButton({ Name = "Reset Speed", Callback = function()
     pcall(function() plr.Character.Humanoid.WalkSpeed = 16 end)
     _G.IvorySpeedHack = false; notify("Speed Reset", "Success")
-end)
+end })
 
-JumpGroup:AddToggle("JumpHack", { Text = "Jump Hack", Default = false,
+MovementSection:CreateToggle({ Name = "Jump Hack", CurrentValue = false,
     Callback = function(s) _G.IvoryJumpHack = s end })
-JumpGroup:AddSlider("JumpValue", { Text = "Jump Power", Default = 50, Min = 50, Max = 500, Rounding = 0,
+MovementSection:CreateSlider({ Name = "Jump Power", Range = {50, 500}, Increment = 1, CurrentValue = 50,
     Callback = function(v) _G.IvoryJumpValue = v end })
-JumpGroup:AddButton("Reset Jump", function()
+MovementSection:CreateButton({ Name = "Reset Jump", Callback = function()
     pcall(function() plr.Character.Humanoid.JumpPower = 50 end)
     _G.IvoryJumpHack = false; notify("Jump Reset", "Success")
-end)
+end })
 
 ------------------------------------------------------------------------
 --// PLAYER > VISUALS
 ------------------------------------------------------------------------
-local VisualsSubTab = PlayerTab:AddSubTab("Visuals", "rbxassetid://79379082636309")
-local ESPGroup = VisualsSubTab:AddLeftGroupbox("ESP", "box-icon")
+local VisualsSection = PlayerTab:CreateSection("Visuals")
 
-ESPGroup:AddLabel("ESP Color"):AddColorPicker("ESPColor", {
-    Default = Color3.fromRGB(255, 0, 0), Title = "ESP Color",
+VisualsSection:CreateColorPicker({ Name = "ESP Color", Color = Color3.fromRGB(255, 0, 0),
     Callback = function(v) _G.IvoryESPColor = v end })
-ESPGroup:AddToggle("PlayerESP", { Text = "Player ESP", Default = false,
+VisualsSection:CreateToggle({ Name = "Player ESP", CurrentValue = false,
     Callback = function(s) _G.IvoryPlayerESP = s end })
-ESPGroup:AddSlider("ESPRange", { Text = "ESP Range", Default = 200, Min = 50, Max = 1000, Rounding = 0,
+VisualsSection:CreateSlider({ Name = "ESP Range", Range = {50, 1000}, Increment = 1, CurrentValue = 200,
     Callback = function(v) _G.IvoryESPRange = v end })
 
 ------------------------------------------------------------------------
 --// FARM > STATUS
 ------------------------------------------------------------------------
-local StatusSubTab = FarmTab:AddSubTab("Status", "rbxassetid://79379082636309")
-local StatusGroup = StatusSubTab:AddLeftGroupbox("Status", "box-icon")
+local StatusSection = FarmTab:CreateSection("Status")
 
-local StatusLabel = StatusGroup:AddLabel("Loading...")
-StatusGroup:AddButton("Refresh Status", function()
+local StatusLabel = StatusSection:CreateLabel("Loading...")
+StatusSection:CreateButton({ Name = "Refresh Status", Callback = function()
     local d = data()
     if d then
         ST.gold = d.Gold or 0; ST.level = d.Level or 0
         ST.dug = d.ItemsDug or 0; ST.cleaned = d.ItemsCleaned or 0
     end
-end)
+end })
 
 ------------------------------------------------------------------------
 --// FARM > DIGGING
 ------------------------------------------------------------------------
-local DiggingSubTab = FarmTab:AddSubTab("Digging", "rbxassetid://79379082636309")
-local DigGroup = DiggingSubTab:AddLeftGroupbox("Manual Dig", "box-icon")
+local DiggingSection = FarmTab:CreateSection("Digging")
 
-DigGroup:AddButton("Begin Dig", function()
+DiggingSection:CreateButton({ Name = "Begin Dig", Callback = function()
     local ctrl = digController()
     if ctrl then pcall(function() ctrl:attemptDig() end); notify("Dig started!", "Success")
     else notify("No dig controller found", "Error") end
-end)
-DigGroup:AddButton("Sweep Area", function()
+end })
+DiggingSection:CreateButton({ Name = "Sweep Area", Callback = function()
     local zone, _ = nearestTagged("DigZone", islandFolder())
     if zone then
         local ok, pivot = pcall(function() return zone:GetPivot() end)
         if ok then hop(pivot.Position + Vector3.new(0, 5, 0)) end
         notify("Sweeping...", "Info")
     else notify("No dig zone found", "Error") end
-end)
+end })
 
 ------------------------------------------------------------------------
 --// FARM > MUSEUM
@@ -724,75 +678,72 @@ local function doPlaceBest()
     return placedCount > 0 or swaps > 0
 end
 
-local MuseumSubTab = FarmTab:AddSubTab("Museum", "rbxassetid://79379082636309")
-local MuseumGroup = MuseumSubTab:AddLeftGroupbox("Museum", "box-icon")
-local PolishGroup = MuseumSubTab:AddRightGroupbox("Polisher", "box-icon")
+local MuseumSection = FarmTab:CreateSection("Museum")
 
-MuseumGroup:AddToggle("AutoMuseum", { Text = "Auto Place Best Item", Default = true,
+MuseumSection:CreateToggle({ Name = "Auto Place Best Item", CurrentValue = true,
     Callback = function(s) CFG.autoMuseum = s end })
-MuseumGroup:AddToggle("AutoPedestal", { Text = "Auto Buy Pedestal", Default = true,
+MuseumSection:CreateToggle({ Name = "Auto Buy Pedestal", CurrentValue = true,
     Callback = function(s) CFG.autoPedestal = s end })
-MuseumGroup:AddToggle("AutoSection", { Text = "Auto Unlock Section", Default = true,
+MuseumSection:CreateToggle({ Name = "Auto Unlock Section", CurrentValue = true,
     Callback = function(s) CFG.autoSection = s end })
 
-MuseumGroup:AddButton("Place Best Item", function()
+MuseumSection:CreateButton({ Name = "Place Best Item", Callback = function()
     local ok, result = pcall(doPlaceBest)
     if not ok then notify("Error: " .. tostring(result), "Error") return end
     if result then notify("Placed/swapped items!", "Success")
     else notify("No items to place", "Info") end
-end)
+end })
 
-MuseumGroup:AddButton("Sell All Inventory", function()
+MuseumSection:CreateButton({ Name = "Sell All Inventory", Callback = function()
     local where = npcNamed("SellerNPC")
     if where then hop(where + Vector3.new(0, 3, 4), 0.8) end
     local ok, earned = invoke("SellNetwork", "SellFunctions", "sellInventory")
     if ok and tonumber(earned) then notify("Sold for " .. math.floor(tonumber(earned)), "Success")
     else notify("Sell failed", "Error") end
-end)
+end })
 
-MuseumGroup:AddButton("Buy Pedestal", function()
+MuseumSection:CreateButton({ Name = "Buy Pedestal", Callback = function()
     doBuyPedestal()
     notify("Pedestal purchase attempted", "Success")
-end)
+end })
 
-MuseumGroup:AddButton("Unlock Section", function()
+MuseumSection:CreateButton({ Name = "Unlock Section", Callback = function()
     doUnlockSection()
     notify("Section unlock attempted", "Success")
-end)
+end })
 
-PolishGroup:AddButton("Start Polish", function()
+local PolishSection = FarmTab:CreateSection("Polisher")
+
+PolishSection:CreateButton({ Name = "Start Polish", Callback = function()
     invoke("PolisherNetwork", "PolisherFunctions", "startPolish", 1)
     notify("Polish started!", "Success")
-end)
-PolishGroup:AddButton("Collect Polish", function()
+end })
+PolishSection:CreateButton({ Name = "Collect Polish", Callback = function()
     invoke("PolisherNetwork", "PolisherFunctions", "collectPolish", 1)
     notify("Polish collected!", "Success")
-end)
-PolishGroup:AddButton("Upgrade Polisher", function()
+end })
+PolishSection:CreateButton({ Name = "Upgrade Polisher", Callback = function()
     invoke("PolisherNetwork", "PolisherFunctions", "upgradePolisher", 1)
     notify("Polisher upgrade attempted", "Success")
-end)
+end })
 
 ------------------------------------------------------------------------
 --// FARM > ISLANDS
 ------------------------------------------------------------------------
-local IslandSubTab = FarmTab:AddSubTab("Islands", "rbxassetid://79379082636309")
-local TravelGroup = IslandSubTab:AddLeftGroupbox("Travel", "box-icon")
-local IslandInfo = IslandSubTab:AddRightGroupbox("Island Info", "box-icon")
+local IslandSection = FarmTab:CreateSection("Islands")
 
-TravelGroup:AddDropdown("TargetIsland", {
-    Text = "Target Island",
-    Values = {"starterIsland", "island2", "island3", "island4", "island5"},
-    Default = "starterIsland", Multi = false,
+IslandSection:CreateDropdown({ Name = "Target Island",
+    Options = {"starterIsland", "island2", "island3", "island4", "island5"},
+    CurrentOption = "starterIsland",
     Callback = function(v) _G.IvoryTargetIsland = v end })
 
-TravelGroup:AddButton("Travel", function()
+IslandSection:CreateButton({ Name = "Travel", Callback = function()
     local target = _G.IvoryTargetIsland or "starterIsland"
     local ok, res = invoke("TravelNetwork", "TravelFunctions", "travel", target)
     notify("Travel " .. target .. ": " .. tostring(res), ok and "Success" or "Error")
-end)
+end })
 
-TravelGroup:AddButton("Unlock Next Island", function()
+IslandSection:CreateButton({ Name = "Unlock Next Island", Callback = function()
     local d = data()
     if not d then return end
     local unlocked = {}
@@ -806,21 +757,20 @@ TravelGroup:AddButton("Unlock Next Island", function()
         end
     end
     notify("All islands unlocked!", "Success")
-end)
+end })
 
-IslandInfo:AddLabel("starterIsland | Free | 1x Luck")
-IslandInfo:AddLabel("island2 | $1.1M | 2x Luck")
-IslandInfo:AddLabel("island3 | $32M | 4x Luck")
-IslandInfo:AddLabel("island4 | $500M | 8x Luck")
-IslandInfo:AddLabel("island5 | $20B | 16x Luck")
+IslandSection:CreateLabel("starterIsland | Free | 1x Luck")
+IslandSection:CreateLabel("island2 | $1.1M | 2x Luck")
+IslandSection:CreateLabel("island3 | $32M | 4x Luck")
+IslandSection:CreateLabel("island4 | $500M | 8x Luck")
+IslandSection:CreateLabel("island5 | $20B | 16x Luck")
 
 ------------------------------------------------------------------------
 --// SHOP > SHOVELS
 ------------------------------------------------------------------------
-local ShovelsSubTab = ShopTab:AddSubTab("Shovels", "rbxassetid://79379082636309")
-local ShovelGroup = ShovelsSubTab:AddLeftGroupbox("Buy & Equip", "box-icon")
+local ShovelsSection = ShopTab:CreateSection("Shovels")
 
-ShovelGroup:AddButton("Buy Best Shovel", function()
+ShovelsSection:CreateButton({ Name = "Buy Best Shovel", Callback = function()
     local where = npcNamed("GearNPC")
     if where then hop(where + Vector3.new(0, 3, 4), 0.8) end
     local d = data()
@@ -844,9 +794,9 @@ ShovelGroup:AddButton("Buy Best Shovel", function()
         end
     end
     notify("No affordable shovel found", "Info")
-end)
+end })
 
-ShovelGroup:AddButton("Equip Best Shovel", function()
+ShovelsSection:CreateButton({ Name = "Equip Best Shovel", Callback = function()
     local d = data()
     if not d then return end
     local list = CfgShovels.Shovels or {}
@@ -865,15 +815,14 @@ ShovelGroup:AddButton("Equip Best Shovel", function()
         invoke("ShopNetwork", "ShopFunctions", "equipGear", "shovel", best)
         notify("Equipped " .. best, "Success")
     end
-end)
+end })
 
 ------------------------------------------------------------------------
 --// SHOP > DETECTORS
 ------------------------------------------------------------------------
-local DetectorsSubTab = ShopTab:AddSubTab("Detectors", "rbxassetid://79379082636309")
-local DetectorGroup = DetectorsSubTab:AddLeftGroupbox("Buy & Equip", "box-icon")
+local DetectorsSection = ShopTab:CreateSection("Detectors")
 
-DetectorGroup:AddButton("Buy Best Detector", function()
+DetectorsSection:CreateButton({ Name = "Buy Best Detector", Callback = function()
     local where = npcNamed("GearNPC")
     if where then hop(where + Vector3.new(0, 3, 4), 0.8) end
     local d = data()
@@ -897,9 +846,9 @@ DetectorGroup:AddButton("Buy Best Detector", function()
         end
     end
     notify("No affordable detector found", "Info")
-end)
+end })
 
-DetectorGroup:AddButton("Equip Best Detector", function()
+DetectorsSection:CreateButton({ Name = "Equip Best Detector", Callback = function()
     local d = data()
     if not d then return end
     local list = CfgDetectors.Detectors or {}
@@ -918,15 +867,14 @@ DetectorGroup:AddButton("Equip Best Detector", function()
         invoke("ShopNetwork", "ShopFunctions", "equipGear", "detector", best)
         notify("Equipped " .. best, "Success")
     end
-end)
+end })
 
 ------------------------------------------------------------------------
 --// SHOP > SPRAYS
 ------------------------------------------------------------------------
-local SpraysSubTab = ShopTab:AddSubTab("Sprays", "rbxassetid://79379082636309")
-local SprayGroup = SpraysSubTab:AddLeftGroupbox("Buy & Equip", "box-icon")
+local SpraysSection = ShopTab:CreateSection("Sprays")
 
-SprayGroup:AddButton("Buy Best Spray", function()
+SpraysSection:CreateButton({ Name = "Buy Best Spray", Callback = function()
     local where = npcNamed("GearNPC")
     if where then hop(where + Vector3.new(0, 3, 4), 0.8) end
     local d = data()
@@ -950,9 +898,9 @@ SprayGroup:AddButton("Buy Best Spray", function()
         end
     end
     notify("No affordable spray found", "Info")
-end)
+end })
 
-SprayGroup:AddButton("Equip Best Spray", function()
+SpraysSection:CreateButton({ Name = "Equip Best Spray", Callback = function()
     local d = data()
     if not d then return end
     local list = CfgSprays.SprayBottles or {}
@@ -971,36 +919,35 @@ SprayGroup:AddButton("Equip Best Spray", function()
         invoke("ShopNetwork", "ShopFunctions", "equipGear", "spray", best)
         notify("Equipped " .. best, "Success")
     end
-end)
+end })
 
 ------------------------------------------------------------------------
 --// SHOP > REWARDS
 ------------------------------------------------------------------------
-local RewardsSubTab = ShopTab:AddSubTab("Rewards", "rbxassetid://79379082636309")
-local RewardGroup = RewardsSubTab:AddLeftGroupbox("Rewards", "box-icon")
+local RewardsSection = ShopTab:CreateSection("Rewards")
 
-RewardGroup:AddButton("Redeem All Codes", function()
+RewardsSection:CreateButton({ Name = "Redeem All Codes", Callback = function()
     local codes = {"UPDATE3", "UPDATE2", "SECRET10", "Update1"}
     for _, code in ipairs(codes) do
         pcall(function() invoke("CodeNetwork", "CodeFunctions", "redeemCode", code) end)
     end
     notify("Attempted to redeem " .. #codes .. " codes!", "Success")
-end)
+end })
 
-RewardGroup:AddButton("Claim Offline Earnings", function()
+RewardsSection:CreateButton({ Name = "Claim Offline Earnings", Callback = function()
     invoke("OfflineEarningsNetwork", "OfflineEarningsFunctions", "claimOfflineEarnings")
     notify("Offline earnings claimed!", "Success")
-end)
+end })
 
-RewardGroup:AddButton("Claim Free Pack", function()
+RewardsSection:CreateButton({ Name = "Claim Free Pack", Callback = function()
     fire("ForeverPackNetwork", "ForeverPackEvents", "claimFree")
     notify("Free pack claimed!", "Success")
-end)
+end })
 
-RewardGroup:AddButton("Claim Group Reward", function()
+RewardsSection:CreateButton({ Name = "Claim Group Reward", Callback = function()
     invoke("FreeLuckNetwork", "FreeLuckFunctions", "claimGroupReward")
     notify("Group reward claimed!", "Success")
-end)
+end })
 
 ------------------------------------------------------------------------
 --// PLAYER ESP
@@ -1438,26 +1385,23 @@ end)
 ------------------------------------------------------------------------
 --// SETTINGS
 ------------------------------------------------------------------------
-ThemeManager:ApplyToTab(SettingsTab)
-SaveManager:BuildConfigSection(SettingsTab)
-
-local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "box-icon")
-MenuGroup:AddToggle("MenuToggle", { Text = "Toggle Menu", Default = true }):AddKeyPicker("MenuKeybind", {
-    Default = "RightShift", Text = "Menu Keybind", Mode = "Toggle", SyncToggleState = false, NoUI = false })
-MenuGroup:AddToggle("CustomCursor", { Text = "Custom Cursor", Default = false,
+local MenuSection = SettingsTab:CreateSection("Menu")
+MenuSection:CreateToggle({ Name = "Toggle Menu", CurrentValue = true })
+MenuSection:CreateKeybind({ Name = "Menu Keybind", CurrentKeybind = "RightShift" })
+MenuSection:CreateToggle({ Name = "Custom Cursor", CurrentValue = false,
     Callback = function(s) Library.ShowCustomCursor = s end })
-MenuGroup:AddButton("Test Notification", function()
-    Library:Notify({ Title = "Ivory", Description = "Test Notification!", Type = "Success", Time = 5 }) end)
-MenuGroup:AddDropdown("NotifySide", { Text = "Notification Side", Values = {"Left", "Right"}, Default = "Right", Multi = false,
+MenuSection:CreateButton({ Name = "Test Notification", Callback = function()
+    Library.Notify({ Title = "Ivory", Content = "Test Notification!", Type = "Success", Duration = 5 }) end })
+MenuSection:CreateDropdown({ Name = "Notification Side", Options = {"Left", "Right"}, CurrentOption = "Right",
     Callback = function(v) Library.NotifySide = v end })
-MenuGroup:AddSlider("CornerRadius", { Text = "Corner Radius", Default = 4, Min = 0, Max = 20, Rounding = 0,
+MenuSection:CreateSlider({ Name = "Corner Radius", Range = {0, 20}, Increment = 1, CurrentValue = 4,
     Callback = function(v) Library.CornerRadius = v end })
-MenuGroup:AddButton("Unload Script", function()
-    Library:Notify({ Title = "Ivory", Description = "Unloading...", Type = "Info", Time = 2 })
+MenuSection:CreateButton({ Name = "Unload Script", Callback = function()
+    Library.Notify({ Title = "Ivory", Content = "Unloading...", Type = "Info", Duration = 2 })
     task.wait(0.5)
     for k in pairs(_G) do if string.find(k, "Ivory") then _G[k] = nil end end
-    pcall(function() Library:ToggleWindow() end)
-end)
+    pcall(function() Library.ToggleWindow() end)
+end })
 
 ------------------------------------------------------------------------
 task.spawn(function()
@@ -1468,5 +1412,5 @@ task.spawn(function()
 end)
 
 ------------------------------------------------------------------------
-Library:Notify({ Title = "Ivory", Description = "Dig & Clean Loaded!", Type = "Success", Time = 5 })
+Library.Notify({ Title = "Ivory", Content = "Dig & Clean Loaded!", Type = "Success", Duration = 5 })
 print("[Ivory] Dig & Clean loaded | PlaceId: " .. tostring(PlaceId) .. " | v1.4")

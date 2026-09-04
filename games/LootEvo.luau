@@ -10,31 +10,20 @@ local TweenService = game:GetService("TweenService")
 local plr = Players.LocalPlayer
 
 --// ═══════════════════════════════════════════════════════════
---// OBSIDIAN ULTRA
+--// IVORY HUB
 --// ═══════════════════════════════════════════════════════════
 
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local function httpGet(url)
-	return request({ Url = url, Method = "GET" }).Body
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	local ok, src = pcall(function()
+		return request({
+			Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+			Method = "GET"
+		}).Body
+	end)
+	if ok then LIB_SRC = src end
 end
-local Library = loadstring(getgenv()._IvoryLibSrc or httpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(getgenv()._IvoryTMSrc or httpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(getgenv()._IvorySMSrc or httpGet(repo .. "addons/SaveManager.lua"))()
-
-local Options = Library.Options
-local Toggles = Library.Toggles
-
-Library.Scheme.MainColor = Color3.fromRGB(18, 14, 28)
-Library.Scheme.AccentColor = Color3.fromRGB(140, 110, 220)
-Library.Scheme.AcccentDark = Color3.fromRGB(110, 80, 190)
-Library.Scheme.OutlineColor = Color3.fromRGB(50, 40, 70)
-Library.Scheme.FontColor = Color3.fromRGB(225, 215, 245)
-Library.Scheme.SubText = Color3.fromRGB(155, 135, 185)
-Library.Scheme.Bright = Color3.fromRGB(32, 26, 48)
-Library.Scheme.Dark = Color3.fromRGB(12, 10, 20)
-Library.Scheme.Risky = Color3.fromRGB(220, 80, 120)
-Library.ShowToggleFrameInKeybinds = true
-Library.ForceCheckbox = false
+local Library = loadstring(LIB_SRC)()
 
 --// ═══════════════════════════════════════════════════════════
 --// WINDOW
@@ -47,63 +36,11 @@ pcall(function()
 		or plr.Character == nil
 end)
 
-local Window = Library:CreateWindow({
-	Title = "Ivory",
-	Icon = "swords",
-	Footer = {
-		"v1.4 |",
-		{ Text = isLobby and "Lobby" or "Game", Copyable = true },
-		"|",
-		{ Text = tostring(plr.UserId), Copyable = true },
-	},
-	CopyableFooter = true,
-	FuzzySearch = true,
-	SearchValues = true,
-	Minimizable = true,
-	MinimizeKeybind = Enum.KeyCode.RightBracket,
-	MinimizedWidth = 280,
-	NotifySide = "Right",
-	ShowCustomCursor = true,
-	SearchKeybind = Enum.KeyCode.F,
-	CornerRadius = 4,
-	Animations = {
-		ToggleWindow = false,
-		TabSwitch = false,
-		Groupbox = false,
-		Dropdown = false,
-		KeyPicker = false,
-		SubTabUnderline = true,
-	},
+local Window = Library.CreateWindow({
+	Name = "Ivory",
+	Width = 460,
+	Height = 360,
 })
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
 
 --// ═══════════════════════════════════════════════════════════
 --// GAME CONSTANTS
@@ -1369,301 +1306,159 @@ end
 --// UI TABS
 --// ═══════════════════════════════════════════════════════════
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
-local CombatTab = Window:AddTab({ Name = "Combat", Icon = "swords" })
-local ShopTab = Window:AddTab({ Name = "Shop", Icon = "swords" })
-local PetTab = Window:AddTab({ Name = "Eggs & Pets", Icon = "swords" })
-local StatusTab = Window:AddTab({ Name = "Status", Icon = "swords" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
+local MainTab = Window:CreateTab({ Name = "Main" })
+local CombatTab = Window:CreateTab({ Name = "Combat" })
+local ShopTab = Window:CreateTab({ Name = "Shop" })
+local PetTab = Window:CreateTab({ Name = "Eggs & Pets" })
+local StatusTab = Window:CreateTab({ Name = "Status" })
+local SettingsTab = Window:CreateTab({ Name = "Settings" })
 
 --// ═══════════════════════════════════════════════════════════
 --// MAIN TAB
 --// ═══════════════════════════════════════════════════════════
 
-local FarmingSub = MainTab:AddSubTab("Farming", "rbxassetid://79379082636309")
-local LadderSub = MainTab:AddSubTab("Ladder", "rbxassetid://79379082636309")
+local FarmingSection = MainTab:CreateSection("Farming")
 
-local DiscordGroup = FarmingSub:AddLeftGroupbox("Community", "users")
-DiscordGroup:AddButton("Join Discord For Dupe", function()
+FarmingSection:CreateButton({ Name = "Join Discord For Dupe", Callback = function()
 	pcall(function() setclipboard("https://discord.gg/ivory") end)
-	Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 })
-end)
-DiscordGroup:AddLabel("Click above to join our Discord for dupes, updates & more!")
+	Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3 })
+end })
+FarmingSection:CreateLabel("Click above to join our Discord for dupes, updates & more!")
 
-local FarmGroup = FarmingSub:AddRightGroupbox("Auto Farm", "cpu")
-FarmGroup:AddToggle("AutoFarm", {
-	Text = "Auto Farm",
-	Default = false,
-	Callback = function(v) CONFIG.autoFarm = v end,
-})
-FarmGroup:AddDropdown("FarmMode", {
-	Values = FARM_MODES,
-	Default = 1,
-	Text = "Farm Mode",
-	Callback = function(v)
-		for i, mode in ipairs(FARM_MODES) do
-			if mode == v then CONFIG.farmMode = i break end
-		end
-	end,
-})
-FarmGroup:AddSlider("FarmStage", {
-	Text = "Fixed Stage",
-	Default = 1,
-	Min = 1,
-	Max = 36,
-	Rounding = 0,
-	Callback = function(v) CONFIG.stage = v end,
-})
+FarmingSection:CreateToggle({ Name = "Auto Farm", CurrentValue = false, Callback = function(v) CONFIG.autoFarm = v end })
+FarmingSection:CreateDropdown({ Name = "Farm Mode", Options = FARM_MODES, CurrentOption = 1, Callback = function(v)
+	for i, mode in ipairs(FARM_MODES) do
+		if mode == v then CONFIG.farmMode = i break end
+	end
+end })
+FarmingSection:CreateSlider({ Name = "Fixed Stage", Range = { 1, 36 }, Increment = 1, CurrentValue = 1, Callback = function(v) CONFIG.stage = v end })
 
-local TimingGroup = FarmingSub:AddLeftGroupbox("Timing", "clock")
-TimingGroup:AddSlider("FastSeconds", {
-	Text = "Jump Under (s)",
-	Default = 5,
-	Min = 2,
-	Max = 30,
-	Rounding = 0,
-	Callback = function(v) CONFIG.fastSeconds = v end,
-})
-TimingGroup:AddSlider("StageTimeout", {
-	Text = "Give Up After (s)",
-	Default = 35,
-	Min = 10,
-	Max = 120,
-	Rounding = 0,
-	Callback = function(v) CONFIG.stageTimeout = v end,
-})
-TimingGroup:AddSlider("FarmRuns", {
-	Text = "Bank Runs",
-	Default = 5,
-	Min = 1,
-	Max = 20,
-	Rounding = 0,
-	Callback = function(v) CONFIG.farmRuns = v end,
-})
+FarmingSection:CreateSlider({ Name = "Jump Under (s)", Range = { 2, 30 }, Increment = 1, CurrentValue = 5, Callback = function(v) CONFIG.fastSeconds = v end })
+FarmingSection:CreateSlider({ Name = "Give Up After (s)", Range = { 10, 120 }, Increment = 1, CurrentValue = 35, Callback = function(v) CONFIG.stageTimeout = v end })
+FarmingSection:CreateSlider({ Name = "Bank Runs", Range = { 1, 20 }, Increment = 1, CurrentValue = 5, Callback = function(v) CONFIG.farmRuns = v end })
 
-local LadderGroup = LadderSub:AddLeftGroupbox("Ladder Status", "trending-up")
-local LadderLabel = LadderGroup:AddLabel("Cursor: 1 | Cleared: 0 | Blocked: -")
-local LadderNote = LadderGroup:AddLabel("Note: -")
+local LadderSection = MainTab:CreateSection("Ladder Status")
+local LadderLabel = LadderSection:CreateLabel("Cursor: 1 | Cleared: 0 | Blocked: -")
+local LadderNote = LadderSection:CreateLabel("Note: -")
 
-local SessionGroup = LadderSub:AddRightGroupbox("Session", "activity")
-local SessionLabel = SessionGroup:AddLabel("Runs: 0 | Deaths: 0 | Missed: 0")
-local SessionWins = SessionGroup:AddLabel("Wins Gained: 0")
+local SessionSection = MainTab:CreateSection("Session")
+local SessionLabel = SessionSection:CreateLabel("Runs: 0 | Deaths: 0 | Missed: 0")
+local SessionWins = SessionSection:CreateLabel("Wins Gained: 0")
 
 --// ═══════════════════════════════════════════════════════════
 --// COMBAT TAB
 --// ═══════════════════════════════════════════════════════════
 
-local ClickSub = CombatTab:AddSubTab("Clicking", "rbxassetid://79379082636309")
-local SkillSub = CombatTab:AddSubTab("Skills", "rbxassetid://79379082636309")
-local SurvivalSub = CombatTab:AddSubTab("Survival", "rbxassetid://79379082636309")
+local ClickSection = CombatTab:CreateSection("Clicking")
+ClickSection:CreateToggle({ Name = "Auto Click", CurrentValue = false, Callback = function(v) CONFIG.autoClick = v end })
+ClickSection:CreateSlider({ Name = "Clicks/sec", Range = { 2, 40 }, Increment = 1, CurrentValue = 20, Callback = function(v) CONFIG.clickRate = v end })
 
-local ClickGroup = ClickSub:AddLeftGroupbox("Clicking", "mouse-pointer")
-ClickGroup:AddToggle("AutoClick", {
-	Text = "Auto Click",
-	Default = false,
-	Callback = function(v) CONFIG.autoClick = v end,
-})
-ClickGroup:AddSlider("ClickRate", {
-	Text = "Clicks/sec",
-	Default = 20,
-	Min = 2,
-	Max = 40,
-	Rounding = 0,
-	Callback = function(v) CONFIG.clickRate = v end,
-})
+local SkillSection = CombatTab:CreateSection("Skills")
+SkillSection:CreateToggle({ Name = "Cast Skills (Q/E/R)", CurrentValue = false, Callback = function(v) CONFIG.castSkills = v end })
+SkillSection:CreateToggle({ Name = "Skip Dash Skill", CurrentValue = true, Callback = function(v) CONFIG.skipDash = v end })
 
-local SkillGroup = SkillSub:AddLeftGroupbox("Skills", "zap")
-SkillGroup:AddToggle("CastSkills", {
-	Text = "Cast Skills (Q/E/R)",
-	Default = false,
-	Callback = function(v) CONFIG.castSkills = v end,
-})
-SkillGroup:AddToggle("SkipDash", {
-	Text = "Skip Dash Skill",
-	Default = true,
-	Callback = function(v) CONFIG.skipDash = v end,
-})
-
-local SurvivalGroup = SurvivalSub:AddLeftGroupbox("Survival", "shield")
-SurvivalGroup:AddToggle("GodMode", {
-	Text = "God Mode",
-	Default = false,
-	Callback = function(v)
-		CONFIG.godMode = v
-		applyGodMode(v)
-	end,
-})
-SurvivalGroup:AddToggle("ChaseMobs", {
-	Text = "Chase Runaway Mobs",
-	Default = true,
-	Callback = function(v) CONFIG.chaseMobs = v end,
-})
-SurvivalGroup:AddSlider("ChaseRange", {
-	Text = "Chase Range",
-	Default = 9,
-	Min = 3,
-	Max = 40,
-	Rounding = 0,
-	Callback = function(v) CONFIG.chaseRange = v end,
-})
+local SurvivalSection = CombatTab:CreateSection("Survival")
+SurvivalSection:CreateToggle({ Name = "God Mode", CurrentValue = false, Callback = function(v)
+	CONFIG.godMode = v
+	applyGodMode(v)
+end })
+SurvivalSection:CreateToggle({ Name = "Chase Runaway Mobs", CurrentValue = true, Callback = function(v) CONFIG.chaseMobs = v end })
+SurvivalSection:CreateSlider({ Name = "Chase Range", Range = { 3, 40 }, Increment = 1, CurrentValue = 9, Callback = function(v) CONFIG.chaseRange = v end })
 
 --// ═══════════════════════════════════════════════════════════
 --// SHOP TAB
 --// ═══════════════════════════════════════════════════════════
 
-local WeaponSub = ShopTab:AddSubTab("Weapons", "rbxassetid://79379082636309")
-local SkillShopSub = ShopTab:AddSubTab("Skills", "rbxassetid://79379082636309")
-local AuraSub = ShopTab:AddSubTab("Auras", "rbxassetid://79379082636309")
-local RebirthSub = ShopTab:AddSubTab("Rebirth", "rbxassetid://79379082636309")
-
-local WeaponGroup = WeaponSub:AddLeftGroupbox("Weapons", "swords")
-WeaponGroup:AddToggle("AutoWeapon", {
-	Text = "Buy Weapons",
-	Default = false,
-	Callback = function(v) CONFIG.autoWeapon = v end,
-})
-local WeaponLabel = WeaponGroup:AddLabel("Weapon: -")
-WeaponGroup:AddButton("Buy Best Weapon Now", function()
+local WeaponSection = ShopTab:CreateSection("Weapons")
+WeaponSection:CreateToggle({ Name = "Buy Weapons", CurrentValue = false, Callback = function(v) CONFIG.autoWeapon = v end })
+local WeaponLabel = WeaponSection:CreateLabel("Weapon: -")
+WeaponSection:CreateButton({ Name = "Buy Best Weapon Now", Callback = function()
 	withUI("weapon", upgradeWeapon)
-end)
+end })
 
-local SkillShopGroup = SkillShopSub:AddLeftGroupbox("Skills", "zap")
-SkillShopGroup:AddToggle("AutoSkill", {
-	Text = "Buy Skills",
-	Default = false,
-	Callback = function(v) CONFIG.autoSkill = v end,
-})
+local SkillShopSection = ShopTab:CreateSection("Skills")
+SkillShopSection:CreateToggle({ Name = "Buy Skills", CurrentValue = false, Callback = function(v) CONFIG.autoSkill = v end })
 
-local AuraGroup = AuraSub:AddLeftGroupbox("Auras", "sparkles")
-AuraGroup:AddToggle("AutoAura", {
-	Text = "Buy Auras",
-	Default = false,
-	Callback = function(v) CONFIG.autoAura = v end,
-})
+local AuraSection = ShopTab:CreateSection("Auras")
+AuraSection:CreateToggle({ Name = "Buy Auras", CurrentValue = false, Callback = function(v) CONFIG.autoAura = v end })
 
-local RebirthGroup = RebirthSub:AddLeftGroupbox("Rebirth", "refresh-cw")
-RebirthGroup:AddToggle("AutoRebirth", {
-	Text = "Auto Rebirth",
-	Default = false,
-	Callback = function(v) CONFIG.autoRebirth = v end,
-})
-RebirthGroup:AddButton("Rebirth Now", function()
+local RebirthSection = ShopTab:CreateSection("Rebirth")
+RebirthSection:CreateToggle({ Name = "Auto Rebirth", CurrentValue = false, Callback = function(v) CONFIG.autoRebirth = v end })
+RebirthSection:CreateButton({ Name = "Rebirth Now", Callback = function()
 	if STATE.needLevel > 0 and STATE.level < STATE.needLevel then
 		STATE.note = string.format("need level %d to rebirth (at %d)", STATE.needLevel, STATE.level)
 		return
 	end
 	lastRebirth = 0
 	tryRebirth()
-end)
-RebirthGroup:AddButton("Reset Ladder", function()
+end })
+RebirthSection:CreateButton({ Name = "Reset Ladder", Callback = function()
 	resetProgression("manual")
-end)
+end })
 
 --// ═══════════════════════════════════════════════════════════
 --// EGGS & PETS TAB
 --// ═══════════════════════════════════════════════════════════
 
-local EggSub = PetTab:AddSubTab("Eggs", "rbxassetid://79379082636309")
-local PetSub = PetTab:AddSubTab("Pets", "rbxassetid://79379082636309")
-
-local EggGroup = EggSub:AddLeftGroupbox("Eggs", "egg")
-EggGroup:AddToggle("AutoBuyEgg", {
-	Text = "Buy Eggs",
-	Default = false,
-	Callback = function(v) CONFIG.autoBuyEgg = v end,
-})
-EggGroup:AddToggle("AutoEggBest", {
-	Text = "Pick Best Egg",
-	Default = true,
-	Callback = function(v) CONFIG.autoEggBest = v end,
-})
-EggGroup:AddDropdown("EggSelect", {
-	Values = (function()
-		local names = {}
-		for _, egg in ipairs(EGGS) do
-			table.insert(names, egg.name .. " (" .. shortNumber(egg.price) .. ")")
+local EggSection = PetTab:CreateSection("Eggs")
+EggSection:CreateToggle({ Name = "Buy Eggs", CurrentValue = false, Callback = function(v) CONFIG.autoBuyEgg = v end })
+EggSection:CreateToggle({ Name = "Pick Best Egg", CurrentValue = true, Callback = function(v) CONFIG.autoEggBest = v end })
+EggSection:CreateDropdown({ Name = "Select Egg", Options = (function()
+	local names = {}
+	for _, egg in ipairs(EGGS) do
+		table.insert(names, egg.name .. " (" .. shortNumber(egg.price) .. ")")
+	end
+	return names
+end)(), CurrentOption = 1, Callback = function(v)
+	for i, egg in ipairs(EGGS) do
+		if egg.name .. " (" .. shortNumber(egg.price) .. ")" == v then
+			CONFIG.egg = i
+			CONFIG.autoEggBest = false
+			break
 		end
-		return names
-	end)(),
-	Default = 1,
-	Text = "Select Egg",
-	Callback = function(v)
-		for i, egg in ipairs(EGGS) do
-			if egg.name .. " (" .. shortNumber(egg.price) .. ")" == v then
-				CONFIG.egg = i
-				CONFIG.autoEggBest = false
-				break
-			end
-		end
-	end,
-})
+	end
+end })
 
-local PetGroup = PetSub:AddLeftGroupbox("Pets", "dog")
-PetGroup:AddToggle("AutoPet", {
-	Text = "Equip Best Pet",
-	Default = false,
-	Callback = function(v) CONFIG.autoPet = v end,
-})
-PetGroup:AddSlider("PetCopies", {
-	Text = "Pet Copies",
-	Default = 3,
-	Min = 1,
-	Max = 10,
-	Rounding = 0,
-	Callback = function(v) CONFIG.petCopies = v end,
-})
-PetGroup:AddToggle("CleanPets", {
-	Text = "Sell Bad Pets",
-	Default = false,
-	Callback = function(v) CONFIG.cleanPets = v end,
-})
-PetGroup:AddSlider("PetKeep", {
-	Text = "Keep Pets",
-	Default = 12,
-	Min = 3,
-	Max = 34,
-	Rounding = 0,
-	Callback = function(v) CONFIG.petKeep = v end,
-})
+local PetSection = PetTab:CreateSection("Pets")
+PetSection:CreateToggle({ Name = "Equip Best Pet", CurrentValue = false, Callback = function(v) CONFIG.autoPet = v end })
+PetSection:CreateSlider({ Name = "Pet Copies", Range = { 1, 10 }, Increment = 1, CurrentValue = 3, Callback = function(v) CONFIG.petCopies = v end })
+PetSection:CreateToggle({ Name = "Sell Bad Pets", CurrentValue = false, Callback = function(v) CONFIG.cleanPets = v end })
+PetSection:CreateSlider({ Name = "Keep Pets", Range = { 3, 34 }, Increment = 1, CurrentValue = 12, Callback = function(v) CONFIG.petKeep = v end })
 
 --// ═══════════════════════════════════════════════════════════
 --// STATUS TAB
 --// ═══════════════════════════════════════════════════════════
 
-local PlayerSub = StatusTab:AddSubTab("Player", "rbxassetid://79379082636309")
-local ProgressSub = StatusTab:AddSubTab("Progress", "rbxassetid://79379082636309")
-local ToolsSub = StatusTab:AddSubTab("Tools", "rbxassetid://79379082636309")
+local PlayerSection = StatusTab:CreateSection("Player")
+local PlayerWins = PlayerSection:CreateLabel("Wins: 0")
+local PlayerDmg = PlayerSection:CreateLabel("Damage: 0")
+local PlayerLvl = PlayerSection:CreateLabel("Level: 0")
+local PlayerRb = PlayerSection:CreateLabel("Rebirth: 0")
 
-local PlayerGroup = PlayerSub:AddLeftGroupbox("Player Data", "user")
-local PlayerWins = PlayerGroup:AddLabel("Wins: 0")
-local PlayerDmg = PlayerGroup:AddLabel("Damage: 0")
-local PlayerLvl = PlayerGroup:AddLabel("Level: 0")
-local PlayerRb = PlayerGroup:AddLabel("Rebirth: 0")
+local SpendSection = StatusTab:CreateSection("Spending")
+local SpendReserve = SpendSection:CreateLabel("Reserve: 0")
+local SpendFree = SpendSection:CreateLabel("Free: 0")
+local SpendWeapon = SpendSection:CreateLabel("Weapon: -")
+local SpendNext = SpendSection:CreateLabel("Next: -")
 
-local SpendGroup = PlayerSub:AddRightGroupbox("Spending", "credit-card")
-local SpendReserve = SpendGroup:AddLabel("Reserve: 0")
-local SpendFree = SpendGroup:AddLabel("Free: 0")
-local SpendWeapon = SpendGroup:AddLabel("Weapon: -")
-local SpendNext = SpendGroup:AddLabel("Next: -")
+local ProgressSection = StatusTab:CreateSection("Progress")
+local ProgressStage = ProgressSection:CreateLabel("Stage Now: -")
+local ProgressHigh = ProgressSection:CreateLabel("Highest: 0")
+local ProgressPeak = ProgressSection:CreateLabel("Peak Damage: 0")
+local ProgressAuras = ProgressSection:CreateLabel("Auras: 0")
+local ProgressEggs = ProgressSection:CreateLabel("Eggs: 0")
+local ProgressSkills = ProgressSection:CreateLabel("Skills: 0")
+local ProgressDel = ProgressSection:CreateLabel("Deleted: 0")
 
-local ProgressGroup = ProgressSub:AddLeftGroupbox("Progress", "bar-chart")
-local ProgressStage = ProgressGroup:AddLabel("Stage Now: -")
-local ProgressHigh = ProgressGroup:AddLabel("Highest: 0")
-local ProgressPeak = ProgressGroup:AddLabel("Peak Damage: 0")
-local ProgressAuras = ProgressGroup:AddLabel("Auras: 0")
-local ProgressEggs = ProgressGroup:AddLabel("Eggs: 0")
-local ProgressSkills = ProgressGroup:AddLabel("Skills: 0")
-local ProgressDel = ProgressGroup:AddLabel("Deleted: 0")
-
-local ToolsGroup = ToolsSub:AddLeftGroupbox("Tools", "wrench")
-ToolsGroup:AddButton("Unstuck Movement", unstuck)
-ToolsGroup:AddButton("Redeem Codes", redeemCodes)
-ToolsGroup:AddButton("Rescan Controllers", function()
+local ToolsSection = StatusTab:CreateSection("Tools")
+ToolsSection:CreateButton({ Name = "Unstuck Movement", Callback = unstuck })
+ToolsSection:CreateButton({ Name = "Redeem Codes", Callback = redeemCodes })
+ToolsSection:CreateButton({ Name = "Rescan Controllers", Callback = function()
 	CTRL.lastScan = 0
 	scanControllers()
 	STATE.note = "controllers rescanned"
-end)
-ToolsGroup:AddButton("Clean Backpack", function()
+end })
+ToolsSection:CreateButton({ Name = "Clean Backpack", Callback = function()
 	withUI("backpack", function()
 		local main = plr.PlayerGui:FindFirstChild("Main")
 		local bag = main and main:FindFirstChild("BackPack")
@@ -1691,62 +1486,22 @@ ToolsGroup:AddButton("Clean Backpack", function()
 		cleanTab("EquipBut", "Equip", "EquipFrame", CONFIG.gearKeep, "gear")
 		cleanTab("GemBut", "Gem", "GemFrame", CONFIG.gemKeep, "gems")
 	end)
-end)
+end })
 
 --// ═══════════════════════════════════════════════════════════
 --// SETTINGS TAB (always last)
 --// ═══════════════════════════════════════════════════════════
 
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub")
-if isLobby then SaveManager:SetSubFolder("lobby") else SaveManager:SetSubFolder("game") end
-
-ThemeManager:ApplyToTab(SettingsTab)
-SaveManager:BuildConfigSection(SettingsTab)
-
-local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "wrench")
-MenuGroup:AddToggle("KeybindMenuOpen", {
-	Default = Library.KeybindFrame.Visible,
-	Text = "Open Keybind Menu",
-	Callback = function(value) Library.KeybindFrame.Visible = value end,
-})
-MenuGroup:AddToggle("ShowCustomCursor", {
-	Text = "Custom Cursor",
-	Default = Library.ShowCustomCursor,
-	Callback = function(Value) Library.ShowCustomCursor = Value end,
-})
-MenuGroup:AddButton("Test Notification", function()
-	Library:Notify({ Title = "Ivory", Description = "This is a test notification!", Type = "Info", Time = 3 })
-end)
-MenuGroup:AddDropdown("NotifySide", {
-	Values = { "Left", "Right" },
-	Default = "Right",
-	Text = "Notification Side",
-	Callback = function(Value) Library.NotifySide = Value end,
-})
-MenuGroup:AddDropdown("DPIDropdown", {
-	Values = { "50%", "75%", "100%", "125%", "150%", "175%", "200%" },
-	Default = "100%",
-	Text = "DPI Scale",
-	Callback = function(Value) Library:SetDPIScale(tonumber(Value:gsub("%%", ""))) end,
-})
-MenuGroup:AddSlider("UICornerSlider", {
-	Text = "Corner Radius",
-	Default = 4,
-	Min = 0,
-	Max = 20,
-	Rounding = 0,
-	Callback = function(value) Window:SetCornerRadius(value) end,
-})
-MenuGroup:AddDivider()
-MenuGroup:AddLabel("Menu: RightShift (default)"):AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
-MenuGroup:AddButton("Unload", function() Library:Unload() end)
-Library.ToggleKeybind = Options.MenuKeybind
-SaveManager:LoadAutoloadConfig()
+local MenuSection = SettingsTab:CreateSection("Menu")
+MenuSection:CreateToggle({ Name = "Test Notification", CurrentValue = false, Callback = function()
+	Library.Notify({ Title = "Ivory", Content = "This is a test notification!", Type = "Info", Duration = 3 })
+end })
+MenuSection:CreateDropdown({ Name = "Notification Side", Options = { "Left", "Right" }, CurrentOption = "Right", Callback = function(Value) Library.NotifySide = Value end })
+MenuSection:CreateDropdown({ Name = "DPI Scale", Options = { "50%", "75%", "100%", "125%", "150%", "175%", "200%" }, CurrentOption = "100%", Callback = function(Value) Library:SetDPIScale(tonumber(Value:gsub("%%", ""))) end })
+MenuSection:CreateSlider({ Name = "Corner Radius", Range = { 0, 20 }, Increment = 1, CurrentValue = 4, Callback = function(value) Window:SetCornerRadius(value) end })
+MenuSection:CreateDivider()
+MenuSection:CreateKeybind({ Name = "Menu Keybind", CurrentKeybind = "RightShift" })
+MenuSection:CreateButton({ Name = "Unload", Callback = function() Library:Unload() end })
 
 --// ═══════════════════════════════════════════════════════════
 --// UI REFRESH LOOP
@@ -1863,8 +1618,6 @@ task.spawn(function()
 	end
 end)
 
-Library:OnUnload(function()
-	-- nothing extra to clean up
-end)
+-- nothing extra to clean up
 
 print("[Ivory] LootEvo loaded! (gen " .. generation .. ")")

@@ -28,61 +28,17 @@ for _, obj in ipairs(CoreGui:GetChildren()) do
 	if obj.Name == "IvoryMurderDuels" then obj:Destroy() end
 end
 
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
-
-local Options = Library.Options
-local Toggles = Library.Toggles
-
-Library.ForceCheckbox = false
-Library.ShowToggleFrameInKeybinds = true
-
-local Window = Library:CreateWindow({
-	Title = "Ivory",
-	NotifySide = "Right",
-	ShowCustomCursor = false,
-	Footer = {
-		"v1.0 |",
-		{ Text = "Murder Duels", Copyable = true },
-		"|",
-		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
-	},
-	CopyableFooter = true,
-	FuzzySearch = true,
-	SearchValues = true,
-	UnlockMouseWhileOpen = false,
-})
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	local ok, src = pcall(function()
+		return request({
+			Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+			Method = "GET"
+		}).Body
+	end)
+	if ok then LIB_SRC = src end
+end
+local Library = loadstring(LIB_SRC)()
 
 local menuVisible = true
 
@@ -95,6 +51,16 @@ UserInputService.InputBegan:Connect(function(input, gpe)
 		end)
 	end
 end)
+
+local Window = Library.CreateWindow({
+	Name = "Ivory",
+	Width = 460,
+	Height = 360,
+	NotifySide = "Right",
+	ShowCustomCursor = false,
+	FuzzySearch = true,
+	SearchValues = true,
+})
 
 local currentTarget = nil
 RunService.RenderStepped:Connect(function()
@@ -194,9 +160,9 @@ oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
 end)
 
 local Tabs = {
-	Aimbot = Window:AddTab({ Name = "Aimbot", Icon = "swords", Description = "Aimbot & Silent Aim" }),
-	Visuals = Window:AddTab({ Name = "Visuals", Icon = "swords", Description = "ESP, Highlights, Health" }),
-	Settings = Window:AddTab({ Name = "Settings", Icon = "swords", Description = "UI settings" }),
+	Aimbot = Window:CreateTab({ Name = "Aimbot" }),
+	Visuals = Window:CreateTab({ Name = "Visuals" }),
+	Settings = Window:CreateTab({ Name = "Settings" }),
 }
 
 -- ═══════════════════════════════════════════════════════════
@@ -452,173 +418,152 @@ end
 -- AIMBOT TAB
 -- ═══════════════════════════════════════════════════════════
 
-local AimbotGroup = Tabs.Aimbot:AddLeftGroupbox("Aimbot")
-local SilentAimGroup = Tabs.Aimbot:AddRightGroupbox("Silent Aim")
+local AimbotSection = Tabs.Aimbot:CreateSection("Aimbot")
+local SilentAimSection = Tabs.Aimbot:CreateSection("Silent Aim")
 
-AimbotGroup:AddToggle("AimbotEnabled", {
-	Text = "Enable Aimbot",
-	Default = false,
-	Tooltip = "Locks mouse to closest enemy",
+AimbotSection:CreateToggle({
+	Name = "Enable Aimbot",
+	CurrentValue = false,
 })
 
-AimbotGroup:AddDropdown("AimSort", {
-	Text = "Target Sort",
-	Values = {"Crosshair", "Distance"},
-	Default = "Crosshair",
-	Tooltip = "Crosshair = nearest to screen center | Distance = nearest in world",
+AimbotSection:CreateDropdown({
+	Name = "Target Sort",
+	Options = {"Crosshair", "Distance"},
+	CurrentOption = "Crosshair",
 })
 
-AimbotGroup:AddLabel("Aim Key"):AddKeyPicker("AimKey", {
-	Default = "E",
-	NoUI = false,
-	Text = "Aim Keybind",
+AimbotSection:CreateKeybind({
+	Name = "Aim Keybind",
+	CurrentKeybind = "E",
 })
 
-AimbotGroup:AddToggle("RightClickAim", {
-	Text = "Right Click Aim",
-	Default = false,
-	Tooltip = "Also aim when holding right mouse button (ADS)",
+AimbotSection:CreateToggle({
+	Name = "Right Click Aim",
+	CurrentValue = false,
 })
 
-AimbotGroup:AddToggle("LeftClickAim", {
-	Text = "Left Click Aim",
-	Default = false,
-	Tooltip = "Also aim when holding left mouse button",
+AimbotSection:CreateToggle({
+	Name = "Left Click Aim",
+	CurrentValue = false,
 })
 
-AimbotGroup:AddToggle("AimbotFOVEnabled", {
-	Text = "Show FOV",
-	Default = false,
-	Tooltip = "Shows aimbot FOV circle",
+AimbotSection:CreateToggle({
+	Name = "Show FOV",
+	CurrentValue = false,
 })
 
-AimbotGroup:AddSlider("AimbotFOV", {
-	Text = "FOV Size",
-	Default = 120,
-	Min = 30,
-	Max = 500,
-	Rounding = 0,
+AimbotSection:CreateSlider({
+	Name = "FOV Size",
+	Range = {30, 500},
+	Increment = 1,
+	CurrentValue = 120,
 })
 
-AimbotGroup:AddSlider("AimbotSmoothing", {
-	Text = "Smoothing",
-	Default = 5,
-	Min = 1,
-	Max = 30,
-	Rounding = 0,
-	Tooltip = "Lower = snappier, higher = smoother",
+AimbotSection:CreateSlider({
+	Name = "Smoothing",
+	Range = {1, 30},
+	Increment = 1,
+	CurrentValue = 5,
 })
 
-AimbotGroup:AddDropdown("AimbotTarget", {
-	Text = "Target Part",
-	Values = {"HumanoidRootPart", "Head", "UpperTorso"},
-	Default = "Head",
+AimbotSection:CreateDropdown({
+	Name = "Target Part",
+	Options = {"HumanoidRootPart", "Head", "UpperTorso"},
+	CurrentOption = "Head",
 })
 
-AimbotGroup:AddToggle("AimbotTeamCheck", {
-	Text = "Team Check",
-	Default = true,
+AimbotSection:CreateToggle({
+	Name = "Team Check",
+	CurrentValue = true,
 })
 
-AimbotGroup:AddToggle("AimbotAliveCheck", {
-	Text = "Alive Check",
-	Default = true,
+AimbotSection:CreateToggle({
+	Name = "Alive Check",
+	CurrentValue = true,
 })
 
-AimbotGroup:AddToggle("StickyAim", {
-	Text = "Sticky Aim",
-	Default = true,
-	Tooltip = "Keeps locked on same target until they die or you release key",
+AimbotSection:CreateToggle({
+	Name = "Sticky Aim",
+	CurrentValue = true,
 })
 
-AimbotGroup:AddSlider("MaxDistance", {
-	Text = "Max Distance",
-	Default = 500,
-	Min = 10,
-	Max = 2000,
-	Rounding = 0,
-	Tooltip = "Max world distance for aimbot + ESP",
+AimbotSection:CreateSlider({
+	Name = "Max Distance",
+	Range = {10, 2000},
+	Increment = 1,
+	CurrentValue = 500,
 })
 
 -- Silent Aim
-SilentAimGroup:AddToggle("SilentAimEnabled", {
-	Text = "Enable Silent Aim",
-	Default = false,
-	Tooltip = "Snaps to target when shooting",
+SilentAimSection:CreateToggle({
+	Name = "Enable Silent Aim",
+	CurrentValue = false,
 })
 
-SilentAimGroup:AddSlider("SilentAimFOV", {
-	Text = "FOV Size",
-	Default = 150,
-	Min = 30,
-	Max = 500,
-	Rounding = 0,
+SilentAimSection:CreateSlider({
+	Name = "FOV Size",
+	Range = {30, 500},
+	Increment = 1,
+	CurrentValue = 150,
 })
 
-SilentAimGroup:AddToggle("SilentAimFOVEnabled", {
-	Text = "Show FOV",
-	Default = false,
-	Tooltip = "Shows silent aim FOV circle",
+SilentAimSection:CreateToggle({
+	Name = "Show FOV",
+	CurrentValue = false,
 })
 
-SilentAimGroup:AddDropdown("SilentAimPart", {
-	Text = "Target Part",
-	Values = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"},
-	Default = "Head",
+SilentAimSection:CreateDropdown({
+	Name = "Target Part",
+	Options = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"},
+	CurrentOption = "Head",
 })
 
-SilentAimGroup:AddToggle("SilentAimRandomPart", {
-	Text = "Random Part",
-	Default = false,
-	Tooltip = "Randomly picks a body part each shot based on % below",
+SilentAimSection:CreateToggle({
+	Name = "Random Part",
+	CurrentValue = false,
 })
 
-SilentAimGroup:AddSlider("SilentAimHeadPercent", {
-	Text = "Head %",
-	Default = 20,
-	Min = 0,
-	Max = 100,
-	Rounding = 0,
+SilentAimSection:CreateSlider({
+	Name = "Head %",
+	Range = {0, 100},
+	Increment = 1,
+	CurrentValue = 20,
 })
 
-SilentAimGroup:AddSlider("SilentAimRootPercent", {
-	Text = "Root %",
-	Default = 30,
-	Min = 0,
-	Max = 100,
-	Rounding = 0,
+SilentAimSection:CreateSlider({
+	Name = "Root %",
+	Range = {0, 100},
+	Increment = 1,
+	CurrentValue = 30,
 })
 
-SilentAimGroup:AddSlider("SilentAimUpperPercent", {
-	Text = "UpperTorso %",
-	Default = 30,
-	Min = 0,
-	Max = 100,
-	Rounding = 0,
+SilentAimSection:CreateSlider({
+	Name = "UpperTorso %",
+	Range = {0, 100},
+	Increment = 1,
+	CurrentValue = 30,
 })
 
-SilentAimGroup:AddSlider("SilentAimLowerPercent", {
-	Text = "LowerTorso %",
-	Default = 20,
-	Min = 0,
-	Max = 100,
-	Rounding = 0,
+SilentAimSection:CreateSlider({
+	Name = "LowerTorso %",
+	Range = {0, 100},
+	Increment = 1,
+	CurrentValue = 20,
 })
 
-SilentAimGroup:AddToggle("SilentAimTeamCheck", {
-	Text = "Team Check",
-	Default = true,
+SilentAimSection:CreateToggle({
+	Name = "Team Check",
+	CurrentValue = true,
 })
 
-SilentAimGroup:AddToggle("SilentAimAliveCheck", {
-	Text = "Alive Check",
-	Default = true,
+SilentAimSection:CreateToggle({
+	Name = "Alive Check",
+	CurrentValue = true,
 })
 
-SilentAimGroup:AddToggle("SilentAimWallCheck", {
-	Text = "Wall Check",
-	Default = true,
-	Tooltip = "Won't shoot through walls",
+SilentAimSection:CreateToggle({
+	Name = "Wall Check",
+	CurrentValue = true,
 })
 
 -- FOV Circle
@@ -695,84 +640,76 @@ end)
 -- VISUALS TAB
 -- ═══════════════════════════════════════════════════════════
 
-local BoxESPGroup = Tabs.Visuals:AddLeftGroupbox("Player ESP")
-local HighlightGroup = Tabs.Visuals:AddRightGroupbox("Highlights")
+local BoxESPSection = Tabs.Visuals:CreateSection("Player ESP")
+local HighlightSection = Tabs.Visuals:CreateSection("Highlights")
 
 -- Box ESP
-BoxESPGroup:AddToggle("BoxESP", {
-	Text = "Enable Box ESP",
-	Default = false,
+BoxESPSection:CreateToggle({
+	Name = "Enable Box ESP",
+	CurrentValue = false,
 })
 
-BoxESPGroup:AddToggle("NameESP", {
-	Text = "Show Names",
-	Default = false,
+BoxESPSection:CreateToggle({
+	Name = "Show Names",
+	CurrentValue = false,
 })
 
-BoxESPGroup:AddToggle("DistanceESP", {
-	Text = "Show Distance",
-	Default = false,
+BoxESPSection:CreateToggle({
+	Name = "Show Distance",
+	CurrentValue = false,
 })
 
-BoxESPGroup:AddToggle("TeamColorESP", {
-	Text = "Team Color",
-	Default = true,
+BoxESPSection:CreateToggle({
+	Name = "Team Color",
+	CurrentValue = true,
 })
 
-BoxESPGroup:AddToggle("BoxESPFilled", {
-	Text = "Filled Boxes",
-	Default = false,
+BoxESPSection:CreateToggle({
+	Name = "Filled Boxes",
+	CurrentValue = false,
 })
 
-BoxESPGroup:AddSlider("BoxESPTransparency", {
-	Text = "Transparency",
-	Default = 3,
-	Min = 1,
-	Max = 10,
-	Rounding = 0,
+BoxESPSection:CreateSlider({
+	Name = "Transparency",
+	Range = {1, 10},
+	Increment = 1,
+	CurrentValue = 3,
 })
 
 -- Highlight / Chams
-HighlightGroup:AddToggle("HighlightEnabled", {
-	Text = "Enable Highlights",
-	Default = false,
-	Tooltip = "Draws chams on enemies through walls",
+HighlightSection:CreateToggle({
+	Name = "Enable Highlights",
+	CurrentValue = false,
 })
 
-HighlightGroup:AddToggle("HighlightFillColorPick", {
-	Text = "Fill Color",
-	Default = false,
-}):AddColorPicker("HighlightFillColor", {
-	Default = PURPLE,
+HighlightSection:CreateColorPicker({
+	Name = "Fill Color",
+	Color = PURPLE,
 })
 
-HighlightGroup:AddToggle("HighlightOutlineColorPick", {
-	Text = "Outline Color",
-	Default = false,
-}):AddColorPicker("HighlightOutlineColor", {
-	Default = WHITE,
+HighlightSection:CreateColorPicker({
+	Name = "Outline Color",
+	Color = WHITE,
 })
 
-HighlightGroup:AddSlider("HighlightFillTrans", {
-	Text = "Fill Transparency",
-	Default = 5,
-	Min = 1,
-	Max = 10,
-	Rounding = 0,
+HighlightSection:CreateSlider({
+	Name = "Fill Transparency",
+	Range = {1, 10},
+	Increment = 1,
+	CurrentValue = 5,
 })
 
-HighlightGroup:AddSlider("HighlightOutlineTrans", {
-	Text = "Outline Transparency",
-	Default = 1,
-	Min = 1,
-	Max = 10,
-	Rounding = 0,
+HighlightSection:CreateSlider({
+	Name = "Outline Transparency",
+	Range = {1, 10},
+	Increment = 1,
+	CurrentValue = 1,
 })
 
-HighlightGroup:AddDropdown("HighlightDepth", {
-	Text = "Depth Mode",
-	Values = {"AlwaysOnTop", "Occluded"},
-	Default = "AlwaysOnTop",
+HighlightSection:CreateDropdown({
+	Name = "Depth Mode",
+	Options = {"AlwaysOnTop", "Occluded"},
+	CurrentOption = "AlwaysOnTop",
 })
 
 -- ESP Drawing
@@ -989,63 +926,38 @@ end
 -- SETTINGS TAB
 -- ═══════════════════════════════════════════════════════════
 
-local SettingsGroup = Tabs.Settings:AddLeftGroupbox("Menu")
-local CreditsGroup = Tabs.Settings:AddRightGroupbox("Credits")
+local SettingsSection = Tabs.Settings:CreateSection("Menu")
+local CreditsSection = Tabs.Settings:CreateSection("Credits")
 
-SettingsGroup:AddButton({
-	Text = "Copy Discord Link",
-	Func = function()
-		if setclipboard then
-			setclipboard("https://discord.gg/ivory")
-			Library:Notify("Discord link copied!", 3)
-		end
-	end,
-	Tooltip = "Join for dupe",
+SettingsSection:CreateButton({Name = "Copy Discord Link", Callback = function()
+	if setclipboard then
+		setclipboard("https://discord.gg/ivory")
+		Library.Notify({ Title = "Ivory Hub", Content = "Discord link copied!", Duration = 3, Type = "Success" })
+	end
+end})
+
+SettingsSection:CreateButton({Name = "Destroy UI", Callback = function()
+	for _, conn in pairs(connections) do
+		if conn.Connected then conn:Disconnect() end
+	end
+	fovCircle:Remove()
+	silentAimFOVCircle:Remove()
+	for _, objs in pairs(espObjects) do
+		for _, v in pairs(objs) do v:Remove() end
+	end
+	for _, hl in pairs(highlights) do
+		pcall(function() hl:Destroy() end)
+	end
+	pcall(function() Library:Unload() end)
+end})
+
+SettingsSection:CreateKeybind({
+	Name = "Menu Toggle Key",
+	CurrentKeybind = "RightShift",
 })
 
-SettingsGroup:AddButton({
-	Text = "Destroy UI",
-	Func = function()
-		for _, conn in pairs(connections) do
-			if conn.Connected then conn:Disconnect() end
-		end
-		fovCircle:Remove()
-		silentAimFOVCircle:Remove()
-		for _, objs in pairs(espObjects) do
-			for _, v in pairs(objs) do v:Remove() end
-		end
-		for _, hl in pairs(highlights) do
-			pcall(function() hl:Destroy() end)
-		end
-		for key, size in pairs(originalSizes) do
-			for _, player in ipairs(Players:GetPlayers()) do
-				if player.UserId == key and player.Character then
-					local hrp = player.Character:FindFirstChild("HumanoidRootPart")
-					if hrp then hrp.Size = size; hrp.Transparency = 1 end
-				end
-			end
-		end
-		pcall(function() Library:Unload() end)
-	end,
-	Tooltip = "Closes the menu",
-})
-
-SettingsGroup:AddLabel("Menu Keybind"):AddKeyPicker("MenuKeybind", {
-	Default = "RightShift",
-	NoUI = false,
-	Text = "Menu Toggle Key",
-})
-
-CreditsGroup:AddLabel('<font size="18" color="#FF69B4"><b>Made by Mommy Veqxoo &lt; / 3</b></font>', true)
-CreditsGroup:AddLabel("Ivory Hub v1.0 | Murder Duels")
-
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({})
-SaveManager:BuildConfigSection(Tabs.Settings)
-ThemeManager:ApplyToTab(Tabs.Settings)
-SaveManager:LoadAutoloadConfig()
+CreditsSection:CreateLabel("Made by Mommy Veqxoo < / 3")
+CreditsSection:CreateLabel("Ivory Hub v1.0 | Murder Duels")
 
 -- ═══════════════════════════════════════════════════════════
 -- FOV number input at bottom of groupbox
@@ -1093,10 +1005,10 @@ local function AddFOVInput(groupbox, sliderOption)
 end
 
 pcall(function()
-	AddFOVInput(AimbotGroup, Options.AimbotFOV)
+	AddFOVInput(AimbotSection, Options.AimbotFOV)
 end)
 pcall(function()
-	AddFOVInput(SilentAimGroup, Options.SilentAimFOV)
+	AddFOVInput(SilentAimSection, Options.SilentAimFOV)
 end)
 
 -- ═══════════════════════════════════════════════════════════
@@ -1139,4 +1051,4 @@ Players.PlayerRemoving:Connect(function(player)
 	end
 end)
 
-Library:Notify("Ivory Hub loaded! Press RightShift to toggle menu.", 5)
+Library.Notify({ Title = "Ivory Hub", Content = "Ivory Hub loaded! Press RightShift to toggle menu.", Duration = 5, Type = "Info" })

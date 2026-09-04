@@ -26,60 +26,17 @@ for _, obj in ipairs(CoreGui:GetChildren()) do
 	if obj.Name == "IvoryHypershot" then obj:Destroy() end
 end
 
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
-
-local Options = Library.Options
-local Toggles = Library.Toggles
-
-Library.ForceCheckbox = false
-Library.ShowToggleFrameInKeybinds = true
-
-local Window = Library:CreateWindow({
-	Title = "Ivory",
-	NotifySide = "Right",
-	ShowCustomCursor = false,
-	Footer = {
-		"v1.0 |",
-		{ Text = "Hypershot", Copyable = true },
-		"|",
-		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
-	},
-	CopyableFooter = true,
-	FuzzySearch = true,
-	SearchValues = true,
-})
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	local ok, src = pcall(function()
+		return request({
+			Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+			Method = "GET"
+		}).Body
+	end)
+	if ok then LIB_SRC = src end
+end
+local Library = loadstring(LIB_SRC)()
 
 local menuVisible = true
 
@@ -93,10 +50,20 @@ UserInputService.InputBegan:Connect(function(input, gpe)
 	end
 end)
 
+local Window = Library.CreateWindow({
+	Name = "Ivory",
+	Width = 460,
+	Height = 360,
+	NotifySide = "Right",
+	ShowCustomCursor = false,
+	FuzzySearch = true,
+	SearchValues = true,
+})
+
 local Tabs = {
-	Aimbot = Window:AddTab({ Name = "Aimbot", Icon = "swords", Description = "Aimbot & Triggerbot" }),
-	Visuals = Window:AddTab({ Name = "Visuals", Icon = "swords", Description = "ESP, Chams, FOV" }),
-	Settings = Window:AddTab({ Name = "Settings", Icon = "swords", Description = "UI settings" }),
+	Aimbot = Window:CreateTab({ Name = "Aimbot" }),
+	Visuals = Window:CreateTab({ Name = "Visuals" }),
+	Settings = Window:CreateTab({ Name = "Settings" }),
 }
 
 -- ═══════════════════════════════════════════════════════════
@@ -307,184 +274,160 @@ end)
 -- AIMBOT TAB
 -- ═══════════════════════════════════════════════════════════
 
-local DiscordGroup = Tabs.Aimbot:AddLeftGroupbox("Ivory Hub", "info")
-DiscordGroup:AddButton("JOIN DISCORD FOR DUPE", function()
+local DiscordSection = Tabs.Aimbot:CreateSection("Ivory Hub")
+DiscordSection:CreateButton({Name = "JOIN DISCORD FOR DUPE", Callback = function()
 	pcall(setclipboard, "https://discord.gg/ivory")
-	Library:Notify({ Title = "Ivory Hub", Description = "Discord link copied!", Time = 2, Type = "Success" })
-end)
+	Library.Notify({ Title = "Ivory Hub", Content = "Discord link copied!", Duration = 2, Type = "Success" })
+end})
 
-local AimbotGroup = Tabs.Aimbot:AddLeftGroupbox("Aimbot", "crosshair")
+local AimbotSection = Tabs.Aimbot:CreateSection("Aimbot")
 
-AimbotGroup:AddToggle("Aimbot", {
-	Text = "Aimbot",
-	Default = false,
-	Tooltip = "Smooth aim toward closest player",
+AimbotSection:CreateToggle({
+	Name = "Aimbot",
+	CurrentValue = false,
 })
 
-AimbotGroup:AddToggle("HoldAimbot", {
-	Text = "Hold to Aim",
-	Default = false,
-	Tooltip = "Only aim while holding the key below",
+AimbotSection:CreateToggle({
+	Name = "Hold to Aim",
+	CurrentValue = false,
 })
 
-AimbotGroup:AddDropdown("HoldKey", {
-	Text = "Hold Key",
-	Values = {"Right Click", "Left Click", "E", "Q", "Left Shift", "Left Ctrl", "C", "V", "X", "Z"},
-	Default = "Right Click",
-	Tooltip = "Key to hold for aimbot",
+AimbotSection:CreateDropdown({
+	Name = "Hold Key",
+	Options = {"Right Click", "Left Click", "E", "Q", "Left Shift", "Left Ctrl", "C", "V", "X", "Z"},
+	CurrentOption = "Right Click",
 })
 
-AimbotGroup:AddToggle("StickyAim", {
-	Text = "Sticky Aim",
-	Default = false,
-	Tooltip = "Stay locked on current target until they die or you right click",
+AimbotSection:CreateToggle({
+	Name = "Sticky Aim",
+	CurrentValue = false,
 })
 
-AimbotGroup:AddDropdown("AimPart", {
-	Text = "Aim Part",
-	Values = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"},
-	Default = "Head",
-	Tooltip = "Body part to aim at",
+AimbotSection:CreateDropdown({
+	Name = "Aim Part",
+	Options = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"},
+	CurrentOption = "Head",
 })
 
-AimbotGroup:AddDropdown("TargetMode", {
-	Text = "Target Mode",
-	Values = {"Crosshair", "Distance"},
-	Default = "Crosshair",
-	Tooltip = "Crosshair = closest to your mouse | Distance = closest to your character",
+AimbotSection:CreateDropdown({
+	Name = "Target Mode",
+	Options = {"Crosshair", "Distance"},
+	CurrentOption = "Crosshair",
 })
 
-AimbotGroup:AddSlider("AimbotFOV", {
-	Text = "FOV",
-	Default = 150,
-	Min = 30,
-	Max = 500,
-	Rounding = 0,
+AimbotSection:CreateSlider({
+	Name = "FOV",
+	Range = {30, 500},
+	Increment = 1,
+	CurrentValue = 150,
 })
 
-AimbotGroup:AddSlider("AimbotStrength", {
-	Text = "Strength",
-	Default = 100,
-	Min = 10,
-	Max = 100,
-	Rounding = 0,
-	Tooltip = "How much the aim moves toward target (%)",
+AimbotSection:CreateSlider({
+	Name = "Strength",
+	Range = {10, 100},
+	Increment = 1,
+	CurrentValue = 100,
 })
 
-AimbotGroup:AddSlider("AimbotSpeed", {
-	Text = "Speed",
-	Default = 50,
-	Min = 1,
-	Max = 100,
-	Rounding = 0,
-	Tooltip = "Aim speed (lower = faster)",
+AimbotSection:CreateSlider({
+	Name = "Speed",
+	Range = {1, 100},
+	Increment = 1,
+	CurrentValue = 50,
 })
 
-AimbotGroup:AddSlider("AimbotSmoothing", {
-	Text = "Smoothing",
-	Default = 5,
-	Min = 1,
-	Max = 20,
-	Rounding = 0,
-	Tooltip = "Higher = smoother (slower)",
+AimbotSection:CreateSlider({
+	Name = "Smoothing",
+	Range = {1, 20},
+	Increment = 1,
+	CurrentValue = 5,
 })
 
-AimbotGroup:AddToggle("TeamCheck", {
-	Text = "Team Check",
-	Default = false,
-	Tooltip = "Don't aim at teammates",
+AimbotSection:CreateToggle({
+	Name = "Team Check",
+	CurrentValue = false,
 })
 
-AimbotGroup:AddToggle("WallCheck", {
-	Text = "Wall Check",
-	Default = false,
-	Tooltip = "Don't aim through walls",
+AimbotSection:CreateToggle({
+	Name = "Wall Check",
+	CurrentValue = false,
 })
 
-AimbotGroup:AddToggle("AliveCheck", {
-	Text = "Alive Check",
-	Default = true,
-	Tooltip = "Only aim at alive players",
+AimbotSection:CreateToggle({
+	Name = "Alive Check",
+	CurrentValue = true,
 })
 
-AimbotGroup:AddToggle("IncludeBots", {
-	Text = "Include Bots",
-	Default = true,
-	Tooltip = "Also aim at NPC bots",
+AimbotSection:CreateToggle({
+	Name = "Include Bots",
+	CurrentValue = true,
 })
 
-AimbotGroup:AddSlider("AimbotDistance", {
-	Text = "Max Distance",
-	Default = 500,
-	Min = 50,
-	Max = 2000,
-	Rounding = 0,
+AimbotSection:CreateSlider({
+	Name = "Max Distance",
+	Range = {50, 2000},
+	Increment = 1,
+	CurrentValue = 500,
 })
 
 -- Triggerbot
-local TriggerGroup = Tabs.Aimbot:AddRightGroupbox("Triggerbot", "zap")
+local TriggerSection = Tabs.Aimbot:CreateSection("Triggerbot")
 
-TriggerGroup:AddToggle("Triggerbot", {
-	Text = "Triggerbot",
-	Default = false,
-	Tooltip = "Auto fire when crosshair is on enemy",
+TriggerSection:CreateToggle({
+	Name = "Triggerbot",
+	CurrentValue = false,
 })
 
-TriggerGroup:AddSlider("TriggerReaction", {
-	Text = "Reaction (ms)",
-	Default = 100,
-	Min = 0,
-	Max = 500,
-	Rounding = 0,
-	Tooltip = "Delay before shooting (ms)",
+TriggerSection:CreateSlider({
+	Name = "Reaction (ms)",
+	Range = {0, 500},
+	Increment = 1,
+	CurrentValue = 100,
 })
 
-TriggerGroup:AddSlider("TriggerFOV", {
-	Text = "FOV",
-	Default = 30,
-	Min = 5,
-	Max = 150,
-	Rounding = 0,
+TriggerSection:CreateSlider({
+	Name = "FOV",
+	Range = {5, 150},
+	Increment = 1,
+	CurrentValue = 30,
 })
 
-TriggerGroup:AddToggle("TriggerShowFOV", {
-	Text = "Show Trigger FOV",
-	Default = false,
+TriggerSection:CreateToggle({
+	Name = "Show Trigger FOV",
+	CurrentValue = false,
 })
 
-TriggerGroup:AddToggle("TriggerHoverOnly", {
-	Text = "Only on Hover",
-	Default = false,
-	Tooltip = "Only shoot when mouse is directly on target",
+TriggerSection:CreateToggle({
+	Name = "Only on Hover",
+	CurrentValue = false,
 })
 
-TriggerGroup:AddDropdown("TriggerAimPart", {
-	Text = "Aim Part",
-	Values = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"},
-	Default = "Head",
+TriggerSection:CreateDropdown({
+	Name = "Aim Part",
+	Options = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"},
+	CurrentOption = "Head",
 })
 
-TriggerGroup:AddToggle("TriggerTeamCheck", {
-	Text = "Team Check",
-	Default = false,
+TriggerSection:CreateToggle({
+	Name = "Team Check",
+	CurrentValue = false,
 })
 
-TriggerGroup:AddToggle("TriggerWallCheck", {
-	Text = "Wall Check",
-	Default = false,
+TriggerSection:CreateToggle({
+	Name = "Wall Check",
+	CurrentValue = false,
 })
 
-TriggerGroup:AddToggle("TriggerAliveCheck", {
-	Text = "Alive Check",
-	Default = true,
+TriggerSection:CreateToggle({
+	Name = "Alive Check",
+	CurrentValue = true,
 })
 
-TriggerGroup:AddSlider("TriggerDistance", {
-	Text = "Max Distance",
-	Default = 500,
-	Min = 50,
-	Max = 2000,
-	Rounding = 0,
+TriggerSection:CreateSlider({
+	Name = "Max Distance",
+	Range = {50, 2000},
+	Increment = 1,
+	CurrentValue = 500,
 })
 
 -- ═══════════════════════════════════════════════════════════
@@ -492,210 +435,192 @@ TriggerGroup:AddSlider("TriggerDistance", {
 -- ═══════════════════════════════════════════════════════════
 
 -- FOV Circle
-local FOVGroup = Tabs.Visuals:AddLeftGroupbox("FOV Circle", "circle")
+local FOVSection = Tabs.Visuals:CreateSection("FOV Circle")
 
-FOVGroup:AddToggle("FOVCircle", {
-	Text = "FOV Circle",
-	Default = false,
-	Tooltip = "Shows aimbot FOV on screen",
+FOVSection:CreateToggle({
+	Name = "FOV Circle",
+	CurrentValue = false,
 })
 
-FOVGroup:AddSlider("FOVSize", {
-	Text = "Size",
-	Default = 150,
-	Min = 30,
-	Max = 500,
-	Rounding = 0,
+FOVSection:CreateSlider({
+	Name = "Size",
+	Range = {30, 500},
+	Increment = 1,
+	CurrentValue = 150,
 })
 
-FOVGroup:AddToggle("FOVFill", {
-	Text = "Filled",
-	Default = false,
+FOVSection:CreateToggle({
+	Name = "Filled",
+	CurrentValue = false,
 })
 
-FOVGroup:AddSlider("FOVFillTransparency", {
-	Text = "Fill Transparency",
-	Default = 0.8,
-	Min = 0,
-	Max = 1,
-	Rounding = 1,
+FOVSection:CreateSlider({
+	Name = "Fill Transparency",
+	Range = {0, 1},
+	Increment = 0.1,
+	CurrentValue = 0.8,
 })
 
-FOVGroup:AddToggle("FOVSpin", {
-	Text = "Spin",
-	Default = false,
-	Tooltip = "Circle spins slowly",
+FOVSection:CreateToggle({
+	Name = "Spin",
+	CurrentValue = false,
 })
 
-FOVGroup:AddSlider("FOVSpinSpeed", {
-	Text = "Spin Speed",
-	Default = 50,
-	Min = 10,
-	Max = 200,
-	Rounding = 0,
+FOVSection:CreateSlider({
+	Name = "Spin Speed",
+	Range = {10, 200},
+	Increment = 1,
+	CurrentValue = 50,
 })
 
-FOVGroup:AddLabel("FOV Color")
-	:AddColorPicker("FOVColor", { Default = PINK })
+FOVSection:CreateColorPicker({
+	Name = "FOV Color",
+	Color = PINK,
+})
 
 -- ESP
-local ESPGroup = Tabs.Visuals:AddLeftGroupbox("Player ESP", "users")
+local ESPSection = Tabs.Visuals:CreateSection("Player ESP")
 
-ESPGroup:AddToggle("PlayerESP", {
-	Text = "Player ESP",
-	Default = false,
-	Tooltip = "Highlights all players",
+ESPSection:CreateToggle({
+	Name = "Player ESP",
+	CurrentValue = false,
 })
 
-ESPGroup:AddToggle("ESPBox", {
-	Text = "Box ESP",
-	Default = false,
+ESPSection:CreateToggle({
+	Name = "Box ESP",
+	CurrentValue = false,
 })
 
-ESPGroup:AddSlider("ESPBoxThickness", {
-	Text = "Box Thickness",
-	Default = 1.5,
-	Min = 0.5,
-	Max = 5,
-	Rounding = 1,
+ESPSection:CreateSlider({
+	Name = "Box Thickness",
+	Range = {0.5, 5},
+	Increment = 0.5,
+	CurrentValue = 1.5,
 })
 
-ESPGroup:AddToggle("ESPGradient", {
-	Text = "Gradient Box",
-	Default = false,
-	Tooltip = "Two-color gradient on the box",
+ESPSection:CreateToggle({
+	Name = "Gradient Box",
+	CurrentValue = false,
 })
 
-ESPGroup:AddLabel("Gradient Top")
-	:AddColorPicker("ESPGradTop", { Default = PURPLE })
-
-ESPGroup:AddLabel("Gradient Bottom")
-	:AddColorPicker("ESPGradBot", { Default = PINK })
-
-ESPGroup:AddSlider("ESPTextSize", {
-	Text = "Text Size",
-	Default = 13,
-	Min = 8,
-	Max = 24,
-	Rounding = 0,
+ESPSection:CreateColorPicker({
+	Name = "Gradient Top",
+	Color = PURPLE,
 })
 
-ESPGroup:AddToggle("ESPName", {
-	Text = "Name",
-	Default = true,
+ESPSection:CreateColorPicker({
+	Name = "Gradient Bottom",
+	Color = PINK,
 })
 
-ESPGroup:AddToggle("ESPTeam", {
-	Text = "Team",
-	Default = false,
+ESPSection:CreateSlider({
+	Name = "Text Size",
+	Range = {8, 24},
+	Increment = 1,
+	CurrentValue = 13,
 })
 
-ESPGroup:AddToggle("ESPDistance", {
-	Text = "Distance",
-	Default = true,
+ESPSection:CreateToggle({
+	Name = "Name",
+	CurrentValue = true,
 })
 
-ESPGroup:AddToggle("ESPHealthbar", {
-	Text = "Healthbar",
-	Default = true,
+ESPSection:CreateToggle({
+	Name = "Team",
+	CurrentValue = false,
 })
 
-ESPGroup:AddToggle("ESPHealthText", {
-	Text = "Health Text",
-	Default = false,
+ESPSection:CreateToggle({
+	Name = "Distance",
+	CurrentValue = true,
 })
 
-ESPGroup:AddSlider("ESPMaxDistance", {
-	Text = "Max Distance",
-	Default = 500,
-	Min = 50,
-	Max = 2000,
-	Rounding = 0,
+ESPSection:CreateToggle({
+	Name = "Healthbar",
+	CurrentValue = true,
+})
+
+ESPSection:CreateToggle({
+	Name = "Health Text",
+	CurrentValue = false,
+})
+
+ESPSection:CreateSlider({
+	Name = "Max Distance",
+	Range = {50, 2000},
+	Increment = 1,
+	CurrentValue = 500,
 })
 
 -- ESP Highlight
-local HighlightGroup = Tabs.Visuals:AddRightGroupbox("Highlight ESP", "layers")
+local HighlightSection = Tabs.Visuals:CreateSection("Highlight ESP")
 
-HighlightGroup:AddToggle("ESPHighlight", {
-	Text = "Highlight ESP",
-	Default = false,
-	Tooltip = "Highlights through walls",
+HighlightSection:CreateToggle({
+	Name = "Highlight ESP",
+	CurrentValue = false,
 })
 
-HighlightGroup:AddLabel("Fill Color")
-	:AddColorPicker("HighlightFillColor", { Default = PURPLE })
-
-HighlightGroup:AddLabel("Outline Color")
-	:AddColorPicker("HighlightOutlineColor", { Default = WHITE })
-
-HighlightGroup:AddSlider("HighlightFillTransparency", {
-	Text = "Fill Transparency",
-	Default = 0.5,
-	Min = 0,
-	Max = 1,
-	Rounding = 1,
+HighlightSection:CreateColorPicker({
+	Name = "Fill Color",
+	Color = PURPLE,
 })
 
-HighlightGroup:AddSlider("HighlightOutlineTransparency", {
-	Text = "Outline Transparency",
-	Default = 0,
-	Min = 0,
-	Max = 1,
-	Rounding = 1,
+HighlightSection:CreateColorPicker({
+	Name = "Outline Color",
+	Color = WHITE,
+})
+
+HighlightSection:CreateSlider({
+	Name = "Fill Transparency",
+	Range = {0, 1},
+	Increment = 0.1,
+	CurrentValue = 0.5,
+})
+
+HighlightSection:CreateSlider({
+	Name = "Outline Transparency",
+	Range = {0, 1},
+	Increment = 0.1,
+	CurrentValue = 0,
 })
 
 -- ═══════════════════════════════════════════════════════════
 -- SETTINGS TAB
 -- ═══════════════════════════════════════════════════════════
 
-local MenuGroup = Tabs.Settings:AddLeftGroupbox("Menu", "wrench")
-MenuGroup:AddLabel("Menu bind")
-	:AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
+local MenuSection = Tabs.Settings:CreateSection("Menu")
+MenuSection:CreateKeybind({
+	Name = "Menu keybind",
+	CurrentKeybind = "RightShift",
+})
 
 Library.ToggleKeybind = Options.MenuKeybind
 
-MenuGroup:AddToggle("ShowCustomCursor", {
-	Text = "Show Cursor",
-	Default = true,
+MenuSection:CreateToggle({
+	Name = "Show Cursor",
+	CurrentValue = true,
 }):OnChanged(function(v)
 	Library.ShowCustomCursor = v
 end)
 
-MenuGroup:AddToggle("NotifySide", {
-	Text = "Notifications",
-	Default = true,
+MenuSection:CreateToggle({
+	Name = "Notifications",
+	CurrentValue = true,
 }):OnChanged(function(v)
 	Library.NotifySide = v and "Right" or "Left"
 end)
 
-MenuGroup:AddButton("Discord", function()
+MenuSection:CreateButton({Name = "Discord", Callback = function()
 	pcall(setclipboard, "https://discord.gg/ivory")
-	Library:Notify({ Title = "Ivory Hub", Description = "Discord link copied!", Time = 2, Type = "Success" })
-end)
+	Library.Notify({ Title = "Ivory Hub", Content = "Discord link copied!", Duration = 2, Type = "Success" })
+end})
 
-MenuGroup:AddButton("Unload", function()
+MenuSection:CreateButton({Name = "Unload", Callback = function()
 	Library:Unload()
-end)
+end})
 
-local CreditsGroup = Tabs.Settings:AddLeftGroupbox("Credits", "heart")
-CreditsGroup:AddLabel('<font size="18" color="#FF69B4"><b>Made by Mommy Veqxoo &lt; / 3</b></font>', true)
-
-local ThemeGroup = Tabs.Settings:AddRightGroupbox("Theme", "palette")
-
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-
-ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub/hypershot")
-SaveManager:SetSubFolder("place")
-
-ThemeManager:ApplyToTab(Tabs["Settings"])
-SaveManager:BuildConfigSection(Tabs["Settings"])
-
-SaveManager:LoadAutoloadConfig()
+local CreditsSection = Tabs.Settings:CreateSection("Credits")
+CreditsSection:CreateLabel("Made by Mommy Veqxoo < / 3")
 
 -- ═══════════════════════════════════════════════════════════
 -- AIMBOT LOOP
@@ -1330,14 +1255,12 @@ end)
 -- CLEANUP ON UNLOAD
 -- ═══════════════════════════════════════════════════════════
 
-Library:OnUnload(function()
-	FOVObj:Remove()
-	TriggerFOVObj:Remove()
-	ClearESP()
-	for key, hl in pairs(highlights) do
-		pcall(function() hl:Destroy() end)
-	end
-end)
+FOVObj:Remove()
+TriggerFOVObj:Remove()
+ClearESP()
+for key, hl in pairs(highlights) do
+	pcall(function() hl:Destroy() end)
+end
 
 -- ═══════════════════════════════════════════════════════════
 -- LOADED

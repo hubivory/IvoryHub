@@ -38,24 +38,7 @@ do
 	end
 end
 
-local function httpGet(url)
-	local ok, res = pcall(function()
-		return request({ Url = url, Method = "GET" })
-	end)
-	if ok and res and res.Body then
-		local body = res.Body
-		if body:byte(1) == 0xEF and body:byte(2) == 0xBB and body:byte(3) == 0xBF then
-			body = body:sub(4)
-		end
-		return body
-	end
-	return nil
-end
-
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = loadstring(httpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua"))()
 
 local STATE = {
 	AutoMelt = false,
@@ -209,69 +192,23 @@ local function setInfiniteJump(on)
 end
 
 local Window = Library:CreateWindow({
-	Title = "Ivory",
-	Icon = "swords",
-	Footer = {
-		"v1.4 |",
-		{ Text = "Game", Copyable = true },
-		"|",
-		{ Text = tostring(LP.UserId), Copyable = true },
-	},
-	CopyableFooter = true,
-	FuzzySearch = true,
-	SearchValues = true,
-	Minimizable = true,
-	MinimizeKeybind = Enum.KeyCode.RightBracket,
-	MinimizedWidth = 280,
-	NotifySide = "Right",
-	ShowCustomCursor = false,
-	SearchKeybind = Enum.KeyCode.F,
-	CornerRadius = 4,
+	Title = "Melt The Ice",
 })
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
-local ShopTab = Window:AddTab({ Name = "Shop", Icon = "swords" })
-local PlayerTab = Window:AddTab({ Name = "Player", Icon = "swords" })
-local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "swords" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
+local MainTab = Window:CreateTab({ Name = "Main", Icon = "swords" })
+local ShopTab = Window:CreateTab({ Name = "Shop", Icon = "swords" })
+local PlayerTab = Window:CreateTab({ Name = "Player", Icon = "swords" })
+local VisualsTab = Window:CreateTab({ Name = "Visuals", Icon = "swords" })
+local SettingsTab = Window:CreateTab({ Name = "Settings", Icon = "swords" })
 
-local AutoSub = MainTab:AddSubTab("Automation", "rbxassetid://79379082636309")
-local MeltGroup = AutoSub:AddLeftGroupbox("Melt", "flame")
-local SellGroup = AutoSub:AddRightGroupbox("Sell", "coins")
-local CollectGroup = AutoSub:AddRightGroupbox("Collect", "package")
-local SpinGroup = AutoSub:AddLeftGroupbox("Spin", "refresh-cw")
-local PlaytimeGroup = AutoSub:AddRightGroupbox("Playtime", "clock")
+local AutoSub = MainTab:CreateSection("Automation")
+local MeltGroup = AutoSub:CreateSection("Melt")
+local SellGroup = AutoSub:CreateSection("Sell")
+local CollectGroup = AutoSub:CreateSection("Collect")
+local SpinGroup = AutoSub:CreateSection("Spin")
+local PlaytimeGroup = AutoSub:CreateSection("Playtime")
 
-MeltGroup:AddToggle("AutoMelt", {
+MeltGroup:CreateToggle("AutoMelt", {
 	Text = "Auto Melt Ice",
 	Default = false,
 	Callback = function(v) STATE.AutoMelt = v end,
@@ -283,7 +220,7 @@ MeltGroup:AddToggle("AutoMelt", {
 	NoUI = false,
 })
 
-SellGroup:AddToggle("AutoSell", {
+SellGroup:CreateToggle("AutoSell", {
 	Text = "Auto Sell",
 	Default = false,
 	Callback = function(v) STATE.AutoSell = v end,
@@ -295,7 +232,7 @@ SellGroup:AddToggle("AutoSell", {
 	NoUI = false,
 })
 
-SellGroup:AddSlider("SellInterval", {
+SellGroup:CreateSlider("SellInterval", {
 	Text = "Sell Interval",
 	Default = 5,
 	Min = 1,
@@ -304,11 +241,11 @@ SellGroup:AddSlider("SellInterval", {
 	Callback = function(v) STATE.AutoSellInterval = v end,
 })
 
-SellGroup:AddButton("Sell All Now", function()
+SellGroup:CreateButton("Sell All Now", function()
 	pcall(function() Remotes.SellAll:InvokeServer() end)
 end)
 
-CollectGroup:AddToggle("AutoCollect", {
+CollectGroup:CreateToggle("AutoCollect", {
 	Text = "Auto Collect Drops",
 	Default = false,
 	Callback = function(v) STATE.AutoCollect = v end,
@@ -316,14 +253,14 @@ CollectGroup:AddToggle("AutoCollect", {
 
 local rarityOrder = { "Common", "Rare", "Epic", "Legendary", "Transcendent", "Secret" }
 for _, rarity in ipairs(rarityOrder) do
-	CollectGroup:AddToggle("Rarity_" .. rarity, {
+	CollectGroup:CreateToggle("Rarity_" .. rarity, {
 		Text = rarity,
 		Default = STATE.CollectRarities[rarity] or false,
 		Callback = function(v) STATE.CollectRarities[rarity] = v end,
 	})
 end
 
-CollectGroup:AddButton("Collect All Drops Now", function()
+CollectGroup:CreateButton("Collect All Drops Now", function()
 	pcall(function()
 		local hrp = getHRP()
 		if not hrp then return end
@@ -349,46 +286,46 @@ CollectGroup:AddButton("Collect All Drops Now", function()
 	end)
 end)
 
-SpinGroup:AddToggle("AutoSpin", {
+SpinGroup:CreateToggle("AutoSpin", {
 	Text = "Auto Spin",
 	Default = false,
 	Callback = function(v) STATE.AutoSpin = v end,
 })
 
-SpinGroup:AddButton("Claim Free Spin", function()
+SpinGroup:CreateButton("Claim Free Spin", function()
 	pcall(function() Remotes.SpinClaim:FireServer() end)
 end)
 
-SpinGroup:AddButton("Roll Spin", function()
+SpinGroup:CreateButton("Roll Spin", function()
 	pcall(function() Remotes.SpinRoll:InvokeServer() end)
 end)
 
-PlaytimeGroup:AddToggle("AutoPlaytime", {
+PlaytimeGroup:CreateToggle("AutoPlaytime", {
 	Text = "Auto Claim Playtime",
 	Default = false,
 	Callback = function(v) STATE.AutoPlaytime = v end,
 })
 
-PlaytimeGroup:AddButton("Claim Playtime Now", function()
+PlaytimeGroup:CreateButton("Claim Playtime Now", function()
 	pcall(function() Remotes.ClaimPlaytimeReward:InvokeServer() end)
 end)
 
-PlaytimeGroup:AddToggle("AutoIndexClaim", {
+PlaytimeGroup:CreateToggle("AutoIndexClaim", {
 	Text = "Auto Claim Index Stages",
 	Default = false,
 	Callback = function(v) STATE.AutoIndexClaim = v end,
 })
 
-PlaytimeGroup:AddButton("Claim All Index Stages", function()
+PlaytimeGroup:CreateButton("Claim All Index Stages", function()
 	for i = 1, 40 do
 		pcall(function() Remotes.IndexClaim:InvokeServer(i) end)
 	end
 end)
 
-local TeleSub = MainTab:AddSubTab("Teleport", "rbxassetid://79379082636309")
-local TeleGroup = TeleSub:AddLeftGroupbox("Stage Teleport", "navigation")
+local TeleSub = MainTab:CreateSection("Teleport")
+local TeleGroup = TeleSub:CreateSection("Stage Teleport")
 
-TeleGroup:AddDropdown("TeleportDropdown", {
+TeleGroup:CreateDropdown("TeleportDropdown", {
 	Values = getZoneNames(),
 	Default = "Zone 1",
 	Text = "Select Stage",
@@ -398,96 +335,96 @@ TeleGroup:AddDropdown("TeleportDropdown", {
 	end,
 })
 
-TeleGroup:AddButton("Teleport to Selected", function()
+TeleGroup:CreateButton("Teleport to Selected", function()
 	teleportToZone(STATE.TeleportStage)
 end)
 
-TeleGroup:AddButton("TP to Current Stage", function()
+TeleGroup:CreateButton("TP to Current Stage", function()
 	pcall(function() Remotes.TeleportToStage:FireServer() end)
 end)
 
-local UpgradeSub = ShopTab:AddSubTab("Upgrades", "rbxassetid://79379082636309")
-local UpgradeGroup = UpgradeSub:AddLeftGroupbox("Upgrades", "trending-up")
+local UpgradeSub = ShopTab:CreateSection("Upgrades")
+local UpgradeGroup = UpgradeSub:CreateSection("Upgrades")
 
-UpgradeGroup:AddToggle("AutoBuyUpgrade", {
+UpgradeGroup:CreateToggle("AutoBuyUpgrade", {
 	Text = "Auto Buy Upgrades",
 	Default = false,
 	Callback = function(v) STATE.AutoBuyUpgrade = v end,
 })
 
-UpgradeGroup:AddButton("Buy Melt Power", function()
+UpgradeGroup:CreateButton("Buy Melt Power", function()
 	pcall(function() Remotes.BuyUpgrade:InvokeServer("melt", 1) end)
 end)
 
-UpgradeGroup:AddButton("Buy Speed", function()
+UpgradeGroup:CreateButton("Buy Speed", function()
 	pcall(function() Remotes.BuyUpgrade:InvokeServer("speed", 1) end)
 end)
 
-UpgradeGroup:AddButton("Buy Warmth", function()
+UpgradeGroup:CreateButton("Buy Warmth", function()
 	pcall(function() Remotes.BuyUpgrade:InvokeServer("warmth", 1) end)
 end)
 
-UpgradeGroup:AddButton("Buy Max Melt", function()
+UpgradeGroup:CreateButton("Buy Max Melt", function()
 	pcall(function()
 		local data = Remotes.BuyUpgrade:InvokeServer("milt", 999)
 	end)
 end)
 
-local WeaponSub = ShopTab:AddSubTab("Weapons", "rbxassetid://79379082636309")
-local WeaponGroup = WeaponSub:AddLeftGroupbox("Weapons", "shield")
+local WeaponSub = ShopTab:CreateSection("Weapons")
+local WeaponGroup = WeaponSub:CreateSection("Weapons")
 
-WeaponGroup:AddToggle("AutoBuyWeapon", {
+WeaponGroup:CreateToggle("AutoBuyWeapon", {
 	Text = "Auto Buy Best Weapon",
 	Default = false,
 	Callback = function(v) STATE.AutoBuyWeapon = v end,
 })
 
-WeaponGroup:AddButton("Buy Weapon Now", function()
+WeaponGroup:CreateButton("Buy Weapon Now", function()
 	pcall(function() Remotes.BuyWeapon:InvokeServer() end)
 end)
 
-local BackpackGroup = WeaponSub:AddRightGroupbox("Backpacks", "package")
+local BackpackGroup = WeaponSub:CreateSection("Backpacks")
 
-BackpackGroup:AddToggle("AutoBuyBackpack", {
+BackpackGroup:CreateToggle("AutoBuyBackpack", {
 	Text = "Auto Buy Backpack",
 	Default = false,
 	Callback = function(v) STATE.AutoBuyBackpack = v end,
 })
 
-BackpackGroup:AddButton("Buy Backpack Now", function()
+BackpackGroup:CreateButton("Buy Backpack Now", function()
 	pcall(function() Remotes.BuyBackpack:InvokeServer() end)
 end)
 
-local PotionSub = ShopTab:AddSubTab("Potions", "rbxassetid://79379082636309")
-local PotionGroup = PotionSub:AddLeftGroupbox("Potions", "droplet")
+local PotionSub = ShopTab:CreateSection("Potions")
+local PotionGroup = PotionSub:CreateSection("Potions")
 
-PotionGroup:AddToggle("AutoBuyPotion", {
+PotionGroup:CreateToggle("AutoBuyPotion", {
 	Text = "Auto Buy Melt Potion",
 	Default = false,
 	Callback = function(v) STATE.AutoBuyPotion = v end,
 })
 
-PotionGroup:AddButton("Buy Melt Potion", function()
+PotionGroup:CreateButton("Buy Melt Potion", function()
 	pcall(function() Remotes.BuyPotion:InvokeServer("melt_1") end)
 end)
 
-PotionGroup:AddButton("Buy Big Melt Potion", function()
+PotionGroup:CreateButton("Buy Big Melt Potion", function()
 	pcall(function() Remotes.BuyPotion:InvokeServer("melt_2") end)
 end)
 
-PotionGroup:AddButton("Buy Luck Potion", function()
+PotionGroup:CreateButton("Buy Luck Potion", function()
 	pcall(function() Remotes.BuyPotion:InvokeServer("luck_1") end)
 end)
 
-PotionGroup:AddButton("Buy Cash Potion", function()
+PotionGroup:CreateButton("Buy Cash Potion", function()
 	pcall(function() Remotes.BuyPotion:InvokeServer("coins_1") end)
 end)
 
-local MoveSub = PlayerTab:AddSubTab("Movement", "rbxassetid://79379082636309")
-local SpeedGroup = MoveSub:AddLeftGroupbox("Speed", "zap")
-local JumpGroup = MoveSub:AddRightGroupbox("Jump", "arrow-up")
+local MoveSub = PlayerTab:CreateSection("Movement")
+local SpeedGroup = MoveSub:CreateSection("Speed")
+local JumpGroup = MoveSub:CreateSection("Jump")
 
-SpeedGroup:AddSlider("WalkSpeed", {
+SpeedGroup:CreateSlider("WalkSpeed", {
 	Text = "Walk Speed",
 	Default = 22,
 	Min = 16,
@@ -500,7 +437,7 @@ SpeedGroup:AddSlider("WalkSpeed", {
 	end,
 })
 
-SpeedGroup:AddToggle("Noclip", {
+SpeedGroup:CreateToggle("Noclip", {
 	Text = "Noclip",
 	Default = false,
 	Callback = function(v)
@@ -515,7 +452,7 @@ SpeedGroup:AddToggle("Noclip", {
 	NoUI = false,
 })
 
-JumpGroup:AddSlider("JumpPower", {
+JumpGroup:CreateSlider("JumpPower", {
 	Text = "Jump Power",
 	Default = 50,
 	Min = 50,
@@ -528,7 +465,7 @@ JumpGroup:AddSlider("JumpPower", {
 	end,
 })
 
-JumpGroup:AddToggle("InfJump", {
+JumpGroup:CreateToggle("InfJump", {
 	Text = "Infinite Jump",
 	Default = false,
 	Callback = function(v)
@@ -543,10 +480,10 @@ JumpGroup:AddToggle("InfJump", {
 	NoUI = false,
 })
 
-local ESPSub = VisualsTab:AddSubTab("ESP", "rbxassetid://79379082636309")
-local ESPGroup = ESPSub:AddLeftGroupbox("Player ESP", "users")
+local ESPSub = VisualsTab:CreateSection("ESP")
+local ESPGroup = ESPSub:CreateSection("Player ESP")
 
-ESPGroup:AddToggle("ESPEnabled", {
+ESPGroup:CreateToggle("ESPEnabled", {
 	Text = "Enable ESP",
 	Default = false,
 	Callback = function(v)
@@ -561,7 +498,7 @@ ESPGroup:AddToggle("ESPEnabled", {
 	NoUI = false,
 })
 
-ESPGroup:AddToggle("ESPDistance", {
+ESPGroup:CreateToggle("ESPDistance", {
 	Text = "Show Distance",
 	Default = true,
 	Callback = function(v)
@@ -570,7 +507,7 @@ ESPGroup:AddToggle("ESPDistance", {
 	end,
 })
 
-ESPGroup:AddLabel("ESP Color"):AddColorPicker("ESPColor", {
+ESPGroup:CreateLabel("ESP Color"):AddColorPicker("ESPColor", {
 	Default = Color3.fromRGB(255, 100, 100),
 	Title = "ESP Color",
 	Callback = function(v)
@@ -579,30 +516,23 @@ ESPGroup:AddLabel("ESP Color"):AddColorPicker("ESPColor", {
 	end,
 })
 
-local WorldGroup = ESPSub:AddRightGroupbox("World", "globe")
+local WorldGroup = ESPSub:CreateSection("World")
 
-WorldGroup:AddButton("Full Bright", function()
+WorldGroup:CreateButton("Full Bright", function()
 	game:GetService("Lighting").Brightness = 2
 	game:GetService("Lighting").ClockTime = 14
 end)
 
-WorldGroup:AddButton("Remove Fog", function()
+WorldGroup:CreateButton("Remove Fog", function()
 	game:GetService("Lighting").FogEnd = 999999
 	game:GetService("Lighting").FogStart = 0
 end)
 
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub")
-SaveManager:SetSubFolder("melttheice")
-local DiscordGroup = SettingsTab:AddLeftGroupbox("Discord", "users")
-DiscordGroup:AddButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 }) end)
+local DiscordGroup = SettingsTab:CreateSection("Discord")
+DiscordGroup:CreateButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library:Notify({ Name = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3 }) end)
 
-local CreditGroup = SettingsTab:AddLeftGroupbox("Credits", "heart")
-local CreditLabel = CreditGroup:AddLabel({ Text = "", Size = 26, DoesWrap = true })
+local CreditGroup = SettingsTab:CreateSection("Credits")
+local CreditLabel = CreditGroup:CreateLabel({ Text = "", Size = 26, DoesWrap = true })
 local CreditTL = CreditLabel.TextLabel
 CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
 CreditTL.Font = Enum.Font.GothamBold
@@ -630,30 +560,27 @@ task.spawn(function()
 	end
 end)
 
-ThemeManager:ApplyToTab(SettingsTab)
-SaveManager:BuildConfigSection(SettingsTab)
-
-local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "wrench")
-MenuGroup:AddToggle("KeybindMenuOpen", {
+local MenuGroup = SettingsTab:CreateSection("Menu")
+MenuGroup:CreateToggle("KeybindMenuOpen", {
 	Default = Library.KeybindFrame.Visible,
 	Text = "Open Keybind Menu",
 	Callback = function(v) Library.KeybindFrame.Visible = v end,
 })
-MenuGroup:AddToggle("ShowCustomCursor", {
+MenuGroup:CreateToggle("ShowCustomCursor", {
 	Text = "Custom Cursor",
 	Default = Library.ShowCustomCursor,
 	Callback = function(v) Library.ShowCustomCursor = v end,
 })
-MenuGroup:AddButton("Test Notification", function()
-	Library:Notify({ Title = "Ivory", Description = "Works!", Time = 4 })
+MenuGroup:CreateButton("Test Notification", function()
+	Library:Notify({ Name = "Ivory", Content = "Works!", Duration = 4 })
 end)
-MenuGroup:AddDropdown("NotificationSide", {
+MenuGroup:CreateDropdown("NotificationSide", {
 	Values = { "Left", "Right" },
 	Default = "Right",
 	Text = "Notification Side",
 	Callback = function(v) Library:SetNotifySide(v) end,
 })
-MenuGroup:AddSlider("UICornerSlider", {
+MenuGroup:CreateSlider("UICornerSlider", {
 	Text = "Corner Radius",
 	Default = Library.CornerRadius,
 	Min = 0,
@@ -661,13 +588,13 @@ MenuGroup:AddSlider("UICornerSlider", {
 	Rounding = 0,
 	Callback = function(v) Window:SetCornerRadius(v) end,
 })
-MenuGroup:AddDivider()
-MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", {
+MenuGroup:CreateDivider()
+MenuGroup:CreateLabel("Menu bind"):AddKeyPicker("MenuKeybind", {
 	Default = "RightShift",
 	NoUI = true,
 	Text = "Menu keybind",
 })
-MenuGroup:AddButton("Unload", function()
+MenuGroup:CreateButton("Unload", function()
 	clearESP()
 	setNoclip(false)
 	setInfiniteJump(false)
@@ -1131,9 +1058,9 @@ end)
 
 pcall(function()
 	Library:Notify({
-		Title = "Ivory",
-		Description = "Melt The Ice loaded!",
+		Name = "Ivory",
+		Content = "Melt The Ice loaded!",
 		Type = "Success",
-		Time = 5,
+		Duration = 5,
 	})
 end)

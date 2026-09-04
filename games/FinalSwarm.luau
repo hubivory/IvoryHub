@@ -629,108 +629,42 @@ task.spawn(function()
 	end
 end)
 
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-
-local req = request or http_request or (syn and syn.request) or (http and http.request) or function(options)
-	return { Body = game:HttpGet(options.Url) }
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	local ok, src = pcall(function()
+		return request({
+			Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+			Method = "GET"
+		}).Body
+	end)
+	if ok then LIB_SRC = src end
 end
-
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library, ThemeManager, SaveManager
-
-local function fetch(path)
-	local res = req({ Url = repo .. path, Method = "GET" })
-	if res and res.Body then
-		return loadstring(res.Body)()
-	end
-	error("Failed to fetch " .. path)
-end
-
-pcall(function()
-	Library = fetch("Library.lua")
-	ThemeManager = fetch("addons/ThemeManager.lua")
-	SaveManager = fetch("addons/SaveManager.lua")
-end)
+local Library = loadstring(LIB_SRC)()
 
 if not Library then
-	warn("[FSH] ObsidianUltra failed to load - features running with defaults")
+	warn("[FSH] Ivory Hub failed to load - features running with defaults")
 	return
 end
 
-local Options = Library.Options
-local Toggles = Library.Toggles
-
-local Window = Library:CreateWindow({
-	Title = "Ivory",
-	Icon = "swords",
-	Footer = {
-		"v1.4 |",
-		{ Text = isLobby and "Lobby" or "Game", Copyable = true },
-		"|",
-		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
-	},
-	CopyableFooter = true,
-	FuzzySearch = true,
-	SearchValues = true,
-	Minimizable = true,
-	MinimizeKeybind = Enum.KeyCode.RightBracket,
-	MinimizedWidth = 280,
-	NotifySide = "Right",
-	ShowCustomCursor = false,
-	SearchKeybind = Enum.KeyCode.F,
-	CornerRadius = 4,
-	Animations = {
-		ToggleWindow = false,
-		TabSwitch = false,
-		Groupbox = false,
-		Dropdown = false,
-		KeyPicker = false,
-		SubTabUnderline = true,
-	},
+local Window = Library.CreateWindow({
+	Name = "Ivory",
+	Width = 460,
+	Height = 360,
 })
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
 
 if isLobby then
-	local LobbyTab = Window:AddTab({ Name = "Lobby", Icon = "swords" })
-	local LSub = LobbyTab:AddSubTab("Automation", "rbxassetid://79379082636309")
+	local LobbyTab = Window:CreateTab({ Name = "Lobby" })
+	local LSub = LobbyTab:CreateSection("Automation")
 
-	local LG1 = LSub:AddLeftGroupbox("Chests", "package")
-	LG1:AddToggle("LobbyAutoChest", {
-		Text = "Auto Open All Chests",
-		Default = false,
+	local LG1 = LSub:CreateSection("Chests")
+	LG1:CreateToggle({
+		Name = "Auto Open All Chests",
+		CurrentValue = false,
 		Callback = function(v) STATE.LobbyAutoChest = v end,
 	})
-	LG1:AddButton({
-		Text = "Open Chests Now",
-		Func = function()
+	LG1:CreateButton({
+		Name = "Open Chests Now",
+		Callback = function()
 			pcall(function()
 				local chests = DataService.client:get({"inventory", "chests"})
 				if chests then
@@ -744,26 +678,26 @@ if isLobby then
 					end
 				end
 			end)
-			Library:Notify({ Title = "Chests", Description = "Opened all chests", Type = "Success", Time = 2 })
+			Library.Notify({ Title = "Chests", Content = "Opened all chests", Type = "Success", Duration = 2 })
 		end,
 	})
 
-	LG1:AddDivider()
+	LG1:CreateDivider()
 
-	local LG1b = LSub:AddRightGroupbox("Rewards", "gift")
-	LG1b:AddToggle("LobbyAutoDaily", {
-		Text = "Auto Claim Daily Chests",
-		Default = false,
+	local LG1b = LSub:CreateSection("Rewards")
+	LG1b:CreateToggle({
+		Name = "Auto Claim Daily Chests",
+		CurrentValue = false,
 		Callback = function(v) STATE.LobbyAutoDaily = v end,
 	})
-	LG1b:AddToggle("LobbyAutoClaim", {
-		Text = "Auto Claim Quests",
-		Default = false,
+	LG1b:CreateToggle({
+		Name = "Auto Claim Quests",
+		CurrentValue = false,
 		Callback = function(v) STATE.LobbyAutoClaim = v end,
 	})
-	LG1b:AddButton({
-		Text = "Claim All Now",
-		Func = function()
+	LG1b:CreateButton({
+		Name = "Claim All Now",
+		Callback = function()
 			pcall(function()
 				local StoreNet = Networker.client.new("Store", {})
 				StoreNet:fire("ClaimDailyBasicChest")
@@ -784,38 +718,37 @@ if isLobby then
 					end
 				end
 			end)
-			Library:Notify({ Title = "Rewards", Description = "Claimed all dailies + quests", Type = "Success", Time = 2 })
+			Library.Notify({ Title = "Rewards", Content = "Claimed all dailies + quests", Type = "Success", Duration = 2 })
 		end,
 	})
 
-	local LG3 = LSub:AddLeftGroupbox("Queue", "play")
-	LG3:AddToggle("LobbyAutoQueue", {
-		Text = "Auto Queue for Game",
-		Default = false,
+	local LG3 = LSub:CreateSection("Queue")
+	LG3:CreateToggle({
+		Name = "Auto Queue for Game",
+		CurrentValue = false,
 		Callback = function(v) STATE.LobbyAutoQueue = v end,
 	})
-	LG3:AddDropdown("LobbyWorld", {
-		Text = "World",
-		Default = "Grasslands",
-		Values = { "Grasslands", "Desert", "Swamp", "Jungle", "Frost Forest" },
-		Searchable = true,
+	LG3:CreateDropdown({
+		Name = "World",
+		Options = { "Grasslands", "Desert", "Swamp", "Jungle", "Frost Forest" },
+		CurrentOption = "Grasslands",
 		Callback = function(v) STATE.LobbyWorld = v end,
 	})
-	LG3:AddDropdown("LobbyDifficulty", {
-		Text = "Difficulty",
-		Default = "Normal",
-		Values = { "Normal", "Hard", "Nightmare" },
+	LG3:CreateDropdown({
+		Name = "Difficulty",
+		Options = { "Normal", "Hard", "Nightmare" },
+		CurrentOption = "Normal",
 		Callback = function(v) STATE.LobbyDifficulty = v end,
 	})
-	LG3:AddDropdown("LobbyChallenge", {
-		Text = "Challenge",
-		Default = "None",
-		Values = { "None" },
+	LG3:CreateDropdown({
+		Name = "Challenge",
+		Options = { "None" },
+		CurrentOption = "None",
 		Callback = function(v) STATE.LobbyChallenge = v end,
 	})
-	LG3:AddButton({
-		Text = "Queue Now",
-		Func = function()
+	LG3:CreateButton({
+		Name = "Queue Now",
+		Callback = function()
 			pcall(function()
 				local WorldNet = Networker.client.new("WorldSelection", {})
 				WorldNet:fire("SetWorld", STATE.LobbyWorld)
@@ -829,97 +762,84 @@ if isLobby then
 					QueueNet:fire("Created")
 				end)
 			end)
-			Library:Notify({ Title = "Queue", Description = "Queued: " .. STATE.LobbyWorld, Type = "Info", Time = 2 })
+			Library.Notify({ Title = "Queue", Content = "Queued: " .. STATE.LobbyWorld, Type = "Info", Duration = 2 })
 		end,
 	})
 end
 
 if isGame then
-	local CombatTab = Window:AddTab({ Name = "Combat", Icon = "swords" })
-	local DefSub = CombatTab:AddSubTab("Defense", "rbxassetid://79379082636309")
-	local DG1 = DefSub:AddLeftGroupbox("Dodge", "move")
-	DG1:AddToggle("AutoDodge", {
-		Text = "Auto Dodge",
-		Default = false,
+	local CombatTab = Window:CreateTab({ Name = "Combat" })
+	local DefSub = CombatTab:CreateSection("Defense")
+	local DG1 = DefSub:CreateSection("Dodge")
+	DG1:CreateToggle({
+		Name = "Auto Dodge",
+		CurrentValue = false,
 		Callback = function(v) STATE.AutoDodge = v end,
-	}):AddKeyPicker("DodgeKeybind", {
-		Default = "None",
-		Text = "Dodge Toggle Key",
-		Mode = "Toggle",
-		SyncToggleState = true,
-		NoUI = false,
 	})
-	DG1:AddSlider("DodgeRange", {
-		Text = "Avoidance Range",
-		Default = 15,
-		Min = 5,
-		Max = 30,
-		Rounding = 0,
-		Suffix = " studs",
+	DG1:CreateKeybind({
+		Name = "Dodge Toggle Key",
+		CurrentKeybind = "None",
+	})
+	DG1:CreateSlider({
+		Name = "Avoidance Range",
+		Range = {5, 30},
+		Increment = 1,
+		CurrentValue = 15,
 		Callback = function(v) STATE.DodgeRange = v end,
 	})
-	DG1:AddSlider("DodgeSpeed", {
-		Text = "Dodge Speed",
-		Default = 50,
-		Min = 16,
-		Max = 100,
-		Rounding = 0,
+	DG1:CreateSlider({
+		Name = "Dodge Speed",
+		Range = {16, 100},
+		Increment = 1,
+		CurrentValue = 50,
 		Callback = function(v) STATE.DodgeSpeed = v end,
 	})
-	DG1:AddSlider("DodgeHeight", {
-		Text = "Dodge Height",
-		Default = 4,
-		Min = 1,
-		Max = 15,
-		Rounding = 0,
-		Suffix = " studs",
+	DG1:CreateSlider({
+		Name = "Dodge Height",
+		Range = {1, 15},
+		Increment = 1,
+		CurrentValue = 4,
 		Callback = function(v) STATE.DodgeHeight = v end,
 	})
-	DG1:AddDropdown("DodgeMode", {
-		Text = "Dodge Mode",
-		Values = { "Fly", "Ground" },
-		Default = "Fly",
+	DG1:CreateDropdown({
+		Name = "Dodge Mode",
+		Options = { "Fly", "Ground" },
+		CurrentOption = "Fly",
 		Callback = function(v) STATE.DodgeMode = v end,
 	})
 
-	local DG2 = DefSub:AddRightGroupbox("Collect", "magnet")
-	DG2:AddToggle("AutoCollect", {
-		Text = "Magnet (Collect All)",
-		Default = false,
+	local DG2 = DefSub:CreateSection("Collect")
+	DG2:CreateToggle({
+		Name = "Magnet (Collect All)",
+		CurrentValue = false,
 		Callback = function(v) STATE.AutoCollect = v end,
-	}):AddKeyPicker("CollectKeybind", {
-		Default = "None",
-		Text = "Collect Toggle Key",
-		Mode = "Toggle",
-		SyncToggleState = true,
-		NoUI = false,
+	})
+	DG2:CreateKeybind({
+		Name = "Collect Toggle Key",
+		CurrentKeybind = "None",
 	})
 
-	local UpgTab = Window:AddTab({ Name = "Upgrades", Icon = "swords" })
-	local UpgSub = UpgTab:AddSubTab("Auto Select", "rbxassetid://79379082636309")
-	local UG1 = UpgSub:AddLeftGroupbox("Auto Upgrade", "arrow-up-circle")
-	UG1:AddToggle("AutoUpgrade", {
-		Text = "Auto Pick Upgrade",
-		Default = false,
+	local UpgTab = Window:CreateTab({ Name = "Upgrades" })
+	local UpgSub = UpgTab:CreateSection("Auto Select")
+	local UG1 = UpgSub:CreateSection("Auto Upgrade")
+	UG1:CreateToggle({
+		Name = "Auto Pick Upgrade",
+		CurrentValue = false,
 		Callback = function(v) STATE.AutoUpgrade = v end,
-	}):AddKeyPicker("UpgradeKeybind", {
-		Default = "None",
-		Text = "Upgrade Toggle Key",
-		Mode = "Toggle",
-		SyncToggleState = true,
-		NoUI = false,
 	})
-	UG1:AddDivider()
-	UG1:AddDropdown("UpgradePriority", {
-		Text = "Priority",
-		Values = { "Any", "None", "Damage", "Attack Speed", "Health", "Crit Chance", "Multishot", "Projectile Count", "Ricochet", "Piercing", "Lifesteal", "Movement Speed", "Luck", "XP Gain", "Regen", "Armor", "Size", "Projectile Speed", "Extra Jump", "Knockback" },
+	UG1:CreateKeybind({
+		Name = "Upgrade Toggle Key",
+		CurrentKeybind = "None",
+	})
+	UG1:CreateDivider()
+	UG1:CreateDropdown({
+		Name = "Priority",
+		Options = { "Any", "None", "Damage", "Attack Speed", "Health", "Crit Chance", "Multishot", "Projectile Count", "Ricochet", "Piercing", "Lifesteal", "Movement Speed", "Luck", "XP Gain", "Regen", "Armor", "Size", "Projectile Speed", "Extra Jump", "Knockback" },
+		CurrentOption = {},
 		Multi = true,
-		Searchable = true,
-		Expandable = true,
-		Default = {},
 		Callback = function(v) STATE.UpgradePriority = v end,
 	})
-	UpgradeLabel = UG1:AddLabel("Last: waiting...")
+	UpgradeLabel = UG1:CreateLabel("Last: waiting...")
 	task.spawn(function()
 		local last = nil
 		while true do
@@ -931,30 +851,25 @@ if isGame then
 		end
 	end)
 
-	local VisTab = Window:AddTab({ Name = "Visuals", Icon = "swords" })
-	local VisSub = VisTab:AddSubTab("ESP", "rbxassetid://79379082636309")
-	local VG1 = VisSub:AddLeftGroupbox("Enemy ESP", "eye")
-	VG1:AddToggle("ESP", {
-		Text = "Show Enemy Health",
-		Default = false,
+	local VisTab = Window:CreateTab({ Name = "Visuals" })
+	local VisSub = VisTab:CreateSection("ESP")
+	local VG1 = VisSub:CreateSection("Enemy ESP")
+	VG1:CreateToggle({
+		Name = "Show Enemy Health",
+		CurrentValue = false,
 		Callback = function(v) STATE.ESP = v end,
-	}):AddKeyPicker("ESPKeybind", {
-		Default = "None",
-		Text = "ESP Toggle Key",
-		Mode = "Toggle",
-		SyncToggleState = true,
-		NoUI = false,
 	})
-	VG1:AddLabel("ESP Color"):AddColorPicker("ESPColorPicker", {
-		Default = Color3.fromRGB(255, 80, 80),
-		Title = "ESP Color",
+	VG1:CreateKeybind({
+		Name = "ESP Toggle Key",
+		CurrentKeybind = "None",
+	})
+	VG1:CreateColorPicker({
+		Name = "ESP Color",
+		Color = Color3.fromRGB(255, 80, 80),
 		Callback = function(Value)
 			STATE.ESPColor = Value
 		end,
 	})
-	Options.ESPColorPicker:OnChanged(function()
-		STATE.ESPColor = Options.ESPColorPicker.Value
-	end)
 
 	task.spawn(function()
 		while true do
@@ -963,82 +878,61 @@ if isGame then
 		end
 	end)
 
-	local AutoTab = Window:AddTab({ Name = "Auto", Icon = "swords" })
-	local AutoSub = AutoTab:AddSubTab("Post-Game", "rbxassetid://79379082636309")
-	local AG1 = AutoSub:AddLeftGroupbox("After Death", "skull")
-	AG1:AddToggle("AutoContinue", {
-		Text = "Auto Continue (Death)",
-		Default = false,
+	local AutoTab = Window:CreateTab({ Name = "Auto" })
+	local AutoSub = AutoTab:CreateSection("Post-Game")
+	local AG1 = AutoSub:CreateSection("After Death")
+	AG1:CreateToggle({
+		Name = "Auto Continue (Death)",
+		CurrentValue = false,
 		Callback = function(v) STATE.AutoContinue = v end,
 	})
 
-	local AG2 = AutoSub:AddRightGroupbox("After Round", "flag")
-	AG2:AddToggle("AutoAgain", {
-		Text = "Auto Play Again",
-		Default = false,
+	local AG2 = AutoSub:CreateSection("After Round")
+	AG2:CreateToggle({
+		Name = "Auto Play Again",
+		CurrentValue = false,
 		Callback = function(v) STATE.AutoAgain = v end,
 	})
-	AG2:AddToggle("AutoLobby", {
-		Text = "Auto Back to Lobby",
-		Default = false,
+	AG2:CreateToggle({
+		Name = "Auto Back to Lobby",
+		CurrentValue = false,
 		Callback = function(v) STATE.AutoLobby = v end,
 	})
 
-	local PlayerTab = Window:AddTab({ Name = "Player", Icon = "swords" })
-	local PlSub = PlayerTab:AddSubTab("Movement", "rbxassetid://79379082636309")
-	local PG1 = PlSub:AddLeftGroupbox("Speed", "zap")
-	PG1:AddToggle("SpeedBoost", {
-		Text = "Speed Boost",
-		Risky = true,
-		Default = false,
+	local PlayerTab = Window:CreateTab({ Name = "Player" })
+	local PlSub = PlayerTab:CreateSection("Movement")
+	local PG1 = PlSub:CreateSection("Speed")
+	PG1:CreateToggle({
+		Name = "Speed Boost",
+		CurrentValue = false,
 		Callback = function(v) STATE.SpeedBoost = v end,
-	}):AddKeyPicker("SpeedKeybind", {
-		Default = "None",
-		Text = "Speed Toggle Key",
-		Mode = "Toggle",
-		SyncToggleState = true,
-		NoUI = false,
 	})
-	PG1:AddSlider("SpeedVal", {
-		Text = "Walk Speed",
-		Default = 16,
-		Min = 16,
-		Max = 32,
-		Rounding = 0,
+	PG1:CreateKeybind({
+		Name = "Speed Toggle Key",
+		CurrentKeybind = "None",
+	})
+	PG1:CreateSlider({
+		Name = "Walk Speed",
+		Range = {16, 32},
+		Increment = 1,
+		CurrentValue = 16,
 		Callback = function(v) STATE.SpeedValue = v end,
 	})
-	PG1:AddLabel("Max safe: 32")
+	PG1:CreateLabel("Max safe: 32")
 
-	PG1:AddDivider()
+	PG1:CreateDivider()
 
-	local PG2 = PlSub:AddRightGroupbox("Jump", "arrow-up")
-	PG2:AddToggle("InfJump", {
-		Text = "Infinite Jump",
-		Default = false,
+	local PG2 = PlSub:CreateSection("Jump")
+	PG2:CreateToggle({
+		Name = "Infinite Jump",
+		CurrentValue = false,
 		Callback = function(v) STATE.InfJump = v end,
 	})
 end
 
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("FinalSwarmHub")
-SaveManager:SetFolder("FinalSwarmHub")
-if isGame then
-	SaveManager:SetSubFolder("game")
-else
-	SaveManager:SetSubFolder("lobby")
-end
-
-	local SettingsTab = Window:AddTab({ Name = "UI Settings", Icon = "swords" })
-local CreditGroup = SettingsTab:AddLeftGroupbox("Credits", "heart")
-local CreditLabel = CreditGroup:AddLabel({ Text = "", Size = 26, DoesWrap = true })
-local CreditTL = CreditLabel.TextLabel
-CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-CreditTL.Font = Enum.Font.GothamBold
-CreditTL.TextSize = 26
-
+	local SettingsTab = Window:CreateTab({ Name = "UI Settings" })
+local CreditGroup = SettingsTab:CreateSection("Credits")
+local CreditLabel = CreditGroup:CreateLabel("")
 task.spawn(function()
 	local full = "Made by mommy Crow"
 	local cursor = "_"
@@ -1047,87 +941,50 @@ task.spawn(function()
 		for i = 1, #full do
 			shown = shown .. full:sub(i, i)
 			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
 			task.wait(math.random(4, 9) / 100)
 		end
 		task.wait(2)
 		for i = #full, 1, -1 do
 			shown = full:sub(1, i - 1)
 			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
 			task.wait(math.random(2, 5) / 100)
 		end
 		task.wait(0.8)
 	end
 end)
 
-ThemeManager:ApplyToTab(SettingsTab)
-SaveManager:BuildConfigSection(SettingsTab)
-
-local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "wrench")
-MenuGroup:AddToggle("KeybindMenuOpen", {
-	Default = Library.KeybindFrame.Visible,
-	Text = "Open Keybind Menu",
-	Callback = function(value)
-		Library.KeybindFrame.Visible = value
-	end,
+local MenuGroup = SettingsTab:CreateSection("Menu")
+MenuGroup:CreateToggle({
+	Name = "Open Keybind Menu",
+	CurrentValue = false,
 })
-MenuGroup:AddToggle("ShowCustomCursor", {
-	Text = "Custom Cursor",
-	Default = Library.ShowCustomCursor,
-	Callback = function(Value)
-		Library.ShowCustomCursor = Value
-	end,
+MenuGroup:CreateToggle({
+	Name = "Custom Cursor",
+	CurrentValue = false,
 })
-MenuGroup:AddButton("Test Notification", function()
-	Library:Notify({
+MenuGroup:CreateButton({ Name = "Test Notification", Callback = function()
+	Library.Notify({
 		Title = "Test Notification",
-		Description = "Fired at " .. os.date("%H:%M:%S"),
-		Time = 4,
+		Content = "Fired at " .. os.date("%H:%M:%S"),
+		Duration = 4,
 	})
-end)
-MenuGroup:AddDropdown("NotificationSide", {
-	Values = { "Left", "Right" },
-	Default = "Right",
-	Text = "Notification Side",
-	Callback = function(Value)
-		Library:SetNotifySide(Value)
-	end,
+end })
+MenuGroup:CreateDropdown({
+	Name = "Notification Side",
+	Options = { "Left", "Right" },
+	CurrentOption = "Right",
 })
-MenuGroup:AddDropdown("DPIDropdown", {
-	Values = { "50%", "75%", "100%", "125%", "150%", "175%", "200%" },
-	Default = "100%",
-	Text = "DPI Scale",
-	Callback = function(Value)
-		Value = Value:gsub("%%", "")
-		local DPI = tonumber(Value)
-		Library:SetDPIScale(DPI)
-	end,
-})
-MenuGroup:AddSlider("UICornerSlider", {
-	Text = "Corner Radius",
-	Default = Library.CornerRadius,
-	Min = 0,
-	Max = 20,
-	Rounding = 0,
-	Callback = function(value)
-		Window:SetCornerRadius(value)
-	end,
-})
-MenuGroup:AddDivider()
-MenuGroup:AddLabel("Menu bind")
-	:AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
-MenuGroup:AddButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 }) end)
-MenuGroup:AddButton("Unload", function()
+MenuGroup:CreateDivider()
+MenuGroup:CreateLabel("Menu bind")
+MenuGroup:CreateKeybind({ Name = "Menu keybind", CurrentKeybind = "RightShift" })
+MenuGroup:CreateButton({ Name = "Join Discord", Callback = function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3 }) end })
+MenuGroup:CreateButton({ Name = "Unload", Callback = function()
 	Library:Unload()
-end)
-Library.ToggleKeybind = Options.MenuKeybind
+end })
 
-SaveManager:LoadAutoloadConfig()
-
-Library:Notify({
+Library.Notify({
 	Title = "Ivory",
-	Description = "v1.4 loaded successfully",
+	Content = "v1.4 loaded successfully",
 	Type = "Success",
-	Time = 3,
+	Duration = 3,
 })

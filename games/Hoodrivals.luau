@@ -29,30 +29,15 @@ LocalPlayer.CharacterAdded:Connect(function(c)
 end)
 
 -- ═══════════════════════════════════════════════════════
---  LOAD OBSIDIANULTRA
+--  LOAD IVORY HUB
 -- ═══════════════════════════════════════════════════════
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local function httpGet(url)
-	return request({ Url = url, Method = "GET" }).Body
-end
-local Library = loadstring(getgenv()._IvoryLibSrc or httpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(getgenv()._IvoryTMSrc or httpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(getgenv()._IvorySMSrc or httpGet(repo .. "addons/SaveManager.lua"))()
-
-local Options = Library.Options
-local Toggles = Library.Toggles
-
-Library.Scheme.MainColor = Color3.fromRGB(18, 14, 28)
-Library.Scheme.AccentColor = Color3.fromRGB(140, 110, 220)
-Library.Scheme.AcccentDark = Color3.fromRGB(110, 80, 190)
-Library.Scheme.OutlineColor = Color3.fromRGB(50, 40, 70)
-Library.Scheme.FontColor = Color3.fromRGB(225, 215, 245)
-Library.Scheme.SubText = Color3.fromRGB(155, 135, 185)
-Library.Scheme.Bright = Color3.fromRGB(32, 26, 48)
-Library.Scheme.Dark = Color3.fromRGB(12, 10, 20)
-Library.Scheme.Risky = Color3.fromRGB(220, 80, 120)
-Library.ShowToggleFrameInKeybinds = true
-Library.ForceCheckbox = false
+local genv = getgenv()
+local Library
+local ls = genv._IvoryLibSrc
+if ls then Library = loadstring(ls)()
+else local r = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/"
+Library = loadstring(game:HttpGet(r .. "Library.lua"))() end
+if not Library then warn("[Ivory] Load failed"); return end
 
 -- ═══════════════════════════════════════════════════════
 --  STATE
@@ -176,186 +161,131 @@ local SpectateTarget = ReplicatedStorage:WaitForChild("SpectateTarget", 10)
 -- ═══════════════════════════════════════════════════════
 --  WINDOW
 -- ═══════════════════════════════════════════════════════
-local Window = Library:CreateWindow({
-	Title = "Ivory",
-	Icon = "swords",
-	Footer = {
-		"v2.0 |",
-		{ Text = "Game", Copyable = true },
-		"|",
-		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
-	},
-	CopyableFooter = true,
-	FuzzySearch = true,
-	SearchValues = true,
-	Minimizable = true,
-	MinimizeKeybind = Enum.KeyCode.RightBracket,
-	MinimizedWidth = 280,
-	NotifySide = "Right",
-	ShowCustomCursor = false,
-	SearchKeybind = Enum.KeyCode.F,
-	CornerRadius = 4,
-	Animations = {
-		ToggleWindow = false,
-		TabSwitch = false,
-		Groupbox = false,
-		Dropdown = false,
-		KeyPicker = false,
-		SubTabUnderline = true,
-	},
+local Window = Library.CreateWindow({
+	Name = "Ivory", Width = 460, Height = 360,
 })
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
 
 -- ═══════════════════════════════════════════════════════
 --  TABS (matching template)
 -- ═══════════════════════════════════════════════════════
-local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
+local MainTab = Window:CreateTab("Main")
 
 -- ═══════════════════════════════════════════════════════
 --  MAIN > COMBAT
 -- ═══════════════════════════════════════════════════════
-local CombatSub = MainTab:AddSubTab("Combat", "rbxassetid://79379082636309")
-local ParryGroup = CombatSub:AddLeftGroupbox("Auto Parry", "shield")
+local CombatSec = MainTab:CreateSection("Combat")
 
-ParryGroup:AddToggle("AutoParry", {
+CombatSec:CreateToggle("AutoParry", {
 	Text = "Enable Auto Parry",
 	Default = false,
 	Callback = function(v) State.AutoParry = v end,
-}):AddKeyPicker("ParryKey", {
+}):CreateKeybind("ParryKey", {
 	Default = "None", Text = "Parry Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
-ParryGroup:AddSlider("DetectionRange", {
+CombatSec:CreateSlider("DetectionRange", {
 	Text = "Detection Range", Default = 15, Min = 1, Max = 50, Rounding = 0,
 	Callback = function(v) State.DetectionRange = v end,
 })
 
-ParryGroup:AddToggle("EvasiveMode", {
+CombatSec:CreateToggle("EvasiveMode", {
 	Text = "Evasive Mode",
 	Default = false,
 	Callback = function(v) State.EvasiveMode = v end,
 })
 
-ParryGroup:AddToggle("EvasiveDirectional", {
+CombatSec:CreateToggle("EvasiveDirectional", {
 	Text = "Evasive Directional",
 	Default = false,
 	Callback = function(v) State.EvasiveDirectional = v end,
 })
 
-ParryGroup:AddToggle("ParryOnly", {
+CombatSec:CreateToggle("ParryOnly", {
 	Text = "Parry Only",
 	Default = false,
 	Callback = function(v) State.ParryOnly = v end,
 })
 
-ParryGroup:AddToggle("PauseM1", {
+CombatSec:CreateToggle("PauseM1", {
 	Text = "Pause M1 for Parry",
 	Default = false,
 	Callback = function(v) State.PauseM1ForParry = v end,
 })
 
-ParryGroup:AddDropdown("Priority", {
+CombatSec:CreateDropdown("Priority", {
 	Values = { "Parry", "Dodge" }, Default = "Parry", Text = "Priority",
 	Callback = function(v) State.Priority = v end,
 })
 
-ParryGroup:AddSlider("FacingStrictness", {
+CombatSec:CreateSlider("FacingStrictness", {
 	Text = "Facing Strictness", Default = 50, Min = 0, Max = 100, Rounding = 0,
 	Callback = function(v) State.FacingStrictness = v / 100 end,
 })
 
-local CooldownGroup = CombatSub:AddRightGroupbox("Cooldowns & Punish", "clock")
+local CooldownSec = MainTab:CreateSection("Cooldowns & Punish")
 
-CooldownGroup:AddToggle("NoParryCooldown", {
+CooldownSec:CreateToggle("NoParryCooldown", {
 	Text = "No Parry Cooldown",
 	Default = false,
 	Risky = true,
 	Callback = function(v) State.NoParryCooldown = v end,
 })
 
-CooldownGroup:AddToggle("NoDodgeCooldown", {
+CooldownSec:CreateToggle("NoDodgeCooldown", {
 	Text = "No Dodge Cooldown",
 	Default = false,
 	Risky = true,
 	Callback = function(v) State.NoDodgeCooldown = v end,
 })
 
-CooldownGroup:AddToggle("AutoPunish", {
+CooldownSec:CreateToggle("AutoPunish", {
 	Text = "Auto Punish",
 	Default = false,
 	Callback = function(v) State.AutoPunish = v end,
 })
 
-CooldownGroup:AddDropdown("PunishMethod", {
+CooldownSec:CreateDropdown("PunishMethod", {
 	Values = { "M1", "Ability", "Gun" }, Default = "M1", Text = "Punish Method",
 	Callback = function(v) State.PunishMethod = v end,
 })
 
-CooldownGroup:AddToggle("FlingAura", {
+CooldownSec:CreateToggle("FlingAura", {
 	Text = "Fling Aura",
 	Default = false,
 	Risky = true,
 	Callback = function(v) State.FlingAura = v end,
 })
 
-local AntiCCGroup = CombatSub:AddLeftGroupbox("Anti CC", "shield")
+local AntiCCSec = MainTab:CreateSection("Anti CC")
 
-AntiCCGroup:AddToggle("NoStun", {
+AntiCCSec:CreateToggle("NoStun", {
 	Text = "No Stun",
 	Default = false,
 	Risky = true,
 	Callback = function(v) State.NoStun = v end,
 })
 
-AntiCCGroup:AddToggle("NoRagdoll", {
+AntiCCSec:CreateToggle("NoRagdoll", {
 	Text = "No Ragdoll",
 	Default = false,
 	Risky = true,
 	Callback = function(v) State.NoRagdoll = v end,
 })
 
-AntiCCGroup:AddToggle("LagSwitch", {
+AntiCCSec:CreateToggle("LagSwitch", {
 	Text = "Lag Switch",
 	Default = false,
 	Risky = true,
 	Callback = function(v) State.LagSwitch = v end,
 })
 
-AntiCCGroup:AddToggle("DisableGlassesKnocked", {
+AntiCCSec:CreateToggle("DisableGlassesKnocked", {
 	Text = "Disable Glasses Knocked",
 	Default = false,
 	Callback = function(v) State.DisableGlassesKnocked = v end,
 })
 
-AntiCCGroup:AddToggle("NoBlurWhenKnocked", {
+AntiCCSec:CreateToggle("NoBlurWhenKnocked", {
 	Text = "No Blur When Knocked",
 	Default = false,
 	Callback = function(v) State.NoBlurWhenKnocked = v end,
@@ -364,16 +294,15 @@ AntiCCGroup:AddToggle("NoBlurWhenKnocked", {
 -- ═══════════════════════════════════════════════════════
 --  MAIN > TARGETING
 -- ═══════════════════════════════════════════════════════
-local TargetingSub = MainTab:AddSubTab("Targeting", "rbxassetid://79379082636309")
-local TargetGroup = TargetingSub:AddLeftGroupbox("Target", "crosshair")
+local TargetingSec = MainTab:CreateSection("Targeting")
 
-TargetGroup:AddToggle("FaceLock", {
+TargetingSec:CreateToggle("FaceLock", {
 	Text = "Face Lock",
 	Default = false,
 	Callback = function(v) State.FaceLock = v end,
 })
 
-TargetGroup:AddToggle("StickyTarget", {
+TargetingSec:CreateToggle("StickyTarget", {
 	Text = "Sticky Target",
 	Default = false,
 	Callback = function(v) State.StickyTarget = v end,
@@ -392,18 +321,17 @@ refreshPlayerList()
 Players.PlayerAdded:Connect(refreshPlayerList)
 Players.PlayerRemoving:Connect(refreshPlayerList)
 
-TargetGroup:AddDropdown("SelectPlayer", {
+TargetingSec:CreateDropdown("SelectPlayer", {
 	Values = PlayerNames, Default = "", Text = "Select Player",
 	Callback = function(v) State.SelectPlayer = v end,
 })
-TargetGroup:AddButton("Refresh Players", function()
+TargetingSec:CreateButton("Refresh Players", function()
 	refreshPlayerList()
-	Options.SelectPlayer:Refresh(PlayerNames)
 end)
 
-local WhiteGroup = TargetingSub:AddRightGroupbox("Whitelist", "users")
+local WhiteSec = MainTab:CreateSection("Whitelist")
 
-WhiteGroup:AddDropdown("WhitelistAdd", {
+WhiteSec:CreateDropdown("WhitelistAdd", {
 	Values = PlayerNames, Default = "", Text = "Add to Whitelist",
 	Callback = function(v)
 		if v and not table.find(State.WhitelistPlayers, v) then
@@ -411,54 +339,49 @@ WhiteGroup:AddDropdown("WhitelistAdd", {
 		end
 	end,
 })
-WhiteGroup:AddButton("Add Selected", function()
-	local val = Options.WhitelistAdd.Value
-	if val and not table.find(State.WhitelistPlayers, val) then
-		table.insert(State.WhitelistPlayers, val)
-		Library:Notify({ Title = "Ivory", Description = val .. " whitelisted", Type = "Success", Time = 2 })
-	end
+WhiteSec:CreateButton("Add Selected", function()
+	Library.Notify({ Title = "Ivory", Content = val .. " whitelisted", Duration = 2 })
 end)
-WhiteGroup:AddButton("Clear Whitelist", function()
+WhiteSec:CreateButton("Clear Whitelist", function()
 	State.WhitelistPlayers = {}
-	Library:Notify({ Title = "Ivory", Description = "Whitelist cleared", Type = "Info", Time = 2 })
+	Library.Notify({ Title = "Ivory", Content = "Whitelist cleared", Duration = 2 })
 end)
 
 -- ═══════════════════════════════════════════════════════
 --  MAIN > RHYTHM
 -- ═══════════════════════════════════════════════════════
-local RhythmSub = MainTab:AddSubTab("Rhythm", "rbxassetid://79379082636309")
-local RhythmGroup = RhythmSub:AddLeftGroupbox("Auto Rhythm", "music")
+local RhythmSec = MainTab:CreateSection("Rhythm")
 
-RhythmGroup:AddToggle("AutoGreen", {
+RhythmSec:CreateToggle("AutoGreen", {
 	Text = "Auto Green",
 	Default = false,
 	Callback = function(v) State.AutoGreen = v end,
 })
 
-RhythmGroup:AddSlider("Accuracy", {
+RhythmSec:CreateSlider("Accuracy", {
 	Text = "Accuracy", Default = 95, Min = 0, Max = 100, Rounding = 0,
 	Callback = function(v) State.Accuracy = v / 100 end,
 })
 
-RhythmGroup:AddToggle("AutoRhythm", {
+RhythmSec:CreateToggle("AutoRhythm", {
 	Text = "Auto Rhythm",
 	Default = false,
 	Callback = function(v) State.AutoRhythm = v end,
 })
 
-local RhythmSet = RhythmSub:AddRightGroupbox("Rhythm Settings", "sliders")
+local RhythmSetSec = MainTab:CreateSection("Rhythm Settings")
 
-RhythmSet:AddSlider("RhythmVertical", {
+RhythmSetSec:CreateSlider("RhythmVertical", {
 	Text = "Vertical", Default = 0, Min = -50, Max = 50, Rounding = 0,
 	Callback = function(v) State.RhythmVertical = v end,
 })
 
-RhythmSet:AddSlider("RhythmSmooth", {
+RhythmSetSec:CreateSlider("RhythmSmooth", {
 	Text = "Smooth Factor", Default = 50, Min = 0, Max = 100, Rounding = 0,
 	Callback = function(v) State.RhythmSmooth = v / 100 end,
 })
 
-RhythmSet:AddSlider("RhythmAnimSpeed", {
+RhythmSetSec:CreateSlider("RhythmAnimSpeed", {
 	Text = "Animation Speed", Default = 100, Min = 10, Max = 300, Rounding = 0,
 	Callback = function(v) State.RhythmAnimSpeed = v / 100 end,
 })
@@ -466,58 +389,56 @@ RhythmSet:AddSlider("RhythmAnimSpeed", {
 -- ═══════════════════════════════════════════════════════
 --  MAIN > VISUALS
 -- ═══════════════════════════════════════════════════════
-local VisualsSub = MainTab:AddSubTab("Visuals", "rbxassetid://79379082636309")
-local ESPGroup = VisualsSub:AddLeftGroupbox("Player ESP", "eye")
+local VisualsSec = MainTab:CreateSection("Player ESP")
 
-ESPGroup:AddToggle("ESP Enabled", {
+VisualsSec:CreateToggle("ESP Enabled", {
 	Text = "Player ESP",
 	Default = false,
 	Callback = function(v) State.ESP_Enabled = v end,
-}):AddKeyPicker("ESPKey", {
+}):CreateKeybind("ESPKey", {
 	Default = "None", Text = "ESP Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
-ESPGroup:AddLabel("ESP Color"):AddColorPicker("ESPColor", {
+VisualsSec:CreateLabel("ESP Color"):CreateColorPicker("ESPColor", {
 	Default = Color3.fromRGB(140, 110, 220), Title = "ESP Color",
 	Callback = function(v) State.ESP_Color = v end,
 })
 
-ESPGroup:AddToggle("ESP Box", { Text = "Boxes", Default = true, Callback = function(v) State.ESP_Box = v end })
-ESPGroup:AddToggle("ESP Fill", { Text = "Fill", Default = false, Callback = function(v) State.ESP_Fill = v end })
-ESPGroup:AddToggle("ESP HeadDot", { Text = "Head Dot", Default = false, Callback = function(v) State.ESP_HeadDot = v end })
-ESPGroup:AddToggle("ESP Tracer", { Text = "Tracers", Default = false, Callback = function(v) State.ESP_Tracer = v end })
-ESPGroup:AddToggle("ESP HPBar", { Text = "HP Bar", Default = true, Callback = function(v) State.ESP_Health = v end })
-ESPGroup:AddToggle("ESP Name", { Text = "Name", Default = true, Callback = function(v) State.ESP_Name = v end })
-ESPGroup:AddToggle("ESP Health", { Text = "Health Text", Default = false, Callback = function(v) end })
-ESPGroup:AddToggle("ESP Distance", { Text = "Distance", Default = true, Callback = function(v) State.ESP_Distance = v end })
+VisualsSec:CreateToggle("ESP Box", { Text = "Boxes", Default = true, Callback = function(v) State.ESP_Box = v end })
+VisualsSec:CreateToggle("ESP Fill", { Text = "Fill", Default = false, Callback = function(v) State.ESP_Fill = v end })
+VisualsSec:CreateToggle("ESP HeadDot", { Text = "Head Dot", Default = false, Callback = function(v) State.ESP_HeadDot = v end })
+VisualsSec:CreateToggle("ESP Tracer", { Text = "Tracers", Default = false, Callback = function(v) State.ESP_Tracer = v end })
+VisualsSec:CreateToggle("ESP HPBar", { Text = "HP Bar", Default = true, Callback = function(v) State.ESP_Health = v end })
+VisualsSec:CreateToggle("ESP Name", { Text = "Name", Default = true, Callback = function(v) State.ESP_Name = v end })
+VisualsSec:CreateToggle("ESP Health", { Text = "Health Text", Default = false, Callback = function(v) end })
+VisualsSec:CreateToggle("ESP Distance", { Text = "Distance", Default = true, Callback = function(v) State.ESP_Distance = v end })
 
-local ESPSet = VisualsSub:AddRightGroupbox("ESP Settings", "sliders")
+local ESPSetSec = MainTab:CreateSection("ESP Settings")
 
-ESPSet:AddSlider("ESP Fill Transparency", {
+ESPSetSec:CreateSlider("ESP Fill Transparency", {
 	Text = "Fill Transparency", Default = 50, Min = 0, Max = 100, Rounding = 0,
 	Callback = function(v) State.ESP_FillTransparency = v / 100 end,
 })
-ESPSet:AddSlider("ESP Outline Transparency", {
+ESPSetSec:CreateSlider("ESP Outline Transparency", {
 	Text = "Outline Transparency", Default = 0, Min = 0, Max = 100, Rounding = 0,
 	Callback = function(v) State.ESP_OutlineTransparency = v / 100 end,
 })
-ESPSet:AddSlider("ESP MaxDist", {
+ESPSetSec:CreateSlider("ESP MaxDist", {
 	Text = "Max Distance", Default = 1500, Min = 50, Max = 2000, Rounding = 0,
 	Callback = function(v) State.ESP_MaxDist = v end,
 })
-ESPSet:AddSlider("ESP FontSize", {
+ESPSetSec:CreateSlider("ESP FontSize", {
 	Text = "Font Size", Default = 14, Min = 8, Max = 32, Rounding = 0,
 	Callback = function(v) State.ESP_TextSize = v end,
 })
-ESPSet:AddSlider("ESP BoxThickness", {
+ESPSetSec:CreateSlider("ESP BoxThickness", {
 	Text = "Box Thickness", Default = 2, Min = 1, Max = 5, Rounding = 0,
 	Callback = function(v) State.ESP_BoxThickness = v end,
 })
-ESPSet:AddToggle("ESP TeamCheck", { Text = "Team Check", Default = false, Callback = function(v) State.ESP_TeamCheck = v end })
+ESPSetSec:CreateToggle("ESP TeamCheck", { Text = "Team Check", Default = false, Callback = function(v) State.ESP_TeamCheck = v end })
 
-local HighlightSub = VisualsSub:AddSubTab("Highlights", "rbxassetid://79379082636309")
-local HighlightGroup = HighlightSub:AddLeftGroupbox("Highlights", "highlighter")
-HighlightGroup:AddToggle("Highlight Enabled", {
+local HighlightSec = MainTab:CreateSection("Highlights")
+HighlightSec:CreateToggle("Highlight Enabled", {
 	Text = "Enable Highlights", Default = false,
 	Callback = function(v)
 		State.Highlight_Enabled = v
@@ -531,16 +452,15 @@ HighlightGroup:AddToggle("Highlight Enabled", {
 		end
 	end,
 })
-HighlightGroup:AddSlider("Highlight Fill", {
+HighlightSec:CreateSlider("Highlight Fill", {
 	Text = "Fill Transparency", Default = 50, Min = 0, Max = 100, Rounding = 0,
 	Callback = function(v) State.Highlight_FillTransparency = v / 100 end,
 })
-HighlightGroup:AddSlider("Highlight Outline", {
+HighlightSec:CreateSlider("Highlight Outline", {
 	Text = "Outline Transparency", Default = 0, Min = 0, Max = 100, Rounding = 0,
 	Callback = function(v) State.Highlight_OutlineTransparency = v / 100 end,
 })
-local HighlightColors = HighlightSub:AddRightGroupbox("Highlight Colors", "palette")
-HighlightColors:AddLabel("Highlight Color"):AddColorPicker("HighlightColor", {
+HighlightSec:CreateLabel("Highlight Color"):CreateColorPicker("HighlightColor", {
 	Default = Color3.fromRGB(140, 110, 220), Title = "Highlight",
 	Callback = function(v) State.Highlight_Color = v end,
 })
@@ -548,10 +468,9 @@ HighlightColors:AddLabel("Highlight Color"):AddColorPicker("HighlightColor", {
 -- ═══════════════════════════════════════════════════════
 --  MAIN > WORLD
 -- ═══════════════════════════════════════════════════════
-local WorldSub = MainTab:AddSubTab("World", "rbxassetid://79379082636309")
-local LightingGroup = WorldSub:AddLeftGroupbox("Lighting", "sun")
+local WorldSec = MainTab:CreateSection("Lighting")
 
-LightingGroup:AddToggle("FullBright", {
+WorldSec:CreateToggle("FullBright", {
 	Text = "Full Bright", Default = false,
 	Callback = function(v)
 		State.FullBright = v
@@ -566,7 +485,7 @@ LightingGroup:AddToggle("FullBright", {
 	end,
 })
 
-LightingGroup:AddToggle("NightMode", {
+WorldSec:CreateToggle("NightMode", {
 	Text = "Night Mode", Default = false,
 	Callback = function(v)
 		State.NightMode = v
@@ -574,26 +493,26 @@ LightingGroup:AddToggle("NightMode", {
 	end,
 })
 
-LightingGroup:AddSlider("Ambient R", {
+WorldSec:CreateSlider("Ambient R", {
 	Text = "Ambient R", Default = 128, Min = 0, Max = 255, Rounding = 0,
 	Callback = function(v) State.AmbientR = v end,
 })
-LightingGroup:AddSlider("Ambient G", {
+WorldSec:CreateSlider("Ambient G", {
 	Text = "Ambient G", Default = 128, Min = 0, Max = 255, Rounding = 0,
 	Callback = function(v) State.AmbientG = v end,
 })
-LightingGroup:AddSlider("Ambient B", {
+WorldSec:CreateSlider("Ambient B", {
 	Text = "Ambient B", Default = 128, Min = 0, Max = 255, Rounding = 0,
 	Callback = function(v) State.AmbientB = v end,
 })
-LightingGroup:AddButton("Apply Ambient", function()
+WorldSec:CreateButton("Apply Ambient", function()
 	Lighting.Ambient = Color3.fromRGB(State.AmbientR, State.AmbientG, State.AmbientB)
-	Library:Notify({ Title = "Ivory", Description = "Ambient applied!", Type = "Success", Time = 2 })
+	Library.Notify({ Title = "Ivory", Content = "Ambient applied!", Duration = 2 })
 end)
 
-local WorldSet = WorldSub:AddRightGroupbox("Camera & GFX", "camera")
+local WorldSetSec = MainTab:CreateSection("Camera & GFX")
 
-WorldSet:AddSlider("CameraFOV", {
+WorldSetSec:CreateSlider("CameraFOV", {
 	Text = "Camera FOV", Default = 70, Min = 60, Max = 120, Rounding = 0,
 	Callback = function(v)
 		State.CameraFOV = v
@@ -601,7 +520,7 @@ WorldSet:AddSlider("CameraFOV", {
 	end,
 })
 
-WorldSet:AddToggle("LowGFX", {
+WorldSetSec:CreateToggle("LowGFX", {
 	Text = "Low GFX", Default = false,
 	Callback = function(v)
 		State.LowGFX = v
@@ -625,7 +544,7 @@ WorldSet:AddToggle("LowGFX", {
 	end,
 })
 
-WorldSet:AddToggle("NoFog", {
+WorldSetSec:CreateToggle("NoFog", {
 	Text = "No Fog", Default = false,
 	Callback = function(v)
 		State.NoFog = v
@@ -643,55 +562,54 @@ WorldSet:AddToggle("NoFog", {
 -- ═══════════════════════════════════════════════════════
 --  MAIN > MOVEMENT
 -- ═══════════════════════════════════════════════════════
-local MovementSub = MainTab:AddSubTab("Movement", "rbxassetid://79379082636309")
-local SpeedGroup = MovementSub:AddLeftGroupbox("Speed", "zap")
+local MovementSec = MainTab:CreateSection("Speed")
 
-SpeedGroup:AddToggle("Speedhack", {
+MovementSec:CreateToggle("Speedhack", {
 	Text = "Speedhack", Default = false,
 	Callback = function(v)
 		State.SpeedEnabled = v
 		if not v then pcall(function() Humanoid.WalkSpeed = 16 end) end
 	end,
 })
-SpeedGroup:AddSlider("Speed", {
+MovementSec:CreateSlider("Speed", {
 	Text = "Speed", Default = 16, Min = 16, Max = 500, Rounding = 0,
 	Callback = function(v) State.SpeedValue = v end,
 })
 
-local FlyGroup = MovementSub:AddRightGroupbox("Fly", "wind")
+local FlySec = MainTab:CreateSection("Fly")
 
-FlyGroup:AddToggle("Fly", {
+FlySec:CreateToggle("Fly", {
 	Text = "Fly", Default = false,
 	Callback = function(v) State.FlyEnabled = v end,
 })
-FlyGroup:AddSlider("FlySpeed", {
+FlySec:CreateSlider("FlySpeed", {
 	Text = "Fly Speed", Default = 60, Min = 16, Max = 500, Rounding = 0,
 	Callback = function(v) State.FlySpeed = v end,
 })
 
-local MoveMisc = MovementSub:AddLeftGroupbox("Misc Movement", "arrow-up")
+local MoveMiscSec = MainTab:CreateSection("Misc Movement")
 
-MoveMisc:AddToggle("Infinite Jump", {
+MoveMiscSec:CreateToggle("Infinite Jump", {
 	Text = "Infinite Jump", Default = false,
 	Callback = function(v) State.InfiniteJump = v end,
 })
 
-MoveMisc:AddToggle("Infinite Stamina", {
+MoveMiscSec:CreateToggle("Infinite Stamina", {
 	Text = "Infinite Stamina", Default = false,
 	Callback = function(v) State.InfiniteStamina = v end,
 })
 
-MoveMisc:AddToggle("Auto Sprint", {
+MoveMiscSec:CreateToggle("Auto Sprint", {
 	Text = "Auto Sprint", Default = false,
 	Callback = function(v) State.AutoSprint = v end,
 })
 
-MoveMisc:AddToggle("Noclip", {
+MoveMiscSec:CreateToggle("Noclip", {
 	Text = "Noclip", Default = false,
 	Callback = function(v) State.Noclip = v end,
 })
 
-MoveMisc:AddToggle("Click Teleport", {
+MoveMiscSec:CreateToggle("Click Teleport", {
 	Text = "Click Teleport", Default = false,
 	Risky = true,
 	Callback = function(v) State.ClickTeleport = v end,
@@ -700,32 +618,19 @@ MoveMisc:AddToggle("Click Teleport", {
 -- ═══════════════════════════════════════════════════════
 --  SETTINGS TAB (always last)
 -- ═══════════════════════════════════════════════════════
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
+local SettingsTab = Window:CreateTab("Settings")
 
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub")
-SaveManager:SetSubFolder("hoodrivals")
-
-ThemeManager:ApplyToTab(SettingsTab)
-SaveManager:BuildConfigSection(SettingsTab)
-
-local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "wrench")
-MenuGroup:AddToggle("KeybindMenuOpen", { Default = Library.KeybindFrame.Visible, Text = "Open Keybind Menu", Callback = function(value) Library.KeybindFrame.Visible = value end })
-MenuGroup:AddToggle("ShowCustomCursor", { Text = "Custom Cursor", Default = Library.ShowCustomCursor, Callback = function(Value) Library.ShowCustomCursor = Value end })
-MenuGroup:AddButton("Test Notification", function() Library:Notify({ Title = "Ivory", Description = "This is a test notification!", Type = "Info", Time = 3 }) end)
-MenuGroup:AddDropdown("NotifySide", { Values = { "Left", "Right" }, Default = "Right", Text = "Notification Side", Callback = function(Value) Library.NotifySide = Value end })
-MenuGroup:AddDropdown("DPIDropdown", { Values = { "50%", "75%", "100%", "125%", "150%", "175%", "200%" }, Default = "100%", Text = "DPI Scale", Callback = function(Value) Library:SetDPIScale(tonumber(Value:gsub("%%", ""))) end })
-MenuGroup:AddSlider("UICornerSlider", { Text = "Corner Radius", Default = 4, Min = 0, Max = 20, Rounding = 0, Callback = function(value) Window:SetCornerRadius(value) end })
-MenuGroup:AddDivider()
-MenuGroup:AddLabel("Menu: RightShift (default)"):AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
-MenuGroup:AddButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 }) end)
-MenuGroup:AddButton("Unload", function() Library:Unload() end)
-Library.ToggleKeybind = Options.MenuKeybind
-SaveManager:LoadAutoloadConfig()
+local MenuSec = SettingsTab:CreateSection("Menu")
+MenuSec:CreateToggle("KeybindMenuOpen", { Default = Library.KeybindFrame.Visible, Text = "Open Keybind Menu", Callback = function(value) Library.KeybindFrame.Visible = value end })
+MenuSec:CreateToggle("ShowCustomCursor", { Text = "Custom Cursor", Default = Library.ShowCustomCursor, Callback = function(Value) Library.ShowCustomCursor = Value end })
+MenuSec:CreateButton("Test Notification", function() Library.Notify({ Title = "Ivory", Content = "This is a test notification!", Duration = 3 }) end)
+MenuSec:CreateDropdown("NotifySide", { Values = { "Left", "Right" }, Default = "Right", Text = "Notification Side", Callback = function(Value) Library.NotifySide = Value end })
+MenuSec:CreateDropdown("DPIDropdown", { Values = { "50%", "75%", "100%", "125%", "150%", "175%", "200%" }, Default = "100%", Text = "DPI Scale", Callback = function(Value) Library:SetDPIScale(tonumber(Value:gsub("%%", ""))) end })
+MenuSec:CreateSlider("UICornerSlider", { Text = "Corner Radius", Default = 4, Min = 0, Max = 20, Rounding = 0, Callback = function(value) Window:SetCornerRadius(value) end })
+MenuSec:CreateDivider()
+MenuSec:CreateLabel("Menu: RightShift (default)"):CreateKeybind("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
+MenuSec:CreateButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Duration = 3 }) end)
+MenuSec:CreateButton("Unload", function() Library:Unload() end)
 
 -- ═══════════════════════════════════════════════════════
 --  ESP LOGIC
@@ -1262,4 +1167,4 @@ Library:OnUnload(function()
 	for _, player in ipairs(Players:GetPlayers()) do removeHighlight(player) end
 end)
 
-Library:Notify({ Title = "Ivory", Description = "v2.0 loaded successfully", Type = "Success", Time = 3 })
+Library.Notify({ Title = "Ivory", Content = "v2.0 loaded successfully", Duration = 3 })

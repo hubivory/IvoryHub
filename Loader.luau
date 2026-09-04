@@ -1,5 +1,5 @@
 --// Ivory Hub | Universal Loader
---// Works in ALL games via ObsidianUltra
+--// Works in ALL games via Ivory Hub Sakura Edition
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -12,30 +12,12 @@ local VirtualUser = game:GetService("VirtualUser")
 local Camera = Workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
---// Load ObsidianUltra
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
+--// Load Ivory Hub Library
+local LIB_URL = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua"
 local function httpGet(url)
 	return request({ Url = url, Method = "GET" }).Body
 end
-local Library = loadstring(getgenv()._IvoryLibSrc or httpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(getgenv()._IvoryTMSrc or httpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(getgenv()._IvorySMSrc or httpGet(repo .. "addons/SaveManager.lua"))()
-
-local Options = Library.Options
-local Toggles = Library.Toggles
-
---// Ivory scheme
-Library.Scheme.MainColor = Color3.fromRGB(18, 14, 28)
-Library.Scheme.AccentColor = Color3.fromRGB(140, 110, 220)
-Library.Scheme.AcccentDark = Color3.fromRGB(110, 80, 190)
-Library.Scheme.OutlineColor = Color3.fromRGB(50, 40, 70)
-Library.Scheme.FontColor = Color3.fromRGB(225, 215, 245)
-Library.Scheme.SubText = Color3.fromRGB(155, 135, 185)
-Library.Scheme.Bright = Color3.fromRGB(32, 26, 48)
-Library.Scheme.Dark = Color3.fromRGB(12, 10, 20)
-Library.Scheme.Risky = Color3.fromRGB(220, 80, 120)
-Library.ShowToggleFrameInKeybinds = true
-Library.ForceCheckbox = false
+local Library = loadstring(getgenv()._IvoryLibSrc or httpGet(LIB_URL))()
 
 --// Game info
 local PlaceId = game.PlaceId
@@ -52,64 +34,19 @@ pcall(function()
 end)
 
 --// Window
-local Window = Library:CreateWindow({
-	Title = "Ivory",
-	Icon = "79379082636309",
-	Footer = {
-		"v1.4 |",
-		{ Text = isLobby and "Lobby" or "Game", Copyable = true },
-		"|",
-		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
-	},
-	CopyableFooter = true,
-	FuzzySearch = true,
-	SearchValues = true,
-	Minimizable = true,
-	MinimizeKeybind = Enum.KeyCode.RightBracket,
-	MinimizedWidth = 280,
-	NotifySide = "Right",
-	ShowCustomCursor = false,
-	SearchKeybind = Enum.KeyCode.F,
-	CornerRadius = 4,
-	Animations = {
-		ToggleWindow = false,
-		TabSwitch = false,
-		Groupbox = false,
-		Dropdown = false,
-		KeyPicker = false,
-		SubTabUnderline = true,
-	},
+local Window = Library.CreateWindow({
+	Name = "Ivory",
+	Width = 460,
+	Height = 360,
+	Resizable = true,
+	AccentColor = Color3.fromRGB(140, 110, 220),
+	CornerRadius = UDim.new(0, 6),
+	ToggleKeybind = Enum.KeyCode.RightShift,
+	ConfigSaving = true,
+	ConfigName = "IvoryHub_Universal",
+	AutoSaveInterval = 60,
+	WatermarkEnabled = true,
 })
-
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
 
 --// State
 local State = {
@@ -158,207 +95,343 @@ local State = {
 }
 
 --// Tabs
-local MainTab = Window:AddTab({ Name = "Main", Icon = "79379082636309" })
-local PlayerTab = Window:AddTab({ Name = "Player", Icon = "79379082636309" })
-local CombatTab = Window:AddTab({ Name = "Combat", Icon = "79379082636309" })
-local WorldTab = Window:AddTab({ Name = "World", Icon = "79379082636309" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "79379082636309" })
+local MainTab = Window:CreateTab({Name = "Main"})
+local PlayerTab = Window:CreateTab({Name = "Player"})
+local CombatTab = Window:CreateTab({Name = "Combat"})
+local WorldTab = Window:CreateTab({Name = "World"})
 
 --// ═══════════════════════════════════════════════════════════
 --// MAIN TAB
 --// ═══════════════════════════════════════════════════════════
 
-local InfoTab = MainTab:AddSubTab("Info", "info")
-local ESPTab = MainTab:AddSubTab("ESP", "eye")
-local VisualTab = MainTab:AddSubTab("Visuals", "highlighter")
+local InfoSection = MainTab:CreateSection("Current Game")
+InfoSection:CreateLabel("Game: " .. GameName)
+InfoSection:CreateLabel("PlaceId: " .. PlaceId)
+InfoSection:CreateButton({
+	Name = "Copy JobId",
+	Callback = function()
+		setclipboard(game.JobId)
+		Library.Notify({ Title = "Ivory", Content = "JobId copied!", Type = "Success", Duration = 2 })
+	end,
+})
 
-local GameInfoGroup = InfoTab:AddLeftGroupbox("Current Game", "gamepad-2")
-GameInfoGroup:AddLabel("Game: " .. GameName)
-GameInfoGroup:AddLabel("PlaceId: " .. PlaceId)
-GameInfoGroup:AddButton("Copy JobId", function()
-	setclipboard(game.JobId)
-	Library:Notify({ Title = "Ivory", Description = "JobId copied!", Type = "Success", Time = 2 })
-end)
-
-local ScriptInfoGroup = InfoTab:AddRightGroupbox("Script Status", "check-circle")
-ScriptInfoGroup:AddLabel('<font color="#FFB74D"><b>Universal Mode</b></font>', true)
-ScriptInfoGroup:AddLabel("Using universal features")
+local ScriptInfoSection = MainTab:CreateSection("Script Status")
+ScriptInfoSection:CreateLabel("Universal Mode")
 
 --// ESP
-local ESPControls = ESPTab:AddLeftGroupbox("ESP Controls", "eye")
-ESPControls:AddToggle("ESP Enabled", { Text = "Enable ESP", Default = false, Callback = function(v) State.ESP_Enabled = v end })
-ESPControls:AddToggle("ESP Box", { Text = "Show Box", Default = true, Callback = function(v) State.ESP_Box = v end })
-ESPControls:AddToggle("ESP Name", { Text = "Show Name", Default = true, Callback = function(v) State.ESP_Name = v end })
-ESPControls:AddToggle("ESP Distance", { Text = "Show Distance", Default = true, Callback = function(v) State.ESP_Distance = v end })
-ESPControls:AddToggle("ESP Health", { Text = "Show Health Bar", Default = true, Callback = function(v) State.ESP_Health = v end })
-ESPControls:AddToggle("ESP Tracer", { Text = "Show Tracer Line", Default = false, Callback = function(v) State.ESP_Tracer = v end })
-ESPControls:AddToggle("ESP TeamCheck", { Text = "Team Check", Default = false, Callback = function(v) State.ESP_TeamCheck = v end })
-ESPControls:AddSlider("ESP MaxDist", { Text = "Max Distance", Default = 1000, Min = 100, Max = 5000, Rounding = 0, Callback = function(v) State.ESP_MaxDist = v end })
+local ESPSection = MainTab:CreateSection("ESP Controls")
+ESPSection:CreateToggle({
+	Name = "Enable ESP",
+	CurrentValue = false,
+	Callback = function(v) State.ESP_Enabled = v end,
+})
+ESPSection:CreateToggle({
+	Name = "Show Box",
+	CurrentValue = true,
+	Callback = function(v) State.ESP_Box = v end,
+})
+ESPSection:CreateToggle({
+	Name = "Show Name",
+	CurrentValue = true,
+	Callback = function(v) State.ESP_Name = v end,
+})
+ESPSection:CreateToggle({
+	Name = "Show Distance",
+	CurrentValue = true,
+	Callback = function(v) State.ESP_Distance = v end,
+})
+ESPSection:CreateToggle({
+	Name = "Show Health Bar",
+	CurrentValue = true,
+	Callback = function(v) State.ESP_Health = v end,
+})
+ESPSection:CreateToggle({
+	Name = "Show Tracer Line",
+	CurrentValue = false,
+	Callback = function(v) State.ESP_Tracer = v end,
+})
+ESPSection:CreateToggle({
+	Name = "Team Check",
+	CurrentValue = false,
+	Callback = function(v) State.ESP_TeamCheck = v end,
+})
+ESPSection:CreateSlider({
+	Name = "Max Distance",
+	Range = {100, 5000},
+	Increment = 100,
+	CurrentValue = 1000,
+	Callback = function(v) State.ESP_MaxDist = v end,
+})
 
-local ESPStyle = ESPTab:AddRightGroupbox("ESP Style", "sliders")
-ESPStyle:AddSlider("BoxThickness", { Text = "Box Thickness", Default = 2, Min = 1, Max = 5, Rounding = 0, Callback = function(v) State.BoxThickness = v end })
-ESPStyle:AddSlider("TextSize", { Text = "Text Size", Default = 14, Min = 10, Max = 24, Rounding = 0, Callback = function(v) State.TextSize = v end })
+local ESPStyleSection = MainTab:CreateSection("ESP Style")
+ESPStyleSection:CreateSlider({
+	Name = "Box Thickness",
+	Range = {1, 5},
+	Increment = 1,
+	CurrentValue = 2,
+	Callback = function(v) State.BoxThickness = v end,
+})
+ESPStyleSection:CreateSlider({
+	Name = "Text Size",
+	Range = {10, 24},
+	Increment = 1,
+	CurrentValue = 14,
+	Callback = function(v) State.TextSize = v end,
+})
 
-local ESPColors = ESPTab:AddLeftGroupbox("ESP Colors", "palette")
-ESPColors:AddLabel("Box Color"):AddColorPicker("ColorBox", { Default = Color3.fromRGB(140, 110, 220), Title = "Box", Callback = function(v) State.Color_Box = v end })
-ESPColors:AddLabel("Name Color"):AddColorPicker("ColorName", { Default = Color3.fromRGB(225, 215, 245), Title = "Name", Callback = function(v) State.Color_Name = v end })
-ESPColors:AddLabel("Distance Color"):AddColorPicker("ColorDistance", { Default = Color3.fromRGB(155, 135, 185), Title = "Distance", Callback = function(v) State.Color_Distance = v end })
-ESPColors:AddLabel("Tracer Color"):AddColorPicker("ColorTracer", { Default = Color3.fromRGB(140, 110, 220), Title = "Tracer", Callback = function(v) State.Color_Tracer = v end })
+local ESPColorSection = MainTab:CreateSection("ESP Colors")
+ESPColorSection:CreateColorPicker({
+	Name = "Box Color",
+	Color = Color3.fromRGB(140, 110, 220),
+	Callback = function(v) State.Color_Box = v end,
+})
+ESPColorSection:CreateColorPicker({
+	Name = "Name Color",
+	Color = Color3.fromRGB(225, 215, 245),
+	Callback = function(v) State.Color_Name = v end,
+})
+ESPColorSection:CreateColorPicker({
+	Name = "Distance Color",
+	Color = Color3.fromRGB(155, 135, 185),
+	Callback = function(v) State.Color_Distance = v end,
+})
+ESPColorSection:CreateColorPicker({
+	Name = "Tracer Color",
+	Color = Color3.fromRGB(140, 110, 220),
+	Callback = function(v) State.Color_Tracer = v end,
+})
 
-local HighlightGroup = VisualTab:AddLeftGroupbox("Highlights", "highlighter")
-HighlightGroup:AddToggle("Highlight Enabled", { Text = "Enable Highlights", Default = false, Callback = function(v)
-	State.Highlight_Enabled = v
-	if not v then
-		for _, player in ipairs(Players:GetPlayers()) do
-			if player.Character then
-				local hl = player.Character:FindFirstChild("IvoryHighlight")
-				if hl then hl:Destroy() end
+local HighlightSection = MainTab:CreateSection("Highlights")
+HighlightSection:CreateToggle({
+	Name = "Enable Highlights",
+	CurrentValue = false,
+	Callback = function(v)
+		State.Highlight_Enabled = v
+		if not v then
+			for _, player in ipairs(Players:GetPlayers()) do
+				if player.Character then
+					local hl = player.Character:FindFirstChild("IvoryHighlight")
+					if hl then hl:Destroy() end
+				end
 			end
 		end
-	end
-end })
-HighlightGroup:AddToggle("Highlight Self", { Text = "Highlight Yourself", Default = false, Callback = function(v) State.Highlight_Self = v end })
-HighlightGroup:AddSlider("Highlight Fill", { Text = "Fill Transparency", Default = 50, Min = 0, Max = 100, Rounding = 0, Callback = function(v) State.Highlight_FillTransparency = v / 100 end })
-HighlightGroup:AddSlider("Highlight Outline", { Text = "Outline Transparency", Default = 0, Min = 0, Max = 100, Rounding = 0, Callback = function(v) State.Highlight_OutlineTransparency = v / 100 end })
-
-local HighlightColors = VisualTab:AddRightGroupbox("Highlight Colors", "palette")
-HighlightColors:AddLabel("Highlight Color"):AddColorPicker("HighlightColor", { Default = Color3.fromRGB(140, 110, 220), Title = "Highlight", Callback = function(v) State.Highlight_Color = v end })
+	end,
+})
+HighlightSection:CreateToggle({
+	Name = "Highlight Yourself",
+	CurrentValue = false,
+	Callback = function(v) State.Highlight_Self = v end,
+})
+HighlightSection:CreateSlider({
+	Name = "Fill Transparency",
+	Range = {0, 100},
+	Increment = 1,
+	CurrentValue = 50,
+	Callback = function(v) State.Highlight_FillTransparency = v / 100 end,
+})
+HighlightSection:CreateSlider({
+	Name = "Outline Transparency",
+	Range = {0, 100},
+	Increment = 1,
+	CurrentValue = 0,
+	Callback = function(v) State.Highlight_OutlineTransparency = v / 100 end,
+})
+HighlightSection:CreateColorPicker({
+	Name = "Highlight Color",
+	Color = Color3.fromRGB(140, 110, 220),
+	Callback = function(v) State.Highlight_Color = v end,
+})
 
 --// ═══════════════════════════════════════════════════════════
 --// PLAYER TAB
 --// ═══════════════════════════════════════════════════════════
 
-local MovementTab = PlayerTab:AddSubTab("Movement", "move")
-local MiscTab = PlayerTab:AddSubTab("Misc", "79379082636309")
+local SpeedSection = PlayerTab:CreateSection("Speed")
+SpeedSection:CreateToggle({
+	Name = "Enable Speed",
+	CurrentValue = false,
+	Callback = function(v)
+		State.Speed_Enabled = v
+		if not v then pcall(function() LocalPlayer.Character.Humanoid.WalkSpeed = 16 end) end
+	end,
+})
+SpeedSection:CreateSlider({
+	Name = "Walk Speed",
+	Range = {16, 200},
+	Increment = 1,
+	CurrentValue = 16,
+	Callback = function(v) State.Speed_Value = v end,
+})
+SpeedSection:CreateButton({
+	Name = "Apply Speed",
+	Callback = function() pcall(function() LocalPlayer.Character.Humanoid.WalkSpeed = State.Speed_Value end) end,
+})
 
-local SpeedGroup = MovementTab:AddLeftGroupbox("Speed", "zap")
-SpeedGroup:AddToggle("Speed Enabled", { Text = "Enable Speed", Default = false, Callback = function(v)
-	State.Speed_Enabled = v
-	if not v then pcall(function() LocalPlayer.Character.Humanoid.WalkSpeed = 16 end) end
-end })
-SpeedGroup:AddSlider("Speed Value", { Text = "Walk Speed", Default = 16, Min = 16, Max = 200, Rounding = 0, Callback = function(v) State.Speed_Value = v end })
-SpeedGroup:AddButton("Apply Speed", function() pcall(function() LocalPlayer.Character.Humanoid.WalkSpeed = State.Speed_Value end) end)
+local JumpSection = PlayerTab:CreateSection("Jump")
+JumpSection:CreateToggle({
+	Name = "Enable Jump Power",
+	CurrentValue = false,
+	Callback = function(v)
+		State.JumpPower_Enabled = v
+		if not v then pcall(function() LocalPlayer.Character.Humanoid.JumpPower = 50 end) end
+	end,
+})
+JumpSection:CreateSlider({
+	Name = "Jump Power",
+	Range = {50, 300},
+	Increment = 1,
+	CurrentValue = 50,
+	Callback = function(v) State.JumpPower_Value = v end,
+})
+JumpSection:CreateButton({
+	Name = "Apply Jump Power",
+	Callback = function() pcall(function() LocalPlayer.Character.Humanoid.JumpPower = State.JumpPower_Value end) end,
+})
+JumpSection:CreateToggle({
+	Name = "Infinite Jump",
+	CurrentValue = false,
+	Callback = function(v) State.InfiniteJump = v end,
+})
 
-local JumpGroup = MovementTab:AddRightGroupbox("Jump", "arrow-up")
-JumpGroup:AddToggle("JumpPower Enabled", { Text = "Enable Jump Power", Default = false, Callback = function(v)
-	State.JumpPower_Enabled = v
-	if not v then pcall(function() LocalPlayer.Character.Humanoid.JumpPower = 50 end) end
-end })
-JumpGroup:AddSlider("JumpPower Value", { Text = "Jump Power", Default = 50, Min = 50, Max = 300, Rounding = 0, Callback = function(v) State.JumpPower_Value = v end })
-JumpGroup:AddButton("Apply Jump Power", function() pcall(function() LocalPlayer.Character.Humanoid.JumpPower = State.JumpPower_Value end) end)
-JumpGroup:AddToggle("Infinite Jump", { Text = "Infinite Jump", Default = false, Callback = function(v) State.InfiniteJump = v end })
+local MiscSection = PlayerTab:CreateSection("Player Mods")
+MiscSection:CreateToggle({
+	Name = "No Fall Damage",
+	CurrentValue = false,
+	Callback = function(v) State.NoFallDamage = v end,
+})
+MiscSection:CreateToggle({
+	Name = "Noclip",
+	CurrentValue = false,
+	Callback = function(v) State.Noclip = v end,
+})
+MiscSection:CreateToggle({
+	Name = "Click Teleport",
+	CurrentValue = false,
+	Callback = function(v) State.ClickTeleport = v end,
+})
 
-local MiscPlayerGroup = MiscTab:AddLeftGroupbox("Player Mods", "79379082636309")
-MiscPlayerGroup:AddToggle("No Fall Damage", { Text = "No Fall Damage", Default = false, Callback = function(v) State.NoFallDamage = v end })
-MiscPlayerGroup:AddToggle("Noclip", { Text = "Noclip", Default = false, Callback = function(v) State.Noclip = v end })
-MiscPlayerGroup:AddToggle("Click Teleport", { Text = "Click Teleport", Default = false, Callback = function(v) State.ClickTeleport = v end })
-
-local FlyGroup = MiscTab:AddRightGroupbox("Fly", "wind")
-FlyGroup:AddToggle("Fly Enabled", { Text = "Enable Fly", Default = false, Callback = function(v) State.Fly_Enabled = v end })
-FlyGroup:AddSlider("Fly Speed", { Text = "Fly Speed", Default = 50, Min = 10, Max = 200, Rounding = 0, Callback = function(v) State.Fly_Speed = v end })
+local FlySection = PlayerTab:CreateSection("Fly")
+FlySection:CreateToggle({
+	Name = "Enable Fly",
+	CurrentValue = false,
+	Callback = function(v) State.Fly_Enabled = v end,
+})
+FlySection:CreateSlider({
+	Name = "Fly Speed",
+	Range = {10, 200},
+	Increment = 1,
+	CurrentValue = 50,
+	Callback = function(v) State.Fly_Speed = v end,
+})
 
 --// ═══════════════════════════════════════════════════════════
 --// COMBAT TAB
 --// ═══════════════════════════════════════════════════════════
 
-local AimbotTab = CombatTab:AddSubTab("Aimbot", "crosshair")
-local AimbotGroup = AimbotTab:AddLeftGroupbox("Aimbot", "crosshair")
-AimbotGroup:AddToggle("Aimbot", { Text = "Enable Aimbot", Default = false, Callback = function(v) State.Aimbot = v end })
-AimbotGroup:AddLabel("Aimbot Keybind"):AddKeyPicker("AimbotKeybind", { Default = "MouseButton2", NoUI = true, Text = "Aimbot Key" })
-AimbotGroup:AddDropdown("Aimbot Target Part", { Text = "Target Part", Values = { "Head", "HumanoidRootPart", "UpperTorso", "LowerTorso" }, Default = "Head", Callback = function(v) State.Aimbot_TargetPart = v end })
-AimbotGroup:AddSlider("Aimbot FOV", { Text = "FOV (px)", Default = 100, Min = 20, Max = 500, Rounding = 0, Callback = function(v) State.Aimbot_FOV = v end })
-AimbotGroup:AddSlider("Aimbot Smooth", { Text = "Smoothing", Default = 5, Min = 1, Max = 20, Rounding = 0, Callback = function(v) State.Aimbot_Smooth = v end })
-AimbotGroup:AddToggle("Aimbot WallCheck", { Text = "Wall Check", Default = true, Callback = function(v) State.Aimbot_WallCheck = v end })
-AimbotGroup:AddToggle("Aimbot Prediction", { Text = "Predict Movement", Default = true, Callback = function(v) State.Aimbot_Prediction = v end })
-AimbotGroup:AddSlider("Aimbot Pred Offset", { Text = "Prediction Lead", Default = 5, Min = 0, Max = 50, Rounding = 0, Callback = function(v) State.Aimbot_PredictionOffset = v / 10 end })
-AimbotGroup:AddToggle("Aimbot FOV Circle", { Text = "Show FOV Circle", Default = true, Callback = function(v) State.Aimbot_FOV_Circle = v end })
-AimbotGroup:AddToggle("Aimbot TeamCheck", { Text = "Team Check", Default = false, Callback = function(v) State.Aimbot_TeamCheck = v end })
+local AimbotSection = CombatTab:CreateSection("Aimbot")
+AimbotSection:CreateToggle({
+	Name = "Enable Aimbot",
+	CurrentValue = false,
+	Callback = function(v) State.Aimbot = v end,
+})
+AimbotSection:CreateKeybind({
+	Name = "Aimbot Keybind",
+	CurrentKeybind = "MouseButton2",
+	Callback = function(keybind) end,
+})
+AimbotSection:CreateDropdown({
+	Name = "Target Part",
+	Options = { "Head", "HumanoidRootPart", "UpperTorso", "LowerTorso" },
+	CurrentOption = "Head",
+	Callback = function(v) State.Aimbot_TargetPart = v end,
+})
+AimbotSection:CreateSlider({
+	Name = "FOV (px)",
+	Range = {20, 500},
+	Increment = 10,
+	CurrentValue = 100,
+	Callback = function(v) State.Aimbot_FOV = v end,
+})
+AimbotSection:CreateSlider({
+	Name = "Smoothing",
+	Range = {1, 20},
+	Increment = 1,
+	CurrentValue = 5,
+	Callback = function(v) State.Aimbot_Smooth = v end,
+})
+AimbotSection:CreateToggle({
+	Name = "Wall Check",
+	CurrentValue = true,
+	Callback = function(v) State.Aimbot_WallCheck = v end,
+})
+AimbotSection:CreateToggle({
+	Name = "Predict Movement",
+	CurrentValue = true,
+	Callback = function(v) State.Aimbot_Prediction = v end,
+})
+AimbotSection:CreateSlider({
+	Name = "Prediction Lead",
+	Range = {0, 50},
+	Increment = 1,
+	CurrentValue = 5,
+	Callback = function(v) State.Aimbot_PredictionOffset = v / 10 end,
+})
+AimbotSection:CreateToggle({
+	Name = "Show FOV Circle",
+	CurrentValue = true,
+	Callback = function(v) State.Aimbot_FOV_Circle = v end,
+})
+AimbotSection:CreateToggle({
+	Name = "Team Check",
+	CurrentValue = false,
+	Callback = function(v) State.Aimbot_TeamCheck = v end,
+})
 
 --// ═══════════════════════════════════════════════════════════
 --// WORLD TAB
 --// ═══════════════════════════════════════════════════════════
 
-local WorldMiscTab = WorldTab:AddSubTab("World Misc", "79379082636309")
-local WorldMiscGroup = WorldMiscTab:AddLeftGroupbox("World Settings", "79379082636309")
-WorldMiscGroup:AddToggle("Auto Rejoin", { Text = "Auto Rejoin on Kick", Default = false, Callback = function(v) State.AutoRejoin = v end })
-WorldMiscGroup:AddToggle("Anti AFK", { Text = "Anti AFK", Default = false, Callback = function(v) State.AntiAFK = v end })
-WorldMiscGroup:AddButton("Rejoin Now", function() pcall(function() TeleportService:Teleport(PlaceId, LocalPlayer) end) end)
-WorldMiscGroup:AddButton("Server Hop", function()
-	pcall(function()
-		local servers = HttpService:JSONDecode(request({
-			Url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100",
-			Method = "GET"
-		}).Body)
-		if servers and servers.data then
-			for _, server in ipairs(servers.data) do
-				if server.id ~= game.JobId and server.playing < server.maxPlayers then
-					TeleportService:TeleportToPlaceInstance(PlaceId, server.id, LocalPlayer)
-					break
+local WorldSection = WorldTab:CreateSection("World Settings")
+WorldSection:CreateToggle({
+	Name = "Auto Rejoin on Kick",
+	CurrentValue = false,
+	Callback = function(v) State.AutoRejoin = v end,
+})
+WorldSection:CreateToggle({
+	Name = "Anti AFK",
+	CurrentValue = false,
+	Callback = function(v) State.AntiAFK = v end,
+})
+WorldSection:CreateButton({
+	Name = "Rejoin Now",
+	Callback = function() pcall(function() TeleportService:Teleport(PlaceId, LocalPlayer) end) end,
+})
+WorldSection:CreateButton({
+	Name = "Server Hop",
+	Callback = function()
+		pcall(function()
+			local servers = HttpService:JSONDecode(request({
+				Url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100",
+				Method = "GET"
+			}).Body)
+			if servers and servers.data then
+				for _, server in ipairs(servers.data) do
+					if server.id ~= game.JobId and server.playing < server.maxPlayers then
+						TeleportService:TeleportToPlaceInstance(PlaceId, server.id, LocalPlayer)
+						break
+					end
 				end
 			end
-		end
-	end)
-end)
-WorldMiscGroup:AddButton("Copy Server JobId", function()
-	setclipboard(game.JobId)
-	Library:Notify({ Title = "Ivory", Description = "JobId copied!", Type = "Success", Time = 2 })
-end)
-
---// ═══════════════════════════════════════════════════════════
---// SETTINGS TAB (always last)
---// ═══════════════════════════════════════════════════════════
-
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub")
-if isLobby then SaveManager:SetSubFolder("lobby") else SaveManager:SetSubFolder("game") end
-local CreditGroup = SettingsTab:AddLeftGroupbox("Credits", "heart")
-local CreditLabel = CreditGroup:AddLabel({ Text = "", Size = 26, DoesWrap = true })
-local CreditTL = CreditLabel.TextLabel
-CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-CreditTL.Font = Enum.Font.GothamBold
-CreditTL.TextSize = 26
-
-task.spawn(function()
-	local full = "Made by mommy Crow & Veqxo </3"
-	local cursor = "_"
-	while true do
-		local shown = ""
-		for i = 1, #full do
-			shown = shown .. full:sub(i, i)
-			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-			task.wait(math.random(4, 9) / 100)
-		end
-		task.wait(2)
-		for i = #full, 1, -1 do
-			shown = full:sub(1, i - 1)
-			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-			task.wait(math.random(2, 5) / 100)
-		end
-		task.wait(0.8)
-	end
-end)
-
-ThemeManager:ApplyToTab(SettingsTab)
-SaveManager:BuildConfigSection(SettingsTab)
-
-local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "wrench")
-MenuGroup:AddToggle("KeybindMenuOpen", { Default = Library.KeybindFrame.Visible, Text = "Open Keybind Menu", Callback = function(value) Library.KeybindFrame.Visible = value end })
-MenuGroup:AddToggle("ShowCustomCursor", { Text = "Custom Cursor", Default = Library.ShowCustomCursor, Callback = function(Value) Library.ShowCustomCursor = Value end })
-MenuGroup:AddButton("Test Notification", function() Library:Notify({ Title = "Ivory", Description = "This is a test notification!", Type = "Info", Time = 3 }) end)
-MenuGroup:AddDropdown("NotifySide", { Values = { "Left", "Right" }, Default = "Right", Text = "Notification Side", Callback = function(Value) Library.NotifySide = Value end })
-MenuGroup:AddDropdown("DPIDropdown", { Values = { "50%", "75%", "100%", "125%", "150%", "175%", "200%" }, Default = "100%", Text = "DPI Scale", Callback = function(Value) Library:SetDPIScale(tonumber(Value:gsub("%%", ""))) end })
-MenuGroup:AddSlider("UICornerSlider", { Text = "Corner Radius", Default = 4, Min = 0, Max = 20, Rounding = 0, Callback = function(value) Window:SetCornerRadius(value) end })
-MenuGroup:AddDivider()
-MenuGroup:AddLabel("Menu: RightShift (default)"):AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
-MenuGroup:AddButton("Unload", function() Library:Unload() end)
-Library.ToggleKeybind = Options.MenuKeybind
-SaveManager:LoadAutoloadConfig()
+		end)
+	end,
+})
+WorldSection:CreateButton({
+	Name = "Copy Server JobId",
+	Callback = function()
+		setclipboard(game.JobId)
+		Library.Notify({ Title = "Ivory", Content = "JobId copied!", Type = "Success", Duration = 2 })
+	end,
+})
 
 --// ═══════════════════════════════════════════════════════════
 --// ESP LOGIC
@@ -452,29 +525,6 @@ local aimbotKeyDown = false
 local aimbotBindType = "Mouse"
 local aimbotBindCode = Enum.UserInputType.MouseButton2
 
-local function updateAimbotBind()
-	local ok, val = pcall(function() return Options.AimbotKeybind.Value end)
-	if ok and val and val ~= "" then
-		if val:find("MouseButton") then
-			aimbotBindType = "Mouse"
-			aimbotBindCode = Enum.UserInputType[val]
-		else
-			aimbotBindType = "Keyboard"
-			aimbotBindCode = Enum.KeyCode[val]
-		end
-	end
-end
-
-UserInputService.InputBegan:Connect(function(input, gpe)
-	if gpe then return end
-	if aimbotBindType == "Keyboard" and input.KeyCode == aimbotBindCode then aimbotKeyDown = true
-	elseif aimbotBindType == "Mouse" and input.UserInputType == aimbotBindCode then aimbotKeyDown = true end
-end)
-UserInputService.InputEnded:Connect(function(input)
-	if aimbotBindType == "Keyboard" and input.KeyCode == aimbotBindCode then aimbotKeyDown = false
-	elseif aimbotBindType == "Mouse" and input.UserInputType == aimbotBindCode then aimbotKeyDown = false end
-end)
-
 local function isPartVisible(targetPart)
 	local origin = Camera.CFrame.Position
 	local direction = (targetPart.Position - origin)
@@ -484,7 +534,7 @@ local function isPartVisible(targetPart)
 	return workspace:Raycast(origin, direction, rayParams) == nil
 end
 
---// Team detection: supports built-in Teams AND custom team systems
+--// Team detection
 local TeamAttributeNames = { "Team", "TeamName", "team", "teamName" }
 
 local function GetTeamKey(player)
@@ -527,7 +577,6 @@ local function GetTeamKey(player)
 				return "val:" .. tostring(child.Value)
 			end
 		end
-		--// Character parented inside a workspace team folder
 		local parent = char.Parent
 		if parent and parent ~= Workspace and parent:IsA("Model") and parent ~= player then
 			return "parent:" .. parent.Name
@@ -640,7 +689,6 @@ end)
 
 RunService.RenderStepped:Connect(function()
 	Camera = workspace.CurrentCamera
-	updateAimbotBind()
 
 	if State.Speed_Enabled then pcall(function() LocalPlayer.Character.Humanoid.WalkSpeed = State.Speed_Value end) end
 	if State.JumpPower_Enabled then pcall(function() LocalPlayer.Character.Humanoid.JumpPower = State.JumpPower_Value end) end
@@ -744,14 +792,6 @@ task.spawn(function()
 			end)
 		end
 	end
-end)
-
-Library:OnUnload(function()
-	FOVCircle:Remove()
-	stopFly()
-	stopNoclip()
-	for player, _ in pairs(espObjects) do removeESP(player) end
-	for _, player in ipairs(Players:GetPlayers()) do removeHighlight(player) end
 end)
 
 print("[Ivory] Universal loaded!")

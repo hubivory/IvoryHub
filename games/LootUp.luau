@@ -9,37 +9,27 @@ local TweenService = game:GetService("TweenService")
 local VirtualUser = game:GetService("VirtualUser")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
+local MarketplaceService = game:GetService("MarketplaceService")
 local VIM = game:GetService("VirtualInputManager")
 
 local plr = Players.LocalPlayer
 local PlaceId = game.PlaceId
 
 --// ═══════════════════════════════════════════════════════════
---// OBSIDIAN ULTRA
+--// IVORY HUB SAKURA EDITION
 --// ═══════════════════════════════════════════════════════════
 
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local function httpGet(url)
-	return request({ Url = url, Method = "GET" }).Body
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	local ok, src = pcall(function()
+		return request({
+			Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+			Method = "GET"
+		}).Body
+	end)
+	if ok then LIB_SRC = src end
 end
-local Library = loadstring(getgenv()._IvoryLibSrc or httpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(getgenv()._IvoryTMSrc or httpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(getgenv()._IvorySMSrc or httpGet(repo .. "addons/SaveManager.lua"))()
-
-local Options = Library.Options
-local Toggles = Library.Toggles
-
-Library.Scheme.MainColor = Color3.fromRGB(18, 14, 28)
-Library.Scheme.AccentColor = Color3.fromRGB(140, 110, 220)
-Library.Scheme.AcccentDark = Color3.fromRGB(110, 80, 190)
-Library.Scheme.OutlineColor = Color3.fromRGB(50, 40, 70)
-Library.Scheme.FontColor = Color3.fromRGB(225, 215, 245)
-Library.Scheme.SubText = Color3.fromRGB(155, 135, 185)
-Library.Scheme.Bright = Color3.fromRGB(32, 26, 48)
-Library.Scheme.Dark = Color3.fromRGB(12, 10, 20)
-Library.Scheme.Risky = Color3.fromRGB(220, 80, 120)
-Library.ShowToggleFrameInKeybinds = true
-Library.ForceCheckbox = false
+local Library = loadstring(LIB_SRC)()
 
 --// ═══════════════════════════════════════════════════════════
 --// WINDOW
@@ -50,64 +40,18 @@ pcall(function()
 	isLobby = plr.Character == nil
 end)
 
-local Window = Library:CreateWindow({
-	Title = "Ivory",
-	Icon = "swords",
-	Footer = {
-		"v1.4 |",
-		{ Text = isLobby and "Lobby" or "Game", Copyable = true },
-		"|",
-		{ Text = tostring(plr.UserId), Copyable = true },
-	},
-	CopyableFooter = true,
-	FuzzySearch = true,
-	SearchValues = true,
-	Minimizable = true,
-	MinimizeKeybind = Enum.KeyCode.RightBracket,
-	MinimizedWidth = 280,
-	NotifySide = "Right",
-	ShowCustomCursor = true,
-	SearchKeybind = Enum.KeyCode.F,
-	CornerRadius = 4,
-	Animations = {
-		ToggleWindow = false,
-		TabSwitch = false,
-		Groupbox = false,
-		Dropdown = false,
-		KeyPicker = false,
-		SubTabUnderline = true,
-	},
+local Window = Library.CreateWindow({
+	Name = "Ivory",
+	Width = 460,
+	Height = 360,
+	Resizable = true,
+	AccentColor = Color3.fromRGB(140, 110, 220),
+	CornerRadius = UDim.new(0, 6),
+	ToggleKeybind = Enum.KeyCode.RightShift,
+	ConfigSaving = true,
+	ConfigName = "IvoryHub_LootUp",
+	AutoSaveInterval = 60,
 })
-
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(plr.PlayerGui) end)
-end)
 
 --// ═══════════════════════════════════════════════════════════
 --// CONFIG + STATE
@@ -169,61 +113,50 @@ local STATE = {
 }
 
 --// ═══════════════════════════════════════════════════════════
---// UI TABS + SUBTABS
+--// UI TABS
 --// ═══════════════════════════════════════════════════════════
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "swords" })
-local CombatTab = Window:AddTab({ Name = "Combat", Icon = "swords" })
-local DungeonTab = Window:AddTab({ Name = "Dungeons", Icon = "swords" })
-local EconomyTab = Window:AddTab({ Name = "Economy", Icon = "swords" })
-local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "swords" })
-local StatusTab = Window:AddTab({ Name = "Status", Icon = "swords" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords" })
-
-local FarmingSub = MainTab:AddSubTab("Farming", "rbxassetid://79379082636309")
-local QuestSub = MainTab:AddSubTab("Quests", "rbxassetid://79379082636309")
-local SkillsSub = CombatTab:AddSubTab("Skills", "rbxassetid://79379082636309")
-local StatsSub = CombatTab:AddSubTab("Stats", "rbxassetid://79379082636309")
-local DungeonSub = DungeonTab:AddSubTab("Dungeons", "rbxassetid://79379082636309")
-local TowerSub = DungeonTab:AddSubTab("Towers", "rbxassetid://79379082636309")
-local ForgeSub = EconomyTab:AddSubTab("Forge & Enchant", "rbxassetid://79379082636309")
-local MerchantSub = EconomyTab:AddSubTab("Merchants", "rbxassetid://79379082636309")
-local MovementSub = VisualsTab:AddSubTab("Movement", "rbxassetid://79379082636309")
-local VisualSub = VisualsTab:AddSubTab("Visuals", "rbxassetid://79379082636309")
-local LiveSub = StatusTab:AddSubTab("Live", "rbxassetid://79379082636309")
-local ToolsSub = StatusTab:AddSubTab("Tools", "rbxassetid://79379082636309")
+local MainTab = Window:CreateTab({Name = "Main"})
+local CombatTab = Window:CreateTab({Name = "Combat"})
+local DungeonTab = Window:CreateTab({Name = "Dungeons"})
+local EconomyTab = Window:CreateTab({Name = "Economy"})
+local VisualsTab = Window:CreateTab({Name = "Visuals"})
+local StatusTab = Window:CreateTab({Name = "Status"})
 
 --// ═══════════════════════════════════════════════════════════
---// MAIN TAB WIDGETS
+--// MAIN TAB
 --// ═══════════════════════════════════════════════════════════
 
-local DiscordGroup = FarmingSub:AddLeftGroupbox("Community", "users")
-DiscordGroup:AddButton("Join Discord", function()
-	pcall(function() setclipboard("https://discord.gg/MCWYKBdB4E") end)
-	Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 })
-end)
-DiscordGroup:AddLabel("Click above to join our Discord for dupes, updates & more!")
+local CommunitySection = MainTab:CreateSection("Community")
+CommunitySection:CreateButton({
+	Name = "Join Discord",
+	Callback = function()
+		pcall(function() setclipboard("https://discord.gg/MCWYKBdB4E") end)
+		Library.Notify({Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3})
+	end,
+})
+CommunitySection:CreateLabel("Click above to join our Discord for dupes, updates & more!")
 
-local FarmGroup = FarmingSub:AddRightGroupbox("Auto Farm", "cpu")
-FarmGroup:AddToggle("AutoFarm", {
-	Text = "Auto Farm",
-	Default = false,
+local FarmSection = MainTab:CreateSection("Auto Farm")
+FarmSection:CreateToggle({
+	Name = "Auto Farm",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.autoFarm = v end,
 })
-FarmGroup:AddToggle("AutoSwing", {
-	Text = "Auto Swing",
-	Default = true,
+FarmSection:CreateToggle({
+	Name = "Auto Swing",
+	CurrentValue = true,
 	Callback = function(v) CONFIG.autoSwing = v end,
 })
-FarmGroup:AddToggle("AutoLoot", {
-	Text = "Auto Collect Loot",
-	Default = false,
+FarmSection:CreateToggle({
+	Name = "Auto Collect Loot",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.autoLoot = v end,
 })
-FarmGroup:AddDropdown("FarmWorld", {
-	Values = { "World 1", "World 2", "World 3", "World 4", "World 5", "World 6", "World 7" },
-	Default = 1,
-	Text = "World",
+FarmSection:CreateDropdown({
+	Name = "World",
+	Options = { "World 1", "World 2", "World 3", "World 4", "World 5", "World 6", "World 7" },
+	CurrentOption = "World 1",
 	Callback = function(v)
 		local num = tonumber(v:match("%d+")) or 1
 		CONFIG.farmWorld = num
@@ -247,331 +180,288 @@ FarmGroup:AddDropdown("FarmWorld", {
 	end,
 })
 
-local EquipGroup = FarmingSub:AddLeftGroupbox("Equipment", "package")
-EquipGroup:AddToggle("AutoEquip", {
-	Text = "Auto Equip Best",
-	Default = false,
+local EquipSection = MainTab:CreateSection("Equipment")
+EquipSection:CreateToggle({
+	Name = "Auto Equip Best",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.autoEquip = v end,
 })
-EquipGroup:AddToggle("AutoSell", {
-	Text = "Auto Sell",
-	Default = false,
+EquipSection:CreateToggle({
+	Name = "Auto Sell",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.autoSell = v end,
 })
-EquipGroup:AddSlider("SellRarity", {
-	Text = "Sell Below Rarity",
-	Default = 1,
-	Min = 1,
-	Max = 7,
-	Rounding = 0,
+EquipSection:CreateSlider({
+	Name = "Sell Below Rarity",
+	Range = {1, 7},
+	Increment = 1,
+	CurrentValue = 1,
 	Callback = function(v) CONFIG.sellRarity = v end,
 })
 
-local QuestGroup = QuestSub:AddLeftGroupbox("Quests", "check-circle")
-QuestGroup:AddToggle("AutoQuests", {
-	Text = "Auto Claim Quests",
-	Default = false,
+local QuestSection = MainTab:CreateSection("Quests")
+QuestSection:CreateToggle({
+	Name = "Auto Claim Quests",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.autoQuests = v end,
 })
-QuestGroup:AddToggle("AutoDaily", {
-	Text = "Auto Daily Rewards",
-	Default = false,
+QuestSection:CreateToggle({
+	Name = "Auto Daily Rewards",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.autoDaily = v end,
 })
-QuestGroup:AddToggle("AutoSpin", {
-	Text = "Auto Season Spin",
-	Default = false,
+QuestSection:CreateToggle({
+	Name = "Auto Season Spin",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.autoSpin = v end,
 })
-QuestGroup:AddToggle("AutoPotions", {
-	Text = "Auto Use Potions",
-	Default = false,
+QuestSection:CreateToggle({
+	Name = "Auto Use Potions",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.autoPotions = v end,
 })
 
 --// ═══════════════════════════════════════════════════════════
---// COMBAT TAB WIDGETS
+--// COMBAT TAB
 --// ═══════════════════════════════════════════════════════════
 
-local SkillGroup = SkillsSub:AddLeftGroupbox("Skills", "zap")
-SkillGroup:AddToggle("AutoSkills", {
-	Text = "Auto Cast Skills",
-	Default = false,
+local SkillSection = CombatTab:CreateSection("Skills")
+SkillSection:CreateToggle({
+	Name = "Auto Cast Skills",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.autoSkills = v end,
 })
-SkillGroup:AddToggle("SkillSlot1", {
-	Text = "Skill Slot 1",
-	Default = true,
+SkillSection:CreateToggle({
+	Name = "Skill Slot 1",
+	CurrentValue = true,
 	Callback = function(v) CONFIG.skillSlot1 = v end,
 })
-SkillGroup:AddToggle("SkillSlot2", {
-	Text = "Skill Slot 2",
-	Default = true,
+SkillSection:CreateToggle({
+	Name = "Skill Slot 2",
+	CurrentValue = true,
 	Callback = function(v) CONFIG.skillSlot2 = v end,
 })
-SkillGroup:AddToggle("SkillSlot3", {
-	Text = "Skill Slot 3",
-	Default = true,
+SkillSection:CreateToggle({
+	Name = "Skill Slot 3",
+	CurrentValue = true,
 	Callback = function(v) CONFIG.skillSlot3 = v end,
 })
-SkillGroup:AddToggle("AutoDodge", {
-	Text = "Auto Dodge",
-	Default = false,
+SkillSection:CreateToggle({
+	Name = "Auto Dodge",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.autoDodge = v end,
 })
 
-local StatGroup = StatsSub:AddLeftGroupbox("Auto Stats", "bar-chart")
-StatGroup:AddToggle("AutoStats", {
-	Text = "Auto Upgrade Stats",
-	Default = false,
+local StatsSection = CombatTab:CreateSection("Auto Stats")
+StatsSection:CreateToggle({
+	Name = "Auto Upgrade Stats",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.autoStats = v end,
 })
-StatGroup:AddDropdown("StatType", {
-	Values = { "Damage", "Health", "Defence", "Speed", "Luck" },
-	Default = "Damage",
-	Text = "Stat Type",
+StatsSection:CreateDropdown({
+	Name = "Stat Type",
+	Options = { "Damage", "Health", "Defence", "Speed", "Luck" },
+	CurrentOption = "Damage",
 	Callback = function(v) CONFIG.statType = v end,
 })
-StatGroup:AddSlider("StatAmount", {
-	Text = "Points Per Click",
-	Default = 1,
-	Min = 1,
-	Max = 50,
-	Rounding = 0,
+StatsSection:CreateSlider({
+	Name = "Points Per Click",
+	Range = {1, 50},
+	Increment = 1,
+	CurrentValue = 1,
 	Callback = function(v) CONFIG.statAmount = v end,
 })
 
-local RebirthGroup = StatsSub:AddRightGroupbox("Rebirth", "refresh-cw")
-RebirthGroup:AddToggle("AutoRebirth", {
-	Text = "Auto Rebirth",
-	Default = false,
+local RebirthSection = CombatTab:CreateSection("Rebirth")
+RebirthSection:CreateToggle({
+	Name = "Auto Rebirth",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.autoRebirth = v end,
 })
 
 --// ═══════════════════════════════════════════════════════════
---// DUNGEONS TAB WIDGETS
+--// DUNGEONS TAB
 --// ═══════════════════════════════════════════════════════════
 
-local DungeonGroup = DungeonSub:AddLeftGroupbox("Dungeons", "castle")
-DungeonGroup:AddToggle("AutoDungeon", {
-	Text = "Auto Dungeon",
-	Default = false,
+local DungeonSection = DungeonTab:CreateSection("Dungeons")
+DungeonSection:CreateToggle({
+	Name = "Auto Dungeon",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.autoDungeon = v end,
 })
-DungeonGroup:AddToggle("DungeonLeave", {
-	Text = "Auto Leave When Done",
-	Default = false,
+DungeonSection:CreateToggle({
+	Name = "Auto Leave When Done",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.dungeonLeave = v end,
 })
 
-local TowerGroup = TowerSub:AddLeftGroupbox("Towers", "building")
-TowerGroup:AddToggle("AutoTower", {
-	Text = "Auto Tower",
-	Default = false,
+local TowerSection = DungeonTab:CreateSection("Towers")
+TowerSection:CreateToggle({
+	Name = "Auto Tower",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.autoTower = v end,
 })
-TowerGroup:AddToggle("AutoInfiniteTower", {
-	Text = "Auto Infinite Tower",
-	Default = false,
+TowerSection:CreateToggle({
+	Name = "Auto Infinite Tower",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.autoInfiniteTower = v end,
 })
-TowerGroup:AddToggle("TowerSpeed", {
-	Text = "x2 Tower Speed",
-	Default = false,
+TowerSection:CreateToggle({
+	Name = "x2 Tower Speed",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.towerSpeed = v end,
 })
 
 --// ═══════════════════════════════════════════════════════════
---// ECONOMY TAB WIDGETS
+--// ECONOMY TAB
 --// ═══════════════════════════════════════════════════════════
 
-local ForgeGroup = ForgeSub:AddLeftGroupbox("Forge", "hammer")
-ForgeGroup:AddToggle("AutoForge", {
-	Text = "Auto Forge",
-	Default = false,
+local ForgeSection = EconomyTab:CreateSection("Forge")
+ForgeSection:CreateToggle({
+	Name = "Auto Forge",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.autoForge = v end,
 })
-ForgeGroup:AddToggle("AutoEnchant", {
-	Text = "Auto Enchant",
-	Default = false,
+ForgeSection:CreateToggle({
+	Name = "Auto Enchant",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.autoEnchant = v end,
 })
 
-local MerchantGroup = MerchantSub:AddLeftGroupbox("Merchants", "shopping-cart")
-MerchantGroup:AddButton("Refresh Stock", function()
-	safeFire("GoldMerchant", "Refresh")
-end)
-MerchantGroup:AddButton("Buy Merchant", function()
-	safeFire("GoldMerchant", "Buy")
-end)
+local MerchantSection = EconomyTab:CreateSection("Merchants")
+MerchantSection:CreateButton({
+	Name = "Refresh Stock",
+	Callback = function()
+		safeFire("GoldMerchant", "Refresh")
+	end,
+})
+MerchantSection:CreateButton({
+	Name = "Buy Merchant",
+	Callback = function()
+		safeFire("GoldMerchant", "Buy")
+	end,
+})
 
 --// ═══════════════════════════════════════════════════════════
---// VISUALS TAB WIDGETS
+--// VISUALS TAB
 --// ═══════════════════════════════════════════════════════════
 
-local MovementGroup = MovementSub:AddLeftGroupbox("Movement", "move")
-MovementGroup:AddToggle("Fly", {
-	Text = "Fly",
-	Default = false,
+local MovementSection = VisualsTab:CreateSection("Movement")
+MovementSection:CreateToggle({
+	Name = "Fly",
+	CurrentValue = false,
 	Callback = function(v)
 		CONFIG.fly = v
 		if v then startFly() else stopFly() end
 	end,
 })
-MovementGroup:AddSlider("FlySpeed", {
-	Text = "Fly Speed",
-	Default = 50,
-	Min = 10,
-	Max = 200,
-	Rounding = 0,
+MovementSection:CreateSlider({
+	Name = "Fly Speed",
+	Range = {10, 200},
+	Increment = 1,
+	CurrentValue = 50,
 	Callback = function(v) CONFIG.flySpeed = v end,
 })
-MovementGroup:AddToggle("InfiniteJump", {
-	Text = "Infinite Jump",
-	Default = false,
+MovementSection:CreateToggle({
+	Name = "Infinite Jump",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.infiniteJump = v end,
 })
-MovementGroup:AddToggle("NoClip", {
-	Text = "NoClip",
-	Default = false,
+MovementSection:CreateToggle({
+	Name = "NoClip",
+	CurrentValue = false,
 	Callback = function(v)
 		CONFIG.noclip = v
 		if v then startNoclip() else stopNoclip() end
 	end,
 })
-MovementGroup:AddSlider("WalkSpeed", {
-	Text = "Walk Speed",
-	Default = 16,
-	Min = 16,
-	Max = 200,
-	Rounding = 0,
+MovementSection:CreateSlider({
+	Name = "Walk Speed",
+	Range = {16, 200},
+	Increment = 1,
+	CurrentValue = 16,
 	Callback = function(v) CONFIG.walkSpeed = v end,
 })
-MovementGroup:AddSlider("JumpPower", {
-	Text = "Jump Power",
-	Default = 50,
-	Min = 50,
-	Max = 300,
-	Rounding = 0,
+MovementSection:CreateSlider({
+	Name = "Jump Power",
+	Range = {50, 300},
+	Increment = 1,
+	CurrentValue = 50,
 	Callback = function(v) CONFIG.jumpPower = v end,
 })
-MovementGroup:AddToggle("AntiAFK", {
-	Text = "Anti AFK",
-	Default = false,
+MovementSection:CreateToggle({
+	Name = "Anti AFK",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.antiAFK = v end,
 })
 
-local VisualGroup = VisualSub:AddLeftGroupbox("Visuals", "eye")
-VisualGroup:AddToggle("HitboxExpand", {
-	Text = "Hitbox Expand",
-	Default = false,
+local VisualSection = VisualsTab:CreateSection("Visuals")
+VisualSection:CreateToggle({
+	Name = "Hitbox Expand",
+	CurrentValue = false,
 	Callback = function(v) CONFIG.hitboxExpand = v end,
 })
-VisualGroup:AddSlider("HitboxSize", {
-	Text = "Hitbox Size",
-	Default = 15,
-	Min = 5,
-	Max = 50,
-	Rounding = 0,
+VisualSection:CreateSlider({
+	Name = "Hitbox Size",
+	Range = {5, 50},
+	Increment = 1,
+	CurrentValue = 15,
 	Callback = function(v) CONFIG.hitboxSize = v end,
 })
 
 --// ═══════════════════════════════════════════════════════════
---// STATUS TAB WIDGETS
+--// STATUS TAB
 --// ═══════════════════════════════════════════════════════════
 
-local LiveGroup = LiveSub:AddLeftGroupbox("Status", "activity")
-local PhaseLabel = LiveGroup:AddLabel("Phase: idle")
-local NoteLabel = LiveGroup:AddLabel("Note: -")
-local KillsLabel = LiveGroup:AddLabel("Kills: 0")
-local LootLabel = LiveGroup:AddLabel("Loot: 0")
+local LiveSection = StatusTab:CreateSection("Live Status")
+local PhaseLabel = LiveSection:CreateLabel("Phase: idle")
+local NoteLabel = LiveSection:CreateLabel("Note: -")
+local KillsLabel = LiveSection:CreateLabel("Kills: 0")
+local LootLabel = LiveSection:CreateLabel("Loot: 0")
 
-local ToolsGroup = ToolsSub:AddLeftGroupbox("Tools", "wrench")
-ToolsGroup:AddButton("Teleport to Hub", function()
-	local hub = workspace:FindFirstChild("Hub") or workspace:FindFirstChild("Lobby") or workspace:FindFirstChild("Spawn")
-	if hub then
-		local part = hub:IsA("BasePart") and hub or hub:FindFirstChildWhichIsA("BasePart")
-		if part then tpTo(part.Position) end
-	end
-end)
-ToolsGroup:AddButton("Rejoin Server", function()
-	TeleportService:Teleport(PlaceId, plr)
-end)
-ToolsGroup:AddButton("Server Hop", function()
-	pcall(function()
-		local servers = HttpService:JSONDecode(request({
-			Url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100",
-			Method = "GET"
-		}).Body)
-		if servers and servers.data then
-			for _, server in ipairs(servers.data) do
-				if server.id ~= game.JobId and server.playing < server.maxPlayers then
-					TeleportService:TeleportToPlaceInstance(PlaceId, server.id, plr)
-					break
+local ToolsSection = StatusTab:CreateSection("Tools")
+ToolsSection:CreateButton({
+	Name = "Teleport to Hub",
+	Callback = function()
+		local hub = workspace:FindFirstChild("Hub") or workspace:FindFirstChild("Lobby") or workspace:FindFirstChild("Spawn")
+		if hub then
+			local part = hub:IsA("BasePart") and hub or hub:FindFirstChildWhichIsA("BasePart")
+			if part then tpTo(part.Position) end
+		end
+	end,
+})
+ToolsSection:CreateButton({
+	Name = "Rejoin Server",
+	Callback = function()
+		TeleportService:Teleport(PlaceId, plr)
+	end,
+})
+ToolsSection:CreateButton({
+	Name = "Server Hop",
+	Callback = function()
+		pcall(function()
+			local servers = HttpService:JSONDecode(request({
+				Url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100",
+				Method = "GET"
+			}).Body)
+			if servers and servers.data then
+				for _, server in ipairs(servers.data) do
+					if server.id ~= game.JobId and server.playing < server.maxPlayers then
+						TeleportService:TeleportToPlaceInstance(PlaceId, server.id, plr)
+						break
+					end
 				end
 			end
-		end
-	end)
-end)
-ToolsGroup:AddButton("Copy JobId", function()
-	pcall(function() setclipboard(game.JobId) end)
-	Library:Notify({ Title = "Ivory", Description = "JobId copied!", Type = "Success", Time = 2 })
-end)
-
---// ═══════════════════════════════════════════════════════════
---// SETTINGS TAB (always last)
---// ═══════════════════════════════════════════════════════════
-
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub")
-if isLobby then SaveManager:SetSubFolder("lobby") else SaveManager:SetSubFolder("game") end
-
-ThemeManager:ApplyToTab(SettingsTab)
-SaveManager:BuildConfigSection(SettingsTab)
-
-local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "wrench")
-MenuGroup:AddToggle("KeybindMenuOpen", {
-	Default = Library.KeybindFrame.Visible,
-	Text = "Open Keybind Menu",
-	Callback = function(value) Library.KeybindFrame.Visible = value end,
+		end)
+	end,
 })
-MenuGroup:AddToggle("ShowCustomCursor", {
-	Text = "Custom Cursor",
-	Default = Library.ShowCustomCursor,
-	Callback = function(Value) Library.ShowCustomCursor = Value end,
+ToolsSection:CreateButton({
+	Name = "Copy JobId",
+	Callback = function()
+		pcall(function() setclipboard(game.JobId) end)
+		Library.Notify({Title = "Ivory", Content = "JobId copied!", Type = "Success", Duration = 2})
+	end,
 })
-MenuGroup:AddButton("Test Notification", function()
-	Library:Notify({ Title = "Ivory", Description = "This is a test notification!", Type = "Info", Time = 3 })
-end)
-MenuGroup:AddDropdown("NotifySide", {
-	Values = { "Left", "Right" },
-	Default = "Right",
-	Text = "Notification Side",
-	Callback = function(Value) Library.NotifySide = Value end,
-})
-MenuGroup:AddDropdown("DPIDropdown", {
-	Values = { "50%", "75%", "100%", "125%", "150%", "175%", "200%" },
-	Default = "100%",
-	Text = "DPI Scale",
-	Callback = function(Value) Library:SetDPIScale(tonumber(Value:gsub("%%", ""))) end,
-})
-MenuGroup:AddSlider("UICornerSlider", {
-	Text = "Corner Radius",
-	Default = 4,
-	Min = 0,
-	Max = 20,
-	Rounding = 0,
-	Callback = function(value) Window:SetCornerRadius(value) end,
-})
-MenuGroup:AddDivider()
-MenuGroup:AddLabel("Menu: RightShift (default)"):AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
-MenuGroup:AddButton("Unload", function() Library:Unload() end)
-Library.ToggleKeybind = Options.MenuKeybind
-SaveManager:LoadAutoloadConfig()
 
 --// ═══════════════════════════════════════════════════════════
 --// REMOTE DISCOVERY (Knit-based: Net/Events + Net/Functions)
@@ -1068,11 +958,6 @@ task.spawn(function()
 		LootLabel:SetText("Loot: " .. STATE.lootCollected)
 		task.wait(0.5)
 	end
-end)
-
-Library:OnUnload(function()
-	stopFly()
-	stopNoclip()
 end)
 
 print("[Ivory] Loot Up loaded!")

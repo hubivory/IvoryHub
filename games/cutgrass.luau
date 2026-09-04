@@ -645,35 +645,6 @@ end
 -- three measurement windows in Roll A Gnome went by at exactly zero that way.
 -- Weak keys, so a despawned loot model does not keep its entry alive.
 local lootStrikes = setmetatable({}, { __mode = "k" })
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
 
 -- Loot despawns: `LootExpiresAt` is a wall clock stamp on the model. A target that
 -- expires before the walk finishes is a slot's worth of nothing, so it is skipped
@@ -1390,22 +1361,29 @@ task.spawn(function() task.wait(2) pcall(statePass) end)
 
 
 --------------------------------------------------------------------------------
--- panel (ObsidianUltra)
+-- panel (Ivory Hub Sakura Edition)
 --------------------------------------------------------------------------------
 
 pcall(function() setthreadidentity(8) end)
 gethui = gethui or function() return plr:WaitForChild("PlayerGui", 10) end
 protectgui = protectgui or function() end
 
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local function httpGet(url) return request({ Url = url, Method = "GET" }).Body end
-local Library = loadstring(httpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	local ok, src = pcall(function()
+		return request({
+			Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+			Method = "GET"
+		}).Body
+	end)
+	if ok then LIB_SRC = src end
+end
+local Library = loadstring(LIB_SRC)()
 
-local Window = Library:CreateWindow({
+local Window = Library.CreateWindow({
 	Title = "Ivory - Cut Grass",
-	Icon = "swords",
+	Width = 460,
+	Height = 360,
 	Footer = {"v1.5 |", {Text = tostring(plr.UserId), Copyable = true}},
 	CopyableFooter = true,
 	FuzzySearch = true,
@@ -1417,24 +1395,22 @@ local Window = Library:CreateWindow({
 	ShowCustomCursor = true,
 	SearchKeybind = Enum.KeyCode.F,
 	CornerRadius = 4,
-	Animations = {ToggleWindow = false, TabSwitch = false, Groupbox = false, Dropdown = false, KeyPicker = false, SubTabUnderline = true},
 })
 
-local MainTab = Window:AddTab({Name = "Main", Icon = "swords"})
-local SettingsTab = Window:AddTab({Name = "Settings", Icon = "swords"})
+local MainTab = Window:CreateTab({Name = "Main"})
+local SettingsTab = Window:CreateTab({Name = "Settings"})
 
-local AutomationSub = MainTab:AddSubTab("Automation", "rbxassetid://79379082636309")
-local StatusSub = MainTab:AddSubTab("Status", "rbxassetid://79379082636309")
+local AutomationSection = MainTab:CreateSection("Automation")
+local StatusSection = MainTab:CreateSection("Status")
 
-local FarmGroup = AutomationSub:AddLeftGroupbox("Core Features", "box-icon")
-local ZoneGroup = AutomationSub:AddRightGroupbox("Zone & Extras", "box-icon")
-local SpendGroup = AutomationSub:AddLeftGroupbox("Spending", "box-icon")
-local ManualGroup = AutomationSub:AddRightGroupbox("Manual", "box-icon")
+local FarmGroup = AutomationSection
+local ZoneGroup = AutomationSection
+local SpendGroup = AutomationSection
+local ManualGroup = AutomationSection
 
-FarmGroup:AddToggle("AutoFarm", {
-	Text = "AUTO",
-	Default = CONFIG.auto,
-	Tooltip = "click, train, cut, collect, sell, repeat",
+FarmGroup:CreateToggle({
+	Name = "AUTO",
+	CurrentValue = CONFIG.auto,
 	Callback = function(v)
 		CONFIG.auto = v
 		STATE.phase = v and "farming" or "idle"
@@ -1443,162 +1419,145 @@ FarmGroup:AddToggle("AutoFarm", {
 	end,
 })
 
-FarmGroup:AddToggle("Click", {
-	Text = "Click",
-	Default = CONFIG.click,
-	Tooltip = "12.5 strength/s is the whole server budget - it is paced, not spammed",
+FarmGroup:CreateToggle({
+	Name = "Click",
+	CurrentValue = CONFIG.click,
 	Callback = function(v) CONFIG.click = v end,
 })
 
-FarmGroup:AddToggle("TrainPad", {
-	Text = "Training pad",
-	Default = CONFIG.train,
-	Tooltip = "stacks with clicking: 2.75/s alone, 13.37/s together",
+FarmGroup:CreateToggle({
+	Name = "Training pad",
+	CurrentValue = CONFIG.train,
 	Callback = function(v) CONFIG.train = v end,
 })
 
-FarmGroup:AddSlider("TrainSecs", {
-	Text = "Train secs/trip",
-	Default = CONFIG.trainSecs,
-	Min = 0,
-	Max = 90,
-	Rounding = 0,
+FarmGroup:CreateSlider({
+	Name = "Train secs/trip",
+	Range = {0, 90},
+	Increment = 1,
+	CurrentValue = CONFIG.trainSecs,
 	Callback = function(v) CONFIG.trainSecs = v end,
 })
 
-FarmGroup:AddSlider("TrainMinMult", {
-	Text = "Min pad multiplier",
-	Default = CONFIG.trainMinMult,
-	Min = 1,
-	Max = 15,
-	Rounding = 0,
+FarmGroup:CreateSlider({
+	Name = "Min pad multiplier",
+	Range = {1, 15},
+	Increment = 1,
+	CurrentValue = CONFIG.trainMinMult,
 	Callback = function(v) CONFIG.trainMinMult = v end,
 })
 
-FarmGroup:AddToggle("CutGrass", {
-	Text = "Cut grass",
-	Default = CONFIG.cut,
-	Tooltip = "opens the next zone - grass is cut once and stays cut, so this is progress",
+FarmGroup:CreateToggle({
+	Name = "Cut grass",
+	CurrentValue = CONFIG.cut,
 	Callback = function(v) CONFIG.cut = v end,
 })
 
-FarmGroup:AddToggle("Loot", {
-	Text = "Pick up loot",
-	Default = CONFIG.loot,
-	Tooltip = "the only income - ranked on sell price, skips loot about to despawn",
+FarmGroup:CreateToggle({
+	Name = "Pick up loot",
+	CurrentValue = CONFIG.loot,
 	Callback = function(v) CONFIG.loot = v end,
 })
 
-FarmGroup:AddSlider("LootSecs", {
-	Text = "Loot secs/lap",
-	Default = CONFIG.tripSecs,
-	Min = 15,
-	Max = 120,
-	Rounding = 0,
+FarmGroup:CreateSlider({
+	Name = "Loot secs/lap",
+	Range = {15, 120},
+	Increment = 1,
+	CurrentValue = CONFIG.tripSecs,
 	Callback = function(v) CONFIG.tripSecs = v end,
 })
 
-FarmGroup:AddSlider("CutSecs", {
-	Text = "Cut secs/lap",
-	Default = CONFIG.cutSecs,
-	Min = 10,
-	Max = 90,
-	Rounding = 0,
+FarmGroup:CreateSlider({
+	Name = "Cut secs/lap",
+	Range = {10, 90},
+	Increment = 1,
+	CurrentValue = CONFIG.cutSecs,
 	Callback = function(v) CONFIG.cutSecs = v end,
 })
 
-ZoneGroup:AddDropdown("ZoneMode", {
-	Text = "Zone pick",
-	Values = {"Auto", "Manual"},
-	Default = CONFIG.zoneMode,
+ZoneGroup:CreateDropdown({
+	Name = "Zone pick",
+	Options = {"Auto", "Manual"},
+	CurrentOption = CONFIG.zoneMode,
 	Callback = function(v) CONFIG.zoneMode = v end,
 })
 
-ZoneGroup:AddSlider("ZoneTarget", {
-	Text = "Manual zone",
-	Default = CONFIG.zoneTarget,
-	Min = 1,
-	Max = 15,
-	Rounding = 0,
+ZoneGroup:CreateSlider({
+	Name = "Manual zone",
+	Range = {1, 15},
+	Increment = 1,
+	CurrentValue = CONFIG.zoneTarget,
 	Callback = function(v) CONFIG.zoneTarget = v end,
 })
 
-ZoneGroup:AddSlider("ProbeHold", {
-	Text = "Hold a walled zone (s)",
-	Default = CONFIG.probeHoldSecs,
-	Min = 30,
-	Max = 300,
-	Rounding = 0,
+ZoneGroup:CreateSlider({
+	Name = "Hold a walled zone (s)",
+	Range = {30, 300},
+	Increment = 1,
+	CurrentValue = CONFIG.probeHoldSecs,
 	Callback = function(v) CONFIG.probeHoldSecs = v end,
 })
 
-ZoneGroup:AddLabel("Auto always pushes for the next zone. One that walls the body is left alone for a while so the click loop can grow the strength that opens it. Grass health runs 50 in zone 1 to 700B in zone 15.")
+ZoneGroup:CreateLabel("Auto always pushes for the next zone. One that walls the body is left alone for a while so the click loop can grow the strength that opens it. Grass health runs 50 in zone 1 to 700B in zone 15.")
 
-SpendGroup:AddToggle("Cutters", {
-	Text = "Cutters",
-	Default = CONFIG.cutters,
-	Tooltip = "DamageMult is the damage engine, so it gets the money first",
+SpendGroup:CreateToggle({
+	Name = "Cutters",
+	CurrentValue = CONFIG.cutters,
 	Callback = function(v) CONFIG.cutters = v end,
 })
 
-SpendGroup:AddToggle("Auras", {
-	Text = "Auras",
-	Default = CONFIG.auras,
-	Tooltip = "money priced, x1.2 up to x300 strength - RobuxPrice is only the other way to pay",
+SpendGroup:CreateToggle({
+	Name = "Auras",
+	CurrentValue = CONFIG.auras,
 	Callback = function(v) CONFIG.auras = v end,
 })
 
-SpendGroup:AddToggle("Upgrades", {
-	Text = "Upgrades",
-	Default = CONFIG.upgrades,
-	Tooltip = "attack speed, range, carry and walk speed, round-robin so none starves",
+SpendGroup:CreateToggle({
+	Name = "Upgrades",
+	CurrentValue = CONFIG.upgrades,
 	Callback = function(v) CONFIG.upgrades = v end,
 })
 
-SpendGroup:AddToggle("Rebirth", {
-	Text = "Auto rebirth",
-	Default = CONFIG.rebirth,
-	Tooltip = "gated on your LEVEL, and it unlocks the next free training pads",
+SpendGroup:CreateToggle({
+	Name = "Auto rebirth",
+	CurrentValue = CONFIG.rebirth,
 	Callback = function(v) CONFIG.rebirth = v end,
 })
 
-SpendGroup:AddToggle("Worlds", {
-	Text = "Travel worlds",
-	Default = CONFIG.worlds,
-	Tooltip = "level gated: 185 / 380 / 570 / 750",
+SpendGroup:CreateToggle({
+	Name = "Travel worlds",
+	CurrentValue = CONFIG.worlds,
 	Callback = function(v) CONFIG.worlds = v end,
 })
 
-SpendGroup:AddToggle("Freebies", {
-	Text = "Free rewards",
-	Default = CONFIG.freebies,
-	Tooltip = "offline, like reward, finished quests, and a wheel spin only when one is banked",
+SpendGroup:CreateToggle({
+	Name = "Free rewards",
+	CurrentValue = CONFIG.freebies,
 	Callback = function(v) CONFIG.freebies = v end,
 })
 
-SpendGroup:AddSlider("ReserveWindow", {
-	Text = "Reserve window (s)",
-	Default = CONFIG.reserveWindow,
-	Min = 15,
-	Max = 300,
-	Rounding = 0,
+SpendGroup:CreateSlider({
+	Name = "Reserve window (s)",
+	Range = {15, 300},
+	Increment = 1,
+	CurrentValue = CONFIG.reserveWindow,
 	Callback = function(v) CONFIG.reserveWindow = v end,
 })
 
-ManualGroup:AddButton({Text = "Trip now", Callback = function() task.spawn(cutPass) end})
-ManualGroup:AddButton({Text = "Sell all", Callback = function() task.spawn(sellPass) end})
-ManualGroup:AddButton({Text = "Shop now", Callback = function() task.spawn(function() cutterPass() auraPass() end) end})
-ManualGroup:AddButton({Text = "Claim free", Callback = function() task.spawn(freePass) end})
-ManualGroup:AddButton({Text = "Unstuck", Callback = unstuck})
+ManualGroup:CreateButton({Name = "Trip now", Callback = function() task.spawn(cutPass) end})
+ManualGroup:CreateButton({Name = "Sell all", Callback = function() task.spawn(sellPass) end})
+ManualGroup:CreateButton({Name = "Shop now", Callback = function() task.spawn(function() cutterPass() auraPass() end) end})
+ManualGroup:CreateButton({Name = "Claim free", Callback = function() task.spawn(freePass) end})
+ManualGroup:CreateButton({Name = "Unstuck", Callback = unstuck})
 
-local AntiCheatGroup = AutomationSub:AddLeftGroupbox("Anti-Cheat", "box-icon")
-AntiCheatGroup:AddLabel("This game detects speed, teleports and walking through uncut grass, and it has twenty honeypot remotes where one call is an instant record. This script never warps, never writes WalkSpeed and never touches those remotes - it walks. If the server ever sends a warning, everything here stops by itself.")
+local AntiCheatGroup = AutomationSection
+AntiCheatGroup:CreateLabel("This game detects speed, teleports and walking through uncut grass, and it has twenty honeypot remotes where one call is an instant record. This script never warps, never writes WalkSpeed and never touches those remotes - it walks. If the server ever sends a warning, everything here stops by itself.")
 
-local StatusGroup = StatusSub:AddLeftGroupbox("Live Stats", "box-icon")
+local StatusGroup = StatusSection
 local statusLabels = {}
 local statusKeys = {"auto", "phase", "strength", "money", "level", "zone", "cutter", "aura", "pad", "backpack", "trips", "loot", "earned", "note"}
 for _, k in ipairs(statusKeys) do
-	statusLabels[k] = StatusGroup:AddLabel(k .. ": ...")
+	statusLabels[k] = StatusGroup:CreateLabel(k .. ": ...")
 end
 
 task.spawn(function()
@@ -1629,15 +1588,8 @@ task.spawn(function()
 	end
 end)
 
-ThemeManager:SetLibrary(Library)
-ThemeManager:SetFolder("IvoryHub")
-
-local CreditGroup = SettingsTab:AddLeftGroupbox("Credits", "heart")
-local CreditLabel = CreditGroup:AddLabel({ Text = "", Size = 26, DoesWrap = true })
-local CreditTL = CreditLabel.TextLabel
-CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-CreditTL.Font = Enum.Font.GothamBold
-CreditTL.TextSize = 26
+local CreditGroup = SettingsTab:CreateSection("Credits")
+local CreditLabel = CreditGroup:CreateLabel("")
 
 task.spawn(function()
 	local full = "Made by mommy Crow"
@@ -1647,28 +1599,24 @@ task.spawn(function()
 		for i = 1, #full do
 			shown = shown .. full:sub(i, i)
 			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
 			task.wait(math.random(4, 9) / 100)
 		end
 		task.wait(2)
 		for i = #full, 1, -1 do
 			shown = full:sub(1, i - 1)
 			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
 			task.wait(math.random(2, 5) / 100)
 		end
 		task.wait(0.8)
 	end
 end)
 
-ThemeManager:ApplyToTab(SettingsTab)
-
-local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "box-icon")
-MenuGroup:AddToggle("CustomCursor", {Text = "Custom Cursor", Default = true, Callback = function(v) Library.ShowCustomCursor = v end})
-MenuGroup:AddKeyPicker("MenuKeybind", {Default = "RightShift", Text = "Menu Toggle", Mode = "Toggle", SyncToggleState = false})
-MenuGroup:AddButton({Text = "Join Discord", Callback = function() pcall(function() setclipboard("https://discord.gg/ivory") end) end})
-MenuGroup:AddButton({Text = "Unload", Callback = function() CONFIG.auto = false; stopWalking(); pcall(function() Library:Destroy() end) end})
-MenuGroup:AddButton({Text = "Unstuck", Callback = unstuck})
+local MenuSection = SettingsTab:CreateSection("Menu")
+MenuSection:CreateToggle({Name = "Custom Cursor", CurrentValue = true, Callback = function(v) Library.ShowCustomCursor = v end})
+MenuSection:CreateKeybind({Name = "Menu Toggle", CurrentKeybind = "RightShift"})
+MenuSection:CreateButton({Name = "Join Discord", Callback = function() pcall(function() setclipboard("https://discord.gg/ivory") end) end})
+MenuSection:CreateButton({Name = "Unload", Callback = function() CONFIG.auto = false; stopWalking(); pcall(function() Library:Destroy() end) end})
+MenuSection:CreateButton({Name = "Unstuck", Callback = unstuck})
 
 --------------------------------------------------------------------------------
 

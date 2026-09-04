@@ -1,10 +1,10 @@
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = loadstring(request({ Url = repo .. "Library.lua", Method = "GET" }).Body)()
-local ThemeManager = loadstring(request({ Url = repo .. "addons/ThemeManager.lua", Method = "GET" }).Body)()
-local SaveManager = loadstring(request({ Url = repo .. "addons/SaveManager.lua", Method = "GET" }).Body)()
-
-local Toggles = Library.Toggles
-local Options = Library.Options
+local genv = getgenv()
+local Library
+local ls = genv._IvoryLibSrc
+if ls then Library = loadstring(ls)()
+else local r = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/"
+Library = loadstring(game:HttpGet(r .. "Library.lua"))() end
+if not Library then warn("[Ivory] Load failed"); return end
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -345,87 +345,66 @@ end end)
 -- ---------------------------------------
 -- WINDOW
 -- ---------------------------------------
-local Window = Library:CreateWindow({
-    Title = "Ivory",
-    Icon = "swords",
-    Footer = { "Ivory | v1.0", { Text = "v1.0", Copyable = true } },
-    Minimizable = true, FuzzySearch = true, SearchValues = true,
+local Window = Library.CreateWindow({
+    Name = "Ivory", Width = 460, Height = 360,
 })
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "swords", Description = "Core Automation" })
-local ShopTab = Window:AddTab({ Name = "Shop", Icon = "swords", Description = "Buying & Inventory" })
-local PlayerTab = Window:AddTab({ Name = "Player", Icon = "swords", Description = "Character Mods" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "swords", Description = "Themes & UI" })
-local LogsTab = Window:AddTab({ Name = "Logs", Icon = "swords", Description = "Money & Status" })
+local MainTab = Window:CreateTab("Main")
+local ShopTab = Window:CreateTab("Shop")
+local PlayerTab = Window:CreateTab("Player")
+local SettingsTab = Window:CreateTab("Settings")
+local LogsTab = Window:CreateTab("Logs")
 
 -- --- MAIN TAB: Automation Sub-Tab ---
-local AutoSub = MainTab:AddSubTab({ Name = "Automation", Icon = "swords" })
+local AutoSec = MainTab:CreateSection("Automation")
 
-local FoodBox = AutoSub:AddLeftGroupbox("Food", "utensils")
-FoodBox:AddToggle("AutoServe", { Text = "Auto Serve Food", Default = false })
-FoodBox:AddToggle("AutoOrder", { Text = "Auto Assign Customers", Default = false })
-FoodBox:AddToggle("AutoSoftdrinks", { Text = "Auto Serve Drinks", Default = false, Tooltip = "Instantly fulfills customer drink orders from inventory via GiveSoftdrink remote" })
+local FoodBox = AutoSec
+FoodBox:CreateToggle("AutoServe", { Text = "Auto Serve Food", Default = false, Callback = function(s) cfg.autoServe = s end })
+FoodBox:CreateToggle("AutoOrder", { Text = "Auto Assign Customers", Default = false, Callback = function(s) cfg.autoOrder = s end })
+FoodBox:CreateToggle("AutoSoftdrinks", { Text = "Auto Serve Drinks", Default = false, Tooltip = "Instantly fulfills customer drink orders from inventory via GiveSoftdrink remote", Callback = function(s) cfg.autoSoftdrinks = s end })
 
-FoodBox:AddDropdown("RejectNPCList", {
+FoodBox:CreateDropdown("RejectNPCList", {
 	Values = {},
 	Multi = true,
 	Default = {},
 	Text = "Reject NPCs",
+	Callback = function(v)
+		if v["None"] then
+			cfg.rejectNPCList = {}
+			return
+		end
+		cfg.rejectNPCList = {}
+		for displayName, selected in pairs(v) do
+			if selected and displayName ~= "None" then
+				local npcName = npcRarityMap[displayName]
+				if npcName then
+					cfg.rejectNPCList[npcName] = true
+				end
+			end
+		end
+	end,
 })
-Options.RejectNPCList:SetValues(npcNamesWithRarity)
-FoodBox:AddToggle("AutoRejectNPC", { Text = "Auto Reject Selected NPCs", Default = false })
+FoodBox:CreateToggle("AutoRejectNPC", { Text = "Auto Reject Selected NPCs", Default = false, Callback = function(s) cfg.autoRejectNPC = s end })
 
-local KitchenBox = AutoSub:AddLeftGroupbox("Kitchen", "chef-hat")
-KitchenBox:AddToggle("AutoClean", { Text = "Auto Clean Tables", Default = false })
-KitchenBox:AddToggle("AutoWash", { Text = "Auto Wash Dishes", Default = false, Tooltip = "Auto-collects dirty dishes, puts in sink, and washes them" })
-KitchenBox:AddToggle("AutoPan", { Text = "Auto Pan (Hit Runaway)", Default = false })
-KitchenBox:AddToggle("AutoFixChiller", { Text = "Auto Fix Chiller", Default = false, Tooltip = "Auto-repairs the chiller when it breaks (costs $200,000)" })
+FoodBox:CreateToggle("AutoClean", { Text = "Auto Clean Tables", Default = false, Callback = function(s) cfg.autoClean = s end })
+FoodBox:CreateToggle("AutoWash", { Text = "Auto Wash Dishes", Default = false, Tooltip = "Auto-collects dirty dishes, puts in sink, and washes them", Callback = function(s) cfg.autoWash = s end })
+FoodBox:CreateToggle("AutoPan", { Text = "Auto Pan (Hit Runaway)", Default = false, Callback = function(s) cfg.autoPan = s end })
+FoodBox:CreateToggle("AutoFixChiller", { Text = "Auto Fix Chiller", Default = false, Tooltip = "Auto-repairs the chiller when it breaks (costs $200,000)", Callback = function(s) cfg.autoFixChiller = s end })
 
-local CodesBox = AutoSub:AddRightGroupbox("Codes", "ticket")
-CodesBox:AddToggle("AutoClaimCodes", { Text = "Auto Claim Codes", Default = false })
+FoodBox:CreateToggle("AutoClaimCodes", { Text = "Auto Claim Codes", Default = false, Callback = function(s) cfg.autoClaimCodes = s end })
 
-local DelaysBox = AutoSub:AddRightGroupbox("Delays", "settings")
-DelaysBox:AddSlider("ServeDelay", { Text = "Serve Delay", Default = 1, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
-DelaysBox:AddSlider("OrderDelay", { Text = "Order Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
-DelaysBox:AddSlider("CleanDelay", { Text = "Clean Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
-DelaysBox:AddSlider("WashDelay", { Text = "Wash Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
+local DelaysSec = MainTab:CreateSection("Delays")
+DelaysSec:CreateSlider("ServeDelay", { Text = "Serve Delay", Default = 1, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
+DelaysSec:CreateSlider("OrderDelay", { Text = "Order Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
+DelaysSec:CreateSlider("CleanDelay", { Text = "Clean Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
+DelaysSec:CreateSlider("WashDelay", { Text = "Wash Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
 
 -- --- MAIN TAB: Furniture & Menu Sub-Tab ---
-local FurnMenuSub = MainTab:AddSubTab({ Name = "Furniture & Menu", Icon = "swords" })
+local FurnSec = MainTab:CreateSection("Furniture & Menu")
 
-local FurnBox = FurnMenuSub:AddLeftGroupbox("Furniture", "armchair")
-FurnBox:AddToggle("AutoBuyFurniture", { Text = "Auto Buy Furniture", Default = false })
-FurnBox:AddToggle("AutoPlaceFurniture", { Text = "Auto Place Furniture", Default = false })
-FurnBox:AddSlider("FurnDelay", { Text = "Furniture Delay", Default = 5, Min = 2, Max = 20, Rounding = 1, Suffix = "s" })
+FurnSec:CreateToggle("AutoBuyFurniture", { Text = "Auto Buy Furniture", Default = false, Callback = function(s) cfg.autoBuyFurniture = s end })
+FurnSec:CreateToggle("AutoPlaceFurniture", { Text = "Auto Place Furniture", Default = false, Callback = function(s) cfg.autoPlaceFurniture = s end })
+FurnSec:CreateSlider("FurnDelay", { Text = "Furniture Delay", Default = 5, Min = 2, Max = 20, Rounding = 1, Suffix = "s" })
 
 -- Build furniture list for dropdown
 local furnitureList = {}
@@ -452,100 +431,104 @@ do
     table.insert(furnitureList, 1, "None")
 end
 
-FurnBox:AddDropdown("FurnitureWhitelist", {
+FurnSec:CreateDropdown("FurnitureWhitelist", {
     Values = furnitureList,
     Multi = true,
     Default = {},
     Text = "Buy Only These",
     Tooltip = "Select which furniture to auto-buy. Empty = buy all",
+    Callback = function(v)
+        if v["None"] then
+            cfg.furnitureWhitelist = {}
+            return
+        end
+        cfg.furnitureWhitelist = {}
+        for name, enabled in pairs(v) do
+            if enabled and name ~= "None" then cfg.furnitureWhitelist[name] = true end
+        end
+    end,
 })
 
-local MenuBox = FurnMenuSub:AddRightGroupbox("Menu", "book-open")
-MenuBox:AddToggle("AutoUnlockMenu", { Text = "Auto Unlock Menu", Default = false, Tooltip = "Unlocks SILOG & LUTONG BAHAY when requirements met" })
-MenuBox:AddButton({ Text = "Enable All Menus", Func = function()
+FurnSec:CreateToggle("AutoUnlockMenu", { Text = "Auto Unlock Menu", Default = false, Tooltip = "Unlocks SILOG & LUTONG BAHAY when requirements met", Callback = function(s) cfg.autoUnlockMenu = s end })
+FurnSec:CreateButton("Enable All Menus", function()
     pcall(function() ToggleMenu:InvokeServer("LUGAW", true) end)
     pcall(function() ToggleMenu:InvokeServer("SILOG", true) end)
     pcall(function() ToggleMenu:InvokeServer("LUTONG BAHAY", true) end)
-end })
+end)
 
 -- --- SHOP TAB: Groceries Sub-Tab ---
-local GrocerySub = ShopTab:AddSubTab({ Name = "Groceries", Icon = "swords" })
+local GrocerySec = ShopTab:CreateSection("Groceries")
 
-local GroceryBox = GrocerySub:AddLeftGroupbox("Ingredients", "apple")
-GroceryBox:AddToggle("AutoBuyIngredients", { Text = "Auto Buy Ingredients", Default = false, Tooltip = "Auto-buys ingredients when stock is low" })
-GroceryBox:AddSlider("IngBuyThreshold", { Text = "Buy When Below", Default = 5, Min = 1, Max = 50, Rounding = 1, Tooltip = "Buy ingredient when count drops below this" })
+GrocerySec:CreateToggle("AutoBuyIngredients", { Text = "Auto Buy Ingredients", Default = false, Tooltip = "Auto-buys ingredients when stock is low", Callback = function(s) cfg.autoBuyIngredients = s end })
+GrocerySec:CreateSlider("IngBuyThreshold", { Text = "Buy When Below", Default = 5, Min = 1, Max = 50, Rounding = 1, Tooltip = "Buy ingredient when count drops below this" })
 
-local MerchantBox = GrocerySub:AddRightGroupbox("Merchant", "store")
-MerchantBox:AddToggle("AutoBuyMerchant", { Text = "Auto Buy Merchant", Default = false, Tooltip = "Auto-buys selected items from the rotating merchant when in stock" })
-MerchantBox:AddDropdown("MerchantWhitelist", { Text = "Items to Buy", Multi = true, Default = 0, Values = {"FoldingChair", "FoldingTable", "BambooChair", "BambooTable", "Dipper", "Hanger", "Slipper", "MalunggayPandesal"}, Tooltip = "Select which merchant items to auto-buy" })
+GrocerySec:CreateToggle("AutoBuyMerchant", { Text = "Auto Buy Merchant", Default = false, Tooltip = "Auto-buys selected items from the rotating merchant when in stock", Callback = function(s) cfg.autoBuyMerchant = s end })
+GrocerySec:CreateDropdown("MerchantWhitelist", { Text = "Items to Buy", Multi = true, Default = 0, Values = {"FoldingChair", "FoldingTable", "BambooChair", "BambooTable", "Dipper", "Hanger", "Slipper", "MalunggayPandesal"}, Tooltip = "Select which merchant items to auto-buy", Callback = function(v)
+    cfg.merchantWhitelist = {}
+    for name, enabled in pairs(v) do
+        if enabled then cfg.merchantWhitelist[name] = true end
+    end
+end })
 
-local UnlockBox = GrocerySub:AddRightGroupbox("Unlocks", "lock-open")
-UnlockBox:AddToggle("AutoUnlockTables", { Text = "Auto Unlock Tables", Default = false, Tooltip = "Auto-unlocks Table7-12 when affordable" })
-UnlockBox:AddButton({ Text = "Upgrade to Golden Pan", Func = function() pcall(function() UpgradeToGoldenPan:InvokeServer() end) end })
+GrocerySec:CreateToggle("AutoUnlockTables", { Text = "Auto Unlock Tables", Default = false, Tooltip = "Auto-unlocks Table7-12 when affordable", Callback = function(s) cfg.autoUnlockTables = s end })
+GrocerySec:CreateButton("Upgrade to Golden Pan", function() pcall(function() UpgradeToGoldenPan:InvokeServer() end) end)
 
 -- --- SHOP TAB: Boosts & Store Sub-Tab ---
-local BoostStoreSub = ShopTab:AddSubTab({ Name = "Boosts & Store", Icon = "swords" })
+local BoostSec = ShopTab:CreateSection("Boosts & Store")
 
-local BoostBox = BoostStoreSub:AddLeftGroupbox("Boosts", "zap")
-BoostBox:AddToggle("AutoUseBoosts", { Text = "Auto Use Boosts", Default = false, Tooltip = "Auto-uses Cash/Luck/UltraLuck potions" })
-BoostBox:AddButton({ Text = "Use Cash Potion", Func = function() pcall(function() UseBoostEvent:FireServer("CashPotion") end) end })
-BoostBox:AddButton({ Text = "Use Luck Potion", Func = function() pcall(function() UseBoostEvent:FireServer("LuckPotion") end) end })
-BoostBox:AddButton({ Text = "Use Ultra Luck Potion", Func = function() pcall(function() UseBoostEvent:FireServer("UltraLuckPotion") end) end })
+BoostSec:CreateToggle("AutoUseBoosts", { Text = "Auto Use Boosts", Default = false, Tooltip = "Auto-uses Cash/Luck/UltraLuck potions", Callback = function(s) cfg.autoUseBoosts = s end })
+BoostSec:CreateButton("Use Cash Potion", function() pcall(function() UseBoostEvent:FireServer("CashPotion") end) end)
+BoostSec:CreateButton("Use Luck Potion", function() pcall(function() UseBoostEvent:FireServer("LuckPotion") end) end)
+BoostSec:CreateButton("Use Ultra Luck Potion", function() pcall(function() UseBoostEvent:FireServer("UltraLuckPotion") end) end)
 
-local StoreBox = BoostStoreSub:AddRightGroupbox("Store", "store")
-StoreBox:AddButton({ Text = "Toggle Store Open/Close", Func = function() pcall(function() ToggleStoreStatus:InvokeServer() end) end })
-StoreBox:AddToggle("AutoBuyMysteryBox", { Text = "Auto Buy Mystery Box", Default = false, Tooltip = "Buys Mystery Box when you can afford it ($10,000 each, max 5)" })
-StoreBox:AddToggle("AutoOpenMysteryBox", { Text = "Auto Open Mystery Box", Default = false, Tooltip = "Auto-opens mystery boxes when available" })
+BoostSec:CreateButton("Toggle Store Open/Close", function() pcall(function() ToggleStoreStatus:InvokeServer() end) end)
+BoostSec:CreateToggle("AutoBuyMysteryBox", { Text = "Auto Buy Mystery Box", Default = false, Tooltip = "Buys Mystery Box when you can afford it ($10,000 each, max 5)", Callback = function(s) cfg.autoBuyMysteryBox = s end })
+BoostSec:CreateToggle("AutoOpenMysteryBox", { Text = "Auto Open Mystery Box", Default = false, Tooltip = "Auto-opens mystery boxes when available", Callback = function(s) cfg.autoOpenMysteryBox = s end })
 
 -- --- PLAYER TAB: Character Sub-Tab ---
-local CharSub = PlayerTab:AddSubTab({ Name = "Character", Icon = "swords" })
+local CharSec = PlayerTab:CreateSection("Character")
 
-local CharBox = CharSub:AddLeftGroupbox("Movement", "person-standing")
-CharBox:AddSlider("WalkSpeed", { Text = "Walk Speed", Default = 16, Min = 16, Max = 100, Rounding = 0 })
-CharBox:AddToggle("InfJump", { Text = "Infinite Jump", Default = false })
-CharBox:AddToggle("NoClip", { Text = "NoClip", Default = false, Tooltip = "Walk through walls" })
-CharBox:AddToggle("AntiAfk", { Text = "Anti-AFK", Default = false, Tooltip = "Prevents AFK kick" })
+CharSec:CreateSlider("WalkSpeed", { Text = "Walk Speed", Default = 16, Min = 16, Max = 100, Rounding = 0, Callback = function(v) cfg.walkSpeed = v local _,h = getChar() if h then h.WalkSpeed = v end end })
+CharSec:CreateToggle("InfJump", { Text = "Infinite Jump", Default = false, Callback = function(s) cfg.infJump = s end })
+CharSec:CreateToggle("NoClip", { Text = "NoClip", Default = false, Tooltip = "Walk through walls", Callback = function(s) cfg.noclip = s end })
+CharSec:CreateToggle("AntiAfk", { Text = "Anti-AFK", Default = false, Tooltip = "Prevents AFK kick", Callback = function(s) cfg.antiAfk = s end })
 
-local EspBox = CharSub:AddRightGroupbox("Visuals", "eye")
-EspBox:AddToggle("EspNPCs", { Text = "ESP NPCs", Default = false, Tooltip = "Highlights all NPCs with colored boxes" })
+CharSec:CreateToggle("EspNPCs", { Text = "ESP NPCs", Default = false, Tooltip = "Highlights all NPCs with colored boxes", Callback = function(s) cfg.espNPCs = s end })
 
 -- --- PLAYER TAB: Teleports Sub-Tab ---
-local TPSub = PlayerTab:AddSubTab({ Name = "Teleports", Icon = "swords" })
+local TPSec = PlayerTab:CreateSection("Teleports")
 
-local PlotTPBox = TPSub:AddLeftGroupbox("My Plot", "map-pin")
-PlotTPBox:AddButton({ Text = "Teleport to Counter", Func = function() local p = getPlot() if p then local c = p:FindFirstChild("Counter") if c then local cp = c:FindFirstChild("Comp", true) if cp then tp(cp.CFrame * CFrame.new(0,3,0)) end end end end })
-PlotTPBox:AddButton({ Text = "Teleport to Kitchen", Func = function() local p = getPlot() if p then local k = p:FindFirstChild("KitchenPlot1") if k then local f = k:GetChildren()[1] if f then tp(f:GetPivot() * CFrame.new(0,3,0)) end end end end })
-PlotTPBox:AddButton({ Text = "Teleport to Serve Area", Func = function() local p = getPlot() if p then local s = p:FindFirstChild("Serve") if s then local f = s:GetChildren()[1] if f then tp(f:GetPivot() * CFrame.new(0,3,0)) end end end end })
-PlotTPBox:AddButton({ Text = "Teleport to NPC Spawn", Func = function() local p = getPlot() if p then local ns = p:FindFirstChild("NpcSpawn") if ns then tp(ns:GetPivot() * CFrame.new(0,3,0)) end end end })
+TPSec:CreateButton("Teleport to Counter", function() local p = getPlot() if p then local c = p:FindFirstChild("Counter") if c then local cp = c:FindFirstChild("Comp", true) if cp then tp(cp.CFrame * CFrame.new(0,3,0)) end end end end)
+TPSec:CreateButton("Teleport to Kitchen", function() local p = getPlot() if p then local k = p:FindFirstChild("KitchenPlot1") if k then local f = k:GetChildren()[1] if f then tp(f:GetPivot() * CFrame.new(0,3,0)) end end end end)
+TPSec:CreateButton("Teleport to Serve Area", function() local p = getPlot() if p then local s = p:FindFirstChild("Serve") if s then local f = s:GetChildren()[1] if f then tp(f:GetPivot() * CFrame.new(0,3,0)) end end end end)
+TPSec:CreateButton("Teleport to NPC Spawn", function() local p = getPlot() if p then local ns = p:FindFirstChild("NpcSpawn") if ns then tp(ns:GetPivot() * CFrame.new(0,3,0)) end end end)
 
-local WorldTPBox = TPSub:AddRightGroupbox("World", "globe")
-WorldTPBox:AddButton({ Text = "Teleport to Grocery", Func = function() local g = Workspace:FindFirstChild("Grocery") if g then local c = g:FindFirstChild("Comp", true) if c then tp(c.CFrame * CFrame.new(0,3,0)) end end end })
-WorldTPBox:AddButton({ Text = "Teleport to Shop", Func = function() local s = Workspace:FindFirstChild("SHOP") if s then local sh = s:FindFirstChild("Shop") if sh then local pp = sh:FindFirstChild("ProximityPrompt") if pp and pp.Parent:IsA("BasePart") then tp(pp.Parent.CFrame * CFrame.new(0,3,0)) end end end end })
+TPSec:CreateButton("Teleport to Grocery", function() local g = Workspace:FindFirstChild("Grocery") if g then local c = g:FindFirstChild("Comp", true) if c then tp(c.CFrame * CFrame.new(0,3,0)) end end end)
+TPSec:CreateButton("Teleport to Shop", function() local s = Workspace:FindFirstChild("SHOP") if s then local sh = s:FindFirstChild("Shop") if sh then local pp = sh:FindFirstChild("ProximityPrompt") if pp and pp.Parent:IsA("BasePart") then tp(pp.Parent.CFrame * CFrame.new(0,3,0)) end end end end)
 
 -- --- SETTINGS TAB ---
-local ThemesSub = SettingsTab:AddSubTab({ Name = "Themes & UI", Icon = "swords" })
-local ConfigSub = SettingsTab:AddSubTab({ Name = "Config", Icon = "swords" })
+-- (empty - theme manager removed)
 
 -- LOGS TAB
-local StatusBox = LogsTab:AddLeftGroupbox("Status", "activity")
+local StatusSec = LogsTab:CreateSection("Status")
 local StatusLabels = {}
 local statusOrder = {"serve", "order", "drink", "codes", "pan", "clean", "wash", "buyFurn", "placeFurn", "buyIng", "boosts", "unlockTbl", "unlockMenu", "chiller", "merchant", "mysteryBox"}
 local statusNames = {serve="Serve", order="Order", drink="Drinks", codes="Codes", pan="Pan", clean="Clean", wash="Wash", buyFurn="Buy Furn", placeFurn="Place Furn", buyIng="Buy Ing", boosts="Boosts", unlockTbl="Unlock Tbl", unlockMenu="Unlock Menu", chiller="Chiller", merchant="Merchant", mysteryBox="Mystery Box"}
 for _, key in ipairs(statusOrder) do
-    StatusLabels[key] = StatusBox:AddLabel(statusNames[key] .. ": Idle", true)
+    StatusLabels[key] = StatusSec:CreateLabel(statusNames[key] .. ": Idle", true)
 end
 
-local MoneyBox = LogsTab:AddRightGroupbox("Money Log", "dollar-sign")
-local MoneyEarnedLabel = MoneyBox:AddLabel("Earned: $0", true)
-local MoneySpentLabel = MoneyBox:AddLabel("Spent: $0", true)
-local MoneyNetLabel = MoneyBox:AddLabel("Net: $0", true)
-local MoneyStartLabel = MoneyBox:AddLabel("Start: $" .. moneyLog.startCash, true)
+local MoneySec = LogsTab:CreateSection("Money Log")
+local MoneyEarnedLabel = MoneySec:CreateLabel("Earned: $0", true)
+local MoneySpentLabel = MoneySec:CreateLabel("Spent: $0", true)
+local MoneyNetLabel = MoneySec:CreateLabel("Net: $0", true)
+local MoneyStartLabel = MoneySec:CreateLabel("Start: $" .. moneyLog.startCash, true)
 
 local MONEY_DISPLAY = 15
 local moneyScrollOffset = 0
 local MoneyLogLines = {}
 for i = 1, MONEY_DISPLAY do
-    MoneyLogLines[i] = MoneyBox:AddLabel("", true)
+    MoneyLogLines[i] = MoneySec:CreateLabel("", true)
 end
 
 local function refreshMoneyDisplay()
@@ -560,7 +543,7 @@ local function refreshMoneyDisplay()
     end
 end
 
-MoneyBox:AddButton({ Text = "Clear Logs", Func = function()
+MoneySec:CreateButton("Clear Logs", function()
     moneyLog.entries = {}
     moneyLog.totalEarned = 0
     moneyLog.totalSpent = 0
@@ -571,83 +554,25 @@ MoneyBox:AddButton({ Text = "Clear Logs", Func = function()
     MoneySpentLabel:SetText("Spent: $0")
     MoneyNetLabel:SetText("Net: $0")
     MoneyStartLabel:SetText("Start: $" .. getCash())
-end })
+end)
 
-MoneyBox:AddButton({ Text = "Scroll Up", Func = function()
+MoneySec:CreateButton("Scroll Up", function()
     moneyScrollOffset = math.max(0, moneyScrollOffset - MONEY_DISPLAY)
     refreshMoneyDisplay()
-end })
+end)
 
-MoneyBox:AddButton({ Text = "Scroll Down", Func = function()
+MoneySec:CreateButton("Scroll Down", function()
     local maxOffset = math.max(0, #moneyLog.entries - MONEY_DISPLAY)
     moneyScrollOffset = math.min(maxOffset, moneyScrollOffset + MONEY_DISPLAY)
     refreshMoneyDisplay()
-end })
+end)
 
-local RefreshBox = LogsTab:AddLeftGroupbox("Auto Refresh", "refresh-cw")
-RefreshBox:AddToggle("AutoRefreshLogs", { Text = "Auto Refresh", Default = true })
-RefreshBox:AddSlider("RefreshInterval", { Text = "Refresh Interval", Default = 2, Min = 1, Max = 10, Rounding = 0, Suffix = "s" })
+local RefreshSec = LogsTab:CreateSection("Auto Refresh")
+RefreshSec:CreateToggle("AutoRefreshLogs", { Text = "Auto Refresh", Default = true, Callback = function(s) cfg.autoRefreshLogs = s end })
+RefreshSec:CreateSlider("RefreshInterval", { Text = "Refresh Interval", Default = 2, Min = 1, Max = 10, Rounding = 0, Suffix = "s" })
 
 -- CALLBACKS
-Toggles.AutoServe:OnChanged(function(s) cfg.autoServe = s end)
-Toggles.AutoOrder:OnChanged(function(s) cfg.autoOrder = s end)
-Toggles.AutoRejectNPC:OnChanged(function(s) cfg.autoRejectNPC = s end)
-Options.RejectNPCList:OnChanged(function(v)
-    if v["None"] then
-        -- "None" selected, clear everything
-        Options.RejectNPCList:SetValue({})
-        cfg.rejectNPCList = {}
-        return
-    end
-    cfg.rejectNPCList = {}
-    for displayName, selected in pairs(v) do
-        if selected and displayName ~= "None" then
-            local npcName = npcRarityMap[displayName]
-            if npcName then
-                cfg.rejectNPCList[npcName] = true
-            end
-        end
-    end
-end)
-Toggles.AutoClaimCodes:OnChanged(function(s) cfg.autoClaimCodes = s end)
-Toggles.AutoPan:OnChanged(function(s) cfg.autoPan = s end)
-Toggles.AutoClean:OnChanged(function(s) cfg.autoClean = s end)
-Toggles.AutoWash:OnChanged(function(s) cfg.autoWash = s end)
-Toggles.AutoFixChiller:OnChanged(function(s) cfg.autoFixChiller = s end)
-Toggles.AutoBuyFurniture:OnChanged(function(s) cfg.autoBuyFurniture = s end)
-Toggles.AutoPlaceFurniture:OnChanged(function(s) cfg.autoPlaceFurniture = s end)
-Options.FurnitureWhitelist:OnChanged(function(v)
-    if v["None"] then
-        -- "None" selected, clear everything
-        Options.FurnitureWhitelist:SetValue({})
-        cfg.furnitureWhitelist = {}
-        return
-    end
-    cfg.furnitureWhitelist = {}
-    for name, enabled in pairs(v) do
-        if enabled and name ~= "None" then cfg.furnitureWhitelist[name] = true end
-    end
-end)
-Toggles.AutoBuyIngredients:OnChanged(function(s) cfg.autoBuyIngredients = s end)
-Toggles.AutoBuyMerchant:OnChanged(function(s) cfg.autoBuyMerchant = s end)
-Options.MerchantWhitelist:OnChanged(function(v)
-    cfg.merchantWhitelist = {}
-    for name, enabled in pairs(v) do
-        if enabled then cfg.merchantWhitelist[name] = true end
-    end
-end)
-Toggles.AutoSoftdrinks:OnChanged(function(s) cfg.autoSoftdrinks = s end)
-Toggles.AutoUseBoosts:OnChanged(function(s) cfg.autoUseBoosts = s end)
-Toggles.AutoBuyMysteryBox:OnChanged(function(s) cfg.autoBuyMysteryBox = s end)
-Toggles.AutoOpenMysteryBox:OnChanged(function(s) cfg.autoOpenMysteryBox = s end)
-Toggles.AutoUnlockTables:OnChanged(function(s) cfg.autoUnlockTables = s end)
-Toggles.AutoUnlockMenu:OnChanged(function(s) cfg.autoUnlockMenu = s end)
-Toggles.NoClip:OnChanged(function(s) cfg.noclip = s end)
-Toggles.AntiAfk:OnChanged(function(s) cfg.antiAfk = s end)
-Toggles.EspNPCs:OnChanged(function(s) cfg.espNPCs = s end)
-Options.WalkSpeed:OnChanged(function(v) cfg.walkSpeed = v local _,h = getChar() if h then h.WalkSpeed = v end end)
-Toggles.InfJump:OnChanged(function(s) cfg.infJump = s end)
-Toggles.AutoRefreshLogs:OnChanged(function(s) cfg.autoRefreshLogs = s end)
+-- (callbacks wired inline via Callback = function in each element above)
 
 -- --- AUTO SERVE ---
 task.spawn(function() while true do
@@ -959,7 +884,7 @@ task.spawn(function() while true do
     else
         setStatus("clean", "Disabled")
     end
-    task.wait(Options.CleanDelay and Options.CleanDelay.Value or 2)
+    task.wait(2)
 end end)
 
 -- --- AUTO WASH ---
@@ -1079,7 +1004,7 @@ task.spawn(function() while true do
     else
         setStatus("wash", "Disabled")
     end
-    task.wait(Options.WashDelay and Options.WashDelay.Value or 2)
+    task.wait(2)
 end end)
 
 -- --- AUTO FIX CHILLER ---
@@ -1176,7 +1101,6 @@ task.spawn(function() while true do
     if cfg.autoBuyMysteryBox then
         local mbCfg = MysteryBoxConfig and MysteryBoxConfig.Common
         local cost = mbCfg and mbCfg.Cost or 10000
-        -- Check if a box is already being delivered
         local stateOk, state = pcall(function() return GetMysteryBoxState:InvokeServer() end)
         if stateOk and state and type(state) == "table" and state.RemainingTime and state.RemainingTime > 0 then
             local mins = math.floor(state.RemainingTime / 60)
@@ -1338,7 +1262,7 @@ task.spawn(function() while true do
     else
         setStatus("buyFurn", "Disabled")
     end
-    task.wait(Options.FurnDelay and Options.FurnDelay.Value or 5)
+    task.wait(5)
 end end)
 
 -- --- AUTO PLACE / UPGRADE FURNITURE ---
@@ -1474,7 +1398,7 @@ task.spawn(function()
         else
             setStatus("placeFurn", "Disabled")
         end
-        task.wait(Options.FurnDelay and Options.FurnDelay.Value or 5)
+        task.wait(5)
     end
 end)
 
@@ -1483,7 +1407,7 @@ task.spawn(function() while true do
     if cfg.autoBuyIngredients then
         setStatus("buyIng", "Checking stock...")
         local cash = getCash()
-        local threshold = Options.IngBuyThreshold and Options.IngBuyThreshold.Value or 5
+        local threshold = 5
         local bought = 0
         local ing = LocalPlayer:FindFirstChild("Ingredients")
         if ing then
@@ -1725,8 +1649,7 @@ task.spawn(function() while true do
         MoneyStartLabel:SetText("Start: $" .. moneyLog.startCash .. " | Now: $" .. getCash())
         refreshMoneyDisplay()
     end
-    local interval = Options.RefreshInterval and Options.RefreshInterval.Value or 2
-    task.wait(interval)
+    task.wait(2)
 end end)
 
 -- ---------------------------------------
@@ -1748,42 +1671,6 @@ task.spawn(function()
         lastCash = currentCash
     end
 end)
-
--- THEME & SAVE
-ThemeManager:SetLibrary(Library) SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings() SaveManager:SetIgnoreIndexes({})
-ThemeManager:SetFolder("KarinderyaScript") SaveManager:SetFolder("KarinderyaScript/saves")
-local CreditGroup = ThemesSub:AddLeftGroupbox("Credits", "heart")
-local CreditLabel = CreditGroup:AddLabel({ Text = "", Size = 26, DoesWrap = true })
-local CreditTL = CreditLabel.TextLabel
-CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-CreditTL.Font = Enum.Font.GothamBold
-CreditTL.TextSize = 26
-
-task.spawn(function()
-	local full = "Made by mommy Crow"
-	local cursor = "_"
-	while true do
-		local shown = ""
-		for i = 1, #full do
-			shown = shown .. full:sub(i, i)
-			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-			task.wait(math.random(4, 9) / 100)
-		end
-		task.wait(2)
-		for i = #full, 1, -1 do
-			shown = full:sub(1, i - 1)
-			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-			task.wait(math.random(2, 5) / 100)
-		end
-		task.wait(0.8)
-	end
-end)
-
-ThemeManager:ApplyToTab(ThemesSub)
-SaveManager:BuildConfigSection(ConfigSub) SaveManager:LoadAutoloadConfig()
 
 if not Library.Toggled then Library:Toggle() end
 print("[Karinderya] Loaded - RightControl to toggle")

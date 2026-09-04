@@ -1,5 +1,5 @@
 --// Rocks RNG - Crash Value Tracker & Multi-Feature Hub
---// Ivory Hub integration using ObsidianUltra UI
+--// Ivory Hub integration using Ivory Hub Sakura Edition
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -37,37 +37,28 @@ if getgenv().RocksCrashTracker then
 end
 getgenv().RocksCrashTracker = {}
 
---// Load ObsidianUltra
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+--// Load Ivory Hub
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	local ok, src = pcall(function()
+		return request({
+			Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+			Method = "GET"
+		}).Body
+	end)
+	if ok then LIB_SRC = src end
+end
+local Library = loadstring(LIB_SRC)()
 
 if not Library then
-	warn("[Rocks RNG] ObsidianUltra failed to load")
+	warn("[Rocks RNG] Ivory Hub failed to load")
 	return
 end
 
-local Options = Library.Options
-local Toggles = Library.Toggles
-
-local Window = Library:CreateWindow({
-	Title = "Ivory",
-	Icon = "swords",
-	Footer = {
-		"Rocks RNG |",
-		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
-	},
-	CopyableFooter = true,
-	FuzzySearch = true,
-	SearchValues = true,
-	Minimizable = true,
-	MinimizeKeybind = Enum.KeyCode.RightBracket,
-	MinimizedWidth = 280,
-	NotifySide = "Right",
-	ShowCustomCursor = false,
-	SearchKeybind = Enum.KeyCode.F,
-	CornerRadius = 4,
+local Window = Library.CreateWindow({
+	Name = "Ivory",
+	Width = 460,
+	Height = 360,
 })
 getgenv().RocksCrashTracker.window = Window
 
@@ -92,18 +83,18 @@ end
 --// TAB 1: CRASH TRACKER
 --// ========================================================
 
-local CrashTab = Window:AddTab({ Name = "Crash Tracker", Icon = "swords" })
-local CrashSub = CrashTab:AddSubTab("Live Data", "rbxassetid://79379082636309")
-local CrashSub2 = CrashTab:AddSubTab("Session", "rbxassetid://79379082636309")
+local CrashTab = Window:CreateTab({ Name = "Crash Tracker" })
+local CrashSub = CrashTab:CreateSection("Live Data")
+local CrashSub2 = CrashTab:CreateSection("Session")
 
-local CG1 = CrashSub:AddLeftGroupbox("Live Crash Value", "activity")
-local CrashLabel = CG1:AddLabel("Crash: waiting for a roll...")
-local DetailLabel = CG1:AddLabel("X1: -- | X2: -- | X3: --")
-local SourceLabel = CG1:AddLabel("Source: --")
-local RarestLabel = CG1:AddLabel("Rarest bucket: --")
+local CG1 = CrashSub:CreateSection("Live Crash Value")
+local CrashLabel = CG1:CreateLabel("Crash: waiting for a roll...")
+local DetailLabel = CG1:CreateLabel("X1: -- | X2: -- | X3: --")
+local SourceLabel = CG1:CreateLabel("Source: --")
+local RarestLabel = CG1:CreateLabel("Rarest bucket: --")
 
-local CG2 = CrashSub2:AddLeftGroupbox("Session Stats", "bar-chart")
-local StatsLabel = CG2:AddLabel("Rolls: 0 | Avg: -- | Max: -- | Min: --")
+local CG2 = CrashSub2:CreateSection("Session Stats")
+local StatsLabel = CG2:CreateLabel("Rolls: 0 | Avg: -- | Max: -- | Min: --")
 
 local function update_stats_ui()
 	local n = #rollHistory
@@ -121,50 +112,21 @@ local function update_stats_ui()
 		n, sum / n, maxC, minC))
 end
 
-local CG3 = CrashSub2:AddRightGroupbox("Actions", "tool")
-CG3:AddButton({
-	Text = "Print Full History",
-	Func = function()
+local CG3 = CrashSub2:CreateSection("Actions")
+CG3:CreateButton({
+	Name = "Print Full History",
+	Callback = function()
 		_G.PrintCrashHistory()
 	end,
 })
-CG3:AddButton({
-	Text = "Reset Session Stats",
-	Func = function()
+CG3:CreateButton({
+	Name = "Reset Session Stats",
+	Callback = function()
 		table.clear(rollHistory)
 		StatsLabel:SetText("Rolls: 0 | Avg: -- | Max: -- | Min: --")
-		Library:Notify({ Title = "Crash Tracker", Description = "Session stats reset", Type = "Info", Time = 2 })
+		Library.Notify({ Title = "Crash Tracker", Content = "Session stats reset", Type = "Info", Duration = 2 })
 	end,
 })
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
 
 --// Hook MiningRoll
 local rollCount = 0
@@ -195,7 +157,6 @@ local rollConn = MiningRoll.OnClientEvent:Connect(function(payload)
 	if not ok3 then warn("[RocksRNG] SourceLabel:SetText failed: " .. tostring(e3)) end
 
 	if type(payload.bucketMins) == "table" and #payload.bucketMins > 0 then
-		-- Find the rarest bucket whose min is actually below the crash value
 		local rarestMin = nil
 		for i = #payload.bucketMins, 1, -1 do
 			local val = payload.bucketMins[i]
@@ -246,17 +207,13 @@ getgenv().RocksCrashTracker.revealConn = revealConn
 --// TAB 2: CASH-OUT ASSIST
 --// ========================================================
 
-local AssistTab = Window:AddTab({ Name = "Cash-Out Assist", Icon = "swords" })
-local AssistSub = AssistTab:AddSubTab("Suggestion", "rbxassetid://79379082636309")
-local AG1 = AssistSub:AddLeftGroupbox("Suggested Cash-Out", "target")
+local AssistTab = Window:CreateTab({ Name = "Cash-Out Assist" })
+local AssistSub = AssistTab:CreateSection("Suggestion")
+local AG1 = AssistSub:CreateSection("Suggested Cash-Out")
 
-local AssistCrashLabel = AG1:AddLabel("Crash: waiting for a roll...")
-local AssistSuggestLabel = AG1:AddLabel("Suggested target: --")
-AG1:AddParagraph("How this works",
-	"Suggestion only. Nothing is auto-filled or auto-toggled. "
-	.. "Copy the value below and paste it into the game's own "
-	.. "\"Auto Roll\" box yourself, then flip Auto Roll on if you want it. "
-	.. "Target = crash - 1 (one under the ceiling for that roll).")
+local AssistCrashLabel = AG1:CreateLabel("Crash: waiting for a roll...")
+local AssistSuggestLabel = AG1:CreateLabel("Suggested target: --")
+AG1:CreateLabel("Suggestion only. Nothing is auto-filled or auto-toggled. Copy the value below and paste it into the game's own \"Auto Roll\" box yourself, then flip Auto Roll on if you want it. Target = crash - 1 (one under the ceiling for that roll).")
 
 local lastSuggested = nil
 
@@ -274,19 +231,19 @@ local function copy_to_clipboard(text)
 	end)
 end
 
-AG1:AddButton({
-	Text = "Copy Suggested Value",
-	Func = function()
+AG1:CreateButton({
+	Name = "Copy Suggested Value",
+	Callback = function()
 		if not lastSuggested then
-			Library:Notify({ Title = "Cash-Out Assist", Description = "Wait for a roll first.", Type = "Warning", Time = 3 })
+			Library.Notify({ Title = "Cash-Out Assist", Content = "Wait for a roll first.", Type = "Warning", Duration = 3 })
 			return
 		end
 		local text = string.format("%.4f", lastSuggested)
 		if copy_to_clipboard(text) then
-			Library:Notify({ Title = "Cash-Out Assist", Description = "Copied: " .. text, Type = "Success", Time = 3 })
+			Library.Notify({ Title = "Cash-Out Assist", Content = "Copied: " .. text, Type = "Success", Duration = 3 })
 		else
 			print("[Cash-Out Assist] Suggested value (clipboard unsupported): " .. text)
-			Library:Notify({ Title = "Cash-Out Assist", Description = "Clipboard unsupported, printed to console", Type = "Warning", Time = 4 })
+			Library.Notify({ Title = "Cash-Out Assist", Content = "Clipboard unsupported, printed to console", Type = "Warning", Duration = 4 })
 		end
 	end,
 })
@@ -305,33 +262,29 @@ getgenv().RocksCrashTracker.assistConn = assistConn
 --// TAB 3: AUTO-LOOP
 --// ========================================================
 
-local AutoLoopTab = Window:AddTab({ Name = "Auto-Loop", Icon = "swords" })
-local AutoLoopSub = AutoLoopTab:AddSubTab("Auto-Fill", "rbxassetid://79379082636309")
-local ALG1 = AutoLoopSub:AddLeftGroupbox("Auto-Fill Auto-Roll", "repeat")
+local AutoLoopTab = Window:CreateTab({ Name = "Auto-Loop" })
+local AutoLoopSub = AutoLoopTab:CreateSection("Auto-Fill")
+local ALG1 = AutoLoopSub:CreateSection("Auto-Fill Auto-Roll")
 
 local AutoLoopEnabled = false
-local AutoLoopStatusLabel = ALG1:AddLabel("Status: idle")
-local AutoLoopCrashLabel = ALG1:AddLabel("Crash: --")
-local AutoLoopTargetLabel = ALG1:AddLabel("Target: --")
+local AutoLoopStatusLabel = ALG1:CreateLabel("Status: idle")
+local AutoLoopCrashLabel = ALG1:CreateLabel("Crash: --")
+local AutoLoopTargetLabel = ALG1:CreateLabel("Target: --")
 
-ALG1:AddParagraph("What this does",
-	"When enabled, automatically fills the game's \"Auto Roll\" "
-	.. "input box with crash - 1 on every roll. "
-	.. "You still need to manually enable/disable the game's "
-	.. "Auto Roll toggle yourself. This only changes the VALUE.")
+ALG1:CreateLabel("When enabled, automatically fills the game's \"Auto Roll\" input box with crash - 1 on every roll. You still need to manually enable/disable the game's Auto Roll toggle yourself. This only changes the VALUE.")
 
-ALG1:AddToggle("AutoLoopToggle", {
-	Text = "Auto-fill cash-out target",
-	Default = false,
+ALG1:CreateToggle({
+	Name = "Auto-fill cash-out target",
+	CurrentValue = false,
 	Callback = function(Value)
 		AutoLoopEnabled = Value
 		AutoLoopStatusLabel:Set(Value and "Status: ENABLED" or "Status: disabled")
 	end,
 })
 
-ALG1:AddButton({
-	Text = "Scan PlayerGui for TextBoxes",
-	Func = function()
+ALG1:CreateButton({
+	Name = "Scan PlayerGui for TextBoxes",
+	Callback = function()
 		print("\n[Auto-Loop] Scanning entire PlayerGui for TextBoxes...")
 		print(string.rep("=", 70))
 		local found_any = false
@@ -437,23 +390,19 @@ getgenv().RocksCrashTracker.autoLoopRollConn = autoLoopRollConn
 --// TAB 4: AUTO COLLECT
 --// ========================================================
 
-local AutoCollectTab = Window:AddTab({ Name = "Auto Collect", Icon = "swords" })
-local AutoCollectSub = AutoCollectTab:AddSubTab("Shards", "rbxassetid://79379082636309")
-local ACG1 = AutoCollectSub:AddLeftGroupbox("Auto Collect Shards", "magnet")
+local AutoCollectTab = Window:CreateTab({ Name = "Auto Collect" })
+local AutoCollectSub = AutoCollectTab:CreateSection("Shards")
+local ACG1 = AutoCollectSub:CreateSection("Auto Collect Shards")
 
 local AutoCollectEnabled = false
-local AutoCollectStatusLabel = ACG1:AddLabel("Status: idle")
-local AutoCollectCountLabel = ACG1:AddLabel("Collected: 0")
+local AutoCollectStatusLabel = ACG1:CreateLabel("Status: idle")
+local AutoCollectCountLabel = ACG1:CreateLabel("Collected: 0")
 
-ACG1:AddParagraph("What this does",
-	"Hooks the game's own ShardSync/CollectCrystal remotes "
-	.. "(the same ones the real Auto Collect gamepass uses) and "
-	.. "collects every synced crystal shard immediately, instead "
-	.. "of waiting for the player to walk within range.")
+ACG1:CreateLabel("Hooks the game's own ShardSync/CollectCrystal remotes (the same ones the real Auto Collect gamepass uses) and collects every synced crystal shard immediately, instead of waiting for the player to walk within range.")
 
-ACG1:AddToggle("AutoCollectToggle", {
-	Text = "Auto collect enabled",
-	Default = false,
+ACG1:CreateToggle({
+	Name = "Auto collect enabled",
+	CurrentValue = false,
 	Callback = function(Value)
 		AutoCollectEnabled = Value
 		AutoCollectStatusLabel:Set(Value and "Status: ENABLED" or "Status: disabled")
@@ -543,22 +492,19 @@ getgenv().RocksCrashTracker.shardSyncConn = shardSyncConn
 --// TAB 5: RUNE SHOP
 --// ========================================================
 
-local ShopTab = Window:AddTab({ Name = "Rune Shop", Icon = "swords" })
-local ShopSub = ShopTab:AddSubTab("Auto-Buy", "rbxassetid://79379082636309")
-local SG1 = ShopSub:AddLeftGroupbox("Auto-Buy Runes", "shopping-cart")
+local ShopTab = Window:CreateTab({ Name = "Rune Shop" })
+local ShopSub = ShopTab:CreateSection("Auto-Buy")
+local SG1 = ShopSub:CreateSection("Auto-Buy Runes")
 
 local AutoShopEnabled = false
-local ShopStatusLabel = SG1:AddLabel("Status: idle")
-local ShopBoughtLabel = SG1:AddLabel("Bought: 0")
+local ShopStatusLabel = SG1:CreateLabel("Status: idle")
+local ShopBoughtLabel = SG1:CreateLabel("Bought: 0")
 
-SG1:AddParagraph("What this does",
-	"Hooks the game's own shop remotes (ShopState, RuneUpdate, "
-	.. "CurrencyUpdate, BuyShopItem) and buys every rune currently "
-	.. "in stock and affordable, repeating as currency/stock allow.")
+SG1:CreateLabel("Hooks the game's own shop remotes (ShopState, RuneUpdate, CurrencyUpdate, BuyShopItem) and buys every rune currently in stock and affordable, repeating as currency/stock allow.")
 
-SG1:AddToggle("AutoShopToggle", {
-	Text = "Auto-buy affordable runes",
-	Default = false,
+SG1:CreateToggle({
+	Name = "Auto-buy affordable runes",
+	CurrentValue = false,
 	Callback = function(Value)
 		AutoShopEnabled = Value
 		ShopStatusLabel:Set(Value and "Status: ENABLED" or "Status: disabled")
@@ -666,21 +612,18 @@ getgenv().RocksCrashTracker.shopLoopThread = shopLoopThread
 --// TAB 6: LIVE EVENTS
 --// ========================================================
 
-local EventsTab = Window:AddTab({ Name = "Live Events", Icon = "swords" })
-local EventsSub = EventsTab:AddSubTab("World Event", "rbxassetid://79379082636309")
-local EventsSub2 = EventsTab:AddSubTab("Luck Boost", "rbxassetid://79379082636309")
+local EventsTab = Window:CreateTab({ Name = "Live Events" })
+local EventsSub = EventsTab:CreateSection("World Event")
+local EventsSub2 = EventsTab:CreateSection("Luck Boost")
 
-local EG1 = EventsSub:AddLeftGroupbox("World Mutation Event", "globe")
-local WorldEventLabel = EG1:AddLabel("No active event")
-local WorldEventTimeLabel = EG1:AddLabel("")
+local EG1 = EventsSub:CreateSection("World Mutation Event")
+local WorldEventLabel = EG1:CreateLabel("No active event")
+local WorldEventTimeLabel = EG1:CreateLabel("")
 
-local EG2 = EventsSub2:AddLeftGroupbox("Your Luck Boost", "sparkles")
-local LuckBoostLabel = EG2:AddLabel("No active personal boost")
+local EG2 = EventsSub2:CreateSection("Your Luck Boost")
+local LuckBoostLabel = EG2:CreateLabel("No active personal boost")
 
-EG1:AddParagraph("What this does",
-	"Read-only. Hooks RE.ServerEvent (the world mutation-boost "
-	.. "event) and RE.LuckBoostState (your own personal luck boost) "
-	.. "and keeps a persistent HUD of both. Nothing is fired or modified.")
+EG1:CreateLabel("Read-only. Hooks RE.ServerEvent (the world mutation-boost event) and RE.LuckBoostState (your own personal luck boost) and keeps a persistent HUD of both. Nothing is fired or modified.")
 
 local ServerEvent = RE:WaitForChild("ServerEvent")
 local LuckBoostState = RE:FindFirstChild("LuckBoostState") or RE:WaitForChild("LuckBoostState", 10)
@@ -765,23 +708,20 @@ getgenv().RocksCrashTracker.eventsLoopThread = eventsLoopThread
 --// TAB 7: CLAIMS & JUNK
 --// ========================================================
 
-local ClaimsTab = Window:AddTab({ Name = "Claims & Junk", Icon = "swords" })
-local ClaimsSub = ClaimsTab:AddSubTab("Index Stars", "rbxassetid://79379082636309")
-local ClaimsSub2 = ClaimsTab:AddSubTab("Junk Crush", "rbxassetid://79379082636309")
+local ClaimsTab = Window:CreateTab({ Name = "Claims & Junk" })
+local ClaimsSub = ClaimsTab:CreateSection("Index Stars")
+local ClaimsSub2 = ClaimsTab:CreateSection("Junk Crush")
 
-local CG1c = ClaimsSub:AddLeftGroupbox("Auto-Claim Index Stars", "star")
+local CG1c = ClaimsSub:CreateSection("Auto-Claim Index Stars")
 local AutoClaimEnabled = false
-local ClaimStatusLabel = CG1c:AddLabel("Status: idle")
-local ClaimedCountLabel = CG1c:AddLabel("Claimed: 0")
+local ClaimStatusLabel = CG1c:CreateLabel("Status: idle")
+local ClaimedCountLabel = CG1c:CreateLabel("Claimed: 0")
 
-CG1c:AddParagraph("What this does",
-	"Free, no cost. Fires ClaimIndexStar for any rock whose "
-	.. "discovery star tier is ahead of what you've already claimed -- "
-	.. "a permanent small luck bonus you've already earned.")
+CG1c:CreateLabel("Free, no cost. Fires ClaimIndexStar for any rock whose discovery star tier is ahead of what you've already claimed -- a permanent small luck bonus you've already earned.")
 
-CG1c:AddToggle("AutoClaimToggle", {
-	Text = "Auto-claim index stars",
-	Default = false,
+CG1c:CreateToggle({
+	Name = "Auto-claim index stars",
+	CurrentValue = false,
 	Callback = function(Value)
 		AutoClaimEnabled = Value
 		ClaimStatusLabel:Set(Value and "Status: ENABLED" or "Status: disabled")
@@ -845,14 +785,10 @@ getgenv().RocksCrashTracker.indexStarsConn = indexStarsConn
 getgenv().RocksCrashTracker.starClaimLoopThread = starClaimLoopThread
 
 --// Junk Crush
-local CG2c = ClaimsSub2:AddLeftGroupbox("Auto-Crush Junk", "trash-2")
-local JunkStatusLabel = CG2c:AddLabel("Status: idle")
+local CG2c = ClaimsSub2:CreateSection("Auto-Crush Junk")
+local JunkStatusLabel = CG2c:CreateLabel("Status: idle")
 
-CG2c:AddParagraph("What this does",
-	"Manual button, not automatic -- crushing junk CONSUMES "
-	.. "those rocks from your inventory in exchange for a "
-	.. "guaranteed-multiplier roll. Press it when you want to "
-	.. "cash in your current junk, not before.")
+CG2c:CreateLabel("Manual button, not automatic -- crushing junk CONSUMES those rocks from your inventory in exchange for a guaranteed-multiplier roll. Press it when you want to cash in your current junk, not before.")
 
 local TradeState = RE:WaitForChild("TradeState")
 local ExchangeAction = RE:WaitForChild("ExchangeAction")
@@ -874,9 +810,9 @@ end)
 pcall(function() TradeState:FireServer() end)
 getgenv().RocksCrashTracker.tradeStateConn = tradeStateConn
 
-CG2c:AddButton({
-	Text = "Crush All Junk Now",
-	Func = function()
+CG2c:CreateButton({
+	Name = "Crush All Junk Now",
+	Callback = function()
 		if not tradeState or not tradeState.junk or (tradeState.junk.count or 0) < 1 then
 			JunkStatusLabel:SetText("Status: nothing to crush")
 			return
@@ -914,25 +850,25 @@ CG2c:AddButton({
 --// TAB 8: PLOT OPTIMIZER
 --// ========================================================
 
-local PlotTab = Window:AddTab({ Name = "Plot Optimizer", Icon = "swords" })
-local PlotSub = PlotTab:AddSubTab("Income", "rbxassetid://79379082636309")
-local PlotSub2 = PlotTab:AddSubTab("Bulk Actions", "rbxassetid://79379082636309")
+local PlotTab = Window:CreateTab({ Name = "Plot Optimizer" })
+local PlotSub = PlotTab:CreateSection("Income")
+local PlotSub2 = PlotTab:CreateSection("Bulk Actions")
 
-local PG1 = PlotSub:AddLeftGroupbox("Current Plot Income", "dollar-sign")
-local PlotTotalLabel = PG1:AddLabel("Total: -- (no data yet)")
-local PlotBreakdownLabel = PG1:AddLabel("No data -- click Refresh")
-local PlotWorstLabel = PG1:AddLabel("Worst rock: --")
+local PG1 = PlotSub:CreateSection("Current Plot Income")
+local PlotTotalLabel = PG1:CreateLabel("Total: -- (no data yet)")
+local PlotBreakdownLabel = PG1:CreateLabel("No data -- click Refresh")
+local PlotWorstLabel = PG1:CreateLabel("Worst rock: --")
 
-PG1:AddButton({
-	Text = "Refresh Plot Scan",
-	Func = function()
+PG1:CreateButton({
+	Name = "Refresh Plot Scan",
+	Callback = function()
 		scan_and_report_plot()
 	end,
 })
 
 --// Target Income Ratio
-PG1:AddDivider()
-PG1:AddLabel("Target Income Ratio (weights)")
+PG1:CreateDivider()
+PG1:CreateLabel("Target Income Ratio (weights)")
 
 local targetWeights = {
 	Normal = 100,
@@ -942,63 +878,54 @@ local targetWeights = {
 	MutVoid = 0,
 }
 
-PG1:AddSlider("WeightNormal", {
-	Text = "Rock Coins Weight",
-	Default = 100,
-	Min = 0,
-	Max = 100,
-	Rounding = 0,
+PG1:CreateSlider({
+	Name = "Rock Coins Weight",
+	Range = {0, 100},
+	Increment = 1,
+	CurrentValue = 100,
 	Callback = function(v) targetWeights.Normal = v end,
 })
-PG1:AddSlider("WeightSurge", {
-	Text = "Surge Coins Weight",
-	Default = 0,
-	Min = 0,
-	Max = 100,
-	Rounding = 0,
+PG1:CreateSlider({
+	Name = "Surge Coins Weight",
+	Range = {0, 100},
+	Increment = 1,
+	CurrentValue = 0,
 	Callback = function(v) targetWeights.MutSurged = v end,
 })
-PG1:AddSlider("WeightPrisma", {
-	Text = "Prisma Coins Weight",
-	Default = 0,
-	Min = 0,
-	Max = 100,
-	Rounding = 0,
+PG1:CreateSlider({
+	Name = "Prisma Coins Weight",
+	Range = {0, 100},
+	Increment = 1,
+	CurrentValue = 0,
 	Callback = function(v) targetWeights.MutPrisma = v end,
 })
-PG1:AddSlider("WeightMolten", {
-	Text = "Molten Coins Weight",
-	Default = 0,
-	Min = 0,
-	Max = 100,
-	Rounding = 0,
+PG1:CreateSlider({
+	Name = "Molten Coins Weight",
+	Range = {0, 100},
+	Increment = 1,
+	CurrentValue = 0,
 	Callback = function(v) targetWeights.MutMolten = v end,
 })
-PG1:AddSlider("WeightVoid", {
-	Text = "Void Coins Weight",
-	Default = 0,
-	Min = 0,
-	Max = 100,
-	Rounding = 0,
+PG1:CreateSlider({
+	Name = "Void Coins Weight",
+	Range = {0, 100},
+	Increment = 1,
+	CurrentValue = 0,
 	Callback = function(v) targetWeights.MutVoid = v end,
 })
 
 --// Auto-Optimize
-local PG2 = PlotSub:AddRightGroupbox("Auto-Optimize (experimental)", "settings")
+local PG2 = PlotSub:CreateSection("Auto-Optimize (experimental)")
 local PlotOptimizeEnabled = false
-local PlotOptimizeStatusLabel = PG2:AddLabel("Status: idle")
-local SwapTallyLabel = PG2:AddLabel("Confirmed swaps: 0 / 0 attempts")
-local LastSwapLabel = PG2:AddLabel("No attempt yet")
+local PlotOptimizeStatusLabel = PG2:CreateLabel("Status: idle")
+local SwapTallyLabel = PG2:CreateLabel("Confirmed swaps: 0 / 0 attempts")
+local LastSwapLabel = PG2:CreateLabel("No attempt yet")
 
-PG2:AddParagraph("Important caveat",
-	"This can only choose WHICH slot to ask the game to swap -- "
-	.. "the server decides what rock actually fills it. It briefly "
-	.. "teleports your character to the target slot to satisfy the "
-	.. "game's proximity requirement, then returns you. Treat as experimental.")
+PG2:CreateLabel("This can only choose WHICH slot to ask the game to swap -- the server decides what rock actually fills it. It briefly teleports your character to the target slot to satisfy the game's proximity requirement, then returns you. Treat as experimental.")
 
-PG2:AddToggle("PlotOptimizeToggle", {
-	Text = "Auto-optimize plot (experimental)",
-	Default = false,
+PG2:CreateToggle({
+	Name = "Auto-optimize plot (experimental)",
+	CurrentValue = false,
 	Callback = function(Value)
 		PlotOptimizeEnabled = Value
 		PlotOptimizeStatusLabel:Set(Value and "Status: ENABLED" or "Status: disabled")
@@ -1006,18 +933,15 @@ PG2:AddToggle("PlotOptimizeToggle", {
 })
 
 --// Bulk Actions
-local PG3 = PlotSub2:AddLeftGroupbox("Bulk Take & Place", "layers")
-local BulkStatusLabel = PG3:AddLabel("Status: idle")
-local BulkResultLabel = PG3:AddLabel("No action run yet")
+local PG3 = PlotSub2:CreateSection("Bulk Take & Place")
+local BulkStatusLabel = PG3:CreateLabel("Status: idle")
+local BulkResultLabel = PG3:CreateLabel("No action run yet")
 
-PG3:AddParagraph("Why two buttons",
-	"Firing a slot's prompt without a pre-selected candidate rock "
-	.. "just TAKES the current rock off the plot rather than swapping. "
-	.. "So: empty every slot first, then try filling them again.")
+PG3:CreateLabel("Firing a slot's prompt without a pre-selected candidate rock just TAKES the current rock off the plot rather than swapping. So: empty every slot first, then try filling them again.")
 
-PG3:AddButton({
-	Text = "Take ALL Rocks from Plot",
-	Func = function()
+PG3:CreateButton({
+	Name = "Take ALL Rocks from Plot",
+	Callback = function()
 		BulkStatusLabel:SetText("Status: taking all rocks...")
 		local results, err = fire_all_my_slots("Take")
 		if not results then
@@ -1031,9 +955,9 @@ PG3:AddButton({
 	end,
 })
 
-PG3:AddButton({
-	Text = "Fill Empty Slots (experimental)",
-	Func = function()
+PG3:CreateButton({
+	Name = "Fill Empty Slots (experimental)",
+	Callback = function()
 		BulkStatusLabel:SetText("Status: attempting to fill slots...")
 		local results, err = fire_all_my_slots("Fill")
 		if not results then
@@ -1416,21 +1340,9 @@ pcall(scan_and_report_plot)
 --// SETTINGS TAB
 --// ========================================================
 
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("RocksRNGHub")
-SaveManager:SetFolder("RocksRNGHub")
-
-local SettingsTab = Window:AddTab({ Name = "UI Settings", Icon = "swords" })
-local CreditGroup = SettingsTab:AddLeftGroupbox("Credits", "heart")
-local CreditLabel = CreditGroup:AddLabel({ Text = "", Size = 26, DoesWrap = true })
-local CreditTL = CreditLabel.TextLabel
-CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-CreditTL.Font = Enum.Font.GothamBold
-CreditTL.TextSize = 26
-
+local SettingsTab = Window:CreateTab({ Name = "UI Settings" })
+local CreditGroup = SettingsTab:CreateSection("Credits")
+local CreditLabel = CreditGroup:CreateLabel("")
 task.spawn(function()
 	local full = "Made by mommy Crow"
 	local cursor = "_"
@@ -1439,67 +1351,51 @@ task.spawn(function()
 		for i = 1, #full do
 			shown = shown .. full:sub(i, i)
 			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
 			task.wait(math.random(4, 9) / 100)
 		end
 		task.wait(2)
 		for i = #full, 1, -1 do
 			shown = full:sub(1, i - 1)
 			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
 			task.wait(math.random(2, 5) / 100)
 		end
 		task.wait(0.8)
 	end
 end)
 
-ThemeManager:ApplyToTab(SettingsTab)
-SaveManager:BuildConfigSection(SettingsTab)
-
-local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "wrench")
-MenuGroup:AddToggle("KeybindMenuOpen", {
-	Default = Library.KeybindFrame.Visible,
-	Text = "Open Keybind Menu",
-	Callback = function(value) Library.KeybindFrame.Visible = value end,
+local MenuGroup = SettingsTab:CreateSection("Menu")
+MenuGroup:CreateToggle({
+	Name = "Open Keybind Menu",
+	CurrentValue = false,
 })
-MenuGroup:AddToggle("ShowCustomCursor", {
-	Text = "Custom Cursor",
-	Default = Library.ShowCustomCursor,
-	Callback = function(Value) Library.ShowCustomCursor = Value end,
+MenuGroup:CreateToggle({
+	Name = "Custom Cursor",
+	CurrentValue = false,
 })
-MenuGroup:AddButton("Test Notification", function()
-	Library:Notify({ Title = "Test", Description = "Fired at " .. os.date("%H:%M:%S"), Time = 4 })
-end)
-MenuGroup:AddDropdown("NotificationSide", {
-	Values = { "Left", "Right" },
-	Default = "Right",
-	Text = "Notification Side",
-	Callback = function(Value) Library:SetNotifySide(Value) end,
+MenuGroup:CreateButton({ Name = "Test Notification", Callback = function()
+	Library.Notify({ Title = "Test", Content = "Fired at " .. os.date("%H:%M:%S"), Duration = 4 })
+end })
+MenuGroup:CreateDropdown({
+	Name = "Notification Side",
+	Options = { "Left", "Right" },
+	CurrentOption = "Right",
 })
-MenuGroup:AddDropdown("DPIDropdown", {
-	Values = { "50%", "75%", "100%", "125%", "150%", "175%", "200%" },
-	Default = "100%",
-	Text = "DPI Scale",
-	Callback = function(Value)
-		Value = Value:gsub("%%", "")
-		Library:SetDPIScale(tonumber(Value))
-	end,
+MenuGroup:CreateDropdown({
+	Name = "DPI Scale",
+	Options = { "50%", "75%", "100%", "125%", "150%", "175%", "200%" },
+	CurrentOption = "100%",
 })
-MenuGroup:AddSlider("UICornerSlider", {
-	Text = "Corner Radius",
-	Default = Library.CornerRadius,
-	Min = 0,
-	Max = 20,
-	Rounding = 0,
-	Callback = function(value) Window:SetCornerRadius(value) end,
+MenuGroup:CreateSlider({
+	Name = "Corner Radius",
+	Range = {0, 20},
+	Increment = 1,
+	CurrentValue = 4,
 })
-MenuGroup:AddDivider()
-MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
-MenuGroup:AddButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 }) end)
-MenuGroup:AddButton("Unload", function() Library:Unload() end)
-Library.ToggleKeybind = Options.MenuKeybind
-
-SaveManager:LoadAutoloadConfig()
+MenuGroup:CreateDivider()
+MenuGroup:CreateLabel("Menu bind")
+MenuGroup:CreateKeybind({ Name = "Menu keybind", CurrentKeybind = "RightShift" })
+MenuGroup:CreateButton({ Name = "Join Discord", Callback = function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3 }) end })
+MenuGroup:CreateButton({ Name = "Unload", Callback = function() Library:Unload() end })
 
 --// ========================================================
 --// GLOBAL UTILITIES
@@ -1515,11 +1411,11 @@ _G.PrintCrashHistory = function()
 	print(string.rep("=", 60) .. "\n")
 end
 
-Library:Notify({
+Library.Notify({
 	Title = "Ivory",
-	Description = "Rocks RNG loaded successfully",
+	Content = "Rocks RNG loaded successfully",
 	Type = "Success",
-	Time = 3,
+	Duration = 3,
 })
 
 print("[Rocks RNG] Script loaded successfully.")

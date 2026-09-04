@@ -1117,13 +1117,18 @@ local function loadScript(url)
 				end
 			end)
 
-			local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-			pcall(function()
-				local genv = getgenv()
-				genv._IvoryLibSrc = request({ Url = repo .. "Library.lua", Method = "GET" }).Body
-				genv._IvoryTMSrc = request({ Url = repo .. "addons/ThemeManager.lua", Method = "GET" }).Body
-				genv._IvorySMSrc = request({ Url = repo .. "addons/SaveManager.lua", Method = "GET" }).Body
-			end)
+			local LIB_SRC = getgenv()._IvoryLibSrc
+			if not LIB_SRC then
+				local ok, src = pcall(function()
+					return request({
+						Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+						Method = "GET"
+					}).Body
+				end)
+				if ok then LIB_SRC = src end
+			end
+			local genv = getgenv()
+			genv._IvoryLibSrc = LIB_SRC
 
 			local fetchUrl = GITHUB_RAW .. commitHash .. "/" .. url
 			local res = request({ Url = fetchUrl, Method = "GET" })

@@ -1,42 +1,19 @@
-local genv = getgenv()
-local Library = nil
-local ThemeManager = nil
-local SaveManager = nil
-
--- Try pre-fetched sources from loader first, fall back to request()
-local libSrc = genv._IvoryLibSrc
-local tmSrc = genv._IvoryTMSrc
-local smSrc = genv._IvorySMSrc
-
-if libSrc then
-    Library = loadstring(libSrc)()
-    ThemeManager = loadstring(tmSrc)()
-    SaveManager = loadstring(smSrc)()
-    print("[Ivory] Loaded ObsidianUltra from loader cache")
-else
-    warn("[Ivory] No cached sources, falling back to request()")
-    local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-    local ok1, err1 = pcall(function()
-        Library = loadstring(request({ Url = repo .. "Library.lua", Method = "GET" }).Body)()
-    end)
-    if not ok1 then warn("[Ivory] Library load failed:", err1) end
-    local ok2, err2 = pcall(function()
-        ThemeManager = loadstring(request({ Url = repo .. "addons/ThemeManager.lua", Method = "GET" }).Body)()
-    end)
-    if not ok2 then warn("[Ivory] ThemeManager load failed:", err2) end
-    local ok3, err3 = pcall(function()
-        SaveManager = loadstring(request({ Url = repo .. "addons/SaveManager.lua", Method = "GET" }).Body)()
-    end)
-    if not ok3 then warn("[Ivory] SaveManager load failed:", err3) end
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	local ok, src = pcall(function()
+		return request({
+			Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
+			Method = "GET"
+		}).Body
+	end)
+	if ok then LIB_SRC = src end
 end
+local Library = loadstring(LIB_SRC)()
 
 if not Library then
-    warn("[Ivory] ObsidianUltra failed to load - aborting")
+    warn("[Ivory] Ivory Hub failed to load - aborting")
     return
 end
-
-local Toggles = Library.Toggles
-local Options = Library.Options
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -141,105 +118,47 @@ end
 -- ---------------------------------------
 -- WINDOW
 -- ---------------------------------------
-local Window = Library:CreateWindow({
-    Title = "Ivory",
-    Icon = "swords",
-    Footer = {
-        "v1.4 |",
-        { Text = "Build A Burger", Copyable = true },
-        "|",
-        { Text = tostring(LocalPlayer.UserId), Copyable = true },
-    },
-    CopyableFooter = true,
-    FuzzySearch = true,
-    SearchValues = true,
-    Minimizable = true,
-    MinimizeKeybind = Enum.KeyCode.RightBracket,
-    MinimizedWidth = 280,
-    NotifySide = "Right",
-    ShowCustomCursor = false,
-    CornerRadius = 4,
+local Window = Library.CreateWindow({
+    Name = "Ivory",
+    Width = 460,
+    Height = 360,
 })
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
 
-local MainTab = Window:AddTab({ Name = "Main", Description = "Automation" })
-local DelaysTab = Window:AddTab({ Name = "Delays", Description = "Adjust Delays" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Description = "Themes & UI" })
+local MainTab = Window:CreateTab({ Name = "Main" })
+local DelaysTab = Window:CreateTab({ Name = "Delays" })
+local SettingsTab = Window:CreateTab({ Name = "Settings" })
 
 -- --- MAIN TAB: Automation Sub-Tab ---
-local AutoSub = MainTab:AddSubTab("Automation")
+local AutoSub = MainTab:CreateSection("Automation")
 
-local BurgerBox = AutoSub:AddLeftGroupbox("Burger")
-BurgerBox:AddToggle("AutoBurger", { Text = "Auto Burger Perfect", Default = false, Callback = function(v) Settings.AutoBurgerEnabled = v if v then task.spawn(AutoBurger) end end })
-BurgerBox:AddToggle("AutoRebirth", { Text = "Auto Rebirth", Default = false, Callback = function(v) Settings.AutoRebirthEnabled = v if v then task.spawn(AutoRebirth) end end })
+local BurgerBox = AutoSub:CreateSection("Burger")
+BurgerBox:CreateToggle({ Name = "Auto Burger Perfect", CurrentValue = false, Callback = function(v) Settings.AutoBurgerEnabled = v if v then task.spawn(AutoBurger) end end })
+BurgerBox:CreateToggle({ Name = "Auto Rebirth", CurrentValue = false, Callback = function(v) Settings.AutoRebirthEnabled = v if v then task.spawn(AutoRebirth) end end })
 
-local UpgradeBox = AutoSub:AddRightGroupbox("Upgrades")
-UpgradeBox:AddToggle("AutoUpgradeFloors", { Text = "Auto Upgrade Floors", Default = false, Callback = function(v) Settings.AutoUpgradeFloorsEnabled = v if v then task.spawn(AutoUpgradeFloors) end end })
-UpgradeBox:AddToggle("AutoUpgradeLives", { Text = "Auto Upgrade Lives", Default = false, Callback = function(v) Settings.AutoUpgradeLivesEnabled = v if v then task.spawn(AutoUpgradeLives) end end })
+local UpgradeBox = AutoSub:CreateSection("Upgrades")
+UpgradeBox:CreateToggle({ Name = "Auto Upgrade Floors", CurrentValue = false, Callback = function(v) Settings.AutoUpgradeFloorsEnabled = v if v then task.spawn(AutoUpgradeFloors) end end })
+UpgradeBox:CreateToggle({ Name = "Auto Upgrade Lives", CurrentValue = false, Callback = function(v) Settings.AutoUpgradeLivesEnabled = v if v then task.spawn(AutoUpgradeLives) end end })
 
-local EconBox = AutoSub:AddLeftGroupbox("Economy")
-EconBox:AddToggle("AutoSell", { Text = "Auto Sell", Default = false, Callback = function(v) Settings.AutoSellEnabled = v if v then task.spawn(AutoSell) end end })
-EconBox:AddToggle("AutoCollect", { Text = "Auto Collect Cash", Default = false, Callback = function(v) Settings.AutoCollectEnabled = v if v then task.spawn(AutoCollect) end end })
+local EconBox = AutoSub:CreateSection("Economy")
+EconBox:CreateToggle({ Name = "Auto Sell", CurrentValue = false, Callback = function(v) Settings.AutoSellEnabled = v if v then task.spawn(AutoSell) end end })
+EconBox:CreateToggle({ Name = "Auto Collect Cash", CurrentValue = false, Callback = function(v) Settings.AutoCollectEnabled = v if v then task.spawn(AutoCollect) end end })
 
 -- --- DELAYS TAB ---
-local DelaySub = DelaysTab:AddSubTab("Delays")
+local DelaySub = DelaysTab:CreateSection("Delays")
 
-local DL1 = DelaySub:AddLeftGroupbox("Delays (seconds)")
-DL1:AddSlider("BurgerDelay", { Text = "Burger Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s", Callback = function(v) Settings.BurgerDelay = v end })
-DL1:AddSlider("SellDelay", { Text = "Sell Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s", Callback = function(v) Settings.SellDelay = v end })
-DL1:AddSlider("CollectDelay", { Text = "Collect Delay", Default = 0.1, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s", Callback = function(v) Settings.CollectDelay = v end })
-DL1:AddSlider("RebirthDelay", { Text = "Rebirth Delay", Default = 1, Min = 0.01, Max = 10, Rounding = 2, Suffix = "s", Callback = function(v) Settings.RebirthDelay = v end })
+local DL1 = DelaySub:CreateSection("Delays (seconds)")
+DL1:CreateSlider({ Name = "Burger Delay", Range = {0.01, 5}, Increment = 0.01, CurrentValue = 0.1, Callback = function(v) Settings.BurgerDelay = v end })
+DL1:CreateSlider({ Name = "Sell Delay", Range = {0.01, 5}, Increment = 0.01, CurrentValue = 0.1, Callback = function(v) Settings.SellDelay = v end })
+DL1:CreateSlider({ Name = "Collect Delay", Range = {0.01, 5}, Increment = 0.01, CurrentValue = 0.1, Callback = function(v) Settings.CollectDelay = v end })
+DL1:CreateSlider({ Name = "Rebirth Delay", Range = {0.01, 10}, Increment = 0.01, CurrentValue = 1, Callback = function(v) Settings.RebirthDelay = v end })
 
-local DL2 = DelaySub:AddRightGroupbox("More Delays")
-DL2:AddSlider("UpgradeFloorsDelay", { Text = "Upgrade Floors Delay", Default = 0.5, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s", Callback = function(v) Settings.UpgradeFloorsDelay = v end })
-DL2:AddSlider("UpgradeLivesDelay", { Text = "Upgrade Lives Delay", Default = 0.5, Min = 0.01, Max = 5, Rounding = 2, Suffix = "s", Callback = function(v) Settings.UpgradeLivesDelay = v end })
+local DL2 = DelaySub:CreateSection("More Delays")
+DL2:CreateSlider({ Name = "Upgrade Floors Delay", Range = {0.01, 5}, Increment = 0.01, CurrentValue = 0.5, Callback = function(v) Settings.UpgradeFloorsDelay = v end })
+DL2:CreateSlider({ Name = "Upgrade Lives Delay", Range = {0.01, 5}, Increment = 0.01, CurrentValue = 0.5, Callback = function(v) Settings.UpgradeLivesDelay = v end })
 
 -- --- SETTINGS TAB ---
-local ThemesSub = SettingsTab:AddSubTab("Themes & UI")
-local ConfigSub = SettingsTab:AddSubTab("Config")
-
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub")
-SaveManager:SetSubFolder("burgerperfect")
-local CreditGroup = ThemesSub:AddLeftGroupbox("Credits", "heart")
-local CreditLabel = CreditGroup:AddLabel({ Text = "", Size = 26, DoesWrap = true })
-local CreditTL = CreditLabel.TextLabel
-CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-CreditTL.Font = Enum.Font.GothamBold
-CreditTL.TextSize = 26
-
+local CreditGroup = SettingsTab:CreateSection("Credits")
+local CreditLabel = CreditGroup:CreateLabel("")
 task.spawn(function()
 	local full = "Made by mommy Crow"
 	local cursor = "_"
@@ -248,57 +167,43 @@ task.spawn(function()
 		for i = 1, #full do
 			shown = shown .. full:sub(i, i)
 			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
 			task.wait(math.random(4, 9) / 100)
 		end
 		task.wait(2)
 		for i = #full, 1, -1 do
 			shown = full:sub(1, i - 1)
 			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
 			task.wait(math.random(2, 5) / 100)
 		end
 		task.wait(0.8)
 	end
 end)
 
-ThemeManager:ApplyToTab(ThemesSub)
-SaveManager:BuildConfigSection(ConfigSub)
-
-local MenuGroup = ThemesSub:AddLeftGroupbox("Menu")
-MenuGroup:AddToggle("KeybindMenuOpen", {
-    Default = Library.KeybindFrame.Visible,
-    Text = "Open Keybind Menu",
-    Callback = function(v) Library.KeybindFrame.Visible = v end,
+local MenuGroup = SettingsTab:CreateSection("Menu")
+MenuGroup:CreateToggle({
+    Name = "Open Keybind Menu",
+    CurrentValue = false,
 })
-MenuGroup:AddToggle("ShowCustomCursor", {
-    Text = "Custom Cursor",
-    Default = Library.ShowCustomCursor,
-    Callback = function(v) Library.ShowCustomCursor = v end,
+MenuGroup:CreateToggle({
+    Name = "Custom Cursor",
+    CurrentValue = false,
 })
-MenuGroup:AddDropdown("NotificationSide", {
-    Values = { "Left", "Right" },
-    Default = "Right",
-    Text = "Notification Side",
-    Callback = function(v) Library:SetNotifySide(v) end,
+MenuGroup:CreateDropdown({
+    Name = "Notification Side",
+    Options = { "Left", "Right" },
+    CurrentOption = "Right",
 })
-MenuGroup:AddDivider()
-MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", {
-    Default = "RightShift",
-    NoUI = true,
-    Text = "Menu keybind",
-})
-MenuGroup:AddButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 }) end)
-MenuGroup:AddButton("Unload", function()
+MenuGroup:CreateDivider()
+MenuGroup:CreateLabel("Menu bind")
+MenuGroup:CreateKeybind({ Name = "Menu keybind", CurrentKeybind = "RightShift" })
+MenuGroup:CreateButton({ Name = "Join Discord", Callback = function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3 }) end })
+MenuGroup:CreateButton({ Name = "Unload", Callback = function()
     Library:Unload()
-end)
-Library.ToggleKeybind = Options.MenuKeybind
+end })
 
-SaveManager:LoadAutoloadConfig()
-
-Library:Notify({
+Library.Notify({
     Title = "Ivory",
-    Description = "Build A Burger loaded. RightShift to toggle menu.",
+    Content = "Build A Burger loaded. RightShift to toggle menu.",
     Type = "Success",
-    Time = 3,
+    Duration = 3,
 })

@@ -103,14 +103,11 @@ local success, err = pcall(function()
 		end
 	end)
 
-	-- Pre-fetch ObsidianUltra source code for game scripts
-	local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
+	-- Pre-fetch Ivory Hub Library source code for game scripts
 	pcall(function()
 		local genv = getgenv()
-		genv._IvoryLibSrc = request({ Url = repo .. "Library.lua", Method = "GET" }).Body
-		genv._IvoryTMSrc = request({ Url = repo .. "addons/ThemeManager.lua", Method = "GET" }).Body
-		genv._IvorySMSrc = request({ Url = repo .. "addons/SaveManager.lua", Method = "GET" }).Body
-		print("[Ivory Hub] ObsidianUltra sources cached")
+		genv._IvoryLibSrc = request({ Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua", Method = "GET" }).Body
+		print("[Ivory Hub] Ivory Hub Library cached")
 	end)
 
 	local url = GITHUB_RAW .. commitHash .. "/" .. ScriptFile

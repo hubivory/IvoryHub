@@ -124,41 +124,18 @@ local function instancePlainReplace(str, find, replace)
     return str
 end
 
-local repo = 'https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/'
-local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
-local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
-local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
-local Options = Library.Options
-local Toggles = Library.Toggles
+local genv = getgenv()
+local Library
+local ls = genv._IvoryLibSrc
+if ls then Library = loadstring(ls)()
+else local r = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/"
+Library = loadstring(game:HttpGet(r .. "Library.lua"))() end
+if not Library then warn("[Ivory] Load failed"); return end
+
+local Options = Library.Options or {}
+local Toggles = Library.Toggles or {}
 getgenv().Toggles = Toggles
 getgenv().Options = Options
-
-if not Library.Create then
-    function Library:Create(class, properties)
-        local inst = typeof(class) == 'Instance' and class or Instance.new(class)
-        for k, v in pairs(properties or {}) do
-            if type(k) == 'number' then
-                v.Parent = inst
-            else
-                inst[k] = v
-            end
-        end
-        return inst
-    end
-end
-
-if not Library.CreateLabel then
-    function Library:CreateLabel(properties)
-        local label = Library:Create('TextLabel', {
-            BackgroundTransparency = 1,
-            Font = Library.Scheme.Font,
-            TextColor3 = Library.Scheme.FontColor,
-            TextSize = 14,
-            TextWrapped = false,
-        })
-        return Library:Create(label, properties or {})
-    end
-end
 
 
 local INSTANCE_MENU_DISPLAY_ORDER = 999
@@ -192,18 +169,9 @@ end
 getgenv().InstanceApplyUiLayering = applyInstanceUiLayering
 
 local Window = Library:CreateWindow({
-    Title = 'Ivory',
-    Icon = "swords",
-    Footer = 'Ivory Hub',
-    Center = true,
-    AutoShow = true,
-    Resizable = true,
-    TabPadding = 8,
-    MenuFadeTime = 0,
-    Size = UDim2.fromOffset(700, 600),
-    ShowCustomCursor = true,
-    UnlockMouseWhileOpen = false,
-    EnableSidebarResize = false,
+    Title = "Ivory Hub",
+    Width = 700,
+    Height = 600,
 })
 getgenv().InstanceWindow = Window
 
@@ -318,8 +286,8 @@ getgenv().InstanceGetUiFont = function()
     if getgenv().InstanceLanguage == "korean" and getgenv().InstanceUIFont then
         return getgenv().InstanceUIFont
     end
-    if Library and Library.Scheme.Font then
-        return Library.Scheme.Font
+    if Library and Library.Font then
+        return Library.Font
     end
     return getgenv().InstanceUIFont or Enum.Font.Roboto
 end
@@ -367,9 +335,9 @@ end
 
 getgenv().InstanceReloadLanguageFont = function(lang)
     lang = lang or getgenv().InstanceLanguage or "english"
-    if lang == "english" and Library and Library.Scheme.Font then
-        getgenv().InstanceUIFont = Library.Scheme.Font
-        return Library.Scheme.Font
+    if lang == "english" and Library and Library.Font then
+        getgenv().InstanceUIFont = Library.Font
+        return Library.Font
     end
     return loadInstanceLanguageFont(lang)
 end
@@ -484,11 +452,11 @@ getgenv().InstanceApplyHudFont = function(idx)
 end
 
 local Tabs = {
-    Combat = Window:AddTab('combat', 'swords'),
-    Visuals = Window:AddTab('visuals', 'eye'),
-    World = Window:AddTab('world', 'globe'),
-    Misc = Window:AddTab('misc', 'sparkles'),
-    ['UI Settings'] = Window:AddTab('settings', 'settings'),
+    Combat = Window:CreateTab({Name = "Combat"}),
+    Visuals = Window:CreateTab({Name = "Visuals"}),
+    World = Window:CreateTab({Name = "World"}),
+    Misc = Window:CreateTab({Name = "Misc"}),
+    ['UI Settings'] = Window:CreateTab({Name = "UI Settings"}),
 }
 
 
@@ -846,42 +814,13 @@ local function setupShootDetection()
 end
 
 do
-    local DiscordGroup = Tabs.Combat:AddLeftGroupbox('discord', 'info')
-    local DiscordLabel = DiscordGroup:AddLabel({ Text = "Join discord for free keys!", DoesWrap = true, Size = 26 })
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return false
-	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
+    local DiscordGroup = Tabs.Combat:CreateSection('discord')
+    local DiscordLabel = DiscordGroup:CreateLabel({ Text = "Join discord for free keys!", DoesWrap = true, Size = 26 })
 
-    DiscordGroup:AddButton('Copy Discord Link', function()
+    DiscordGroup:CreateButton({Name = 'Copy Discord Link', Callback = function()
         pcall(function() setclipboard("https://discord.gg/ivory") end)
-        Library:Notify({ Title = "Ivory", Description = "Discord Link Copied!", Type = "Success", Time = 3 })
-    end)
+        Library.Notify({ Title = "Ivory", Content = "Discord Link Copied!", Type = "Success", Duration = 3 })
+    end})
 
     task.spawn(function()
         task.wait(0.5)
@@ -937,15 +876,14 @@ end)
     end)
 end
 
-local AimbotGroup     = Tabs.Combat:AddRightTabbox()
-local aimbotTab       = AimbotGroup:AddTab('aimbot')
-local aimbotCustomTab = AimbotGroup:AddTab('customization')
+local aimbotTab       = Tabs.Combat:CreateSection('aimbot')
+local aimbotCustomTab = Tabs.Combat:CreateSection('customization')
 
 
 
 
 
-aimbotTab:AddToggle("AimbotToggle", {
+aimbotTab:CreateToggle("AimbotToggle", {
     Text = "aimbot",
     Default = false,
     Callback = function(val)
@@ -956,7 +894,7 @@ aimbotTab:AddToggle("AimbotToggle", {
             updaimbot()
         end
     end
-}):AddKeyPicker("AimbotKey", {
+}):CreateKeybind("AimbotKey", {
     Text = "Aimbot",
     Default = "None",
     Mode = "Toggle",
@@ -996,7 +934,7 @@ RunService.RenderStepped:Connect(function()
     updaimbot()
 end)
 
-aimbotTab:AddSlider("AimbotSmoothness", {
+aimbotTab:CreateSlider("AimbotSmoothness", {
     Text = "smoothness",
     Default = 2,
     Min = 0.20,
@@ -1008,7 +946,7 @@ aimbotTab:AddSlider("AimbotSmoothness", {
     end
 })
 
-aimbotTab:AddDropdown("AimbotCurve", {
+aimbotTab:CreateDropdown("AimbotCurve", {
     Text = "aim curve",
     Default = "Linear",
     Values = { "Linear", "Expo", "EaseIn", "EaseOut", "EaseInOut", "Cubic", "Instant" },
@@ -1017,44 +955,44 @@ aimbotTab:AddDropdown("AimbotCurve", {
     end
 })
 
-aimbotTab:AddDropdown("AimbotHitPart", {
+aimbotTab:CreateDropdown("AimbotHitPart", {
     Text="hit part", Default="Head",
     Values={"Head","HumanoidRootPart","Torso","UpperTorso","LowerTorso"},
     Callback=function(val) aimbot.targetPart=val end
 })
 
-aimbotTab:AddSlider("AimbotMaxDist", {
+aimbotTab:CreateSlider("AimbotMaxDist", {
     Text="max distance", Default=500, Min=100, Max=5000, Rounding=0, Suffix=" studs",
     Callback=function(val) aimbot.maxDistance=val end
 })
 
 
-aimbotCustomTab:AddToggle("ShowAimbotFOV", {
+aimbotCustomTab:CreateToggle("ShowAimbotFOV", {
     Text="show fov", Default=false,
     Callback=function(val)
         aimbot.showFov=val
         aimbotFOVContainer.Visible=val
     end
-}):AddColorPicker("AimbotFOVOutlineColor1", {
+}):CreateColorPicker("AimbotFOVOutlineColor1", {
     Default=Color3.fromRGB(255,255,255), Title="outline color 1",
     Callback=function(val) aimbotFOVCfg.OutlineColor1=val; updaimbotoutlinegrad() end
-}):AddColorPicker("AimbotFOVOutlineColor2", {
+}):CreateColorPicker("AimbotFOVOutlineColor2", {
     Default=Color3.fromRGB(255,255,255), Title="outline color 2",
     Callback=function(val) aimbotFOVCfg.OutlineColor2=val; updaimbotoutlinegrad() end
 })
 
-aimbotCustomTab:AddToggle("AimbotFOVFilled", {
+aimbotCustomTab:CreateToggle("AimbotFOVFilled", {
     Text="fov fill", Default=false,
     Callback=function(val) aimbotFOVCfg.FilledEnabled=val; aimbotFOVFill.Visible=val end
-}):AddColorPicker("AimbotFOVFillColor1", {
+}):CreateColorPicker("AimbotFOVFillColor1", {
     Default=Color3.fromRGB(255, 255, 255), Title="fill color 1",
     Callback=function(val) aimbotFOVCfg.FilledColor1=val; updaimbotfillgrad() end
-}):AddColorPicker("AimbotFOVFillColor2", {
+}):CreateColorPicker("AimbotFOVFillColor2", {
     Default=Color3.fromRGB(0,0,0), Title="fill color 2",
     Callback=function(val) aimbotFOVCfg.FilledColor2=val; updaimbotfillgrad() end
 })
 
-aimbotCustomTab:AddToggle("AimbotFOVFillAnimated", {
+aimbotCustomTab:CreateToggle("AimbotFOVFillAnimated", {
     Text="animated fill", Default=false,
     Callback=function(val)
         aimbotFOVCfg.FilledAnimated=val
@@ -1062,32 +1000,32 @@ aimbotCustomTab:AddToggle("AimbotFOVFillAnimated", {
     end
 })
 
-aimbotCustomTab:AddSlider("AimbotFOV", {
+aimbotCustomTab:CreateSlider("AimbotFOV", {
     Text="fov radius", Default=500, Min=10, Max=1000, Rounding=0, Compact=true,
     Callback=function(val) aimbot.fovRadius=val end
 })
 
-aimbotCustomTab:AddSlider("AimbotFOVOutlineThickness", {
+aimbotCustomTab:CreateSlider("AimbotFOVOutlineThickness", {
     Text="outline thickness", Default=1.5, Min=0.5, Max=5, Rounding=1, Compact=true,
     Callback=function(val) aimbotFOVCfg.OutlineThickness=val; aimbotFOVStroke.Thickness=val end
 })
 
-aimbotCustomTab:AddSlider("AimbotFOVOutlineTransparency", {
+aimbotCustomTab:CreateSlider("AimbotFOVOutlineTransparency", {
     Text="outline transparency", Default=0, Min=0, Max=1, Rounding=2, Compact=true,
     Callback=function(val) aimbotFOVCfg.OutlineTransparency=val; aimbotFOVStroke.Transparency=val end
 })
 
-aimbotCustomTab:AddSlider("AimbotFOVOutlineRotation", {
+aimbotCustomTab:CreateSlider("AimbotFOVOutlineRotation", {
     Text="outline rotation", Default=0, Min=0, Max=360, Rounding=0, Compact=true,
     Callback=function(val) aimbotFOVCfg.OutlineRotation=val; aimbotFOVStrokeGrad.Rotation=val end
 })
 
-aimbotCustomTab:AddSlider("AimbotFOVFillTransparency", {
+aimbotCustomTab:CreateSlider("AimbotFOVFillTransparency", {
     Text="fill transparency", Default=0.7, Min=0, Max=1, Rounding=2, Compact=true,
     Callback=function(val) aimbotFOVCfg.FilledTransparency=val; aimbotFOVFill.BackgroundTransparency=val end
 })
 
-aimbotCustomTab:AddSlider("AimbotFOVFillRotation", {
+aimbotCustomTab:CreateSlider("AimbotFOVFillRotation", {
     Text="fill rotation", Default=0, Min=0, Max=360, Rounding=0, Compact=true,
     Callback=function(val)
         aimbotFOVCfg.FilledRotation=val
@@ -1095,12 +1033,12 @@ aimbotCustomTab:AddSlider("AimbotFOVFillRotation", {
     end
 })
 
-aimbotCustomTab:AddSlider("AimbotFOVFillSpeed", {
+aimbotCustomTab:CreateSlider("AimbotFOVFillSpeed", {
     Text="fill speed", Default=1, Min=0.1, Max=10, Rounding=1, Compact=true,
     Callback=function(val) aimbotFOVCfg.FilledSpeed=val end
 })
 
-aimbotCustomTab:AddToggle("AimbotFOVSpin", {
+aimbotCustomTab:CreateToggle("AimbotFOVSpin", {
     Text="fov spin", Default=false,
     Callback=function(val)
         aimbotFOVCfg.SpinOn=val
@@ -1113,12 +1051,12 @@ aimbotCustomTab:AddToggle("AimbotFOVSpin", {
     end
 })
 
-aimbotCustomTab:AddSlider("AimbotFOVSpinSpd", {
+aimbotCustomTab:CreateSlider("AimbotFOVSpinSpd", {
     Text="spin speed", Default=1, Min=0.1, Max=10, Rounding=1, Compact=true,
     Callback=function(val) aimbotFOVCfg.SpinSpd=val end
 })
 
-aimbotCustomTab:AddToggle("AimbotFOVFollowMuzzle", {
+aimbotCustomTab:CreateToggle("AimbotFOVFollowMuzzle", {
     Text="follow muzzle", Default=false,
     Callback=function(val) aimbot.followMuzzle=val end
 })
@@ -1127,7 +1065,7 @@ updaimbot()
 setupShootDetection()
 
 do
-local LeftGroup = Tabs.Combat:AddLeftGroupbox("gun")
+local LeftGroup = Tabs.Combat:CreateSection("gun")
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -1275,7 +1213,7 @@ local function nomuzzleflash()
     end
 end
 
-LeftGroup:AddToggle("NoCooldown", {
+LeftGroup:CreateToggle("NoCooldown", {
     Text = "rapid fire",
     Default = false,
     Callback = function(val)
@@ -1283,7 +1221,7 @@ LeftGroup:AddToggle("NoCooldown", {
     end
 })
 
-LeftGroup:AddToggle("NoSpread", {
+LeftGroup:CreateToggle("NoSpread", {
     Text = "no spread",
     Default = false,
     Callback = function(val)
@@ -1291,7 +1229,7 @@ LeftGroup:AddToggle("NoSpread", {
     end
 })
 
-LeftGroup:AddToggle("NoRecoil", {
+LeftGroup:CreateToggle("NoRecoil", {
     Text = "no recoil",
     Default = false,
     Callback = function(val)
@@ -1299,7 +1237,7 @@ LeftGroup:AddToggle("NoRecoil", {
     end
 })
 
-LeftGroup:AddToggle("MaxAccuracy", {
+LeftGroup:CreateToggle("MaxAccuracy", {
     Text = "max accuracy",
     Default = false,
     Callback = function(val)
@@ -1307,7 +1245,7 @@ LeftGroup:AddToggle("MaxAccuracy", {
     end
 })
 
-LeftGroup:AddToggle("RapidAttack", {
+LeftGroup:CreateToggle("RapidAttack", {
     Text = "rapid attack",
     Default = false,
     Callback = function(val)
@@ -1315,7 +1253,7 @@ LeftGroup:AddToggle("RapidAttack", {
     end
 })
 
-LeftGroup:AddToggle("NoMuzzleFlash", {
+LeftGroup:CreateToggle("NoMuzzleFlash", {
     Text = "no muzzle flash",
     Default = false,
     Callback = function(val)
@@ -1335,7 +1273,6 @@ LeftGroup:AddToggle("NoMuzzleFlash", {
 })
 end
 
-HitGroup = Tabs.World:AddRightTabbox()
 
 getDamageBillboardInfo = function(obj)
     local cached = damageBillboardInfoCache[obj]
@@ -1383,7 +1320,7 @@ local TweenService = game:GetService("TweenService")
 local fonts = {}
 fonts.main = getgenv().InstanceUIFont or Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Black)
 
-local hitEffectsTab = HitGroup:AddTab('hit effects')
+local hitEffectsTab = Tabs.World:CreateSection('hit effects')
 
 local hitEffectEnabled = false
 local hitEffectColor = Color3.fromRGB(159, 133, 195)
@@ -1392,7 +1329,7 @@ local hitEffectFloatSpeed = 7
 local hitEffectAliveTime = 2.8
 local hitEffectAliveScale = 1
 
-local hitEffectsToggle = hitEffectsTab:AddToggle("HitEffects", {
+local hitEffectsToggle = hitEffectsTab:CreateToggle("HitEffects", {
     Text = "hit effects",
     Default = false,
     Callback = function(val)
@@ -1400,7 +1337,7 @@ local hitEffectsToggle = hitEffectsTab:AddToggle("HitEffects", {
     end
 })
 
-hitEffectsToggle:AddColorPicker("HitEffectColorPicker", {
+hitEffectsToggle:CreateColorPicker("HitEffectColorPicker", {
     Default = Color3.fromRGB(159, 133, 195),
     Title = "Hit Effect Color",
     Callback = function(val)
@@ -1408,9 +1345,9 @@ hitEffectsToggle:AddColorPicker("HitEffectColorPicker", {
     end
 })
 
-local hitEffectDepBox = hitEffectsTab:AddDependencyBox()
+local hitEffectDepBox = hitEffectsTab:CreateDependencyBox()
 
-hitEffectDepBox:AddSlider("HitEffectFloatSpeed", {
+hitEffectDepBox:CreateSlider("HitEffectFloatSpeed", {
     Text = "float speed",
     Default = 7,
     Min = 1,
@@ -1421,7 +1358,7 @@ hitEffectDepBox:AddSlider("HitEffectFloatSpeed", {
     end
 })
 
-hitEffectDepBox:AddSlider("HitEffectAliveTime", {
+hitEffectDepBox:CreateSlider("HitEffectAliveTime", {
     Text = "alive time",
     Default = 2.8,
     Min = 0.5,
@@ -1438,7 +1375,7 @@ hitEffectDepBox:SetupDependencies({
     { hitEffectsToggle, true }
 })
 
-hitEffectsTab:AddDropdown("HitEffectStyleDropdown", {
+hitEffectsTab:CreateDropdown("HitEffectStyleDropdown", {
     Text = "style",
     Default = {"Particles"},
     Values = {
@@ -2284,7 +2221,7 @@ end
 
 do
 
-local hitSoundsTab = HitGroup:AddTab('hit sounds')
+local hitSoundsTab = Tabs.World:CreateSection('hit sounds')
 
 local hitSoundEnabled = false
 local hitSoundStyle = "Rust HS"
@@ -2367,7 +2304,7 @@ local function playHS()
     end)
 end
 
-hitSoundsTab:AddToggle("HitSounds", {
+hitSoundsTab:CreateToggle("HitSounds", {
     Text = "hit sounds",
     Default = false,
     Callback = function(val)
@@ -2377,7 +2314,7 @@ hitSoundsTab:AddToggle("HitSounds", {
 
 local soundDropdown
 
-hitSoundsTab:AddInput("SoundSearch", {
+hitSoundsTab:CreateInput("SoundSearch", {
     Text = "search sounds",
     Placeholder = "",
     ClearTextOnFocus = false,
@@ -2403,7 +2340,7 @@ hitSoundsTab:AddInput("SoundSearch", {
     end
 })
 
-soundDropdown = hitSoundsTab:AddDropdown("SoundStyleDropdown", {
+soundDropdown = hitSoundsTab:CreateDropdown("SoundStyleDropdown", {
     Text = "sound",
     Default = "Rust HS",
     Values = allSounds,
@@ -2412,7 +2349,7 @@ soundDropdown = hitSoundsTab:AddDropdown("SoundStyleDropdown", {
     end
 })
 
-hitSoundsTab:AddSlider("SoundVolume", {
+hitSoundsTab:CreateSlider("SoundVolume", {
     Text = "volume",
     Default = 50,
     Min = 1,
@@ -2424,7 +2361,7 @@ hitSoundsTab:AddSlider("SoundVolume", {
     end
 })
 
-hitSoundsTab:AddSlider("SoundPitch", {
+hitSoundsTab:CreateSlider("SoundPitch", {
     Text = "pitch",
     Default = 100,
     Min = 50,
@@ -2436,7 +2373,7 @@ hitSoundsTab:AddSlider("SoundPitch", {
     end
 })
 
-hitSoundsTab:AddToggle("DisableGunSounds", {
+hitSoundsTab:CreateToggle("DisableGunSounds", {
     Text = "disable gun sounds",
     Default = _G.Features.DisableGunSounds,
     Callback = function(val)
@@ -2466,9 +2403,8 @@ end
 
 pcall(function()
 
-local ViewModelTabbox = Tabs.World:AddRightTabbox()
-local vmTab = ViewModelTabbox:AddTab("view model")
-local viewportTab = ViewModelTabbox:AddTab("viewport")
+local vmTab = Tabs.World:CreateSection("view model")
+local viewportTab = Tabs.World:CreateSection("viewport")
 
 local gunChamsEnabled = false
 local armChamsEnabled = false
@@ -3330,7 +3266,7 @@ local function stopViewportLoop()
     end
 end
 
-viewportTab:AddToggle("EnableViewport", {Text = "viewport", Default = false, Callback = function(v)
+viewportTab:CreateToggle("EnableViewport", {Text = "viewport", Default = false, Callback = function(v)
     viewportEnabled = v
     if v then
         viewportloop()
@@ -3339,7 +3275,7 @@ viewportTab:AddToggle("EnableViewport", {Text = "viewport", Default = false, Cal
     end
 end})
 
-viewportTab:AddSlider('OffsetX', {
+viewportTab:CreateSlider('OffsetX', {
     Text = 'x',
     Default = 0,
     Min = -10,
@@ -3348,7 +3284,7 @@ viewportTab:AddSlider('OffsetX', {
     Compact = true,
     Callback = function(v) offsetX = v end
 })
-viewportTab:AddSlider('OffsetY', {
+viewportTab:CreateSlider('OffsetY', {
     Text = 'y',
     Default = 0,
     Min = -10,
@@ -3358,7 +3294,7 @@ viewportTab:AddSlider('OffsetY', {
     Callback = function(v) offsetY = v end
 })
 
-viewportTab:AddSlider("OffsetZ", {Text = "z", Default = 0, Min = -10, Max = 10, Rounding = 2, Compact = true, Callback = function(v) offsetZ = v end})
+viewportTab:CreateSlider("OffsetZ", {Text = "z", Default = 0, Min = -10, Max = 10, Rounding = 2, Compact = true, Callback = function(v) offsetZ = v end})
 
 local noAnimationsEnabled = false
 local noAnimBlocked = {}
@@ -3508,7 +3444,7 @@ local function updNoAnimations()
     end
 end
 
-local noAnimToggle = viewportTab:AddToggle("NoAnimations", {
+local noAnimToggle = viewportTab:CreateToggle("NoAnimations", {
     Text = "no animations",
     Default = false,
     Callback = function(v)
@@ -3517,8 +3453,8 @@ local noAnimToggle = viewportTab:AddToggle("NoAnimations", {
     end,
 })
 
-local noAnimDepBox = viewportTab:AddDependencyBox()
-noAnimDepBox:AddDropdown("NoAnimationsList", {
+local noAnimDepBox = viewportTab:CreateDependencyBox()
+noAnimDepBox:CreateDropdown("NoAnimationsList", {
     Text = "disabled animations",
     Values = { "Idle", "Reloading", "Sprinting", "Crouching", "Shooting", "Aiming" },
     Default = {},
@@ -3534,35 +3470,35 @@ noAnimDepBox:SetupDependencies({
 local mats = { "ForceField", "Neon", "SmoothPlastic", "Glass", "Ice", "Plastic", "Wood", "Marble", "Granite", "Brick", "Cobblestone", "Concrete", "Slate", "Foil" }
 
 ;(function()
-local gunChamsToggle = vmTab:AddToggle("GunChams", {
+local gunChamsToggle = vmTab:CreateToggle("GunChams", {
     Text = "gun chams",
     Default = false,
     Callback = function(v)
         gunChamsEnabled = v
         updViewModelEffectLoop()
     end,
-}):AddColorPicker("GunColor1", {
+}):CreateColorPicker("GunColor1", {
     Default = Color3.fromRGB(255, 255, 255),
     Title = "gun color 1",
     Callback = function(v) gunColor1 = v end,
-}):AddColorPicker("GunColor2", {
+}):CreateColorPicker("GunColor2", {
     Default = Color3.fromRGB(255, 255, 255),
     Title = "gun color 2",
     Callback = function(v) gunColor2 = v end,
-}):AddColorPicker("GunColor3", {
+}):CreateColorPicker("GunColor3", {
     Default = Color3.fromRGB(255, 255, 255),
     Title = "gun color 3",
     Callback = function(v) gunColor3 = v end,
 })
 
-local gunChamsDep = vmTab:AddDependencyBox()
-gunChamsDep:AddDropdown("GunMaterial", {
+local gunChamsDep = vmTab:CreateDependencyBox()
+gunChamsDep:CreateDropdown("GunMaterial", {
     Text = "gun material",
     Default = "Neon",
     Values = mats,
     Callback = function(v) gunMaterial = Enum.Material[v] end,
 })
-gunChamsDep:AddSlider("GunChamSpeed", {
+gunChamsDep:CreateSlider("GunChamSpeed", {
     Text = "gradient speed",
     Default = gunChamSpeed,
     Min = 0.1,
@@ -3571,7 +3507,7 @@ gunChamsDep:AddSlider("GunChamSpeed", {
     Compact = true,
     Callback = function(v) gunChamSpeed = v end,
 })
-gunChamsDep:AddSlider("GunChamTransparency", {
+gunChamsDep:CreateSlider("GunChamTransparency", {
     Text = "gun transparency",
     Default = gunChamTransparency,
     Min = 0,
@@ -3584,35 +3520,35 @@ gunChamsDep:SetupDependencies({
     { gunChamsToggle, true },
 })
 
-local armChamsToggle = vmTab:AddToggle("ArmChams", {
+local armChamsToggle = vmTab:CreateToggle("ArmChams", {
     Text = "arm chams",
     Default = false,
     Callback = function(v)
         armChamsEnabled = v
         updViewModelEffectLoop()
     end,
-}):AddColorPicker("ArmColor1", {
+}):CreateColorPicker("ArmColor1", {
     Default = Color3.fromRGB(255, 255, 255),
     Title = "arm color 1",
     Callback = function(v) armColor1 = v end,
-}):AddColorPicker("ArmColor2", {
+}):CreateColorPicker("ArmColor2", {
     Default = Color3.fromRGB(255, 255, 255),
     Title = "arm color 2",
     Callback = function(v) armColor2 = v end,
-}):AddColorPicker("ArmColor3", {
+}):CreateColorPicker("ArmColor3", {
     Default = Color3.fromRGB(255, 255, 255),
     Title = "arm color 3",
     Callback = function(v) armColor3 = v end,
 })
 
-local armChamsDep = vmTab:AddDependencyBox()
-armChamsDep:AddDropdown("ArmMaterial", {
+local armChamsDep = vmTab:CreateDependencyBox()
+armChamsDep:CreateDropdown("ArmMaterial", {
     Text = "arm material",
     Default = "ForceField",
     Values = mats,
     Callback = function(v) armMaterial = Enum.Material[v] end,
 })
-armChamsDep:AddSlider("ArmChamSpeed", {
+armChamsDep:CreateSlider("ArmChamSpeed", {
     Text = "gradient speed",
     Default = armChamSpeed,
     Min = 0.1,
@@ -3621,7 +3557,7 @@ armChamsDep:AddSlider("ArmChamSpeed", {
     Compact = true,
     Callback = function(v) armChamSpeed = v end,
 })
-armChamsDep:AddSlider("ArmChamTransparency", {
+armChamsDep:CreateSlider("ArmChamTransparency", {
     Text = "arm transparency",
     Default = armChamTransparency,
     Min = 0,
@@ -3634,73 +3570,73 @@ armChamsDep:SetupDependencies({
     { armChamsToggle, true },
 })
 
-vmTab:AddToggle("GunOutline", {
+vmTab:CreateToggle("GunOutline", {
     Text = "gun outline",
     Default = false,
     Callback = function(v)
         gunOutlineEnabled = v
         updViewModelEffectLoop()
     end,
-}):AddColorPicker("GunOutlineColor1", {
+}):CreateColorPicker("GunOutlineColor1", {
     Title = 'gun outline 1',
     Default = Color3.fromRGB(255, 255, 255),
     Callback = function(v) gunOutlineColor1 = v end,
-}):AddColorPicker("GunOutlineColor2", {
+}):CreateColorPicker("GunOutlineColor2", {
     Title = "gun outline 2",
     Default = Color3.fromRGB(255, 255, 255),
     Callback = function(v) gunOutlineColor2 = v end,
-}):AddColorPicker("GunOutlineColor3", {
+}):CreateColorPicker("GunOutlineColor3", {
     Title = "gun outline 3",
     Default = Color3.fromRGB(255, 255, 255),
     Callback = function(v) gunOutlineColor3 = v end,
 })
 
-vmTab:AddToggle("ArmOutline", {
+vmTab:CreateToggle("ArmOutline", {
     Text = "arm outline",
     Default = false,
     Callback = function(v)
         armOutlineEnabled = v
         updViewModelEffectLoop()
     end,
-}):AddColorPicker("ArmOutlineColor1", {
+}):CreateColorPicker("ArmOutlineColor1", {
     Title = "arm outline 1",
     Default = Color3.fromRGB(255, 255, 255),
     Callback = function(v) armOutlineColor1 = v end,
-}):AddColorPicker("ArmOutlineColor2", {
+}):CreateColorPicker("ArmOutlineColor2", {
     Title = "arm outline 2",
     Default = Color3.fromRGB(255, 255, 255),
     Callback = function(v) armOutlineColor2 = v end,
-}):AddColorPicker("ArmOutlineColor3", {
+}):CreateColorPicker("ArmOutlineColor3", {
     Title = "arm outline 3",
     Default = Color3.fromRGB(255, 255, 255),
     Callback = function(v) armOutlineColor3 = v end,
 })
 
-local gunHighlightToggle = vmTab:AddToggle("GunHighlight", {
+local gunHighlightToggle = vmTab:CreateToggle("GunHighlight", {
     Text = "gun highlight",
     Default = false,
     Callback = function(v)
         gunHighlightEnabled = v
         updViewModelEffectLoop()
     end,
-}):AddColorPicker("GunHighlightTop", {
+}):CreateColorPicker("GunHighlightTop", {
     Default = Color3.fromRGB(255, 255, 255),
     Title = "gun top",
     Callback = function(v) gunHighlightTop = v end,
-}):AddColorPicker("GunHighlightBottom", {
+}):CreateColorPicker("GunHighlightBottom", {
     Default = Color3.fromRGB(200, 200, 255),
     Title = "gun bottom",
     Callback = function(v) gunHighlightBottom = v end,
 })
 
-local gunHighlightDep = vmTab:AddDependencyBox()
-gunHighlightDep:AddDropdown("GunHighlightMaterial", {
+local gunHighlightDep = vmTab:CreateDependencyBox()
+gunHighlightDep:CreateDropdown("GunHighlightMaterial", {
     Text = "gun highlight material",
     Default = "Neon",
     Values = mats,
     Callback = function(v) gunHighlightMaterial = Enum.Material[v] end,
 })
-gunHighlightDep:AddSlider("GunHighlightFillTransparency", {
+gunHighlightDep:CreateSlider("GunHighlightFillTransparency", {
     Text = "transparency",
     Default = gunHighlightFillTrans,
     Min = 0,
@@ -3709,7 +3645,7 @@ gunHighlightDep:AddSlider("GunHighlightFillTransparency", {
     Compact = true,
     Callback = function(v) gunHighlightFillTrans = v end,
 })
-gunHighlightDep:AddSlider("GunHighlightOutlineTransparency", {
+gunHighlightDep:CreateSlider("GunHighlightOutlineTransparency", {
     Text = "outline transparency",
     Default = gunHighlightOutlineTrans,
     Min = 0,
@@ -3722,31 +3658,31 @@ gunHighlightDep:SetupDependencies({
     { gunHighlightToggle, true },
 })
 
-local armHighlightToggle = vmTab:AddToggle("ArmHighlight", {
+local armHighlightToggle = vmTab:CreateToggle("ArmHighlight", {
     Text = "arm highlight",
     Default = false,
     Callback = function(v)
         armHighlightEnabled = v
         updViewModelEffectLoop()
     end,
-}):AddColorPicker("ArmHighlightTop", {
+}):CreateColorPicker("ArmHighlightTop", {
     Default = Color3.fromRGB(255, 255, 255),
     Title = "arm top",
     Callback = function(v) armHighlightTop = v end,
-}):AddColorPicker("ArmHighlightBottom", {
+}):CreateColorPicker("ArmHighlightBottom", {
     Default = Color3.fromRGB(200, 200, 255),
     Title = "arm bottom",
     Callback = function(v) armHighlightBottom = v end,
 })
 
-local armHighlightDep = vmTab:AddDependencyBox()
-armHighlightDep:AddDropdown("ArmHighlightMaterial", {
+local armHighlightDep = vmTab:CreateDependencyBox()
+armHighlightDep:CreateDropdown("ArmHighlightMaterial", {
     Text = "arm highlight material",
     Default = "Neon",
     Values = mats,
     Callback = function(v) armHighlightMaterial = Enum.Material[v] end,
 })
-armHighlightDep:AddSlider("ArmHighlightFillTransparency", {
+armHighlightDep:CreateSlider("ArmHighlightFillTransparency", {
     Text = "arm highlight fill transparency",
     Default = armHighlightFillTrans,
     Min = 0,
@@ -3755,7 +3691,7 @@ armHighlightDep:AddSlider("ArmHighlightFillTransparency", {
     Compact = true,
     Callback = function(v) armHighlightFillTrans = v end,
 })
-armHighlightDep:AddSlider("ArmHighlightOutlineTransparency", {
+armHighlightDep:CreateSlider("ArmHighlightOutlineTransparency", {
     Text = "arm highlight outline transparency",
     Default = armHighlightOutlineTrans,
     Min = 0,
@@ -3768,7 +3704,7 @@ armHighlightDep:SetupDependencies({
     { armHighlightToggle, true },
 })
 
-vmTab:AddToggle("DisableArms", {
+vmTab:CreateToggle("DisableArms", {
     Text = "disable arms",
     Default = false,
     Callback = function(v)
@@ -3783,7 +3719,7 @@ end)
 
 do
 
-local TracersGroup = Tabs.World:AddLeftGroupbox("bullet tracers")
+local TracersGroup = Tabs.World:CreateSection("bullet tracers")
 
 local tracerEnabled  = true
 local tracerColor    = Color3.fromRGB(255, 255, 255)
@@ -4104,7 +4040,7 @@ local function stoptracers()
     tracers = {}
 end
 
-TracersGroup:AddToggle("TracerEnabled", {
+TracersGroup:CreateToggle("TracerEnabled", {
     Text    = "enable",
     Default = true,
     Callback = function(val)
@@ -4115,7 +4051,7 @@ TracersGroup:AddToggle("TracerEnabled", {
             stoptracers()
         end
     end
-}):AddColorPicker("TracerColor", {
+}):CreateColorPicker("TracerColor", {
     Default  = Color3.fromRGB(255, 255, 255),
     Title    = "tracer color",
     Callback = function(val)
@@ -4130,7 +4066,7 @@ TracersGroup:AddToggle("TracerEnabled", {
     end
 })
 
-TracersGroup:AddDropdown("TracerStyle", {
+TracersGroup:CreateDropdown("TracerStyle", {
     Text     = "style",
     Default  = "Line",
     Values   = {"Line","Beam","Lightning","Heartrate","Chain","Glitch","Swirl","Neon","Plasma","Laser"},
@@ -4139,7 +4075,7 @@ TracersGroup:AddDropdown("TracerStyle", {
     end
 })
 
-TracersGroup:AddSlider("TracerDuration", {
+TracersGroup:CreateSlider("TracerDuration", {
     Text     = "duration",
     Default  = 3,
     Min      = 0.1,
@@ -4152,7 +4088,7 @@ TracersGroup:AddSlider("TracerDuration", {
     end
 })
 
-TracersGroup:AddSlider("TracerSize", {
+TracersGroup:CreateSlider("TracerSize", {
     Text     = "size",
     Default  = 1,
     Min      = 0.5,
@@ -4174,7 +4110,7 @@ TracersGroup:AddSlider("TracerSize", {
     end
 })
 
-TracersGroup:AddSlider("TracerFade", {
+TracersGroup:CreateSlider("TracerFade", {
     Text     = "fade time",
     Default  = 0.5,
     Min      = 0,
@@ -4187,7 +4123,7 @@ TracersGroup:AddSlider("TracerFade", {
     end
 })
 
-TracersGroup:AddSlider("TracerLerpSpeed", {
+TracersGroup:CreateSlider("TracerLerpSpeed", {
     Text     = "lerp speed",
     Default  = 0,
     Min      = 0,
@@ -5972,12 +5908,11 @@ local function togglekey()
 end
 
 local rageui = {
-    targetgroup = Tabs.Combat:AddRightTabbox()
+    ragebottab = Tabs.Combat:CreateSection('ragebot'),
+    ragebotvisualtab = Tabs.Combat:CreateSection('visualizer'),
 }
-rageui.ragebottab = rageui.targetgroup:AddTab('ragebot')
-rageui.ragebotvisualtab = rageui.targetgroup:AddTab('visualizer')
 
-rageui.ragebottab:AddToggle("TargetOn", {
+rageui.ragebottab:CreateToggle("TargetOn", {
     Text = "ragebot",
     Default = false,
     Callback = function(val)
@@ -5993,14 +5928,14 @@ rageui.ragebottab:AddToggle("TargetOn", {
             cleartarget()
         end
     end
-}):AddKeyPicker("TargetKey", {
+}):CreateKeybind("TargetKey", {
     Text = "Ragebot",
     Default = "None",
     Mode = "Toggle",
     Callback = function() togglekey() end
 })
 
-rageui.ragebottab:AddToggle("AutoTarget", {
+rageui.ragebottab:CreateToggle("AutoTarget", {
     Text = "auto target",
     Default = false,
     Callback = function(val) config.target.auto = val end
@@ -6022,7 +5957,7 @@ local function syncAtkDeps()
     end
 end
 
-local attackPosDropdown = rageui.ragebottab:AddDropdown("AutoTargetAttackPos", {
+local attackPosDropdown = rageui.ragebottab:CreateDropdown("AutoTargetAttackPos", {
     Text = "attack position",
     Default = "default",
     Values = { "default", "under" },
@@ -6035,7 +5970,7 @@ local attackPosDropdown = rageui.ragebottab:AddDropdown("AutoTargetAttackPos", {
     end,
 })
 
-rageui.ragebottab:AddToggle("AttackCustomOverride", {
+rageui.ragebottab:CreateToggle("AttackCustomOverride", {
     Text = "attack position",
     Default = false,
     Tooltip = "overrides attack position dropdown when enabled",
@@ -6048,9 +5983,9 @@ rageui.ragebottab:AddToggle("AttackCustomOverride", {
     end,
 })
 
-local attackUnderDep = rageui.ragebottab:AddDependencyBox()
+local attackUnderDep = rageui.ragebottab:CreateDependencyBox()
 
-attackUnderDep:AddSlider("UnderAttackOffset", {
+attackUnderDep:CreateSlider("UnderAttackOffset", {
     Text = "under offset",
     Default = config.target.underOffset,
     Min = 1,
@@ -6072,7 +6007,7 @@ attackUnderDep:SetupDependencies({
     { attackUnderVisGate, true },
 })
 
-local attackCustomDep = rageui.ragebottab:AddDependencyBox()
+local attackCustomDep = rageui.ragebottab:CreateDependencyBox()
 
 local function onAtkCustom()
     if config.target.attackCustomEnabled and config.state.csyncactive and ragebot.refreshAtk then
@@ -6080,7 +6015,7 @@ local function onAtkCustom()
     end
 end
 
-attackCustomDep:AddSlider("CustomAttackHeight", {
+attackCustomDep:CreateSlider("CustomAttackHeight", {
     Text = "orbit height",
     Default = config.target.customHeight,
     Min = -25,
@@ -6093,7 +6028,7 @@ attackCustomDep:AddSlider("CustomAttackHeight", {
     end,
 })
 
-attackCustomDep:AddSlider("CustomAttackFront", {
+attackCustomDep:CreateSlider("CustomAttackFront", {
     Text = "front offset",
     Default = config.target.customFront,
     Min = -20,
@@ -6106,7 +6041,7 @@ attackCustomDep:AddSlider("CustomAttackFront", {
     end,
 })
 
-attackCustomDep:AddSlider("CustomAttackSide", {
+attackCustomDep:CreateSlider("CustomAttackSide", {
     Text = "side offset",
     Default = config.target.customSide,
     Min = -20,
@@ -6119,7 +6054,7 @@ attackCustomDep:AddSlider("CustomAttackSide", {
     end,
 })
 
-attackCustomDep:AddSlider("CustomAttackVertical", {
+attackCustomDep:CreateSlider("CustomAttackVertical", {
     Text = "vertical offset",
     Default = config.target.customVertical,
     Min = -25,
@@ -6132,7 +6067,7 @@ attackCustomDep:AddSlider("CustomAttackVertical", {
     end,
 })
 
-attackCustomDep:AddSlider("CustomAttackRadius", {
+attackCustomDep:CreateSlider("CustomAttackRadius", {
     Text = "orbit radius",
     Default = config.target.customRadius,
     Min = 0,
@@ -6152,7 +6087,7 @@ attackCustomDep:SetupDependencies({
 syncAtkDeps()
 task.defer(syncAtkDeps)
 
-rageui.ragebottab:AddDropdown("RageWeaponPick", {
+rageui.ragebottab:CreateDropdown("RageWeaponPick", {
     Text = "weapon",
     Default = config.target.weaponPick or "primary",
     Values = { "primary", "secondary", "melee" },
@@ -6167,7 +6102,7 @@ rageui.ragebottab:AddDropdown("RageWeaponPick", {
     end,
 })
 
-rageui.ragebottab:AddSlider("ShootAttempts", {
+rageui.ragebottab:CreateSlider("ShootAttempts", {
     Text = "shoot attempts",
     Default = 1,
     Min = 1,
@@ -6179,20 +6114,20 @@ rageui.ragebottab:AddSlider("ShootAttempts", {
     end,
 })
 
-rageui.ragebottab:AddDropdown("TargetPart", {
+rageui.ragebottab:CreateDropdown("TargetPart", {
     Text = "hit part",
     Default = "Head",
     Values = {"Head", "HumanoidRootPart", "Torso", "UpperTorso", "Closest", "Random"},
     Callback = function(val) config.target.hitpart = val end
 })
 
-rageui.ragebottab:AddToggle("PredictT", {
+rageui.ragebottab:CreateToggle("PredictT", {
     Text = "prediction",
     Default = false,
     Callback = function(val) config.prediction.enabled = val end
 })
 
-rageui.ragebottab:AddSlider("PredictMul", {
+rageui.ragebottab:CreateSlider("PredictMul", {
     Text = "prediction mult",
     Default = 1.2,
     Min = 0.1,
@@ -6201,7 +6136,7 @@ rageui.ragebottab:AddSlider("PredictMul", {
     Callback = function(val) config.prediction.multiplier = val end
 })
 
-rageui.ragebottab:AddToggle("VoidSpam", {
+rageui.ragebottab:CreateToggle("VoidSpam", {
     Text = "voidspam",
     Default = false,
     Callback = function(val)
@@ -6227,7 +6162,7 @@ rageui.ragebottab:AddToggle("VoidSpam", {
     end
 })
 
-rageui.ragebottab:AddSlider('VoidShootTime', {
+rageui.ragebottab:CreateSlider('VoidShootTime', {
     Default = 1,
     Text = "attack",
     Min = 0.1,
@@ -6240,7 +6175,7 @@ rageui.ragebottab:AddSlider('VoidShootTime', {
         config.voidspam.shoot_max = val
     end
 })
-rageui.ragebottab:AddSlider('VoidHideTime', {
+rageui.ragebottab:CreateSlider('VoidHideTime', {
     Default = 1,
     Text = "hide",
     Min = 0.1,
@@ -6254,7 +6189,7 @@ rageui.ragebottab:AddSlider('VoidHideTime', {
     end
 })
 
-local rageStatusToggle = rageui.ragebotvisualtab:AddToggle("RageStatus", {
+local rageStatusToggle = rageui.ragebotvisualtab:CreateToggle("RageStatus", {
     Text = "rage status",
     Default = config.ragestatus.enabled,
     Callback = function(val)
@@ -6269,7 +6204,7 @@ local rageStatusToggle = rageui.ragebotvisualtab:AddToggle("RageStatus", {
             end
         end
     end,
-}):AddColorPicker("RageStatusColor", {
+}):CreateColorPicker("RageStatusColor", {
     Title = "text color",
     Default = config.ragestatus.color,
     Callback = function(val)
@@ -6280,12 +6215,12 @@ local rageStatusToggle = rageui.ragebotvisualtab:AddToggle("RageStatus", {
     end,
 })
 
-local rageStatusDep = rageui.ragebotvisualtab:AddDependencyBox()
+local rageStatusDep = rageui.ragebotvisualtab:CreateDependencyBox()
 rageStatusDep:SetupDependencies({
     { rageStatusToggle, true },
 })
 
-rageStatusDep:AddDropdown("RageStatusMode", {
+rageStatusDep:CreateDropdown("RageStatusMode", {
     Text = "position",
     Default = "static",
     Values = { "static", "muzzle" },
@@ -6294,7 +6229,7 @@ rageStatusDep:AddDropdown("RageStatusMode", {
     end,
 })
 
-rageStatusDep:AddSlider("RageStatusStaticX", {
+rageStatusDep:CreateSlider("RageStatusStaticX", {
     Text = "static x",
     Default = config.ragestatus.staticOffsetX,
     Min = -500,
@@ -6306,7 +6241,7 @@ rageStatusDep:AddSlider("RageStatusStaticX", {
     end,
 })
 
-rageStatusDep:AddSlider("RageStatusStaticY", {
+rageStatusDep:CreateSlider("RageStatusStaticY", {
     Text = "static y",
     Default = config.ragestatus.staticOffsetY,
     Min = -500,
@@ -6318,7 +6253,7 @@ rageStatusDep:AddSlider("RageStatusStaticY", {
     end,
 })
 
-rageStatusDep:AddToggle("RageStatusAmmo", {
+rageStatusDep:CreateToggle("RageStatusAmmo", {
     Text = "show ammo line",
     Default = true,
     Callback = function(val)
@@ -6326,7 +6261,7 @@ rageStatusDep:AddToggle("RageStatusAmmo", {
     end,
 })
 
-rageStatusDep:AddToggle("RageStatusReloadHide", {
+rageStatusDep:CreateToggle("RageStatusReloadHide", {
     Text = "hide while reloading",
     Default = true,
     Callback = function(val)
@@ -6334,35 +6269,35 @@ rageStatusDep:AddToggle("RageStatusReloadHide", {
     end,
 })
 
-rageui.ragebotvisualtab:AddToggle("VisEnabled", {
+rageui.ragebotvisualtab:CreateToggle("VisEnabled", {
     Text = "visualizer",
     Default = false,
     Callback = function(val) config.visualizer.enabled = val end
 })
 
-rageui.ragebotvisualtab:AddToggle("VisTracerEnabled", {
+rageui.ragebotvisualtab:CreateToggle("VisTracerEnabled", {
     Text = "tracer",
     Default = false,
     Callback = function(val) config.visualizer.tracer.enabled = val end
-}):AddColorPicker("VisTracerColor", {
+}):CreateColorPicker("VisTracerColor", {
     Default = config.visualizer.tracer.color,
     Callback = function(val) config.visualizer.tracer.color = val end
 })
 
-rageui.ragebotvisualtab:AddDropdown("VisTracerStart", {
+rageui.ragebotvisualtab:CreateDropdown("VisTracerStart", {
     Text = "tracer start",
     Default = "cursor",
     Values = {"cursor", "muzzle"},
     Callback = function(val) config.visualizer.tracer.start_point = val end
 })
 
-rageui.ragebotvisualtab:AddToggle("VisTracerOutline", {
+rageui.ragebotvisualtab:CreateToggle("VisTracerOutline", {
     Text = "tracer outline",
     Default = true,
     Callback = function(val) config.visualizer.tracer.outline = val end
 })
 
-rageui.ragebotvisualtab:AddSlider("VisTracerThickness", {
+rageui.ragebotvisualtab:CreateSlider("VisTracerThickness", {
     Text = "tracer thickness",
     Default = 1,
     Min = 0.1,
@@ -6564,8 +6499,8 @@ local function createHitNotifBox(text)
 
     local outer = Library:Create("Frame", {
         Name = "HitNotifOuter",
-        BackgroundColor3 = Library.Scheme.MainColor,
-        BorderColor3 = Library.Scheme.OutlineColor,
+        BackgroundColor3 = Color3.fromRGB(30, 30, 45),
+        BorderColor3 = Color3.fromRGB(60, 60, 80),
         BorderMode = Enum.BorderMode.Inset,
         Size = UDim2.fromOffset(boxW, boxH),
         Position = UDim2.fromOffset(0, 0),
@@ -6584,8 +6519,8 @@ local function createHitNotifBox(text)
 
     local inner = Library:Create("Frame", {
         Name = "HitNotifInner",
-        BackgroundColor3 = Library.Scheme.BackgroundColor,
-        BorderColor3 = Library.Scheme.OutlineColor,
+        BackgroundColor3 = Color3.fromRGB(20, 20, 30),
+        BorderColor3 = Color3.fromRGB(60, 60, 80),
         BorderMode = Enum.BorderMode.Inset,
         Position = UDim2.fromOffset(1, 1),
         Size = UDim2.new(1, -2, 1, -2),
@@ -6604,7 +6539,7 @@ local function createHitNotifBox(text)
         Text = text,
         Font = Enum.Font.Code,
         TextSize = textSize,
-        TextColor3 = hn.color or Library.Scheme.FontColor,
+        TextColor3 = hn.color or Color3.fromRGB(255, 255, 255),
         TextTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextYAlignment = Enum.TextYAlignment.Center,
@@ -7413,9 +7348,9 @@ localplayer.CharacterAdded:Connect(function()
     task.defer(flushAntiAimMovementState)
 end)
 
-local antiaimbox = Tabs.Combat:AddLeftGroupbox('anti aim')
+local antiaimbox = Tabs.Combat:CreateSection('anti aim')
 
-antiaimbox:AddToggle("AntiAimEnable", {
+antiaimbox:CreateToggle("AntiAimEnable", {
     Text = "anti aim",
     Default = false,
     Callback = function(value)
@@ -7427,7 +7362,7 @@ antiaimbox:AddToggle("AntiAimEnable", {
     end
 })
 
-antiaimbox:AddDropdown("AntiAimYaw", {
+antiaimbox:CreateDropdown("AntiAimYaw", {
     Values = {"none", "jitter", "spinbot", "random"},
     Default = "none",
     Text = "yaw",
@@ -7436,7 +7371,7 @@ antiaimbox:AddDropdown("AntiAimYaw", {
     end
 })
 
-antiaimbox:AddDropdown("AntiAimPitch", {
+antiaimbox:CreateDropdown("AntiAimPitch", {
     Values = {"none", "jitter", "spinbot", "random"},
     Default = "none",
     Text = "pitch",
@@ -7445,7 +7380,7 @@ antiaimbox:AddDropdown("AntiAimPitch", {
     end
 })
 
-antiaimbox:AddDropdown("AntiAimAngle", {
+antiaimbox:CreateDropdown("AntiAimAngle", {
     Values = {"none", "tilt 45", "tilt 90", "upside down", "custom"},
     Default = "none",
     Text = "angle",
@@ -7454,7 +7389,7 @@ antiaimbox:AddDropdown("AntiAimAngle", {
     end
 })
 
-antiaimbox:AddSlider("AntiAimCustomAngle", {
+antiaimbox:CreateSlider("AntiAimCustomAngle", {
     Text = "custom angle",
     Default = 0,
     Min = 0,
@@ -7466,7 +7401,7 @@ antiaimbox:AddSlider("AntiAimCustomAngle", {
     end
 })
 
-antiaimbox:AddSlider('speedslider', {
+antiaimbox:CreateSlider('speedslider', {
     Text = 'min speed',
     Default = 10,
     Min = 1,
@@ -7477,7 +7412,7 @@ antiaimbox:AddSlider('speedslider', {
         settings.minspeed = value
     end
 })
-antiaimbox:AddSlider('angleslider', {
+antiaimbox:CreateSlider('angleslider', {
     Text = 'max speed',
     Default = 20,
     Min = 1,
@@ -7489,7 +7424,7 @@ antiaimbox:AddSlider('angleslider', {
     end
 })
 
-antiaimbox:AddSlider('minangleslider', {
+antiaimbox:CreateSlider('minangleslider', {
     Text = 'min angle',
     Default = 30,
     Min = 1,
@@ -7500,7 +7435,7 @@ antiaimbox:AddSlider('minangleslider', {
         settings.minangle = value
     end
 })
-antiaimbox:AddSlider('maxangleslider', {
+antiaimbox:CreateSlider('maxangleslider', {
     Text = 'max angle',
     Default = 60,
     Min = 1,
@@ -7512,7 +7447,7 @@ antiaimbox:AddSlider('maxangleslider', {
     end
 })
 
-antiaimbox:AddToggle("randomangle", {
+antiaimbox:CreateToggle("randomangle", {
     Text = "random angle",
     Default = false,
     Callback = function(value)
@@ -7520,7 +7455,7 @@ antiaimbox:AddToggle("randomangle", {
     end
 })
 
-antiaimbox:AddToggle("AntiAimUnderground", {
+antiaimbox:CreateToggle("AntiAimUnderground", {
     Text = "underground",
     Default = false,
     Callback = function(value)
@@ -7550,7 +7485,7 @@ RunService.Heartbeat:Connect(getgenv().InstanceAntiAimUpdater)
 -- BLATANT SECTION — Silent Aim, Auto Bhop
 -- ═══════════════════════════════════════════════════════════════════
 do
-local BlatantGroup = Tabs.Combat:AddLeftGroupbox("blatant")
+local BlatantGroup = Tabs.Combat:CreateSection("blatant")
 
 -- ── Shared references ──
 local Players = game:GetService("Players")
@@ -7955,7 +7890,7 @@ _SA_oldnc = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
     return _SA_oldnc(self, ...)
 end))
 
-BlatantGroup:AddToggle("IvorySAEnabled", {
+BlatantGroup:CreateToggle("IvorySAEnabled", {
     Text = "silent aim",
     Default = false,
     Callback = function(val)
@@ -7963,7 +7898,7 @@ BlatantGroup:AddToggle("IvorySAEnabled", {
     end
 })
 
-BlatantGroup:AddSlider("IvorySAFOV", {
+BlatantGroup:CreateSlider("IvorySAFOV", {
     Text = "fov radius",
     Default = 300,
     Min = 10,
@@ -7974,7 +7909,7 @@ BlatantGroup:AddSlider("IvorySAFOV", {
     end
 })
 
-BlatantGroup:AddSlider("IvorySAHeadChance", {
+BlatantGroup:CreateSlider("IvorySAHeadChance", {
     Text = "head chance %",
     Default = 10,
     Min = 0,
@@ -7985,7 +7920,7 @@ BlatantGroup:AddSlider("IvorySAHeadChance", {
     end
 })
 
-BlatantGroup:AddToggle("IvorySATeamCheck", {
+BlatantGroup:CreateToggle("IvorySATeamCheck", {
     Text = "team check",
     Default = false,
     Callback = function(val)
@@ -7993,7 +7928,7 @@ BlatantGroup:AddToggle("IvorySATeamCheck", {
     end
 })
 
-BlatantGroup:AddSlider("IvorySAHitChance", {
+BlatantGroup:CreateSlider("IvorySAHitChance", {
     Text = "hit chance %",
     Default = 100,
     Min = 0,
@@ -8004,7 +7939,7 @@ BlatantGroup:AddSlider("IvorySAHitChance", {
     end
 })
 
-BlatantGroup:AddSlider("IvorySAMaxDist", {
+BlatantGroup:CreateSlider("IvorySAMaxDist", {
     Text = "max distance",
     Default = 500,
     Min = 100,
@@ -8016,7 +7951,7 @@ BlatantGroup:AddSlider("IvorySAMaxDist", {
     end
 })
 
-BlatantGroup:AddDropdown("IvorySAHitPart", {
+BlatantGroup:CreateDropdown("IvorySAHitPart", {
     Values = {"Head", "Random", "UpperTorso", "LowerTorso", "HumanoidRootPart", "Pelvis"},
     Default = "Head",
     Text = "hit part",
@@ -8025,7 +7960,7 @@ BlatantGroup:AddDropdown("IvorySAHitPart", {
     end
 })
 
-BlatantGroup:AddSlider("IvorySAPrediction", {
+BlatantGroup:CreateSlider("IvorySAPrediction", {
     Text = "prediction",
     Default = 0.10,
     Min = 0,
@@ -8036,7 +7971,7 @@ BlatantGroup:AddSlider("IvorySAPrediction", {
     end
 })
 
-BlatantGroup:AddToggle("IvorySAWallCheck", {
+BlatantGroup:CreateToggle("IvorySAWallCheck", {
     Text = "wall check",
     Default = false,
     Callback = function(val)
@@ -8044,7 +7979,7 @@ BlatantGroup:AddToggle("IvorySAWallCheck", {
     end
 })
 
-BlatantGroup:AddToggle("IvorySAProjPred", {
+BlatantGroup:CreateToggle("IvorySAProjPred", {
     Text = "projectile prediction",
     Default = false,
     Callback = function(val)
@@ -8070,7 +8005,7 @@ _SA_FOVBg.Visible = false
 _SA_FOVBg.Radius = _IvorySA.FOV
 _SA_FOVBg.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
-BlatantGroup:AddToggle("IvorySAShowFOV", {
+BlatantGroup:CreateToggle("IvorySAShowFOV", {
     Text = "show fov",
     Default = false,
     Callback = function(val)
@@ -8078,7 +8013,7 @@ BlatantGroup:AddToggle("IvorySAShowFOV", {
     end
 })
 
-BlatantGroup:AddToggle("IvorySAFOVFilled", {
+BlatantGroup:CreateToggle("IvorySAFOVFilled", {
     Text = "filled fov",
     Default = false,
     Callback = function(val)
@@ -8086,7 +8021,7 @@ BlatantGroup:AddToggle("IvorySAFOVFilled", {
     end
 })
 
-BlatantGroup:AddSlider("IvorySAFOVThickness", {
+BlatantGroup:CreateSlider("IvorySAFOVThickness", {
     Text = "fov thickness",
     Default = 1.5,
     Min = 0.5,
@@ -8097,7 +8032,7 @@ BlatantGroup:AddSlider("IvorySAFOVThickness", {
     end
 })
 
-BlatantGroup:AddLabel("fov color"):AddColorPicker("IvorySAFOVColor", {
+BlatantGroup:CreateLabel("fov color"):CreateColorPicker("IvorySAFOVColor", {
     Default = Color3.fromRGB(255, 255, 255),
     Title = "silent aim fov color",
     Callback = function(val)
@@ -8106,7 +8041,7 @@ BlatantGroup:AddLabel("fov color"):AddColorPicker("IvorySAFOVColor", {
     end
 })
 
-BlatantGroup:AddToggle("IvorySAFOVRainbow", {
+BlatantGroup:CreateToggle("IvorySAFOVRainbow", {
     Text = "rainbow fov",
     Default = false,
     Callback = function(val)
@@ -8133,14 +8068,14 @@ RunService.RenderStepped:Connect(function()
     _SA_FOVCircle.Visible = _IvorySA.Enabled and _SA_FOVVisible
 end)
 
-BlatantGroup:AddDivider()
+BlatantGroup:CreateDivider()
 
 -- ═══════════════════════════════════════════════════════════════════
 -- AUTO BUNNY HOP — jump when Space is held
 -- ═══════════════════════════════════════════════════════════════════
 local _IvoryAutoBhop = { Enabled = false }
 
-BlatantGroup:AddToggle("IvoryAutoBhop", {
+BlatantGroup:CreateToggle("IvoryAutoBhop", {
     Text = "auto bunny hop",
     Default = false,
     Callback = function(val)
@@ -8158,13 +8093,13 @@ RunService.Stepped:Connect(function()
     end
 end)
 
-BlatantGroup:AddDivider()
+BlatantGroup:CreateDivider()
 
 end
 
 
 
-local v555 = Tabs.Misc:AddRightGroupbox('miscellaneous')
+local v555 = Tabs.Misc:CreateSection('miscellaneous')
 do
 
 local Players = game:GetService("Players")
@@ -8218,7 +8153,7 @@ LocalPlayer.CharacterAdded:Connect(function()
 end)
 
 
-v555:AddToggle('noclip', {
+v555:CreateToggle('noclip', {
     Text = 'noclip',
     Default = _G.Features.Noclip.Enabled,
     Callback = function(Value)
@@ -8251,7 +8186,7 @@ local function updHandicaps()
     end)
 end
 
-v555:AddToggle('handcaps', {
+v555:CreateToggle('handcaps', {
     Text = 'enable handicaps',
     Default = _G.Features.Handicaps.Enabled,
     Callback = function(val)
@@ -8292,7 +8227,7 @@ local function det()
     end)
 end
 
-v555:AddToggle("AntiTrip", {
+v555:CreateToggle("AntiTrip", {
     Text = "anti subspace tripmine",
     Default = false,
     Callback = function(val)
@@ -8415,7 +8350,7 @@ local function updmoddetector()
     end
 end
 
-v555:AddToggle('moddetector', {
+v555:CreateToggle('moddetector', {
     Text = 'mod detector',
     Default = _G.Features.ModDetector.Enabled,
     Callback = function(Value)
@@ -8499,7 +8434,7 @@ local function hideCharacterHead(char)
     end
 end
 
-v555:AddToggle("AntiFlashbang", {
+v555:CreateToggle("AntiFlashbang", {
     Text = "anti flashbang",
     Default = false,
     Callback = function(val)
@@ -8617,10 +8552,10 @@ LocalPlayer.CharacterAdded:Connect(function()
 end)
 end
 
-local hitNotifTab = HitGroup:AddTab('hit notif')
+local hitNotifTab = Tabs.World:CreateSection('hit notif')
 local rbHitCfg = ragebot.config.hitNotifications
 
-local hitNotificationsToggle = hitNotifTab:AddToggle('HitNotifications', {
+local hitNotificationsToggle = hitNotifTab:CreateToggle('HitNotifications', {
     Text = 'hit notifications',
     Default = false,
     Callback = function(val)
@@ -8629,7 +8564,7 @@ local hitNotificationsToggle = hitNotifTab:AddToggle('HitNotifications', {
             ragebot.clearHitNotifications()
         end
     end
-}):AddColorPicker('HitNotificationsColor', {
+}):CreateColorPicker('HitNotificationsColor', {
     Default = rbHitCfg.color,
     Title = 'text color',
     Callback = function(val)
@@ -8637,8 +8572,8 @@ local hitNotificationsToggle = hitNotifTab:AddToggle('HitNotifications', {
     end
 })
 
-local hitNotifDepBox = hitNotifTab:AddDependencyBox()
-hitNotifDepBox:AddSlider('HitNotifDuration', {
+local hitNotifDepBox = hitNotifTab:CreateDependencyBox()
+hitNotifDepBox:CreateSlider('HitNotifDuration', {
     Text = 'duration',
     Default = rbHitCfg.duration,
     Min = 1,
@@ -8650,7 +8585,7 @@ hitNotifDepBox:AddSlider('HitNotifDuration', {
         rbHitCfg.duration = val
     end
 })
-hitNotifDepBox:AddSlider('HitNotifTextSize', {
+hitNotifDepBox:CreateSlider('HitNotifTextSize', {
     Text = 'text size',
     Default = rbHitCfg.textSize,
     Min = 10,
@@ -8661,7 +8596,7 @@ hitNotifDepBox:AddSlider('HitNotifTextSize', {
         rbHitCfg.textSize = val
     end
 })
-hitNotifDepBox:AddSlider('HitNotifMaxVisible', {
+hitNotifDepBox:CreateSlider('HitNotifMaxVisible', {
     Text = 'max on screen',
     Default = rbHitCfg.maxVisible,
     Min = 1,
@@ -8672,7 +8607,7 @@ hitNotifDepBox:AddSlider('HitNotifMaxVisible', {
         rbHitCfg.maxVisible = math.clamp(val, 1, 25)
     end
 })
-local hitNotifPositionDropdown = hitNotifDepBox:AddDropdown('HitNotifPosition', {
+local hitNotifPositionDropdown = hitNotifDepBox:CreateDropdown('HitNotifPosition', {
     Text = 'position',
     Default = rbHitCfg.position or 'Top Left',
     Values = {
@@ -8692,8 +8627,8 @@ local hitNotifPositionDropdown = hitNotifDepBox:AddDropdown('HitNotifPosition', 
     end
 })
 
-local hitNotifPosDepBox = hitNotifDepBox:AddDependencyBox()
-hitNotifPosDepBox:AddSlider('HitNotifOffsetX', {
+local hitNotifPosDepBox = hitNotifDepBox:CreateDependencyBox()
+hitNotifPosDepBox:CreateSlider('HitNotifOffsetX', {
     Text = 'custom x',
     Default = rbHitCfg.offsetX,
     Min = 0,
@@ -8707,7 +8642,7 @@ hitNotifPosDepBox:AddSlider('HitNotifOffsetX', {
         end
     end
 })
-hitNotifPosDepBox:AddSlider('HitNotifOffsetY', {
+hitNotifPosDepBox:CreateSlider('HitNotifOffsetY', {
     Text = 'custom y',
     Default = rbHitCfg.offsetY,
     Min = 0,
@@ -8725,7 +8660,7 @@ hitNotifPosDepBox:SetupDependencies({
     { hitNotifPositionDropdown, 'Custom' },
 })
 
-hitNotifDepBox:AddSlider('HitNotifStackGap', {
+hitNotifDepBox:CreateSlider('HitNotifStackGap', {
     Text = 'stack gap',
     Default = rbHitCfg.stackGap,
     Min = 2,
@@ -8739,7 +8674,7 @@ hitNotifDepBox:AddSlider('HitNotifStackGap', {
 local hitNotifAnimStyles = ragebot.hitNotifAnimStyles or {
     "fade", "slide left", "slide right", "slide down", "bounce", "fade bounce", "scale",
 }
-hitNotifDepBox:AddDropdown('HitNotifInAnim', {
+hitNotifDepBox:CreateDropdown('HitNotifInAnim', {
     Text = 'in animation',
     Default = rbHitCfg.inAnimation,
     Values = hitNotifAnimStyles,
@@ -8747,7 +8682,7 @@ hitNotifDepBox:AddDropdown('HitNotifInAnim', {
         rbHitCfg.inAnimation = val
     end
 })
-hitNotifDepBox:AddDropdown('HitNotifOutAnim', {
+hitNotifDepBox:CreateDropdown('HitNotifOutAnim', {
     Text = 'out animation',
     Default = rbHitCfg.outAnimation,
     Values = hitNotifAnimStyles,
@@ -8755,7 +8690,7 @@ hitNotifDepBox:AddDropdown('HitNotifOutAnim', {
         rbHitCfg.outAnimation = val
     end
 })
-hitNotifDepBox:AddSlider('HitNotifInSpeed', {
+hitNotifDepBox:CreateSlider('HitNotifInSpeed', {
     Text = 'in speed',
     Default = rbHitCfg.animInDuration,
     Min = 0.15,
@@ -8767,7 +8702,7 @@ hitNotifDepBox:AddSlider('HitNotifInSpeed', {
         rbHitCfg.animInDuration = val
     end
 })
-hitNotifDepBox:AddSlider('HitNotifOutSpeed', {
+hitNotifDepBox:CreateSlider('HitNotifOutSpeed', {
     Text = 'out speed',
     Default = rbHitCfg.animOutDuration,
     Min = 0.15,
@@ -8787,9 +8722,9 @@ hitNotifDepBox:SetupDependencies({
 
 _G.Features.SlideBoost = _G.Features.SlideBoost or { Enabled = false, Speed = 200 }
 
-local slideBox = Tabs.Misc:AddRightGroupbox('slide boost')
+local slideBox = Tabs.Misc:CreateSection('slide boost')
 
-slideBox:AddToggle('slide_boost', {
+slideBox:CreateToggle('slide_boost', {
     Text = 'enable',
     Default = _G.Features.SlideBoost.Enabled,
     Callback = function(Value)
@@ -8797,7 +8732,7 @@ slideBox:AddToggle('slide_boost', {
     end
 })
 
-slideBox:AddSlider('slide_speed', {
+slideBox:CreateSlider('slide_speed', {
     Text = 'slide boost',
     Default = _G.Features.SlideBoost.Speed,
     Min = 50,
@@ -9746,9 +9681,9 @@ end)
 
 Players.PlayerRemoving:Connect(RemoveBox)
 
-local v67 = Tabs.Visuals:AddLeftGroupbox("esp")
+local v67 = Tabs.Visuals:CreateSection("esp")
 
-v67:AddToggle('box_enabled', {
+v67:CreateToggle('box_enabled', {
     Text = 'enable',
     Default = ConfigBox.MasterEnabled or false,
     Callback = function(Value)
@@ -9756,9 +9691,9 @@ v67:AddToggle('box_enabled', {
     end
 })
 
-local BoxDepBox = v67:AddDependencyBox()
+local BoxDepBox = v67:CreateDependencyBox()
 
-BoxDepBox:AddToggle('box_enabled2', {
+BoxDepBox:CreateToggle('box_enabled2', {
     Text = 'boxes + glow',
     Default = ConfigBox.Enable or false,
     Callback = function(Value)
@@ -9768,14 +9703,14 @@ BoxDepBox:AddToggle('box_enabled2', {
             Toggles['box_glow']:SetValue(Value)
         end
     end
-}):AddColorPicker('box_outline_color', {
+}):CreateColorPicker('box_outline_color', {
     Title = 'box color 1',
     Default = ConfigBox.OutlineColor or Color3.fromRGB(255, 255, 255),
     Transparency = false,
     Callback = function(Value)
         ConfigBox.OutlineColor = Value
     end
-}):AddColorPicker('box_outline_color2', {
+}):CreateColorPicker('box_outline_color2', {
     Title = 'box color 2',
     Default = ConfigBox.OutlineColor2 or Color3.fromRGB(255, 255, 255),
     Transparency = false,
@@ -9784,20 +9719,20 @@ BoxDepBox:AddToggle('box_enabled2', {
     end
 })
 
-BoxDepBox:AddToggle('box_glow', {
+BoxDepBox:CreateToggle('box_glow', {
     Text = 'box glow',
     Default = _G.Config.Glow.Enable or false,
     Callback = function(Value)
         _G.Config.Glow.Enable = Value
     end
-}):AddColorPicker('box_glow_color_start', {
+}):CreateColorPicker('box_glow_color_start', {
     Title = 'glow color start',
     Default = _G.Config.Glow.ColorStart or Color3.fromRGB(255, 255, 255),
     Transparency = false,
     Callback = function(Value)
         _G.Config.Glow.ColorStart = Value
     end
-}):AddColorPicker('box_glow_color_end', {
+}):CreateColorPicker('box_glow_color_end', {
     Title = 'glow color end',
     Default = _G.Config.Glow.ColorEnd or Color3.fromRGB(255, 255, 255),
     Transparency = false,
@@ -9806,20 +9741,20 @@ BoxDepBox:AddToggle('box_glow', {
     end
 })
 
-BoxDepBox:AddToggle('box_filled', {
+BoxDepBox:CreateToggle('box_filled', {
     Text = 'box fill',
     Default = _G.Config.Filled.Enable or false,
     Callback = function(Value)
         _G.Config.Filled.Enable = Value
     end
-}):AddColorPicker('box_filled_color_start', {
+}):CreateColorPicker('box_filled_color_start', {
     Title = 'fill color start',
     Default = _G.Config.Filled.ColorStart or Color3.fromRGB(255, 255, 255),
     Transparency = false,
     Callback = function(Value)
         _G.Config.Filled.ColorStart = Value
     end
-}):AddColorPicker('box_filled_color_end', {
+}):CreateColorPicker('box_filled_color_end', {
     Title = 'fill color end',
     Default = _G.Config.Filled.ColorEnd or Color3.fromRGB(255, 255, 255),
     Transparency = false,
@@ -9828,7 +9763,7 @@ BoxDepBox:AddToggle('box_filled', {
     end
 })
 
-BoxDepBox:AddToggle('box_filled_animated', {
+BoxDepBox:CreateToggle('box_filled_animated', {
     Text = 'fill rotation',
     Default = _G.Config.Filled.Animated or false,
     Callback = function(Value)
@@ -9836,7 +9771,7 @@ BoxDepBox:AddToggle('box_filled_animated', {
     end
 })
 
-BoxDepBox:AddToggle('healthbar', {
+BoxDepBox:CreateToggle('healthbar', {
     Text = 'healthbar',
     Default = (ConfigBox.Healthbar and ConfigBox.Healthbar.Enable) or false,
     Callback = function(Value)
@@ -9845,7 +9780,7 @@ BoxDepBox:AddToggle('healthbar', {
         end
         ConfigBox.Healthbar.Enable = Value
     end
-}):AddColorPicker('ColorPicker121212', {
+}):CreateColorPicker('ColorPicker121212', {
     Default = (ConfigBox.HealthLerpColors and ConfigBox.HealthLerpColors.Color1) or Color3.fromRGB(255, 255, 255),
     Title = 'high health',
     Transparency = 0,
@@ -9859,7 +9794,7 @@ BoxDepBox:AddToggle('healthbar', {
         end
         ConfigBox.HealthLerpColors.Color1 = Value
     end
-}):AddColorPicker('ColorPicker21', {
+}):CreateColorPicker('ColorPicker21', {
     Default = (ConfigBox.HealthLerpColors and ConfigBox.HealthLerpColors.Color2) or Color3.fromRGB(255, 255, 255),
     Title = 'mid health',
     Transparency = 0,
@@ -9873,7 +9808,7 @@ BoxDepBox:AddToggle('healthbar', {
         end
         ConfigBox.HealthLerpColors.Color2 = Value
     end
-}):AddColorPicker('ColorPicker45', {
+}):CreateColorPicker('ColorPicker45', {
     Default = (ConfigBox.HealthLerpColors and ConfigBox.HealthLerpColors.Color3) or Color3.fromRGB(255, 255, 255),
     Title = 'low health',
     Transparency = 0,
@@ -9889,20 +9824,20 @@ BoxDepBox:AddToggle('healthbar', {
     end
 })
 
-v67:AddToggle('textesp', {
+v67:CreateToggle('textesp', {
     Text = 'names',
     Default = _G.Config.TextESP.Names or false,
     Callback = function(Value)
         _G.Config.TextESP.Names = Value
     end
-}):AddColorPicker('name_color', {
+}):CreateColorPicker('name_color', {
     Title = 'name color 1',
     Default = _G.Config.TextESP.NameColor or Color3.fromRGB(255, 255, 255),
     Transparency = false,
     Callback = function(Value)
         _G.Config.TextESP.NameColor = Value
     end
-}):AddColorPicker('name_color2', {
+}):CreateColorPicker('name_color2', {
     Title = 'name color 2',
     Default = _G.Config.TextESP.NameColor2 or Color3.fromRGB(255, 255, 255),
     Transparency = false,
@@ -9911,20 +9846,20 @@ v67:AddToggle('textesp', {
     end
 })
 
-v67:AddToggle('textesp_distance', {
+v67:CreateToggle('textesp_distance', {
     Text = 'distance',
     Default = _G.Config.TextESP.Distance or false,
     Callback = function(Value)
         _G.Config.TextESP.Distance = Value
     end
-}):AddColorPicker('distance_color', {
+}):CreateColorPicker('distance_color', {
     Title = 'distance color 1',
     Default = _G.Config.TextESP.DistanceColor or Color3.fromRGB(255, 255, 255),
     Transparency = false,
     Callback = function(Value)
         _G.Config.TextESP.DistanceColor = Value
     end
-}):AddColorPicker('distance_color2', {
+}):CreateColorPicker('distance_color2', {
     Title = 'distance color 2',
     Default = _G.Config.TextESP.DistanceColor2 or Color3.fromRGB(255, 255, 255),
     Transparency = false,
@@ -9933,20 +9868,20 @@ v67:AddToggle('textesp_distance', {
     end
 })
 
-v67:AddToggle('textesp_tools', {
+v67:CreateToggle('textesp_tools', {
     Text = 'tools',
     Default = _G.Config.TextESP.Tools or false,
     Callback = function(Value)
         _G.Config.TextESP.Tools = Value
     end
-}):AddColorPicker('tool_color', {
+}):CreateColorPicker('tool_color', {
     Title = 'tool color 1',
     Default = _G.Config.TextESP.ToolColor or Color3.fromRGB(255, 255, 255),
     Transparency = false,
     Callback = function(Value)
         _G.Config.TextESP.ToolColor = Value
     end
-}):AddColorPicker('tool_color2', {
+}):CreateColorPicker('tool_color2', {
     Title = 'tool color 2',
     Default = _G.Config.TextESP.ToolColor2 or Color3.fromRGB(255, 255, 255),
     Transparency = false,
@@ -9957,20 +9892,20 @@ v67:AddToggle('textesp_tools', {
 
 
 
-v67:AddToggle('chams', {
+v67:CreateToggle('chams', {
     Text = 'chams',
     Default = _G.Config.Chams.Enable or false,
     Callback = function(Value)
         _G.Config.Chams.Enable = Value
     end
-}):AddColorPicker('chams_color', {
+}):CreateColorPicker('chams_color', {
     Title = 'chams color 1',
     Default = _G.Config.Chams.Color or Color3.fromRGB(255, 255, 255),
     Transparency = false,
     Callback = function(Value)
         _G.Config.Chams.Color = Value
     end
-}):AddColorPicker('chams_color2', {
+}):CreateColorPicker('chams_color2', {
     Title = 'chams color 2',
     Default = _G.Config.Chams.Color2 or Color3.fromRGB(255, 255, 255),
     Transparency = false,
@@ -9979,7 +9914,7 @@ v67:AddToggle('chams', {
     end
 })
 
-v67:AddSlider('box_filled_transparency', {
+v67:CreateSlider('box_filled_transparency', {
     Text = 'fill transparency',
     Default = _G.Config.Filled.Transparency or 0.7,
     Min = 0,
@@ -9991,7 +9926,7 @@ v67:AddSlider('box_filled_transparency', {
     end
 })
 
-v67:AddSlider('box_filled_rotation', {
+v67:CreateSlider('box_filled_rotation', {
     Text = 'fill rotation',
     Default = _G.Config.Filled.Rotation or 0,
     Min = 0,
@@ -10003,7 +9938,7 @@ v67:AddSlider('box_filled_rotation', {
     end
 })
 
-v67:AddSlider('box_filled_speed', {
+v67:CreateSlider('box_filled_speed', {
     Text = 'fill speed',
     Default = _G.Config.Filled.Speed or 1,
     Min = 0.1,
@@ -10015,7 +9950,7 @@ v67:AddSlider('box_filled_speed', {
     end
 })
 
-v67:AddSlider('box_glow_transparency', {
+v67:CreateSlider('box_glow_transparency', {
     Text = 'glow transparency',
     Default = _G.Config.Glow.Transparency or 0.80,
     Min = 0,
@@ -10027,7 +9962,7 @@ v67:AddSlider('box_glow_transparency', {
     end
 })
 
-v67:AddSlider('box_glow_rotation', {
+v67:CreateSlider('box_glow_rotation', {
     Text = 'glow rotation',
     Default = _G.Config.Glow.Rotation or 0,
     Min = 0,
@@ -10039,7 +9974,7 @@ v67:AddSlider('box_glow_rotation', {
     end
 })
 
-v67:AddSlider('textesp_namesize', {
+v67:CreateSlider('textesp_namesize', {
     Text = 'name size',
     Default = _G.Config.TextESP.NameSize or 8,
     Min = 8,
@@ -10051,7 +9986,7 @@ v67:AddSlider('textesp_namesize', {
     end
 })
 
-v67:AddSlider('textesp_distancesize', {
+v67:CreateSlider('textesp_distancesize', {
     Text = 'distance size',
     Default = _G.Config.TextESP.DistanceSize or 8,
     Min = 8,
@@ -10063,7 +9998,7 @@ v67:AddSlider('textesp_distancesize', {
     end
 })
 
-v67:AddSlider('textesp_toolssize', {
+v67:CreateSlider('textesp_toolssize', {
     Text = 'tools size',
     Default = _G.Config.TextESP.ToolsSize or 8,
     Min = 8,
@@ -10077,7 +10012,7 @@ v67:AddSlider('textesp_toolssize', {
 
 
 
-v67:AddSlider('chams_transparency', {
+v67:CreateSlider('chams_transparency', {
     Text = 'chams transparency',
     Default = _G.Config.Chams.Transparency or 0,
     Min = 0,
@@ -10089,7 +10024,7 @@ v67:AddSlider('chams_transparency', {
     end
 })
 
-v67:AddSlider('esp_max_distance', {
+v67:CreateSlider('esp_max_distance', {
     Text = 'max distance',
     Default = ConfigBox.MaxDistance or 0,
     Min = 0,
@@ -10428,16 +10363,16 @@ local function refreshutilesp()
     end
 end
 
-local v68 = Tabs.Visuals:AddLeftGroupbox("utility")
+local v68 = Tabs.Visuals:CreateSection("utility")
 
-v68:AddToggle('utilenable', {
+v68:CreateToggle('utilenable', {
     Text = 'enable',
     Default = utilconfig.enable,
     Callback = function(value)
         utilconfig.enable = value
         refreshutilesp()
     end
-}):AddColorPicker('utilcolor', {
+}):CreateColorPicker('utilcolor', {
     Title = 'text color 1',
     Default = utilconfig.color,
     Transparency = false,
@@ -10449,7 +10384,7 @@ v68:AddToggle('utilenable', {
             end
         end
     end
-}):AddColorPicker('utilcolor2', {
+}):CreateColorPicker('utilcolor2', {
     Title = 'text color 2',
     Default = utilconfig.color2 or utilconfig.color,
     Transparency = false,
@@ -10458,7 +10393,7 @@ v68:AddToggle('utilenable', {
     end
 })
 
-v68:AddDropdown('utilitems', {
+v68:CreateDropdown('utilitems', {
     Text = 'utilities',
     Values = {
         "grenade",
@@ -10477,7 +10412,7 @@ v68:AddDropdown('utilitems', {
     end
 })
 
-v68:AddToggle('utildistance', {
+v68:CreateToggle('utildistance', {
     Text = 'distance',
     Default = utilconfig.distance,
     Callback = function(value)
@@ -10485,7 +10420,7 @@ v68:AddToggle('utildistance', {
     end
 })
 
-v68:AddToggle('utilimages', {
+v68:CreateToggle('utilimages', {
     Text = 'images',
     Default = utilconfig.images,
     Callback = function(value)
@@ -10819,9 +10754,9 @@ local function stoplightupdater()
     ensureExtraEffects()
 end
 
-local lightbox = Tabs.Visuals:AddRightGroupbox('lighting')
+local lightbox = Tabs.Visuals:CreateSection('lighting')
 
-lightbox:AddToggle('lighting_master', {
+lightbox:CreateToggle('lighting_master', {
     Text = 'enable',
     Default = _G.LightingSettings.Enabled,
     Callback = function(v)
@@ -10834,14 +10769,14 @@ lightbox:AddToggle('lighting_master', {
     end
 })
 
-local ambientToggle = lightbox:AddToggle('lighting_ambient', {
+local ambientToggle = lightbox:CreateToggle('lighting_ambient', {
     Text = 'custom ambient',
     Default = _G.LightingSettings.Ambient.Enabled,
     Callback = function(v)
         _G.LightingSettings.Ambient.Enabled = v
     end
 })
-ambientToggle:AddColorPicker('lighting_ambient_color', {
+ambientToggle:CreateColorPicker('lighting_ambient_color', {
     Default = _G.LightingSettings.Ambient.Color,
     Title = 'ambient color',
     Callback = function(c)
@@ -10849,14 +10784,14 @@ ambientToggle:AddColorPicker('lighting_ambient_color', {
     end
 })
 
-local outdoorToggle = lightbox:AddToggle('lighting_outdoorambient', {
+local outdoorToggle = lightbox:CreateToggle('lighting_outdoorambient', {
     Text = 'custom outdoor ambient',
     Default = _G.LightingSettings.OutdoorAmbient.Enabled,
     Callback = function(v)
         _G.LightingSettings.OutdoorAmbient.Enabled = v
     end
 })
-outdoorToggle:AddColorPicker('lighting_outdoorambient_color', {
+outdoorToggle:CreateColorPicker('lighting_outdoorambient_color', {
     Default = _G.LightingSettings.OutdoorAmbient.Color,
     Title = 'outdoor ambient color',
     Callback = function(c)
@@ -10864,14 +10799,14 @@ outdoorToggle:AddColorPicker('lighting_outdoorambient_color', {
     end
 })
 
-local sunColorToggle = lightbox:AddToggle('lighting_suncolor', {
+local sunColorToggle = lightbox:CreateToggle('lighting_suncolor', {
     Text = 'custom sun color',
     Default = _G.LightingSettings.SunColor.Enabled,
     Callback = function(v)
         _G.LightingSettings.SunColor.Enabled = v
     end
 })
-sunColorToggle:AddColorPicker('lighting_suncolor_color', {
+sunColorToggle:CreateColorPicker('lighting_suncolor_color', {
     Default = _G.LightingSettings.SunColor.Color,
     Title = 'sun color',
     Callback = function(c)
@@ -10879,7 +10814,7 @@ sunColorToggle:AddColorPicker('lighting_suncolor_color', {
     end
 })
 
-lightbox:AddToggle('lighting_globalshadows', {
+lightbox:CreateToggle('lighting_globalshadows', {
     Text = 'global shadows',
     Default = _G.LightingSettings.GlobalShadows.Enabled,
     Callback = function(v)
@@ -10887,7 +10822,7 @@ lightbox:AddToggle('lighting_globalshadows', {
     end
 })
 
-lightbox:AddToggle('lighting_shadowsoftness', {
+lightbox:CreateToggle('lighting_shadowsoftness', {
     Text = 'custom shadow softness',
     Default = _G.LightingSettings.ShadowSoftness.Enabled,
     Callback = function(v)
@@ -10895,14 +10830,14 @@ lightbox:AddToggle('lighting_shadowsoftness', {
     end
 })
 
-local topShiftToggle = lightbox:AddToggle('lighting_colorshifttop', {
+local topShiftToggle = lightbox:CreateToggle('lighting_colorshifttop', {
     Text = 'color shift top',
     Default = _G.LightingSettings.ColorShiftTop.Enabled,
     Callback = function(v)
         _G.LightingSettings.ColorShiftTop.Enabled = v
     end
 })
-topShiftToggle:AddColorPicker('lighting_colorshifttop_color', {
+topShiftToggle:CreateColorPicker('lighting_colorshifttop_color', {
     Default = _G.LightingSettings.ColorShiftTop.Color,
     Title = 'top color',
     Callback = function(c)
@@ -10910,14 +10845,14 @@ topShiftToggle:AddColorPicker('lighting_colorshifttop_color', {
     end
 })
 
-local bottomShiftToggle = lightbox:AddToggle('lighting_colorshiftbottom', {
+local bottomShiftToggle = lightbox:CreateToggle('lighting_colorshiftbottom', {
     Text = 'color shift bottom',
     Default = _G.LightingSettings.ColorShiftBottom.Enabled,
     Callback = function(v)
         _G.LightingSettings.ColorShiftBottom.Enabled = v
     end
 })
-bottomShiftToggle:AddColorPicker('lighting_colorshiftbottom_color', {
+bottomShiftToggle:CreateColorPicker('lighting_colorshiftbottom_color', {
     Default = _G.LightingSettings.ColorShiftBottom.Color,
     Title = 'bottom color',
     Callback = function(c)
@@ -10925,7 +10860,7 @@ bottomShiftToggle:AddColorPicker('lighting_colorshiftbottom_color', {
     end
 })
 
-lightbox:AddToggle('lighting_clocktime', {
+lightbox:CreateToggle('lighting_clocktime', {
     Text = 'custom time',
     Default = _G.LightingSettings.ClockTime.Enabled,
     Callback = function(v)
@@ -10933,7 +10868,7 @@ lightbox:AddToggle('lighting_clocktime', {
     end
 })
 
-lightbox:AddToggle('lighting_latitude', {
+lightbox:CreateToggle('lighting_latitude', {
     Text = 'custom latitude',
     Default = _G.LightingSettings.GeographicLatitude.Enabled,
     Callback = function(v)
@@ -10941,14 +10876,14 @@ lightbox:AddToggle('lighting_latitude', {
     end
 })
 
-local fogToggle = lightbox:AddToggle('lighting_fog', {
+local fogToggle = lightbox:CreateToggle('lighting_fog', {
     Text = 'custom fog',
     Default = _G.LightingSettings.Fog.Enabled,
     Callback = function(v)
         _G.LightingSettings.Fog.Enabled = v
     end
 })
-fogToggle:AddColorPicker('lighting_fog_color', {
+fogToggle:CreateColorPicker('lighting_fog_color', {
     Default = _G.LightingSettings.Fog.Color,
     Title = 'fog color',
     Callback = function(c)
@@ -10956,7 +10891,7 @@ fogToggle:AddColorPicker('lighting_fog_color', {
     end
 })
 
-lightbox:AddToggle('lighting_diffuse', {
+lightbox:CreateToggle('lighting_diffuse', {
     Text = 'custom diffuse scale',
     Default = _G.LightingSettings.EnvironmentDiffuseScale.Enabled,
     Callback = function(v)
@@ -10964,7 +10899,7 @@ lightbox:AddToggle('lighting_diffuse', {
     end
 })
 
-lightbox:AddToggle('lighting_specular', {
+lightbox:CreateToggle('lighting_specular', {
     Text = 'custom specular scale',
     Default = _G.LightingSettings.EnvironmentSpecularScale.Enabled,
     Callback = function(v)
@@ -10972,7 +10907,7 @@ lightbox:AddToggle('lighting_specular', {
     end
 })
 
-lightbox:AddSlider('lighting_shadowsoftness_value', {
+lightbox:CreateSlider('lighting_shadowsoftness_value', {
     Text = 'shadow softness',
     Min = 0,
     Max = 1,
@@ -10984,7 +10919,7 @@ lightbox:AddSlider('lighting_shadowsoftness_value', {
     end
 })
 
-lightbox:AddSlider('lighting_clocktime_value', {
+lightbox:CreateSlider('lighting_clocktime_value', {
     Text = 'hour',
     Min = 0,
     Max = 24,
@@ -10996,7 +10931,7 @@ lightbox:AddSlider('lighting_clocktime_value', {
     end
 })
 
-lightbox:AddSlider('lighting_latitude_value', {
+lightbox:CreateSlider('lighting_latitude_value', {
     Text = 'geographic latitude',
     Min = -90,
     Max = 90,
@@ -11008,7 +10943,7 @@ lightbox:AddSlider('lighting_latitude_value', {
     end
 })
 
-lightbox:AddSlider('lighting_fogstart', {
+lightbox:CreateSlider('lighting_fogstart', {
     Text = 'fog start',
     Min = 0,
     Max = 1000,
@@ -11020,7 +10955,7 @@ lightbox:AddSlider('lighting_fogstart', {
     end
 })
 
-lightbox:AddSlider('lighting_fogend', {
+lightbox:CreateSlider('lighting_fogend', {
     Text = 'fog end',
     Min = 0,
     Max = 100000,
@@ -11032,7 +10967,7 @@ lightbox:AddSlider('lighting_fogend', {
     end
 })
 
-lightbox:AddSlider('lighting_diffuse_value', {
+lightbox:CreateSlider('lighting_diffuse_value', {
     Text = 'diffuse scale',
     Min = 0,
     Max = 2,
@@ -11044,7 +10979,7 @@ lightbox:AddSlider('lighting_diffuse_value', {
     end
 })
 
-lightbox:AddSlider('lighting_specular_value', {
+lightbox:CreateSlider('lighting_specular_value', {
     Text = 'specular scale',
     Min = 0,
     Max = 2,
@@ -11056,11 +10991,10 @@ lightbox:AddSlider('lighting_specular_value', {
     end
 })
 
-local fxTabbox = Tabs.Visuals:AddRightTabbox()
-local colorTab = fxTabbox:AddTab('color')
-local bloomTab = fxTabbox:AddTab('bloom')
+local colorTab = Tabs.Visuals:CreateSection('color')
+local bloomTab = Tabs.Visuals:CreateSection('bloom')
 
-colorTab:AddToggle('lighting_color_correction', {
+colorTab:CreateToggle('lighting_color_correction', {
     Text = 'enable',
     Default = _G.LightingSettings.ColorCorrection.Enabled,
     Callback = function(v)
@@ -11069,7 +11003,7 @@ colorTab:AddToggle('lighting_color_correction', {
     end
 })
 
-colorTab:AddSlider('lighting_cc_contrast', {
+colorTab:CreateSlider('lighting_cc_contrast', {
     Text = 'contrast',
     Min = -10,
     Max = 10,
@@ -11084,7 +11018,7 @@ colorTab:AddSlider('lighting_cc_contrast', {
     end
 })
 
-colorTab:AddSlider('lighting_cc_saturation', {
+colorTab:CreateSlider('lighting_cc_saturation', {
     Text = 'saturation',
     Min = -10,
     Max = 10,
@@ -11099,7 +11033,7 @@ colorTab:AddSlider('lighting_cc_saturation', {
     end
 })
 
-colorTab:AddSlider('lighting_cc_brightness', {
+colorTab:CreateSlider('lighting_cc_brightness', {
     Text = 'brightness',
     Min = -10,
     Max = 10,
@@ -11114,7 +11048,7 @@ colorTab:AddSlider('lighting_cc_brightness', {
     end
 })
 
-bloomTab:AddToggle('lighting_bloom_modifier', {
+bloomTab:CreateToggle('lighting_bloom_modifier', {
     Text = 'enable',
     Default = _G.LightingSettings.Bloom.Enabled,
     Callback = function(v)
@@ -11126,7 +11060,7 @@ bloomTab:AddToggle('lighting_bloom_modifier', {
     end
 })
 
-bloomTab:AddSlider('lighting_bloom_multiplier', {
+bloomTab:CreateSlider('lighting_bloom_multiplier', {
     Text = 'emissive intensity',
     Min = 0,
     Max = 1.5,
@@ -11144,7 +11078,7 @@ bloomTab:AddSlider('lighting_bloom_multiplier', {
     end
 })
 
-bloomTab:AddSlider('lighting_bloom_size', {
+bloomTab:CreateSlider('lighting_bloom_size', {
     Text = 'glow size',
     Min = 2,
     Max = 8,
@@ -11162,7 +11096,7 @@ bloomTab:AddSlider('lighting_bloom_size', {
     end
 })
 
-bloomTab:AddSlider('lighting_bloom_threshold', {
+bloomTab:CreateSlider('lighting_bloom_threshold', {
     Text = 'brightness threshold',
     Min = 0.5,
     Max = 1,
@@ -11483,33 +11417,33 @@ Run.PostSimulation:Connect(function()
     end
 end)
 
-local vcrosshair = Tabs.Visuals:AddRightGroupbox("crosshair")
+local vcrosshair = Tabs.Visuals:CreateSection("crosshair")
 
-vcrosshair:AddToggle('crosshaireeee',{
+vcrosshair:CreateToggle('crosshaireeee',{
     Text = 'enable',
     Default = false,
     Callback = function(Value)
         getgenv().crosshair.enabled = Value
     end
-}):AddColorPicker('CrosshairColor', {
+}):CreateColorPicker('CrosshairColor', {
     Default = getgenv().crosshair.crosshair_color,
     Title = 'Crosshair Color',
     Callback = function(Value)
         getgenv().crosshair.crosshair_color = Value
     end
-}):AddColorPicker('GradientColor1', {
+}):CreateColorPicker('GradientColor1', {
     Default = getgenv().crosshair.color1,
     Title = 'Text Color 1',
     Callback = function(Value)
         getgenv().crosshair.color1 = Value
     end
-}):AddColorPicker('GradientColor2', {
+}):CreateColorPicker('GradientColor2', {
     Default = getgenv().crosshair.color2,
     Title = 'Text Color 2',
     Callback = function(Value)
         getgenv().crosshair.color2 = Value
     end
-}):AddColorPicker('GradientColor3', {
+}):CreateColorPicker('GradientColor3', {
     Default = getgenv().crosshair.color3,
     Title = 'Text Color 3',
     Callback = function(Value)
@@ -11517,7 +11451,7 @@ vcrosshair:AddToggle('crosshaireeee',{
     end
 })
 
-vcrosshair:AddToggle('showlines', {
+vcrosshair:CreateToggle('showlines', {
     Text = 'crosshair lines',
     Default = getgenv().crosshair.show_lines,
     Callback = function(Value)
@@ -11525,7 +11459,7 @@ vcrosshair:AddToggle('showlines', {
     end
 })
 
-vcrosshair:AddToggle('showwatermark', {
+vcrosshair:CreateToggle('showwatermark', {
     Text = 'watermark',
     Default = getgenv().crosshair.show_watermark,
     Callback = function(Value)
@@ -11533,7 +11467,7 @@ vcrosshair:AddToggle('showwatermark', {
     end
 })
 
-vcrosshair:AddToggle('showammo', {
+vcrosshair:CreateToggle('showammo', {
     Text = 'ammo',
     Default = false,
     Callback = function(Value)
@@ -11541,7 +11475,7 @@ vcrosshair:AddToggle('showammo', {
     end
 })
 
-vcrosshair:AddSlider('ooetg', {
+vcrosshair:CreateSlider('ooetg', {
     Text = 'speed',
     Default = getgenv().crosshair.spin_speed,
     Min = 0,
@@ -11552,7 +11486,7 @@ vcrosshair:AddSlider('ooetg', {
         getgenv().crosshair.spin_speed = Value
     end
 })
-vcrosshair:AddSlider('GradientRotation', {
+vcrosshair:CreateSlider('GradientRotation', {
     Text = 'rotation',
     Default = getgenv().crosshair.gradient_rotation,
     Min = 0,
@@ -11564,7 +11498,7 @@ vcrosshair:AddSlider('GradientRotation', {
     end
 })
 
-vcrosshair:AddDropdown('crosshairmode', {
+vcrosshair:CreateDropdown('crosshairmode', {
     Text = 'crosshair mode',
     Default = 1,
     Values = {'static', 'follow muzzle'},
@@ -11582,9 +11516,8 @@ local SoundService = game:GetService("SoundService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
-local atmotabbox = Tabs.World:AddRightTabbox()
-local atmotab = atmotabbox:AddTab('atmosphere')
-local ambienceTab   = atmotabbox:AddTab('ambience')
+local atmotab = Tabs.World:CreateSection('atmosphere')
+local ambienceTab   = Tabs.World:CreateSection('ambience')
 
 _G.LightingSettings.Atmosphere = _G.LightingSettings.Atmosphere or {
     Enabled = false,
@@ -11690,21 +11623,21 @@ Players.LocalPlayer.CharacterAdded:Connect(function()
     playambientsound()
 end)
 
-atmotab:AddToggle('atmosphere_master', {
+atmotab:CreateToggle('atmosphere_master', {
     Text = 'enable',
     Default = _G.LightingSettings.Atmosphere.Enabled,
     Callback = function(v)
         _G.LightingSettings.Atmosphere.Enabled = v
         applycustomatmo()
     end
-}):AddColorPicker('atmosphere_color', {
+}):CreateColorPicker('atmosphere_color', {
     Default = _G.LightingSettings.Atmosphere.Color,
     Title = 'atmosphere color',
     Callback = function(c)
         _G.LightingSettings.Atmosphere.Color = c
         applycustomatmo()
     end
-}):AddColorPicker('atmosphere_decay', {
+}):CreateColorPicker('atmosphere_decay', {
     Default = _G.LightingSettings.Atmosphere.Decay,
     Title = 'decay color',
     Callback = function(c)
@@ -11713,7 +11646,7 @@ atmotab:AddToggle('atmosphere_master', {
     end
 })
 
-atmotab:AddSlider('atmosphere_density', {
+atmotab:CreateSlider('atmosphere_density', {
     Text = 'density: ',
     Min = 0,
     Max = 1,
@@ -11725,7 +11658,7 @@ atmotab:AddSlider('atmosphere_density', {
         applycustomatmo()
     end
 })
-atmotab:AddSlider('atmosphere_haze', {
+atmotab:CreateSlider('atmosphere_haze', {
     Text = 'haze: ',
     Min = 0,
     Max = 5,
@@ -11738,7 +11671,7 @@ atmotab:AddSlider('atmosphere_haze', {
     end
 })
 
-atmotab:AddSlider('atmosphere_glare', {
+atmotab:CreateSlider('atmosphere_glare', {
     Text = 'glare: ',
     Min = 0,
     Max = 5,
@@ -11750,7 +11683,7 @@ atmotab:AddSlider('atmosphere_glare', {
         applycustomatmo()
     end
 })
-atmotab:AddSlider('atmosphere_offset', {
+atmotab:CreateSlider('atmosphere_offset', {
     Text = 'offset: ',
     Min = 0,
     Max = 1,
@@ -11763,7 +11696,7 @@ atmotab:AddSlider('atmosphere_offset', {
     end
 })
 
-ambienceTab:AddToggle('atmosphere_sound_toggle', {
+ambienceTab:CreateToggle('atmosphere_sound_toggle', {
     Text = 'enable',
     Default = _G.LightingSettings.Atmosphere.SoundEnabled,
     Callback = function(v)
@@ -11772,7 +11705,7 @@ ambienceTab:AddToggle('atmosphere_sound_toggle', {
     end
 })
 
-ambienceTab:AddDropdown('atmosphere_ambient_sound', {
+ambienceTab:CreateDropdown('atmosphere_ambient_sound', {
     Text = 'ambient sound',
     Values = {"None", "Rain", "Night", "Birds Chirping", "Jungle Birds", "Campfire Crackling", "Night Crickets", "Snow Storm"},
     Default = _G.LightingSettings.Atmosphere.SelectedSound,
@@ -11783,7 +11716,7 @@ ambienceTab:AddDropdown('atmosphere_ambient_sound', {
     end
 })
 
-ambienceTab:AddSlider('atmosphere_sound_volume', {
+ambienceTab:CreateSlider('atmosphere_sound_volume', {
     Text = 'volume',
     Min = 0,
     Max = 10,
@@ -11798,7 +11731,7 @@ ambienceTab:AddSlider('atmosphere_sound_volume', {
     end
 })
 
-local killSoundsTab = Tabs.World:AddRightGroupbox('kill sounds')
+local killSoundsTab = Tabs.World:CreateSection('kill sounds')
 local ksCfg = _G.Features.KillSounds
 local ksLocalPlayer = game:GetService("Players").LocalPlayer
 
@@ -11940,7 +11873,7 @@ getgenv().InstanceTryKillSound = function(plr, lastHp, newHp)
     playKillSound()
 end
 
-local killSoundsToggle = killSoundsTab:AddToggle('KillSoundsEnabled', {
+local killSoundsToggle = killSoundsTab:CreateToggle('KillSoundsEnabled', {
     Text = 'enable',
     Default = ksCfg.Enabled,
     Callback = function(val)
@@ -11948,12 +11881,12 @@ local killSoundsToggle = killSoundsTab:AddToggle('KillSoundsEnabled', {
     end,
 })
 
-local killSoundsDep = killSoundsTab:AddDependencyBox()
+local killSoundsDep = killSoundsTab:CreateDependencyBox()
 killSoundsDep:SetupDependencies({
     { killSoundsToggle, true },
 })
 
-killSoundsDep:AddDropdown('KillSoundStyle', {
+killSoundsDep:CreateDropdown('KillSoundStyle', {
     Text = 'sound',
     Default = ksCfg.Sound or "sound 1",
     Values = KILL_SOUND_NAMES,
@@ -11962,7 +11895,7 @@ killSoundsDep:AddDropdown('KillSoundStyle', {
     end,
 })
 
-killSoundsDep:AddSlider('KillSoundVolume', {
+killSoundsDep:CreateSlider('KillSoundVolume', {
     Text = 'volume',
     Default = ksCfg.Volume or 50,
     Min = 0,
@@ -11974,7 +11907,7 @@ killSoundsDep:AddSlider('KillSoundVolume', {
     end,
 })
 
-killSoundsDep:AddSlider('KillSoundPitch', {
+killSoundsDep:CreateSlider('KillSoundPitch', {
     Text = 'pitch',
     Default = ksCfg.Pitch or 100,
     Min = 50,
@@ -11993,10 +11926,8 @@ pcall(function()
 local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
 
-local skyboxTabbox = Tabs.World:AddLeftTabbox()
-
-local skyTab      = skyboxTabbox:AddTab('skybox')
-local aspectTab   = skyboxTabbox:AddTab('aspect ratio')
+local skyTab      = Tabs.World:CreateSection('skybox')
+local aspectTab   = Tabs.World:CreateSection('aspect ratio')
 
 _G.SkyboxSettings = _G.SkyboxSettings or {
     Enabled = false,
@@ -12109,7 +12040,7 @@ local function stopSkyboxUpdater()
     removecustomsky()
 end
 
-skyTab:AddToggle('skybox_master', {
+skyTab:CreateToggle('skybox_master', {
     Text = 'enable',
     Default = _G.SkyboxSettings.Enabled,
     Callback = function(v)
@@ -12128,7 +12059,7 @@ for name, _ in pairs(Skyboxes) do
 end
 table.sort(skyboxList)
 
-skyTab:AddDropdown('skybox_selection', {
+skyTab:CreateDropdown('skybox_selection', {
     Text = 'skybox',
     Default = _G.SkyboxSettings.CurrentSkybox,
     Values = skyboxList,
@@ -12137,7 +12068,7 @@ skyTab:AddDropdown('skybox_selection', {
     end
 })
 
-skyTab:AddDropdown('disable_elements', {
+skyTab:CreateDropdown('disable_elements', {
     Text = 'disable elements',
     Values = {"Sun", "Moon", "Stars"},
     Default = _G.SkyboxSettings.DisabledElements,
@@ -12199,7 +12130,7 @@ local function stopaspectratio()
     end)
 end
 
-aspectTab:AddToggle('aspect_ratio_master', {
+aspectTab:CreateToggle('aspect_ratio_master', {
     Text = 'enable',
     Default = _G.AspectRatioSettings.Enabled,
     Callback = function(v)
@@ -12212,7 +12143,7 @@ aspectTab:AddToggle('aspect_ratio_master', {
     end
 })
 
-aspectTab:AddSlider('aspect_ratio_x', {
+aspectTab:CreateSlider('aspect_ratio_x', {
     Text = 'X ratio',
     Default = _G.AspectRatioSettings.X,
     Min = 1,
@@ -12224,7 +12155,7 @@ aspectTab:AddSlider('aspect_ratio_x', {
     end
 })
 
-aspectTab:AddSlider('aspect_ratio_y', {
+aspectTab:CreateSlider('aspect_ratio_y', {
     Text = 'Y ratio',
     Default = _G.AspectRatioSettings.Y,
     Min = 10,
@@ -12487,11 +12418,11 @@ local function pushSharedToKey(key)
     cfg.sizeScale         = sharedCfg.sizeScale
 end
 
-local weatherBox = Tabs.World:AddLeftGroupbox('weather')
+local weatherBox = Tabs.World:CreateSection('weather')
 
 local weatherEnabled = false
 
-weatherBox:AddToggle('weather_master_enable', {
+weatherBox:CreateToggle('weather_master_enable', {
     Text = 'enable',
     Default = false,
     Callback = function(value)
@@ -12502,7 +12433,7 @@ weatherBox:AddToggle('weather_master_enable', {
             end
         end
     end
-}):AddColorPicker('weather_color', {
+}):CreateColorPicker('weather_color', {
     Default = sharedCfg.color,
     Title = 'color',
     Callback = function(value)
@@ -12522,7 +12453,7 @@ local keyMap = {
     ['hearts']     = 'hearts',
 }
 
-weatherBox:AddDropdown('weather_effects', {
+weatherBox:CreateDropdown('weather_effects', {
     Text = 'effects',
     Values = { 'rain', 'snow', 'light rain', 'stars', 'hearts' },
     Default = {},
@@ -12543,7 +12474,7 @@ weatherBox:AddDropdown('weather_effects', {
     end
 })
 
-weatherBox:AddSlider('weather_rate', {
+weatherBox:CreateSlider('weather_rate', {
     Text = 'rate',
     Default = sharedCfg.rate,
     Min = 0,
@@ -12560,7 +12491,7 @@ weatherBox:AddSlider('weather_rate', {
     end
 })
 
-weatherBox:AddSlider('weather_speed_min', {
+weatherBox:CreateSlider('weather_speed_min', {
     Text = 'speed min',
     Default = sharedCfg.speed_min,
     Min = 0,
@@ -12574,7 +12505,7 @@ weatherBox:AddSlider('weather_speed_min', {
     end
 })
 
-weatherBox:AddSlider('weather_speed_max', {
+weatherBox:CreateSlider('weather_speed_max', {
     Text = 'speed max',
     Default = sharedCfg.speed_max,
     Min = 0,
@@ -12588,7 +12519,7 @@ weatherBox:AddSlider('weather_speed_max', {
     end
 })
 
-weatherBox:AddSlider('weather_size_min', {
+weatherBox:CreateSlider('weather_size_min', {
     Text = 'size min',
     Default = sharedCfg.size_min,
     Min = 0.1,
@@ -12602,7 +12533,7 @@ weatherBox:AddSlider('weather_size_min', {
     end
 })
 
-weatherBox:AddSlider('weather_size_max', {
+weatherBox:CreateSlider('weather_size_max', {
     Text = 'size max',
     Default = sharedCfg.size_max,
     Min = 0.1,
@@ -12616,7 +12547,7 @@ weatherBox:AddSlider('weather_size_max', {
     end
 })
 
-weatherBox:AddSlider('weather_opacity_min', {
+weatherBox:CreateSlider('weather_opacity_min', {
     Text = 'opacity min',
     Default = math.floor((1 - sharedCfg.transparency_min) * 100),
     Min = 0,
@@ -12631,7 +12562,7 @@ weatherBox:AddSlider('weather_opacity_min', {
     end
 })
 
-weatherBox:AddSlider('weather_opacity_max', {
+weatherBox:CreateSlider('weather_opacity_max', {
     Text = 'opacity max',
     Default = math.floor((1 - sharedCfg.transparency_max) * 100),
     Min = 0,
@@ -12646,7 +12577,7 @@ weatherBox:AddSlider('weather_opacity_max', {
     end
 })
 
-weatherBox:AddSlider('weather_spread', {
+weatherBox:CreateSlider('weather_spread', {
     Text = 'spread',
     Default = 0,
     Min = 0,
@@ -12661,7 +12592,7 @@ weatherBox:AddSlider('weather_spread', {
     end
 })
 
-weatherBox:AddSlider('weather_brightness', {
+weatherBox:CreateSlider('weather_brightness', {
     Text = 'brightness',
     Default = sharedCfg.brightness * 100,
     Min = 0,
@@ -12676,7 +12607,7 @@ weatherBox:AddSlider('weather_brightness', {
     end
 })
 
-weatherBox:AddSlider('weather_emission', {
+weatherBox:CreateSlider('weather_emission', {
     Text = 'light emission',
     Default = sharedCfg.light_emission * 100,
     Min = 0,
@@ -12691,7 +12622,7 @@ weatherBox:AddSlider('weather_emission', {
     end
 })
 
-weatherBox:AddSlider('weather_glow', {
+weatherBox:CreateSlider('weather_glow', {
     Text = 'glow',
     Default = sharedCfg.glowScale,
     Min = 0,
@@ -12706,7 +12637,7 @@ weatherBox:AddSlider('weather_glow', {
     end
 })
 
-weatherBox:AddSlider('weather_sizescale', {
+weatherBox:CreateSlider('weather_sizescale', {
     Text = 'particle size',
     Default = sharedCfg.sizeScale,
     Min = 0.1,
@@ -13130,8 +13061,8 @@ end
 
 -- ==================== CREDITS TAB SECTION ====================
 do
-    local creditsGroup = Tabs['UI Settings']:AddLeftGroupbox('credits', 'info')
-    local CreditsLabel = creditsGroup:AddLabel({ Text = "Made by Mommy Veqxoo", DoesWrap = true, Size = 26 })
+    local creditsGroup = Tabs['UI Settings']:CreateSection('credits', 'info')
+    local CreditsLabel = creditsGroup:CreateLabel({ Text = "Made by Mommy Veqxoo", DoesWrap = true, Size = 26 })
 
     task.spawn(function()
         task.wait(0.5)
@@ -13187,7 +13118,7 @@ do
     end)
 end
 
-MenuGroup = Tabs['UI Settings']:AddLeftGroupbox('menu settings')
+MenuGroup = Tabs['UI Settings']:CreateSection('menu settings')
 
 local function syncMenuOverlayUi()
     applyInstanceUiLayering()
@@ -13224,7 +13155,7 @@ if Window and Window.Toggle then
 end
 task.defer(syncMenuOverlayUi)
 
-MenuGroup:AddLabel('menu bind'):AddKeyPicker('MenuKeybind', { 
+MenuGroup:CreateLabel('menu bind'):CreateKeybind('MenuKeybind', { 
     Default = 'RightShift', 
     NoUI = true, 
     Text = 'menu keybind' 
@@ -13232,7 +13163,7 @@ MenuGroup:AddLabel('menu bind'):AddKeyPicker('MenuKeybind', {
 
 Library.ToggleKeybind = Options.MenuKeybind
 
-MenuGroup:AddToggle('KeybindVisible', {
+MenuGroup:CreateToggle('KeybindVisible', {
     Text = 'keybind list',
     Default = false,
     Callback = function()
@@ -13242,7 +13173,7 @@ MenuGroup:AddToggle('KeybindVisible', {
     end
 })
 
-MenuGroup:AddSlider('tgbtgbbktbkmb', {
+MenuGroup:CreateSlider('tgbtgbbktbkmb', {
     Text = 'cap fps at (0 = off)',
     Default = 0,
     Min = 0,
@@ -13259,7 +13190,7 @@ MenuGroup:AddSlider('tgbtgbbktbkmb', {
     end
 })
 
-MenuGroup:AddDropdown('InstanceLanguage', {
+MenuGroup:CreateDropdown('InstanceLanguage', {
     Text = 'language',
     Values = { 'english', 'korean', 'spanish' },
     Default = getgenv().InstanceLanguage or 'english',
@@ -13277,7 +13208,7 @@ MenuGroup:AddDropdown('InstanceLanguage', {
     end,
 })
 
-MenuGroup:AddToggle('AntiAFK', {Text = 'anti-afk', Default = true, Callback = function(val)
+MenuGroup:CreateToggle('AntiAFK', {Text = 'anti-afk', Default = true, Callback = function(val)
     if val then
         pcall(function()
             local VirtualUser = game:GetService("VirtualUser")
@@ -13290,7 +13221,7 @@ MenuGroup:AddToggle('AntiAFK', {Text = 'anti-afk', Default = true, Callback = fu
     end
 end})
 
-MenuGroup:AddToggle('CustomCursorToggle', {
+MenuGroup:CreateToggle('CustomCursorToggle', {
     Text = 'custom cursor',
     Default = true,
     Callback = function(state)
@@ -13298,11 +13229,11 @@ MenuGroup:AddToggle('CustomCursorToggle', {
     end,
 })
 
-MenuGroup:AddButton('test notification', function()
-    Library:Notify({ Title = "Ivory Hub", Description = "Notification works!", Type = "Success", Time = 3 })
+MenuGroup:CreateButton('test notification', function()
+    Library.Notify({ Title = "Ivory Hub", Content = "Notification works!", Type = "Success", Duration = 3 })
 end)
 
-MenuGroup:AddDropdown('NotifySideDropdown', {
+MenuGroup:CreateDropdown('NotifySideDropdown', {
     Text = 'notification side',
     Default = 'Right',
     Values = { 'Left', 'Right' },
@@ -13311,7 +13242,7 @@ MenuGroup:AddDropdown('NotifySideDropdown', {
     end,
 })
 
-MenuGroup:AddDropdown('DPIScale', {
+MenuGroup:CreateDropdown('DPIScale', {
     Text = 'dpi scale',
     Default = '100%',
     Values = { '50%', '75%', '100%', '125%', '150%', '175%', '200%' },
@@ -13321,7 +13252,7 @@ MenuGroup:AddDropdown('DPIScale', {
     end,
 })
 
-MenuGroup:AddSlider('CornerRadius', {
+MenuGroup:CreateSlider('CornerRadius', {
     Text = 'corner radius',
     Default = 4,
     Min = 0,
@@ -13332,14 +13263,14 @@ MenuGroup:AddSlider('CornerRadius', {
     end,
 })
 
-MenuGroup:AddButton('unload menu', function()
+MenuGroup:CreateButton('unload menu', function()
     Library:Unload()
 end)
 
 end);
 
 pcall(function()
-local ServerGroup = Tabs['UI Settings']:AddRightGroupbox('server')
+local ServerGroup = Tabs['UI Settings']:CreateSection('server')
 
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
@@ -13389,31 +13320,31 @@ local function allservers()
     return servers
 end
 
-ServerGroup:AddButton('Rejoin Server', function()
+ServerGroup:CreateButton('Rejoin Server', function()
     if game.JobId ~= "" then
-        Library:Notify("Rejoining server...", 3)
+        Library.Notify({Title = "Ivory", Content = "Rejoining server...", Duration = 3})
         TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
     else
-        Library:Notify("No valid JobId.", 3)
+        Library.Notify({Title = "Ivory", Content = "No valid JobId.", Duration = 3})
     end
 end)
 
-ServerGroup:AddButton('Server Hop (Random)', function()
+ServerGroup:CreateButton('Server Hop (Random)', function()
     local servers = allservers()
     if #servers == 0 then
-        Library:Notify("No servers found.", 3)
+        Library.Notify({Title = "Ivory", Content = "No servers found.", Duration = 3})
         return
     end
 
     local s = servers[math.random(#servers)]
-    Library:Notify("Hopping to server (" .. s.playing .. "/" .. s.maxPlayers .. " players)", 5)
+    Library.Notify({Title = "Ivory", Content = "Hopping to server (" .. s.playing .. "/" .. s.maxPlayers .. " players)", Duration = 5})
     TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LocalPlayer)
 end)
 
-ServerGroup:AddButton('Join Lowest Players Server', function()
+ServerGroup:CreateButton('Join Lowest Players Server', function()
     local servers = allservers()
     if #servers == 0 then
-        Library:Notify("No servers found.", 3)
+        Library.Notify({Title = "Ivory", Content = "No servers found.", Duration = 3})
         return
     end
 
@@ -13422,14 +13353,14 @@ ServerGroup:AddButton('Join Lowest Players Server', function()
     end)
 
     local s = servers[1]
-    Library:Notify("Joining lowest server (" .. s.playing .. "/" .. s.maxPlayers .. " players)", 5)
+    Library.Notify({Title = "Ivory", Content = "Joining lowest server (" .. s.playing .. "/" .. s.maxPlayers .. " players)", Duration = 5})
     TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LocalPlayer)
 end)
 
-ServerGroup:AddButton('Join Biggest Server', function()
+ServerGroup:CreateButton('Join Biggest Server', function()
     local servers = allservers()
     if #servers == 0 then
-        Library:Notify("No servers found.", 3)
+        Library.Notify({Title = "Ivory", Content = "No servers found.", Duration = 3})
         return
     end
 
@@ -13438,7 +13369,7 @@ ServerGroup:AddButton('Join Biggest Server', function()
     end)
 
     local s = servers[1]
-    Library:Notify("Joining biggest server (" .. s.playing .. "/" .. s.maxPlayers .. " players)", 5)
+    Library.Notify({Title = "Ivory", Content = "Joining biggest server (" .. s.playing .. "/" .. s.maxPlayers .. " players)", Duration = 5})
     TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LocalPlayer)
 end)
 
@@ -13806,9 +13737,9 @@ getgenv().InstanceUpdSmoothTextures = updSmoothTextures
 getgenv().InstanceUpdDarkTextures = updDarkTextures
 getgenv().InstanceUpdTransparentTextures = updTransparentTextures
 
-local texturesBox = Tabs.Misc:AddLeftGroupbox('textures')
+local texturesBox = Tabs.Misc:CreateSection('textures')
 
-texturesBox:AddToggle('smooth_textures', {
+texturesBox:CreateToggle('smooth_textures', {
     Text = 'smooth textures',
     Default = _G.Features.SmoothTextures.Enabled,
     Tooltip = 'makes map textures smooth (smooth plastic, hides surface detail)',
@@ -13819,7 +13750,7 @@ texturesBox:AddToggle('smooth_textures', {
     end
 })
 
-texturesBox:AddToggle('dark_textures', {
+texturesBox:CreateToggle('dark_textures', {
     Text = 'dark textures',
     Default = _G.Features.WorldTextures.Dark,
     Tooltip = 'darkens world parts for a deeper, darker texture look',
@@ -13830,7 +13761,7 @@ texturesBox:AddToggle('dark_textures', {
     end
 })
 
-local transparentToggle = texturesBox:AddToggle('transparent_textures', {
+local transparentToggle = texturesBox:CreateToggle('transparent_textures', {
     Text = 'transparent textures',
     Default = _G.Features.TransparentTextures.Enabled,
     Tooltip = 'makes world textures semi-transparent',
@@ -13841,7 +13772,7 @@ local transparentToggle = texturesBox:AddToggle('transparent_textures', {
     end
 })
 
-texturesBox:AddSlider("TransparentStrength", {
+texturesBox:CreateSlider("TransparentStrength", {
     Text = "transparency",
     Default = _G.Features.TransparentTextures.Transparency,
     Min = 0.5,
@@ -13979,16 +13910,16 @@ end
 
 local function _cfgSave(name)
     if not name or name == "" then
-        Library:Notify({ Title = "Ivory", Description = "Enter a config name first!", Type = "Error", Time = 3 })
+        Library.Notify({ Title = "Ivory", Content = "Enter a config name first!", Type = "Error", Duration = 3 })
         return
     end
     local path = _CONFIG_SUBDIR .. "/" .. name .. ".json"
     local snap = _cfgBuildSnapshot()
     local ok, err = pcall(writefile, path, _cfgEncodeJSON(snap))
     if ok then
-        Library:Notify({ Title = "Ivory", Description = "Config Saved: " .. name, Type = "Success", Time = 3 })
+        Library.Notify({ Title = "Ivory", Content = "Config Saved: " .. name, Type = "Success", Duration = 3 })
     else
-        Library:Notify({ Title = "Ivory", Description = "Config Error: " .. tostring(err), Type = "Error", Time = 3 })
+        Library.Notify({ Title = "Ivory", Content = "Config Error: " .. tostring(err), Type = "Error", Duration = 3 })
     end
 end
 
@@ -13997,7 +13928,7 @@ local function _cfgDelete(name)
     local path = _CONFIG_SUBDIR .. "/" .. name .. ".json"
     if isfile(path) then
         pcall(delfile, path)
-        Library:Notify({ Title = "Ivory", Description = "Config Deleted: " .. name, Type = "Info", Time = 3 })
+        Library.Notify({ Title = "Ivory", Content = "Config Deleted: " .. name, Type = "Info", Duration = 3 })
     end
 end
 
@@ -14014,26 +13945,26 @@ local _cfgApplyFn = nil
 
 local function _cfgLoad(name)
     if not name or name == "" then
-        Library:Notify({ Title = "Ivory", Description = "Enter a config name first!", Type = "Error", Time = 3 })
+        Library.Notify({ Title = "Ivory", Content = "Enter a config name first!", Type = "Error", Duration = 3 })
         return
     end
     local path = _CONFIG_SUBDIR .. "/" .. name .. ".json"
     if not isfile(path) then
-        Library:Notify({ Title = "Ivory", Description = name .. " not found", Type = "Error", Time = 3 })
+        Library.Notify({ Title = "Ivory", Content = name .. " not found", Type = "Error", Duration = 3 })
         return
     end
     local ok, raw = pcall(readfile, path)
     if not ok then
-        Library:Notify({ Title = "Ivory", Description = "Could not read file", Type = "Error", Time = 3 })
+        Library.Notify({ Title = "Ivory", Content = "Could not read file", Type = "Error", Duration = 3 })
         return
     end
     local ok2, data = pcall(_cfgDecodeJSON, raw)
     if not ok2 or type(data) ~= "table" then
-        Library:Notify({ Title = "Ivory", Description = "Corrupt config", Type = "Error", Time = 3 })
+        Library.Notify({ Title = "Ivory", Content = "Corrupt config", Type = "Error", Duration = 3 })
         return
     end
     if _cfgApplyFn then _cfgApplyFn(data) end
-    Library:Notify({ Title = "Ivory", Description = "Config Loaded: " .. name, Type = "Success", Time = 3 })
+    Library.Notify({ Title = "Ivory", Content = "Config Loaded: " .. name, Type = "Success", Duration = 3 })
 end
 
 local function _cfgRefreshList(dropdownRef)
@@ -14044,9 +13975,9 @@ end
 
 -- ==================== THEMES ====================
 do
-    local themesGroup = Tabs['UI Settings']:AddLeftGroupbox('themes', 'palette')
+    local themesGroup = Tabs['UI Settings']:CreateSection('themes', 'palette')
 
-    themesGroup:AddLabel('background'):AddColorPicker('ThemeBG', {
+    themesGroup:CreateLabel('background'):CreateColorPicker('ThemeBG', {
         Default = Color3.fromRGB(20, 20, 30),
         Title = 'Background Color',
         Callback = function(Value)
@@ -14060,7 +13991,7 @@ do
         end,
     })
 
-    themesGroup:AddLabel('main'):AddColorPicker('ThemeMain', {
+    themesGroup:CreateLabel('main'):CreateColorPicker('ThemeMain', {
         Default = Color3.fromRGB(30, 30, 45),
         Title = 'Main Color',
         Callback = function(Value)
@@ -14074,7 +14005,7 @@ do
         end,
     })
 
-    themesGroup:AddLabel('accent'):AddColorPicker('ThemeAccent', {
+    themesGroup:CreateLabel('accent'):CreateColorPicker('ThemeAccent', {
         Default = Color3.fromRGB(128, 0, 255),
         Title = 'Accent Color',
         Callback = function(Value)
@@ -14082,7 +14013,7 @@ do
         end,
     })
 
-    themesGroup:AddLabel('outline'):AddColorPicker('ThemeOutline', {
+    themesGroup:CreateLabel('outline'):CreateColorPicker('ThemeOutline', {
         Default = Color3.fromRGB(60, 60, 80),
         Title = 'Outline Color',
         Callback = function(Value)
@@ -14096,7 +14027,7 @@ do
         end,
     })
 
-    themesGroup:AddLabel('font'):AddColorPicker('ThemeFont', {
+    themesGroup:CreateLabel('font'):CreateColorPicker('ThemeFont', {
         Default = Color3.fromRGB(255, 255, 255),
         Title = 'Font Color',
         Callback = function(Value)
@@ -14110,7 +14041,7 @@ do
         end,
     })
 
-    themesGroup:AddDropdown('ThemeFontFace', {
+    themesGroup:CreateDropdown('ThemeFontFace', {
         Text = 'font face',
         Values = { 'Code', 'Gotham', 'GothamBold', 'GothamMedium', 'Legacy', 'SourceSans', 'SourceSansBold' },
         Default = 'Code',
@@ -14125,34 +14056,34 @@ do
         end,
     })
 
-    themesGroup:AddDropdown('ThemeList', {
+    themesGroup:CreateDropdown('ThemeList', {
         Text = 'theme list',
         Values = { 'Default', 'Midnight', 'Ocean', 'Sunset', 'Matrix' },
         Default = 'Default',
         Callback = function(Value)
-            Library:Notify({ Title = "Ivory", Description = "Theme: " .. Value, Type = "Info", Time = 3 })
+            Library.Notify({ Title = "Ivory", Content = "Theme: " .. Value, Type = "Info", Duration = 3 })
         end,
     })
 
-    themesGroup:AddButton('set as default', function()
-        Library:Notify({ Title = "Ivory", Description = "Default theme saved", Type = "Success", Time = 3 })
+    themesGroup:CreateButton('set as default', function()
+        Library.Notify({ Title = "Ivory", Content = "Default theme saved", Type = "Success", Duration = 3 })
     end)
 end
 
 -- ==================== CONFIGURATION ====================
 do
-    local configGroup = Tabs['UI Settings']:AddRightGroupbox('configuration', 'save')
+    local configGroup = Tabs['UI Settings']:CreateSection('configuration', 'save')
 
     local configNameValue = ""
 
-    _cfgRefs.ConfigNameInput = configGroup:AddInput('ConfigName', {
+    _cfgRefs.ConfigNameInput = configGroup:CreateInput('ConfigName', {
         Text = 'config name',
         Default = '',
         Placeholder = 'myconfig',
         Callback = function(v) configNameValue = v end,
     })
 
-    configGroup:AddButton('create config', function()
+    configGroup:CreateButton('create config', function()
         _cfgSave(configNameValue)
         _cfgRefreshList(_cfgRefs.ConfigList)
     end)
@@ -14160,7 +14091,7 @@ do
     local initialNames = _cfgListConfigs()
     initialNames[#initialNames+1] = "---"
 
-    _cfgRefs.ConfigList = configGroup:AddDropdown('ConfigList', {
+    _cfgRefs.ConfigList = configGroup:CreateDropdown('ConfigList', {
         Text = 'config list',
         Values = initialNames,
         Default = '---',
@@ -14172,64 +14103,64 @@ do
         end,
     })
 
-    configGroup:AddButton('load config', function() _cfgLoad(configNameValue) end)
+    configGroup:CreateButton('load config', function() _cfgLoad(configNameValue) end)
 
-    configGroup:AddButton('overwrite config', function()
+    configGroup:CreateButton('overwrite config', function()
         if not configNameValue or configNameValue == "" then return end
         _cfgSave(configNameValue)
     end)
 
-    configGroup:AddButton('delete config', function()
+    configGroup:CreateButton('delete config', function()
         _cfgDelete(configNameValue)
         _cfgRefreshList(_cfgRefs.ConfigList)
     end)
 
-    configGroup:AddButton('refresh list', function()
+    configGroup:CreateButton('refresh list', function()
         _cfgRefreshList(_cfgRefs.ConfigList)
-        Library:Notify({ Title = "Ivory", Description = "List refreshed", Type = "Info", Time = 3 })
+        Library.Notify({ Title = "Ivory", Content = "List refreshed", Type = "Info", Duration = 3 })
     end)
 
-    configGroup:AddButton('set as autoload', function()
+    configGroup:CreateButton('set as autoload', function()
         _cfgSetAutoload(configNameValue)
-        Library:Notify({ Title = "Ivory", Description = "Autoload set: " .. configNameValue, Type = "Success", Time = 3 })
+        Library.Notify({ Title = "Ivory", Content = "Autoload set: " .. configNameValue, Type = "Success", Duration = 3 })
     end)
 
-    configGroup:AddButton('reset autoload', function()
+    configGroup:CreateButton('reset autoload', function()
         _cfgClearAutoload()
-        Library:Notify({ Title = "Ivory", Description = "Autoload cleared", Type = "Info", Time = 3 })
+        Library.Notify({ Title = "Ivory", Content = "Autoload cleared", Type = "Info", Duration = 3 })
     end)
 
-    configGroup:AddLabel('current autoload config: none')
+    configGroup:CreateLabel('current autoload config: none')
 
     local configJSONValue = ""
-    configGroup:AddInput('ConfigJSON', {
+    configGroup:CreateInput('ConfigJSON', {
         Text = 'config json',
         Default = '',
         Placeholder = 'paste config JSON here',
         Callback = function(v) configJSONValue = v end,
     })
 
-    configGroup:AddButton('import config', function()
+    configGroup:CreateButton('import config', function()
         if not configNameValue or configNameValue == "" then return end
         if not configJSONValue or configJSONValue == "" then return end
         local ok2, data = pcall(_cfgDecodeJSON, configJSONValue)
         if not ok2 or type(data) ~= "table" then
-            Library:Notify({ Title = "Ivory", Description = "Invalid JSON", Type = "Error", Time = 3 })
+            Library.Notify({ Title = "Ivory", Content = "Invalid JSON", Type = "Error", Duration = 3 })
             return
         end
         local path = _CONFIG_SUBDIR .. "/" .. configNameValue .. ".json"
         pcall(writefile, path, configJSONValue)
-        Library:Notify({ Title = "Ivory", Description = "Config imported: " .. configNameValue, Type = "Success", Time = 3 })
+        Library.Notify({ Title = "Ivory", Content = "Config imported: " .. configNameValue, Type = "Success", Duration = 3 })
     end)
 
-    configGroup:AddButton('export current config', function()
+    configGroup:CreateButton('export current config', function()
         if not configNameValue or configNameValue == "" then return end
         local path = _CONFIG_SUBDIR .. "/" .. configNameValue .. ".json"
         if not isfile(path) then return end
         local ok, raw = pcall(readfile, path)
         if ok and raw then
             pcall(setclipboard, raw)
-            Library:Notify({ Title = "Ivory", Description = "Config JSON copied to clipboard", Type = "Success", Time = 3 })
+            Library.Notify({ Title = "Ivory", Content = "Config JSON copied to clipboard", Type = "Success", Duration = 3 })
         end
     end)
 end
@@ -14315,7 +14246,7 @@ task.delay(0.5, function()
         if ok and name and name ~= "" then
             name = name:gsub("%s+","")
             if name ~= "" then
-                Library:Notify({ Title = "Ivory", Description = "Loading config: \""..name.."\"", Type = "Info", Time = 3 })
+                Library.Notify({ Title = "Ivory", Content = "Loading config: \""..name.."\"", Type = "Info", Duration = 3 })
                 task.wait(0.3)
                 _cfgLoad(name)
             end
