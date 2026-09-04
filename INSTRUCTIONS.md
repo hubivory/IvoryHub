@@ -6,135 +6,140 @@
 - Footer: `"v1.4 | Lobby/Game | UserId"` (copyable)
 - All GUI text must say "Ivory" -- never display the game name
 
-## UI Library: ObsidianUltra
+## UI Library: IvoryHubLibrary
 
 ```lua
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local function httpGet(url)
-    return request({ Url = url, Method = "GET" }).Body
-end
-local Library = loadstring(httpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua"))()
 ```
 
-### ObsidianUltra Key API Notes
+### Key API
 
-- `AddSubTab(Name, Icon)` -- creates sidebar dropdown + button row. Parent tab hides its own columns once it has sub tabs.
-- `SubTab:AddLeftGroupbox(Name, Icon)` / `SubTab:AddRightGroupbox(Name, Icon)` -- columns inside sub tabs.
-- `AddToggle`, `AddSlider`, `AddDropdown`, `AddLabel`, `AddDivider` -- standard elements.
-- `AddButton` takes a string and callback: `Group:AddButton("Text", function() ... end)` -- do NOT use `{Text = ..., Func = ...}`.
-- `Dropdown` supports `Searchable = true`, `Expandable = true`, `Multi = true`, `SelectAllButtons = true`.
-- `AddKeyPicker` attaches to toggles: `:AddKeyPicker("Name", { Default, Text, Mode, SyncToggleState, NoUI })`.
-- `AddColorPicker` must be chained on a label: `Group:AddLabel("Label Text"):AddColorPicker("Name", { Default, Title, Callback })`.
-- `Library:Notify({ Title, Description, Type, Time })` -- Type is "Success", "Info", or "Error".
-- `Library.Scheme.BlueColor` -- available for custom elements.
-- `Window:SetMinimized(true/false)`, `Window:ToggleMinimized()`.
-- Minimize keybind, custom cursor, DPI scale, corner radius all configurable in Settings tab.
+```lua
+-- Window
+local Window = Library:CreateWindow({ Title = "Ivory", Width = 700, Height = 600 })
+
+-- Tabs
+local CombatTab = Window:CreateTab({ Name = "Combat" })
+local MiscTab = Window:CreateTab({ Name = "Misc" })
+
+-- Sections (replace AddLeftGroupbox/AddRightGroupbox)
+local Section = CombatTab:CreateSection("section name")
+
+-- Elements
+Section:CreateToggle("FlagName", { Text = "toggle text", CurrentValue = false, Callback = function(v) end })
+Section:CreateSlider("SliderName", { Text = "slider text", Default = 50, Min = 0, Max = 100, Rounding = 0, Callback = function(v) end })
+Section:CreateDropdown("DropdownName", { Text = "dropdown text", Values = {"A","B"}, Value = "A", Callback = function(v) end })
+Section:CreateButton({ Name = "button text", Callback = function() end })
+Section:CreateLabel("label text")
+Section:CreateLabel({ Text = "label text" })
+
+-- Chained ColorPicker (on label)
+Section:CreateLabel({Text = "color label"}):CreateColorPicker("PickerName", { Default = Color3.new(1,1,1), Callback = function(c) end })
+
+-- Chained Keybind (on toggle or label)
+Section:CreateLabel("keybind label"):CreateKeybind("KeybindName", { Default = "RightShift", Callback = function(k) end })
+
+-- DependencyBox (hides contents when dependency not met)
+local depBox = Section:CreateDependencyBox()
+depBox:CreateSlider("DepSlider", { Text = "only visible when toggle is on", ... })
+depBox:SetupDependencies({ { someToggle, true } })
+
+-- Nested sections
+local sub = Section:CreateSection("sub section")
+
+-- Notifications
+Library.Notify({ Title = "Ivory", Content = "message", Type = "Success", Duration = 3 })
+
+-- ObsidianUltra compat methods
+Library:Create("Frame", { Parent = Library.ScreenGui, ... })  -- creates Instance
+Library:AddToRegistry(instance, props)  -- registers for theme updates
+Library:OnUnload(callback)              -- registers unload callback
+Library:Unload() / Library:Destroy()   -- destroys UI
+Library:Toggle()                        -- toggles visibility
+Library.Toggled                         -- boolean state
+Library.ScreenGui                       -- the ScreenGui instance
+Library.MainFrame                       -- the main wrapper frame
+Library.KeybindFrame                    -- keybind list frame
+Library.Toggles                         -- registry of all toggles by flag name
+```
 
 ## Window Setup
 
 ```lua
 local Window = Library:CreateWindow({
     Title = "Ivory",
-    Icon = "swords",
-    Footer = {
-        "v1.4 |",
-        { Text = isLobby and "Lobby" or "Game", Copyable = true },
-        "|",
-        { Text = tostring(LocalPlayer.UserId), Copyable = true },
-    },
-    CopyableFooter = true,
-    FuzzySearch = true,
-    SearchValues = true,
-    Minimizable = true,
-    MinimizeKeybind = Enum.KeyCode.RightBracket,
-    MinimizedWidth = 280,
-    NotifySide = "Right",
-    ShowCustomCursor = true,
-    SearchKeybind = Enum.KeyCode.F,
-    CornerRadius = 4,
-    Animations = {
-        ToggleWindow = false,
-        TabSwitch = false,
-        Groupbox = false,
-        Dropdown = false,
-        KeyPicker = false,
-        SubTabUnderline = true,
-    },
+    Width = 720,
+    Height = 600,
 })
 ```
 
-## Tab Structure (Sub-Tab Sidebar Style)
+## Tab Structure
 
-Use `AddSubTab()` for sidebar dropdowns. Do NOT create flat tabs for sub-sections.
+Tabs are created with `Window:CreateTab()`. Each tab has sections created with `Tab:CreateSection()`.
 
 ```lua
-local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
-local SubTab = MainTab:AddSubTab("Automation", "zap")
-local Group = SubTab:AddLeftGroupbox("Feature Group", "box-icon")
+local Tabs = {
+    Combat = Window:CreateTab({ Name = "Combat" }),
+    Visuals = Window:CreateTab({ Name = "Visuals" }),
+    World = Window:CreateTab({ Name = "World" }),
+    Misc = Window:CreateTab({ Name = "Misc" }),
+    ["UI Settings"] = Window:CreateTab({ Name = "UI Settings" }),
+}
+
+local combatSection = Tabs.Combat:CreateSection("aimbot")
+local espSection = Tabs.Visuals:CreateSection("esp")
 ```
 
 ### Typical Tab Layout
 
 ```
-Tab: Main
-  SubTab: Automation
-    LeftGroupbox: Core Features
-    RightGroupbox: Extra Features
-  SubTab: Config
-    LeftGroupbox: Settings
+Tab: Combat
+  Section: aimbot
+  Section: gun
+  Section: ragebot
 
-Tab: Shop/Tools
-  SubTab: Category A
-    LeftGroupbox: ...
-    RightGroupbox: ...
-  SubTab: Category B
+Tab: Visuals
+  Section: esp
+  Section: utility
+  Section: lighting
 
-Tab: Player
-  SubTab: Movement
-    LeftGroupbox: Speed
-    RightGroupbox: Jump
-  SubTab: Visuals
-    LeftGroupbox: ESP
+Tab: World
+  Section: hit effects
+  Section: hit sounds
+  Section: view model
 
-Tab: Settings (always last)
-  ThemeManager:ApplyToTab(SettingsTab)
-  SaveManager:BuildConfigSection(SettingsTab)
-  LeftGroupbox: Menu (keybind, cursor, DPI, unload)
-```
+Tab: Misc
+  Section: miscellaneous
+  Section: textures
 
-## Theme and Save Manager
-
-```lua
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub")
-if isGame then
-    SaveManager:SetSubFolder("game")
-else
-    SaveManager:SetSubFolder("lobby")
-end
+Tab: UI Settings
+  Section: credits
+  Section: menu settings
+  Section: server
+  Section: themes
+  Section: configuration
 ```
 
 ## Settings Tab (Always Last)
 
 Must include:
 
-- ThemeManager section
-- SaveManager config section
-- Menu groupbox with:
-  - Keybind menu toggle
+- Credits section
+- Menu settings section with:
+  - Menu keybind picker (RightShift default)
+  - Keybind list toggle
+  - FPS cap slider
+  - Language dropdown
+  - Anti AFK toggle
   - Custom cursor toggle
   - Test notification button
   - Notification side dropdown (Left/Right)
   - DPI scale dropdown (50%-200%)
   - Corner radius slider (0-20)
-  - Menu keybind picker (RightShift default)
   - Unload button
+- Server section with rejoin/hop buttons
+- Themes section with color pickers
+- Configuration section with config save/load
 
 ## Loader Entry (IvoryHub.luau)
 
@@ -152,10 +157,9 @@ Before submitting a script, verify all of these:
 
 - [ ] Window title says "Ivory" (not the game name)
 - [ ] Footer shows "v1.4 | Lobby/Game | UserId"
-- [ ] Sub-tab sidebar structure with AddSubTab (not flat tabs)
-- [ ] All AddButton calls use `Group:AddButton("Text", function() ... end)` format (not `{Text=..., Func=...}`)
-- [ ] All AddColorPicker calls chained on AddLabel (not called directly on group)
-- [ ] ThemeManager + SaveManager setup
+- [ ] Sections created with `Tab:CreateSection("name")` (not AddLeftGroupbox/AddRightGroupbox)
+- [ ] All CreateButton calls use `{Name = "text", Callback = function() end}` format
+- [ ] All CreateColorPicker calls chained on CreateLabel
 - [ ] Settings tab with menu controls (always last tab)
 - [ ] Game added to IvoryHub.luau loader with correct PlaceId(s)
 - [ ] No game names anywhere in the UI
