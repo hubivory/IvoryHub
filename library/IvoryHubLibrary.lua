@@ -143,7 +143,7 @@ Elements.CreateInput = function(parent, config)
     config = config or {}
 
     local row = Instance.new("Frame")
-    row.Name = config.Name or "Input"
+    row.Name = config.Name or config.Text or "Input"
     row.BackgroundTransparency = 1
     row.Size = UDim2.new(1, 0, 0, 46)
     row.ZIndex = 3
@@ -178,7 +178,7 @@ Elements.CreateInput = function(parent, config)
     nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
     nameLabel.Size = UDim2.new(0.4, -8, 1, 0)
     nameLabel.Position = UDim2.new(0, 16, 0, 0)
-    nameLabel.Text = config.Name or ""
+    nameLabel.Text = config.Name or config.Text or ""
     nameLabel.ZIndex = 4
     nameLabel.Parent = card
 
@@ -325,7 +325,7 @@ Elements.CreateParagraph = function(parent, config)
     config = config or {}
 
     local row = Instance.new("Frame")
-    row.Name = config.Title or "Paragraph"
+    row.Name = config.Title or config.Text or config.Name or "Paragraph"
     row.BackgroundTransparency = 1
     row.AutomaticSize = Enum.AutomaticSize.Y
     row.Size = UDim2.new(1, 0, 0, 0)
@@ -541,7 +541,7 @@ Elements.CreateButton = function(parent, config)
 	label.TextColor3 = Theme.TextPrimary
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.TextYAlignment = Enum.TextYAlignment.Center
-	label.Text = config.Name or "Button"
+	label.Text = config.Name or config.Text or "Button"
 	label.ZIndex = 4
 	label.Parent = rowFrame
 
@@ -672,7 +672,7 @@ Elements.CreateToggle = function(parent, config)
 	label.TextColor3 = Theme.TextPrimary
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.TextYAlignment = Enum.TextYAlignment.Center
-	label.Text = config.Name or "Toggle"
+	label.Text = config.Name or config.Text or "Toggle"
 	label.ZIndex = 4
 	label.Parent = rowFrame
 
@@ -818,7 +818,7 @@ end
 Elements.CreateSlider = function(parent, config)
     config = config or {}
 
-    local sliderName = tostring(config.Name or "Slider")
+    local sliderName = tostring(config.Name or config.Text or "Slider")
     local range = config.Range or {0, 100}
     local minVal = range[1] or 0
     local maxVal = range[2] or 100
@@ -1246,7 +1246,7 @@ do
         end
 
         local rowFrame = Instance.new("Frame")
-        rowFrame.Name = "Dropdown_" .. tostring(config.Name or "Dropdown")
+        rowFrame.Name = "Dropdown_" .. tostring(config.Name or config.Text or "Dropdown")
         rowFrame.BackgroundTransparency = 1
         rowFrame.BorderSizePixel = 0
         rowFrame.Size = UDim2.new(1, 0, 0, 0)
@@ -1296,7 +1296,7 @@ do
         nameLabel.TextXAlignment = Enum.TextXAlignment.Left
         nameLabel.TextYAlignment = Enum.TextYAlignment.Center
         nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
-        nameLabel.Text = tostring(config.Name or "Dropdown")
+        nameLabel.Text = tostring(config.Name or config.Text or "Dropdown")
         nameLabel.ZIndex = 4
         nameLabel.Parent = headerFrame
 
@@ -2068,7 +2068,7 @@ end
 Elements.CreateColorPicker = function(parent, config)
 	config = config or {}
 
-	local pickerName = config.Name or "Color Picker"
+	local pickerName = config.Name or config.Text or "Color Picker"
 	local initialColor = config.Color or Color3.fromRGB(255, 255, 255)
 	local flag = config.Flag
 	local callback = config.Callback or function() end
@@ -2640,7 +2640,7 @@ Elements.CreateKeybind = function(parent, config)
 	nameLabel.TextColor3 = Theme.TextPrimary
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 	nameLabel.TextYAlignment = Enum.TextYAlignment.Center
-	nameLabel.Text = config.Name or "Keybind"
+	nameLabel.Text = config.Name or config.Text or "Keybind"
 	nameLabel.ZIndex = 4
 	nameLabel.Parent = rowFrame
 
@@ -5119,23 +5119,12 @@ function Tab:CreateDependencyBox()
     wrapped.SetupDependencies = function(_, deps)
         local function applyState()
             local met = checkDeps(deps)
-            frame.GroupTransparency = met and 0 or 0.7
-            for _, child in ipairs(frame:GetDescendants()) do
-                if child:IsA("GuiObject") then
-                    child.GroupTransparency = met and 0 or 0.7
-                end
-            end
+            frame.Visible = met
         end
 
         for _, dep in ipairs(deps) do
             local toggle = dep[1]
             if toggle and toggle.Set then
-                local origCallback = nil
-                if toggle.Instance and toggle.Instance:IsA("TextButton") then
-                    for _, conn in ipairs(getconnections and getconnections(toggle.Instance.MouseButton1Click) or {}) do
-                        -- no-op, just checking
-                    end
-                end
                 local oldSet = toggle.Set
                 toggle.Set = function(self, value, silent)
                     oldSet(self, value, silent)
@@ -5244,12 +5233,7 @@ Tab._wrapSection = function(section)
             wrapped.SetupDependencies = function(_, deps)
                 local function applyState()
                     local met = checkDeps(deps)
-                    frame.GroupTransparency = met and 0 or 0.7
-                    for _, child in ipairs(frame:GetDescendants()) do
-                        if child:IsA("GuiObject") then
-                            child.GroupTransparency = met and 0 or 0.7
-                        end
-                    end
+                    frame.Visible = met
                 end
 
                 for _, dep in ipairs(deps) do
