@@ -5755,8 +5755,13 @@ Library.CreateWindow = function(config)
     screenGui.DisplayOrder = 9999
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 
-    local parentedToCoreGui = pcall(function()
+    -- Try CoreGui first, but verify it actually rendered. Some executors
+    -- (Potassium etc.) let pcall succeed for CoreGui parenting but the
+    -- ScreenGui never shows up. Fall back to PlayerGui if needed.
+    local parentedToCoreGui = false
+    pcall(function()
         screenGui.Parent = game:GetService("CoreGui")
+        parentedToCoreGui = screenGui.Parent == game:GetService("CoreGui")
     end)
 
     if not parentedToCoreGui then
@@ -5770,6 +5775,7 @@ Library.CreateWindow = function(config)
     local self = setmetatable({}, Window)
     self.ScreenGui = screenGui
     Library.ScreenGui = screenGui
+    print("[Ivory] ScreenGui parented to:", screenGui.Parent and screenGui.Parent:GetFullName() or "nil")
     Library.MainFrame = wrapper
     Library.KeybindFrame = Instance.new("Frame")
     Library.KeybindFrame.Name = "KeybindFrame"
