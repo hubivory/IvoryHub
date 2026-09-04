@@ -28,10 +28,7 @@ local httpGet do
 	end
 end
 
-local LIB_SRC = getgenv()._IvoryLibSrc
-if not LIB_SRC then
-	LIB_SRC = httpGet(LIB_URL)
-end
+local LIB_SRC = httpGet(LIB_URL)
 if not LIB_SRC or #LIB_SRC == 0 then
 	error("[Ivory] Library source could not be loaded. Check your executor's HTTP support.")
 end
