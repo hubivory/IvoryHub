@@ -5043,8 +5043,11 @@ function Tab:CreateSection(title)
 end
 
 Tab._wrapSection = function(section)
-        section.CreateLabel = function(_, text)
-            return Elements.CreateLabel(section.Instance, text)
+        section.CreateLabel = function(_, textOrConfig)
+            if type(textOrConfig) == "table" then
+                textOrConfig = textOrConfig.Text or textOrConfig.Name or textOrConfig.Title or ""
+            end
+            return Elements.CreateLabel(section.Instance, textOrConfig)
         end
         section.CreateButton = function(_, config)
             return Elements.CreateButton(section.Instance, config)
