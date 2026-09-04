@@ -5027,7 +5027,51 @@ end
 
 function Tab:CreateSection(title)
     if Elements.CreateSection then
-        return Elements.CreateSection(self.Content, title)
+        local section = Elements.CreateSection(self.Content, title)
+        section.CreateLabel = function(_, text)
+            return Elements.CreateLabel(section.Instance, text)
+        end
+        section.CreateButton = function(_, config)
+            return Elements.CreateButton(section.Instance, config)
+        end
+        section.CreateToggle = function(_, config)
+            return Elements.CreateToggle(section.Instance, config)
+        end
+        section.CreateSlider = function(_, config)
+            return Elements.CreateSlider(section.Instance, config)
+        end
+        section.CreateDropdown = function(_, config)
+            return Elements.CreateDropdown(section.Instance, config)
+        end
+        if Elements.CreateMultiDropdown then
+            section.CreateMultiDropdown = function(_, config)
+                return Elements.CreateMultiDropdown(section.Instance, config)
+            end
+        end
+        if Elements.CreateColorPicker then
+            section.CreateColorPicker = function(_, config)
+                return Elements.CreateColorPicker(section.Instance, config)
+            end
+        end
+        if Elements.CreateKeybind then
+            section.CreateKeybind = function(_, config)
+                return Elements.CreateKeybind(section.Instance, config)
+            end
+        end
+        if Elements.CreateInput then
+            section.CreateInput = function(_, config)
+                return Elements.CreateInput(section.Instance, config)
+            end
+        end
+        if Elements.CreateParagraph then
+            section.CreateParagraph = function(_, config)
+                return Elements.CreateParagraph(section.Instance, config)
+            end
+        end
+        section.CreateDivider = function(_)
+            return Elements.CreateDivider(section.Instance)
+        end
+        return section
     end
 end
 
