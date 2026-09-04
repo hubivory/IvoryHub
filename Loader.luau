@@ -108,6 +108,7 @@ local State = {
 	Aimbot_FOV_Circle = true,
 	Aimbot_TargetPart = "Head",
 	Aimbot_TeamCheck = false,
+	Aimbot_Keybind = "MouseButton2",
 	Highlight_Enabled = false,
 	Highlight_FillTransparency = 0.5,
 	Highlight_OutlineTransparency = 0,
@@ -360,7 +361,10 @@ AimbotSection:CreateToggle({
 AimbotSection:CreateKeybind({
 	Name = "Aimbot Keybind",
 	CurrentKeybind = "MouseButton2",
-	Callback = function(keybind) end,
+	Callback = function(keybind)
+		State.Aimbot_Keybind = keybind
+		refreshAimbotBind()
+	end,
 })
 AimbotSection:CreateDropdown({
 	Name = "Target Part",
@@ -548,6 +552,19 @@ local aimbotKeyDown = false
 local aimbotBindType = "Mouse"
 local aimbotBindCode = Enum.UserInputType.MouseButton2
 
+local function parseKeybind(keybindStr)
+	if not keybindStr or keybindStr == "" then return "Mouse", Enum.UserInputType.MouseButton2 end
+	if keybindStr:find("MouseButton") then return "Mouse", Enum.UserInputType[keybindStr] end
+	return "Keyboard", Enum.KeyCode[keybindStr]
+end
+
+local function refreshAimbotBind()
+	local tp, code = parseKeybind(State.Aimbot_Keybind)
+	aimbotBindType = tp
+	aimbotBindCode = code
+end
+refreshAimbotBind()
+
 local function isPartVisible(targetPart)
 	local origin = Camera.CFrame.Position
 	local direction = (targetPart.Position - origin)
@@ -696,6 +713,21 @@ UserInputService.InputBegan:Connect(function(input, gpe)
 			local mouse = LocalPlayer:GetMouse()
 			LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0))
 		end)
+	end
+	if State.Aimbot then
+		if aimbotBindType == "Mouse" and input.UserInputType == aimbotBindCode then
+			aimbotKeyDown = true
+		elseif aimbotBindType == "Keyboard" and input.KeyCode == aimbotBindCode then
+			aimbotKeyDown = true
+		end
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input, gpe)
+	if aimbotBindType == "Mouse" and input.UserInputType == aimbotBindCode then
+		aimbotKeyDown = false
+	elseif aimbotBindType == "Keyboard" and input.KeyCode == aimbotBindCode then
+		aimbotKeyDown = false
 	end
 end)
 

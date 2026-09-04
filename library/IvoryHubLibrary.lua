@@ -5499,7 +5499,7 @@ Library.CreateWindow = function(config)
     local auraScale = Instance.new("UIScale")
     auraScale.Parent = aura
     self.Aura = aura
-    tw(aura, EASE_SLOW, { BackgroundTransparency = 0.92 })
+    tw(aura, EASE_SLOW, { BackgroundTransparency = 0.97 })
 
     if Library._RegisterAccentBound then
         Library._RegisterAccentBound(function(color)
@@ -5512,10 +5512,10 @@ Library.CreateWindow = function(config)
     task.spawn(function()
         while aura.Parent do
             tw(auraScale, TweenInfo.new(3.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Scale = 1.08 })
-            tw(aura, TweenInfo.new(3.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.96 })
+            tw(aura, TweenInfo.new(3.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.98 })
             task.wait(3.4)
             tw(auraScale, TweenInfo.new(3.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Scale = 1 })
-            tw(aura, TweenInfo.new(3.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.92 })
+            tw(aura, TweenInfo.new(3.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.97 })
             task.wait(3.4)
         end
     end)
@@ -5558,8 +5558,8 @@ Library.CreateWindow = function(config)
             ColorSequenceKeypoint.new(1, Theme.Mauve),
         })
         gradient.Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0.85),
-            NumberSequenceKeypoint.new(0.5, 0.94),
+            NumberSequenceKeypoint.new(0, 0.92),
+            NumberSequenceKeypoint.new(0.5, 0.97),
             NumberSequenceKeypoint.new(1, 1),
         })
         gradient.Parent = blob
