@@ -830,7 +830,7 @@ end
 
 do
     local DiscordGroup = Tabs.Combat:CreateSection('discord')
-    local DiscordLabel = DiscordGroup:CreateLabel({ Text = "Join discord for free keys!", DoesWrap = true, Size = 26 })
+    local DiscordLabel = DiscordGroup:CreateLabel({ Text = "join discord for keys!", DoesWrap = true, Size = 26 })
 
     DiscordGroup:CreateButton({Name = 'Copy Discord Link', Callback = function()
         pcall(function() setclipboard("https://discord.gg/ivory") end)
@@ -3478,7 +3478,7 @@ local function updNoAnimations()
 end
 
 local noAnimToggle = viewportTab:CreateToggle("NoAnimations", {
-    Text = "no animations",
+    Text = "no anims",
     Default = false,
     Callback = function(v)
         noAnimationsEnabled = v
@@ -3488,7 +3488,7 @@ local noAnimToggle = viewportTab:CreateToggle("NoAnimations", {
 
 local noAnimDepBox = viewportTab:CreateDependencyBox()
 noAnimDepBox:CreateDropdown("NoAnimationsList", {
-    Text = "disabled animations",
+    Text = "blocked anims",
     Values = { "Idle", "Reloading", "Sprinting", "Crouching", "Shooting", "Aiming" },
     Default = {},
     Multi = true,
@@ -3532,7 +3532,7 @@ gunChamsDep:CreateDropdown("GunMaterial", {
     Callback = function(v) gunMaterial = Enum.Material[v] end,
 })
 gunChamsDep:CreateSlider("GunChamSpeed", {
-    Text = "gradient speed",
+    Text = "gradient spd",
     Default = gunChamSpeed,
     Min = 0.1,
     Max = 10,
@@ -3582,7 +3582,7 @@ armChamsDep:CreateDropdown("ArmMaterial", {
     Callback = function(v) armMaterial = Enum.Material[v] end,
 })
 armChamsDep:CreateSlider("ArmChamSpeed", {
-    Text = "gradient speed",
+    Text = "gradient spd",
     Default = armChamSpeed,
     Min = 0.1,
     Max = 10,
@@ -3716,7 +3716,7 @@ armHighlightDep:CreateDropdown("ArmHighlightMaterial", {
     Callback = function(v) armHighlightMaterial = Enum.Material[v] end,
 })
 armHighlightDep:CreateSlider("ArmHighlightFillTransparency", {
-    Text = "arm highlight fill transparency",
+    Text = "arm fill alpha",
     Default = armHighlightFillTrans,
     Min = 0,
     Max = 1,
@@ -3725,7 +3725,7 @@ armHighlightDep:CreateSlider("ArmHighlightFillTransparency", {
     Callback = function(v) armHighlightFillTrans = v end,
 })
 armHighlightDep:CreateSlider("ArmHighlightOutlineTransparency", {
-    Text = "arm highlight outline transparency",
+    Text = "arm outline alpha",
     Default = armHighlightOutlineTrans,
     Min = 0,
     Max = 1,
@@ -6295,7 +6295,7 @@ rageStatusDep:CreateToggle("RageStatusAmmo", {
 })
 
 rageStatusDep:CreateToggle("RageStatusReloadHide", {
-    Text = "hide while reloading",
+    Text = "hide reload",
     Default = true,
     Callback = function(val)
         config.ragestatus.hideOnReload = val
@@ -8013,7 +8013,7 @@ BlatantGroup:CreateToggle("IvorySAWallCheck", {
 })
 
 BlatantGroup:CreateToggle("IvorySAProjPred", {
-    Text = "projectile prediction",
+    Text = "proj prediction",
     Default = false,
     Callback = function(val)
         _IvorySA.ProjectilePrediction = val
@@ -8109,7 +8109,7 @@ BlatantGroup:CreateDivider()
 local _IvoryAutoBhop = { Enabled = false }
 
 BlatantGroup:CreateToggle("IvoryAutoBhop", {
-    Text = "auto bunny hop",
+    Text = "auto bhop",
     Default = false,
     Callback = function(val)
         _IvoryAutoBhop.Enabled = val
@@ -8261,7 +8261,7 @@ local function det()
 end
 
 v555:CreateToggle("AntiTrip", {
-    Text = "anti subspace tripmine",
+    Text = "anti tripmine",
     Default = false,
     Callback = function(val)
         if val then
@@ -8589,7 +8589,7 @@ local hitNotifTab = Tabs.World:CreateSection('hit notif')
 local rbHitCfg = ragebot.config.hitNotifications
 
 local hitNotificationsToggle = hitNotifTab:CreateToggle('HitNotifications', {
-    Text = 'hit notifications',
+    Text = 'hit notifs',
     Default = false,
     Callback = function(val)
         rbHitCfg.enabled = val
@@ -10803,7 +10803,7 @@ lightbox:CreateToggle('lighting_master', {
 })
 
 local ambientToggle = lightbox:CreateToggle('lighting_ambient', {
-    Text = 'custom ambient',
+    Text = 'ambient',
     Default = _G.LightingSettings.Ambient.Enabled,
     Callback = function(v)
         _G.LightingSettings.Ambient.Enabled = v
@@ -10818,7 +10818,7 @@ ambientToggle:CreateColorPicker('lighting_ambient_color', {
 })
 
 local outdoorToggle = lightbox:CreateToggle('lighting_outdoorambient', {
-    Text = 'custom outdoor ambient',
+    Text = 'outdoor ambient',
     Default = _G.LightingSettings.OutdoorAmbient.Enabled,
     Callback = function(v)
         _G.LightingSettings.OutdoorAmbient.Enabled = v
@@ -10833,7 +10833,7 @@ outdoorToggle:CreateColorPicker('lighting_outdoorambient_color', {
 })
 
 local sunColorToggle = lightbox:CreateToggle('lighting_suncolor', {
-    Text = 'custom sun color',
+    Text = 'sun color',
     Default = _G.LightingSettings.SunColor.Enabled,
     Callback = function(v)
         _G.LightingSettings.SunColor.Enabled = v
@@ -10856,7 +10856,7 @@ lightbox:CreateToggle('lighting_globalshadows', {
 })
 
 lightbox:CreateToggle('lighting_shadowsoftness', {
-    Text = 'custom shadow softness',
+    Text = 'shadow softness',
     Default = _G.LightingSettings.ShadowSoftness.Enabled,
     Callback = function(v)
         _G.LightingSettings.ShadowSoftness.Enabled = v
@@ -10894,7 +10894,7 @@ bottomShiftToggle:CreateColorPicker('lighting_colorshiftbottom_color', {
 })
 
 lightbox:CreateToggle('lighting_clocktime', {
-    Text = 'custom time',
+    Text = 'time',
     Default = _G.LightingSettings.ClockTime.Enabled,
     Callback = function(v)
         _G.LightingSettings.ClockTime.Enabled = v
@@ -10902,7 +10902,7 @@ lightbox:CreateToggle('lighting_clocktime', {
 })
 
 lightbox:CreateToggle('lighting_latitude', {
-    Text = 'custom latitude',
+    Text = 'latitude',
     Default = _G.LightingSettings.GeographicLatitude.Enabled,
     Callback = function(v)
         _G.LightingSettings.GeographicLatitude.Enabled = v
@@ -10910,7 +10910,7 @@ lightbox:CreateToggle('lighting_latitude', {
 })
 
 local fogToggle = lightbox:CreateToggle('lighting_fog', {
-    Text = 'custom fog',
+    Text = 'fog',
     Default = _G.LightingSettings.Fog.Enabled,
     Callback = function(v)
         _G.LightingSettings.Fog.Enabled = v
@@ -10925,7 +10925,7 @@ fogToggle:CreateColorPicker('lighting_fog_color', {
 })
 
 lightbox:CreateToggle('lighting_diffuse', {
-    Text = 'custom diffuse scale',
+    Text = 'diffuse scale',
     Default = _G.LightingSettings.EnvironmentDiffuseScale.Enabled,
     Callback = function(v)
         _G.LightingSettings.EnvironmentDiffuseScale.Enabled = v
@@ -10933,7 +10933,7 @@ lightbox:CreateToggle('lighting_diffuse', {
 })
 
 lightbox:CreateToggle('lighting_specular', {
-    Text = 'custom specular scale',
+    Text = 'specular scale',
     Default = _G.LightingSettings.EnvironmentSpecularScale.Enabled,
     Callback = function(v)
         _G.LightingSettings.EnvironmentSpecularScale.Enabled = v
@@ -13207,7 +13207,7 @@ MenuGroup:CreateToggle('KeybindVisible', {
 })
 
 MenuGroup:CreateSlider('tgbtgbbktbkmb', {
-    Text = 'cap fps at (0 = off)',
+    Text = 'fps cap',
     Default = 0,
     Min = 0,
     Max = 9999,
@@ -13241,7 +13241,7 @@ MenuGroup:CreateDropdown('InstanceLanguage', {
     end,
 })
 
-MenuGroup:CreateToggle('AntiAFK', {Text = 'anti-afk', Default = true, Callback = function(val)
+MenuGroup:CreateToggle('AntiAFK', {Text = 'anti afk', Default = true, Callback = function(val)
     if val then
         pcall(function()
             local VirtualUser = game:GetService("VirtualUser")
