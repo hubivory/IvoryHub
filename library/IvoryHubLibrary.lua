@@ -6230,46 +6230,6 @@ Library.CreateWindow = function(config)
     minimizeBarCorner.CornerRadius = Radius.Pill
     minimizeBarCorner.Parent = minimizeBar
 
-    -- Mobile re-center button (only visible on touch devices)
-    local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-    if isMobile then
-        local recenterButton = makeTitleBarButton(titleBar, -82)
-        local recenterDot = Instance.new("Frame")
-        recenterDot.Name = "Dot"
-        recenterDot.AnchorPoint = Vector2.new(0.5, 0.5)
-        recenterDot.Position = UDim2.new(0.5, 0, 0.5, 0)
-        recenterDot.Size = UDim2.new(0, 8, 0, 8)
-        recenterDot.BackgroundColor3 = Theme.TextPrimary
-        recenterDot.BorderSizePixel = 0
-        recenterDot.ZIndex = 6
-        recenterDot.Parent = recenterButton
-        local dotCorner = Instance.new("UICorner")
-        dotCorner.CornerRadius = UDim.new(1, 0)
-        dotCorner.Parent = recenterDot
-        local recenterRing = Instance.new("UIStroke")
-        recenterRing.Color = Theme.TextPrimary
-        recenterRing.Thickness = 1.5
-        recenterRing.Transparency = 0.3
-        recenterRing.Parent = recenterDot
-
-        recenterButton.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                local startPos = input.Position
-                local conn
-                conn = input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then
-                        if conn then conn:Disconnect() end
-                        if (input.Position - startPos).Magnitude < 10 then
-                            tw(wrapper, EASE_SPRING, {
-                                Position = UDim2.new(0.5, 0, 0.5, 0),
-                            })
-                        end
-                    end
-                end)
-            end
-        end)
-    end
-
     closeButton.MouseButton1Click:Connect(function()
         self:Destroy()
     end)
@@ -6590,6 +6550,97 @@ Library.CreateWindow = function(config)
 
     tw(wrapper, EASE_SPRING, {GroupTransparency = 0})
     tw(uiScale, EASE_SPRING, {Scale = 1})
+
+    -- ---------------- Floating mobile buttons (outside the UI) ----------------
+    local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+    if isMobile then
+        local mobileScreen = Instance.new("ScreenGui")
+        mobileScreen.Name = "IvoryMobileButtons"
+        mobileScreen.ResetOnSpawn = false
+        mobileScreen.DisplayOrder = 10000
+        mobileScreen.IgnoreGuiInset = true
+        mobileScreen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        pcall(function() mobileScreen.Parent = game:GetService("CoreGui") end)
+        if not mobileScreen.Parent then
+            local pg = Players.LocalPlayer and Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
+            if pg then mobileScreen.Parent = pg end
+        end
+
+        local BUTTON_SIZE = 44
+        local BUTTON_GAP = 10
+        local SIDE_PAD = 14
+        local BOTTOM_PAD = 60
+
+        local container = Instance.new("Frame")
+        container.Name = "MobileControls"
+        container.AnchorPoint = Vector2.new(1, 1)
+        container.Position = UDim2.new(1, -SIDE_PAD, 1, -BOTTOM_PAD)
+        container.Size = UDim2.new(0, BUTTON_SIZE, 0, BUTTON_SIZE * 2 + BUTTON_GAP)
+        container.BackgroundTransparency = 1
+        container.Parent = mobileScreen
+
+        local function makeMobileBtn(parent, name, iconText, order)
+            local btn = Instance.new("TextButton")
+            btn.Name = name
+            btn.AnchorPoint = Vector2.new(0.5, 0.5)
+            btn.Position = UDim2.new(0.5, 0, 0, BUTTON_SIZE / 2 + (order - 1) * (BUTTON_SIZE + BUTTON_GAP))
+            btn.Size = UDim2.new(0, BUTTON_SIZE, 0, BUTTON_SIZE)
+            btn.BackgroundColor3 = Theme.Plum800
+            btn.BackgroundTransparency = 0.15
+            btn.BorderSizePixel = 0
+            btn.Text = iconText
+            btn.TextColor3 = Theme.TextPrimary
+            btn.Font = Enum.Font.GothamBold
+            btn.TextSize = 18
+            btn.ZIndex = 100
+            btn.Parent = parent
+
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(1, 0)
+            corner.Parent = btn
+
+            local stroke = Instance.new("UIStroke")
+            stroke.Color = Theme.Blossom
+            stroke.Thickness = 1.5
+            stroke.Transparency = 0.5
+            stroke.Parent = btn
+
+            return btn
+        end
+
+        -- Button 1: Toggle UI visibility
+        local toggleBtn = makeMobileBtn(container, "ToggleUI", "UI", 1)
+        toggleBtn.MouseButton1Click:Connect(function()
+            Library:Toggle()
+            if Library.Toggled then
+                toggleBtn.Text = "UI"
+                toggleBtn.BackgroundColor3 = Theme.Plum800
+            else
+                toggleBtn.Text = ">>"
+                toggleBtn.BackgroundColor3 = Theme.Blossom
+            end
+        end)
+
+        -- Button 2: Re-center window
+        local centerBtn = makeMobileBtn(container, "Center", "+", 2)
+        centerBtn.TextSize = 22
+        centerBtn.MouseButton1Click:Connect(function()
+            if self.Wrapper then
+                tw(self.Wrapper, EASE_SPRING, {
+                    Position = UDim2.new(0.5, 0, 0.5, 0),
+                })
+            end
+            if self.Aura then
+                tw(self.Aura, EASE_QUICK, {Position = UDim2.new(0.5, 0, 0.5, 0)})
+            end
+            for _, blob in ipairs(self._glowBlobs or {}) do
+                blob.Position = UDim2.new(0.5, 0, 0.5, 0)
+            end
+        end)
+
+        -- Show/hide mobile buttons with the main UI
+        self._mobileScreen = mobileScreen
+    end
 
     return self
 end
