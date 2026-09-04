@@ -5091,6 +5091,22 @@ function Tab:CreateSection(title)
     end
 end
 
+function Tab:CreateDependencyBox()
+    local frame = Instance.new("Frame")
+    frame.Name = "DependencyBox"
+    frame.BackgroundTransparency = 1
+    frame.AutomaticSize = Enum.AutomaticSize.Y
+    frame.Size = UDim2.new(1, 0, 0, 0)
+    frame.ZIndex = 3
+    frame.Parent = self.Content
+    local layout = Instance.new("UIListLayout")
+    layout.FillDirection = Enum.FillDirection.Vertical
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, 6)
+    layout.Parent = frame
+    return Tab._wrapSection({Instance = frame, Set = function() end})
+end
+
 Tab._wrapSection = function(section)
         section.CreateLabel = function(_, textOrConfig)
             if type(textOrConfig) == "table" then
@@ -5156,6 +5172,21 @@ Tab._wrapSection = function(section)
         section.CreateSection = function(_, subTitle)
             local sub = Elements.CreateSection(section.Instance, subTitle)
             return Tab._wrapSection(sub)
+        end
+        section.CreateDependencyBox = function(_)
+            local frame = Instance.new("Frame")
+            frame.Name = "DependencyBox"
+            frame.BackgroundTransparency = 1
+            frame.AutomaticSize = Enum.AutomaticSize.Y
+            frame.Size = UDim2.new(1, 0, 0, 0)
+            frame.ZIndex = 3
+            frame.Parent = section.Instance
+            local layout = Instance.new("UIListLayout")
+            layout.FillDirection = Enum.FillDirection.Vertical
+            layout.SortOrder = Enum.SortOrder.LayoutOrder
+            layout.Padding = UDim.new(0, 6)
+            layout.Parent = frame
+            return Tab._wrapSection({Instance = frame, Set = function() end})
         end
         return section
 end
