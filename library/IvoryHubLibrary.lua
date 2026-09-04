@@ -5146,8 +5146,14 @@ Tab._wrapSection = function(section)
             end
             return Elements.CreateLabel(section.Instance, textOrConfig)
         end
-        section.CreateButton = function(_, config)
-            return Elements.CreateButton(section.Instance, config)
+        section.CreateButton = function(_, nameOrConfig, callback)
+            local cfg
+            if type(nameOrConfig) == "string" then
+                cfg = { Name = nameOrConfig, Callback = callback }
+            else
+                cfg = nameOrConfig or {}
+            end
+            return Elements.CreateButton(section.Instance, cfg)
         end
         section.CreateToggle = function(_, nameOrConfig, config)
             local flagName, cfg
@@ -5167,15 +5173,36 @@ Tab._wrapSection = function(section)
             end
             return obj
         end
-        section.CreateSlider = function(_, config)
-            return Elements.CreateSlider(section.Instance, config)
+        section.CreateSlider = function(_, nameOrConfig, config)
+            local cfg
+            if type(nameOrConfig) == "string" then
+                cfg = config or {}
+                cfg.Text = cfg.Text or nameOrConfig
+            else
+                cfg = nameOrConfig or {}
+            end
+            return Elements.CreateSlider(section.Instance, cfg)
         end
-        section.CreateDropdown = function(_, config)
-            return Elements.CreateDropdown(section.Instance, config)
+        section.CreateDropdown = function(_, nameOrConfig, config)
+            local cfg
+            if type(nameOrConfig) == "string" then
+                cfg = config or {}
+                cfg.Text = cfg.Text or nameOrConfig
+            else
+                cfg = nameOrConfig or {}
+            end
+            return Elements.CreateDropdown(section.Instance, cfg)
         end
         if Elements.CreateMultiDropdown then
-            section.CreateMultiDropdown = function(_, config)
-                return Elements.CreateMultiDropdown(section.Instance, config)
+            section.CreateMultiDropdown = function(_, nameOrConfig, config)
+                local cfg
+                if type(nameOrConfig) == "string" then
+                    cfg = config or {}
+                    cfg.Text = cfg.Text or nameOrConfig
+                else
+                    cfg = nameOrConfig or {}
+                end
+                return Elements.CreateMultiDropdown(section.Instance, cfg)
             end
         end
         if Elements.CreateColorPicker then
@@ -5189,8 +5216,15 @@ Tab._wrapSection = function(section)
             end
         end
         if Elements.CreateInput then
-            section.CreateInput = function(_, config)
-                return Elements.CreateInput(section.Instance, config)
+            section.CreateInput = function(_, nameOrConfig, config)
+                local cfg
+                if type(nameOrConfig) == "string" then
+                    cfg = config or {}
+                    cfg.Text = cfg.Text or nameOrConfig
+                else
+                    cfg = nameOrConfig or {}
+                end
+                return Elements.CreateInput(section.Instance, cfg)
             end
         end
         if Elements.CreateParagraph then
@@ -6098,6 +6132,35 @@ Library.CreateWindow = function(config)
     local minimizeBarCorner = Instance.new("UICorner")
     minimizeBarCorner.CornerRadius = Radius.Pill
     minimizeBarCorner.Parent = minimizeBar
+
+    -- Mobile re-center button (only visible on touch devices)
+    local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+    if isMobile then
+        local recenterButton = makeTitleBarButton(titleBar, -82)
+        local recenterDot = Instance.new("Frame")
+        recenterDot.Name = "Dot"
+        recenterDot.AnchorPoint = Vector2.new(0.5, 0.5)
+        recenterDot.Position = UDim2.new(0.5, 0, 0.5, 0)
+        recenterDot.Size = UDim2.new(0, 8, 0, 8)
+        recenterDot.BackgroundColor3 = Theme.TextPrimary
+        recenterDot.BorderSizePixel = 0
+        recenterDot.ZIndex = 6
+        recenterDot.Parent = recenterButton
+        local dotCorner = Instance.new("UICorner")
+        dotCorner.CornerRadius = UDim.new(1, 0)
+        dotCorner.Parent = recenterDot
+        local recenterRing = Instance.new("UIStroke")
+        recenterRing.Color = Theme.TextPrimary
+        recenterRing.Thickness = 1.5
+        recenterRing.Transparency = 0.3
+        recenterRing.Parent = recenterDot
+
+        recenterButton.MouseButton1Click:Connect(function()
+            tw(wrapper, EASE_SPRING, {
+                Position = UDim2.fromScale(0.5, 0.5),
+            })
+        end)
+    end
 
     closeButton.MouseButton1Click:Connect(function()
         self:Destroy()
