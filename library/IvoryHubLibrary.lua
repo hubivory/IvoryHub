@@ -1,6 +1,3 @@
---!strict
---!native
---!optimize 2
 --Selene: allow unused_variable, shadowing
 --[[
     Ivory Hub — Sakura Edition
