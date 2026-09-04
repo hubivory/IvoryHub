@@ -4755,14 +4755,14 @@ local function createPetalField(parent, zIndex, count, sizeMin, sizeMax, speedMi
     field.Name = "PetalField"
     field.Size = UDim2.fromScale(1, 1)
     field.BackgroundTransparency = 1
+    field.ClipsDescendants = true
     field.ZIndex = zIndex
     field.Parent = parent
 
     local camera = workspace.CurrentCamera
     local petals = {}
 
-    local function newPetal(initial)
-        local vp = camera and camera.ViewportSize or Vector2.new(1280, 720)
+    local function newPetal(initial, bounds)
         local size = math.random(sizeMin * 10, sizeMax * 10) / 10
         local petal = Instance.new("Frame")
         petal.Size = UDim2.fromOffset(size * 0.62, size * 1.4)
@@ -4786,10 +4786,13 @@ local function createPetalField(parent, zIndex, count, sizeMin, sizeMax, speedMi
         })
         gradient.Parent = petal
 
+        local w = bounds and bounds.X or (camera and camera.ViewportSize.X or 1280)
+        local h = bounds and bounds.Y or (camera and camera.ViewportSize.Y or 720)
+
         return {
             inst = petal,
-            x = math.random(0, math.floor(vp.X)),
-            y = initial and math.random(-40, math.floor(vp.Y)) or -30,
+            x = math.random(0, math.floor(w)),
+            y = initial and math.random(-40, math.floor(h)) or -30,
             speed = speedMin + math.random() * (speedMax - speedMin),
             swayAmp = 10 + math.random() * 20,
             swayFreq = 0.3 + math.random() * 0.6,
@@ -4805,10 +4808,20 @@ local function createPetalField(parent, zIndex, count, sizeMin, sizeMax, speedMi
         table.insert(petals, newPetal(true))
     end
 
+    field._petals = petals
+    field._newPetal = newPetal
+    field._sizeMin = sizeMin
+    field._sizeMax = sizeMax
+    field._speedMin = speedMin
+    field._speedMax = speedMax
+    field._zIndex = zIndex
+
     task.spawn(function()
         while field.Parent do
             local dt = RunService.Heartbeat:Wait()
             local vp = camera and camera.ViewportSize or Vector2.new(1280, 720)
+            local fw = field.AbsoluteSize.X > 0 and field.AbsoluteSize.X or vp.X
+            local fh = field.AbsoluteSize.Y > 0 and field.AbsoluteSize.Y or vp.Y
             for _, fl in ipairs(petals) do
                 fl.y = fl.y + fl.speed * dt
                 fl.phase = fl.phase + dt
@@ -4818,9 +4831,9 @@ local function createPetalField(parent, zIndex, count, sizeMin, sizeMax, speedMi
                 fl.inst.Position = UDim2.fromOffset(fl.x + swayX, fl.y)
                 fl.inst.Rotation = fl.rotation
                 fl.inst.BackgroundTransparency = math.clamp(fl.baseTransparency + math.sin(fl.twinklePhase) * 0.12, 0, 1)
-                if fl.y > vp.Y + 30 then
+                if fl.y > fh + 30 then
                     fl.y = -30 - math.random(0, 150)
-                    fl.x = math.random(0, math.floor(vp.X))
+                    fl.x = math.random(0, math.floor(fw))
                 end
             end
         end
@@ -5028,6 +5041,11 @@ end
 function Tab:CreateSection(title)
     if Elements.CreateSection then
         local section = Elements.CreateSection(self.Content, title)
+        return Tab._wrapSection(section)
+    end
+end
+
+Tab._wrapSection = function(section)
         section.CreateLabel = function(_, text)
             return Elements.CreateLabel(section.Instance, text)
         end
@@ -5071,8 +5089,11 @@ function Tab:CreateSection(title)
         section.CreateDivider = function(_)
             return Elements.CreateDivider(section.Instance)
         end
+        section.CreateSection = function(_, subTitle)
+            local sub = Elements.CreateSection(section.Instance, subTitle)
+            return Tab._wrapSection(sub)
+        end
         return section
-    end
 end
 
 -- ===================== Window methods =====================
@@ -5600,14 +5621,6 @@ Library.CreateWindow = function(config)
 
     self._glowBlobs = glowBlobs
 
-    -- Ambient sakura petals: a sparse layer drifting behind the window,
-    -- and a few petals drifting in front of it (ZIndex above everything
-    -- else built below) for depth. Falls gently with sway, a soft
-    -- twinkle, and a slow tumbling spin.
-    local petalBack = createPetalField(screenGui, -1, 30, 1.5, 4, 16, 34)
-    local petalFront = createPetalField(screenGui, 60, 9, 2.5, 5, 26, 46)
-    self._petalFields = { petalBack, petalFront }
-
     -- Wrapper is a CanvasGroup so the whole window (card + shadow bleed) can
     -- fade and scale in as one unit, and so the shadow layers are allowed to
     -- bleed outward past the card edges without being clipped by it.
@@ -5656,6 +5669,59 @@ Library.CreateWindow = function(config)
         table.insert(shadowLayers, layer)
     end
     self._shadowLayers = shadowLayers
+
+    -- Ambient sakura petals: a sparse layer drifting behind the window,
+    -- and a few petals drifting in front of it, parented to a clip frame
+    -- inside wrapper so they stay inside the GUI window only.
+    local petalClip = Instance.new("Frame")
+    petalClip.Name = "PetalClip"
+    petalClip.Size = UDim2.new(0, self._cardWidth, 0, self._cardHeight)
+    petalClip.AnchorPoint = Vector2.new(0.5, 0.5)
+    petalClip.Position = UDim2.new(0.5, 0, 0.5, 0)
+    petalClip.BackgroundTransparency = 1
+    petalClip.ClipsDescendants = true
+    petalClip.ZIndex = 50
+    petalClip.Parent = wrapper
+    self._petalClip = petalClip
+
+    local petalBack = createPetalField(petalClip, -1, 30, 1.5, 4, 16, 34)
+    local petalFront = createPetalField(petalClip, 60, 9, 2.5, 5, 26, 46)
+    self._petalFields = { petalBack, petalFront }
+
+    -- Petal control API: toggle visibility and adjust count
+    function self:SetPetalsEnabled(enabled)
+        for _, field in ipairs(self._petalFields) do
+            field.Visible = enabled
+        end
+    end
+
+    function self:SetPetalCount(count)
+        local backCount = math.floor(count * 30 / 39)
+        local frontCount = count - backCount
+        local targets = { backCount, frontCount }
+        for i, field in ipairs(self._petalFields) do
+            local target = targets[i] or 0
+            local existing = #field._petals
+            if target > existing then
+                for _ = 1, target - existing do
+                    local p = field._newPetal(false)
+                    table.insert(field._petals, p)
+                end
+            elseif target < existing then
+                for j = existing, target + 1, -1 do
+                    if field._petals[j] and field._petals[j].inst then
+                        field._petals[j].inst:Destroy()
+                    end
+                end
+                for _ = existing, target + 1, -1 do
+                    table.remove(field._petals)
+                end
+            end
+        end
+    end
+
+    self._petalsEnabled = true
+    self._petalCount = 30
 
     -- ---------------- Corner accents ----------------
     -- Small L-shaped accents living in the ambient glow margin around the

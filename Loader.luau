@@ -123,6 +123,7 @@ local MainTab = Window:CreateTab("Main")
 local PlayerTab = Window:CreateTab("Player")
 local CombatTab = Window:CreateTab("Combat")
 local WorldTab = Window:CreateTab("World")
+local SettingsTab = Window:CreateTab("Settings")
 
 --// ═══════════════════════════════════════════════════════════
 --// MAIN TAB
@@ -457,6 +458,39 @@ WorldSection:CreateButton({
 	Callback = function()
 		setclipboard(game.JobId)
 		Library.Notify({ Title = "Ivory", Content = "JobId copied!", Type = "Success", Duration = 2 })
+	end,
+})
+
+--// ═══════════════════════════════════════════════════════════
+--// SETTINGS TAB
+--// ═══════════════════════════════════════════════════════════
+
+State.Petals_Enabled = true
+State.Petals_InWindow = true
+State.Petals_Amount = 30
+
+local PetalSection = SettingsTab:CreateSection("Appearance")
+PetalSection:CreateToggle({
+	Name = "Falling Petals",
+	CurrentValue = true,
+	Callback = function(v)
+		State.Petals_Enabled = v
+		if Window.SetPetalsEnabled then Window:SetPetalsEnabled(v) end
+	end,
+})
+PetalSection:CreateToggle({
+	Name = "Petals Inside Window Only",
+	CurrentValue = true,
+	Callback = function(v) State.Petals_InWindow = v end,
+})
+PetalSection:CreateSlider({
+	Name = "Petal Amount",
+	Range = { 0, 80 },
+	Increment = 1,
+	CurrentValue = 30,
+	Callback = function(v)
+		State.Petals_Amount = v
+		if Window.SetPetalCount then Window:SetPetalCount(v) end
 	end,
 })
 
