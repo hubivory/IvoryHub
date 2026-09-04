@@ -3858,15 +3858,14 @@ local function createHudScreenGui(name)
     screenGui.DisplayOrder = 10000
     screenGui.IgnoreGuiInset = true
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-    local parented = pcall(function()
-        screenGui.Parent = game:GetService("CoreGui")
-    end)
-    if not parented then
-        local player = Players.LocalPlayer
-        local playerGui = player and (player:FindFirstChildOfClass("PlayerGui") or player:WaitForChild("PlayerGui"))
-        if playerGui then
-            screenGui.Parent = playerGui
-        end
+    local player = Players.LocalPlayer
+    local playerGui = player and (player:FindFirstChildOfClass("PlayerGui") or player:WaitForChild("PlayerGui"))
+    if playerGui then
+        screenGui.Parent = playerGui
+    else
+        pcall(function()
+            screenGui.Parent = game:GetService("CoreGui")
+        end)
     end
     return screenGui
 end
@@ -5755,21 +5754,17 @@ Library.CreateWindow = function(config)
     screenGui.DisplayOrder = 9999
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 
-    -- Try CoreGui first, but verify it actually rendered. Some executors
-    -- (Potassium etc.) let pcall succeed for CoreGui parenting but the
-    -- ScreenGui never shows up. Fall back to PlayerGui if needed.
-    local parentedToCoreGui = false
-    pcall(function()
-        screenGui.Parent = game:GetService("CoreGui")
-        parentedToCoreGui = screenGui.Parent == game:GetService("CoreGui")
-    end)
-
-    if not parentedToCoreGui then
-        local player = Players.LocalPlayer
-        local playerGui = player and (player:FindFirstChildOfClass("PlayerGui") or player:WaitForChild("PlayerGui"))
-        if playerGui then
-            screenGui.Parent = playerGui
-        end
+    -- Always parent to PlayerGui for maximum executor compatibility.
+    -- CoreGui parenting can silently fail on Potassium and other executors
+    -- (pcall succeeds but the ScreenGui never renders).
+    local player = Players.LocalPlayer
+    local playerGui = player and (player:FindFirstChildOfClass("PlayerGui") or player:WaitForChild("PlayerGui"))
+    if playerGui then
+        screenGui.Parent = playerGui
+    else
+        pcall(function()
+            screenGui.Parent = game:GetService("CoreGui")
+        end)
     end
 
     local self = setmetatable({}, Window)
@@ -6621,10 +6616,11 @@ Library.CreateWindow = function(config)
         mobileScreen.DisplayOrder = 10000
         mobileScreen.IgnoreGuiInset = true
         mobileScreen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        pcall(function() mobileScreen.Parent = game:GetService("CoreGui") end)
-        if not mobileScreen.Parent then
-            local pg = Players.LocalPlayer and Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
-            if pg then mobileScreen.Parent = pg end
+        local mPg = Players.LocalPlayer and Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
+        if mPg then
+            mobileScreen.Parent = mPg
+        else
+            pcall(function() mobileScreen.Parent = game:GetService("CoreGui") end)
         end
 
         local BUTTON_SIZE = 44
