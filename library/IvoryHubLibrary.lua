@@ -310,6 +310,11 @@ Elements.CreateLabel = function(parent, text)
         kbConfig.Name = kbConfig.Name or name
         return Elements.CreateKeybind(self.Instance.Parent, kbConfig)
     end
+    obj.CreateColorPicker = function(self, name, cpConfig)
+        cpConfig = cpConfig or {}
+        cpConfig.Name = cpConfig.Name or name
+        return Elements.CreateColorPicker(self.Instance.Parent, cpConfig)
+    end
     return obj
 end
 
@@ -775,6 +780,11 @@ Elements.CreateToggle = function(parent, config)
 		kbConfig = kbConfig or {}
 		kbConfig.Name = kbConfig.Name or name
 		return Elements.CreateKeybind(self.Instance.Parent, kbConfig)
+	end
+	toggleObject.CreateColorPicker = function(self, name, cpConfig)
+		cpConfig = cpConfig or {}
+		cpConfig.Name = cpConfig.Name or name
+		return Elements.CreateColorPicker(self.Instance.Parent, cpConfig)
 	end
 
 	-- register hooks, then return
