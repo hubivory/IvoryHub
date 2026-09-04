@@ -5620,6 +5620,16 @@ Library.CreateWindow = function(config)
 
     local self = setmetatable({}, Window)
     self.ScreenGui = screenGui
+    Library.ScreenGui = screenGui
+    Library.MainFrame = wrapper
+    Library.KeybindFrame = Instance.new("Frame")
+    Library.KeybindFrame.Name = "KeybindFrame"
+    Library.KeybindFrame.Visible = false
+    Library.KeybindFrame.Parent = screenGui
+    Library.Unloaded = false
+    Library.CornerRadius = 4
+    Library.DPIScale = 100
+    Library.ToggleKeybind = nil
     self._tabs = {}
     self._connections = {}
     self._activeTab = nil
@@ -6411,6 +6421,86 @@ Library.CreateWindow = function(config)
     tw(uiScale, EASE_SPRING, {Scale = 1})
 
     return self
+end
+
+-- ===================== ObsidianUltra compat methods =====================
+
+function Library:Create(className, props)
+    local inst = Instance.new(className)
+    props = props or {}
+    for k, v in pairs(props) do
+        if k ~= "Parent" and k ~= "Name" then
+            pcall(function() inst[k] = v end)
+        end
+    end
+    if props.Name then inst.Name = props.Name end
+    if props.Parent then inst.Parent = props.Parent end
+    return inst
+end
+
+Library._registry = {}
+
+function Library:AddToRegistry(instance, props)
+    table.insert(Library._registry, {Instance = instance, Props = props or {}})
+end
+
+function Library:UpdateDependencyBoxes()
+    -- stub; dependency boxes self-update via SetupDependencies
+end
+
+function Library:CreateLabel(config)
+    config = config or {}
+    local text = config.Text or config.Name or config.Title or config.Content or ""
+    local parent = config.Parent or Library.ScreenGui
+    local label = Instance.new("TextLabel")
+    label.Name = config.Name or "Label"
+    label.BackgroundTransparency = 1
+    label.Size = UDim2.new(1, 0, 0, 20)
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 14
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Text = text
+    label.Parent = parent
+    return label
+end
+
+Library._unloadCallbacks = {}
+
+function Library:OnUnload(callback)
+    table.insert(Library._unloadCallbacks, callback)
+end
+
+function Library:Unload()
+    for _, cb in ipairs(Library._unloadCallbacks) do
+        pcall(cb)
+    end
+    if Library.ScreenGui then
+        Library.ScreenGui:Destroy()
+        Library.ScreenGui = nil
+    end
+end
+
+Library.Destroy = Library.Unload
+
+Library.Toggled = true
+
+function Library:Toggle()
+    Library.Toggled = not Library.Toggled
+    if Library.ScreenGui then
+        Library.ScreenGui.Enabled = Library.Toggled
+    end
+end
+
+function Library:SetDPIScale(scale)
+end
+
+function Library:SetNotifySide(side)
+end
+
+function Library:SetAccent(color)
+    if Library.SetAccentColor then
+        Library.SetAccentColor(color)
+    end
 end
 
 
