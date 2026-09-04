@@ -118,10 +118,10 @@ local State = {
 }
 
 --// Tabs
-local MainTab = Window:CreateTab({Name = "Main"})
-local PlayerTab = Window:CreateTab({Name = "Player"})
-local CombatTab = Window:CreateTab({Name = "Combat"})
-local WorldTab = Window:CreateTab({Name = "World"})
+local MainTab = Window:CreateTab("Main")
+local PlayerTab = Window:CreateTab("Player")
+local CombatTab = Window:CreateTab("Combat")
+local WorldTab = Window:CreateTab("World")
 
 --// ═══════════════════════════════════════════════════════════
 --// MAIN TAB

@@ -5034,7 +5034,7 @@ end
 -- ===================== Window methods =====================
 
 function Window:CreateTab(name)
-    local tabName = tostring(name or "Tab")
+    local tabName = tostring((type(name) == "table" and name.Name) or name or "Tab")
     local tabIndex = #self._tabs + 1
 
     local tabButton = Instance.new("TextButton")
