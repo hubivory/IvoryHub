@@ -851,7 +851,7 @@ Elements.CreateSlider = function(parent, config)
     config = config or {}
 
     local sliderName = tostring(config.Name or config.Text or "Slider")
-    local range = config.Range or {0, 100}
+    local range = config.Range or config.Min and config.Max and {config.Min, config.Max} or {0, 100}
     local minVal = range[1] or 0
     local maxVal = range[2] or 100
     if maxVal < minVal then
@@ -5035,9 +5035,15 @@ end
 -- which may be authored by a different agent and may not exist yet when this
 -- file is tested in isolation.
 
-function Tab:CreateButton(config)
+function Tab:CreateButton(nameOrConfig, callback)
     if Elements.CreateButton then
-        return Elements.CreateButton(self.Content, config)
+        local cfg
+        if type(nameOrConfig) == "string" then
+            cfg = { Name = nameOrConfig, Callback = callback }
+        else
+            cfg = nameOrConfig or {}
+        end
+        return Elements.CreateButton(self.Content, cfg)
     end
 end
 
@@ -5051,6 +5057,9 @@ function Tab:CreateToggle(nameOrConfig, config)
             cfg = nameOrConfig or {}
             flagName = cfg.Flag
         end
+        if cfg.CurrentValue == nil and cfg.Default ~= nil then
+            cfg.CurrentValue = cfg.Default
+        end
         local obj = Elements.CreateToggle(self.Content, cfg)
         if flagName and obj then
             Library.Toggles[flagName] = obj
@@ -5062,33 +5071,77 @@ function Tab:CreateToggle(nameOrConfig, config)
     end
 end
 
-function Tab:CreateSlider(config)
+function Tab:CreateSlider(nameOrConfig, config)
     if Elements.CreateSlider then
-        return Elements.CreateSlider(self.Content, config)
+        local cfg
+        if type(nameOrConfig) == "string" then
+            cfg = config or {}
+            cfg.Text = cfg.Text or nameOrConfig
+        else
+            cfg = nameOrConfig or {}
+        end
+        if cfg.CurrentValue == nil and cfg.Default ~= nil then
+            cfg.CurrentValue = cfg.Default
+        end
+        return Elements.CreateSlider(self.Content, cfg)
     end
 end
 
-function Tab:CreateDropdown(config)
+function Tab:CreateDropdown(nameOrConfig, config)
     if Elements.CreateDropdown then
-        return Elements.CreateDropdown(self.Content, config)
+        local cfg
+        if type(nameOrConfig) == "string" then
+            cfg = config or {}
+            cfg.Text = cfg.Text or nameOrConfig
+        else
+            cfg = nameOrConfig or {}
+        end
+        if cfg.Values and not cfg.Options then
+            cfg.Options = cfg.Values
+        end
+        if cfg.CurrentOption == nil and cfg.Value ~= nil then
+            cfg.CurrentOption = cfg.Value
+        end
+        return Elements.CreateDropdown(self.Content, cfg)
     end
 end
 
-function Tab:CreateMultiDropdown(config)
+function Tab:CreateMultiDropdown(nameOrConfig, config)
     if Elements.CreateMultiDropdown then
-        return Elements.CreateMultiDropdown(self.Content, config)
+        local cfg
+        if type(nameOrConfig) == "string" then
+            cfg = config or {}
+            cfg.Text = cfg.Text or nameOrConfig
+        else
+            cfg = nameOrConfig or {}
+        end
+        return Elements.CreateMultiDropdown(self.Content, cfg)
     end
 end
 
-function Tab:CreateColorPicker(config)
+function Tab:CreateColorPicker(nameOrConfig, config)
     if Elements.CreateColorPicker then
-        return Elements.CreateColorPicker(self.Content, config)
+        local cfg
+        if type(nameOrConfig) == "string" then
+            cfg = config or {}
+            cfg.Text = cfg.Text or nameOrConfig
+        else
+            cfg = nameOrConfig or {}
+        end
+        return Elements.CreateColorPicker(self.Content, cfg)
     end
 end
 
-function Tab:CreateKeybind(config)
+function Tab:CreateKeybind(nameOrConfig, config)
     if Elements.CreateKeybind then
-        return Elements.CreateKeybind(self.Content, config)
+        local cfg
+        if type(nameOrConfig) == "string" then
+            cfg = config or {}
+            cfg.Text = cfg.Text or nameOrConfig
+        else
+            cfg = nameOrConfig or {}
+        end
+        return Elements.CreateKeybind(self.Content, cfg)
     end
 end
 
@@ -6199,10 +6252,21 @@ Library.CreateWindow = function(config)
         recenterRing.Transparency = 0.3
         recenterRing.Parent = recenterDot
 
-        recenterButton.MouseButton1Click:Connect(function()
-            tw(wrapper, EASE_SPRING, {
-                Position = UDim2.fromScale(0.5, 0.5),
-            })
+        recenterButton.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                local startPos = input.Position
+                local conn
+                conn = input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        if conn then conn:Disconnect() end
+                        if (input.Position - startPos).Magnitude < 10 then
+                            tw(wrapper, EASE_SPRING, {
+                                Position = UDim2.new(0.5, 0, 0.5, 0),
+                            })
+                        end
+                    end
+                end)
+            end
         end)
     end
 
