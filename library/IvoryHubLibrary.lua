@@ -587,28 +587,60 @@ Elements.CreateButton = function(parent, config)
 	chevBottomCorner.CornerRadius = Radius.Pill
 	chevBottomCorner.Parent = chevBarBottom
 
+	-- Gloss gradient overlay for cool hover effect
+	local gloss = Instance.new("Frame")
+	gloss.Name = "Gloss"
+	gloss.Size = UDim2.new(1, 0, 0.5, 0)
+	gloss.Position = UDim2.new(0, 0, 0, 0)
+	gloss.BackgroundTransparency = 1
+	gloss.ZIndex = 4
+	gloss.Parent = rowFrame
+
+	local glossGradient = Instance.new("UIGradient")
+	glossGradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255)),
+	})
+	glossGradient.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.9),
+		NumberSequenceKeypoint.new(0.5, 0.7),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	glossGradient.Rotation = 90
+	glossGradient.Parent = gloss
+
+	local glossCorner = Instance.new("UICorner")
+	glossCorner.CornerRadius = Radius.MD
+	glossCorner.Parent = gloss
+
 	rowFrame.MouseEnter:Connect(function()
 		tw(rowFrame, EASE_OUT_SOFT, { BackgroundColor3 = Theme.Plum600, BackgroundTransparency = 0.05 })
-		tw(rowStroke, EASE_OUT_SOFT, { Transparency = 0.3 })
-		tw(rowScale, EASE_OUT_SOFT, { Scale = 1.02 })
+		tw(rowStroke, EASE_OUT_SOFT, { Transparency = 0.3, Color = Theme.AccentColor })
+		tw(rowScale, EASE_OUT_SOFT, { Scale = 1.03 })
+		tw(gloss, EASE_OUT_SOFT, { Transparency = 0.85 })
 		tw(chevronHolder, EASE_OUT_SOFT, { Position = UDim2.new(1, -14, 0.5, 0) })
-		tw(chevBarTop, EASE_OUT_SOFT, { BackgroundTransparency = 0 })
-		tw(chevBarBottom, EASE_OUT_SOFT, { BackgroundTransparency = 0 })
+		tw(chevBarTop, EASE_OUT_SOFT, { BackgroundTransparency = 0, BackgroundColor3 = Theme.AccentColor })
+		tw(chevBarBottom, EASE_OUT_SOFT, { BackgroundTransparency = 0, BackgroundColor3 = Theme.AccentColor })
 	end)
 
 	rowFrame.MouseLeave:Connect(function()
 		tw(rowFrame, EASE_OUT_SOFT, { BackgroundColor3 = Theme.Plum700, BackgroundTransparency = Alpha.CardFill })
-		tw(rowStroke, EASE_OUT_SOFT, { Transparency = Alpha.Faint })
+		tw(rowStroke, EASE_OUT_SOFT, { Transparency = Alpha.Faint, Color = Color3.fromRGB(255, 255, 255) })
 		tw(rowScale, EASE_OUT_SOFT, { Scale = 1 })
+		tw(gloss, EASE_OUT_SOFT, { Transparency = 1 })
 		tw(chevronHolder, EASE_OUT_SOFT, { Position = UDim2.new(1, -24, 0.5, 0) })
-		tw(chevBarTop, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
-		tw(chevBarBottom, EASE_OUT_SOFT, { BackgroundTransparency = 1 })
+		tw(chevBarTop, EASE_OUT_SOFT, { BackgroundTransparency = 1, BackgroundColor3 = Theme.TextSecondary })
+		tw(chevBarBottom, EASE_OUT_SOFT, { BackgroundTransparency = 1, BackgroundColor3 = Theme.TextSecondary })
 	end)
 
 	rowFrame.MouseButton1Click:Connect(function()
-		local downTween = tw(rowScale, EASE_QUICK, { Scale = 0.98 })
+		local downTween = tw(rowScale, EASE_QUICK, { Scale = 0.96 })
 		downTween.Completed:Wait()
-		tw(rowScale, EASE_QUICK, { Scale = 1 })
+		tw(rowScale, EASE_SPRING, { Scale = 1.04 })
+		task.delay(0.12, function()
+			tw(rowScale, EASE_OUT_SOFT, { Scale = 1 })
+		end)
 		pcall(function()
 			if config.Callback then
 				config.Callback()

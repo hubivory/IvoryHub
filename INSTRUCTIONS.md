@@ -16,22 +16,31 @@ local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/hubiv
 
 ```lua
 -- Window
-local Window = Library:CreateWindow({ Title = "Ivory", Width = 700, Height = 600 })
+local Window = Library.CreateWindow({ Name = "Ivory", Width = 700, Height = 600 })
 
--- Tabs
-local CombatTab = Window:CreateTab({ Name = "Combat" })
+-- Tabs (accepts string or {Name = "..."})
+local CombatTab = Window:CreateTab("Combat")
 local MiscTab = Window:CreateTab({ Name = "Misc" })
 
 -- Sections (replace AddLeftGroupbox/AddRightGroupbox)
 local Section = CombatTab:CreateSection("section name")
 
--- Elements
-Section:CreateToggle("FlagName", { Text = "toggle text", CurrentValue = false, Callback = function(v) end })
-Section:CreateSlider("SliderName", { Text = "slider text", Default = 50, Min = 0, Max = 100, Rounding = 0, Callback = function(v) end })
-Section:CreateDropdown("DropdownName", { Text = "dropdown text", Values = {"A","B"}, Value = "A", Callback = function(v) end })
+-- Elements — two calling styles supported:
+-- 1. Table config (preferred)
+Section:CreateToggle({ Name = "toggle text", CurrentValue = false, Callback = function(v) end })
+Section:CreateSlider({ Name = "slider text", Min = 0, Max = 100, CurrentValue = 50, Callback = function(v) end })
+Section:CreateDropdown({ Name = "dropdown text", Values = {"A","B"}, CurrentOption = "A", Callback = function(v) end })
 Section:CreateButton({ Name = "button text", Callback = function() end })
 Section:CreateLabel("label text")
 Section:CreateLabel({ Text = "label text" })
+Section:CreateInput({ Name = "input text", Default = "", Placeholder = "type here", Callback = function(v) end })
+
+-- 2. Two-arg style (ObsidianUltra compat)
+Section:CreateToggle("FlagName", { Text = "toggle text", CurrentValue = false, Callback = function(v) end })
+Section:CreateSlider("SliderName", { Text = "slider text", Min = 0, Max = 100, CurrentValue = 50, Callback = function(v) end })
+Section:CreateDropdown("DropdownName", { Text = "dropdown text", Values = {"A","B"}, CurrentOption = "A", Callback = function(v) end })
+Section:CreateButton("button text", function() end)
+Section:CreateInput("InputName", { Text = "input text", Default = "", Placeholder = "type here", Callback = function(v) end })
 
 -- Chained ColorPicker (on label)
 Section:CreateLabel({Text = "color label"}):CreateColorPicker("PickerName", { Default = Color3.new(1,1,1), Callback = function(c) end })
@@ -47,31 +56,45 @@ depBox:SetupDependencies({ { someToggle, true } })
 -- Nested sections
 local sub = Section:CreateSection("sub section")
 
+-- Keybind (standalone)
+Section:CreateKeybind({ Name = "Menu Keybind", CurrentKeybind = "RightShift" })
+
 -- Notifications
 Library.Notify({ Title = "Ivory", Content = "message", Type = "Success", Duration = 3 })
 
 -- ObsidianUltra compat methods
-Library:Create("Frame", { Parent = Library.ScreenGui, ... })  -- creates Instance
-Library:AddToRegistry(instance, props)  -- registers for theme updates
-Library:OnUnload(callback)              -- registers unload callback
-Library:Unload() / Library:Destroy()   -- destroys UI
-Library:Toggle()                        -- toggles visibility
-Library.Toggled                         -- boolean state
-Library.ScreenGui                       -- the ScreenGui instance
-Library.MainFrame                       -- the main wrapper frame
-Library.KeybindFrame                    -- keybind list frame
-Library.Toggles                         -- registry of all toggles by flag name
+Library:Create("Frame", { Parent = Library.ScreenGui, ... })
+Library:AddToRegistry(instance, props)
+Library:OnUnload(callback)
+Library:Unload() / Library:Destroy()
+Library:Toggle()
+Library.Toggled
+Library.ScreenGui
+Library.MainFrame
+Library.KeybindFrame
+Library.Toggles
+Library.Options
+Library.Scheme
+Library:UpdateColorsUsingRegistry()
+Library:RemoveFromRegistry(instance)
 ```
 
 ## Window Setup
 
 ```lua
-local Window = Library:CreateWindow({
-    Title = "Ivory",
+local Window = Library.CreateWindow({
+    Name = "Ivory",
     Width = 720,
     Height = 600,
 })
 ```
+
+## Mobile Support
+
+- Title bar is touch-draggable
+- **Re-center button** appears automatically on mobile devices only (touch-enabled, no keyboard)
+- Re-center button is a small circle with a ring, positioned left of minimize/close
+- Tapping it tweens the window back to screen center
 
 ## Tab Structure
 
