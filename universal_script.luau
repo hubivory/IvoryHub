@@ -1101,39 +1101,43 @@ local function fadeOutAndDestroy(afterFade)
 	end)
 end
 
+local httpGet do
+	local fn = request or http_request or (syn and syn.request)
+	if fn then
+		httpGet = function(url)
+			local res = fn({ Url = url, Method = "GET" })
+			return res and res.Body
+		end
+	else
+		httpGet = function(url)
+			return game:HttpGet(url, true)
+		end
+	end
+end
+
 local function loadScript(url)
 	StatusLabel.Text = "loading..."
 	fadeOutAndDestroy(function()
 		local success, err = pcall(function()
 			local commitHash = "main"
 			pcall(function()
-				local apiRes = request({
-					Url = "https://api.github.com/repos/hubivory/IvoryHub/commits?per_page=1",
-					Method = "GET",
-				})
-				if apiRes and apiRes.Body then
-					local hash = apiRes.Body:match('"sha":"(%w+)"')
+				local apiRes = httpGet("https://api.github.com/repos/hubivory/IvoryHub/commits?per_page=1")
+				if apiRes then
+					local hash = apiRes:match('"sha":"(%w+)"')
 					if hash then commitHash = hash end
 				end
 			end)
 
 			local LIB_SRC = getgenv()._IvoryLibSrc
 			if not LIB_SRC then
-				local ok, src = pcall(function()
-					return request({
-						Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
-						Method = "GET"
-					}).Body
-				end)
-				if ok then LIB_SRC = src end
+				LIB_SRC = httpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua")
 			end
 			local genv = getgenv()
 			genv._IvoryLibSrc = LIB_SRC
 
 			local fetchUrl = GITHUB_RAW .. commitHash .. "/" .. url
-			local res = request({ Url = fetchUrl, Method = "GET" })
-			local content = res and res.Body or nil
-			if not content then error("HTTP fetch failed") end
+			local content = httpGet(fetchUrl)
+			if not content or #content == 0 then error("HTTP fetch failed for " .. tostring(url)) end
 
 			if content:byte(1) == 0xEF and content:byte(2) == 0xBB and content:byte(3) == 0xBF then
 				content = content:sub(4)

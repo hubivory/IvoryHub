@@ -5,6 +5,20 @@
 local GITHUB_RAW = "https://raw.githubusercontent.com/hubivory/IvoryHub/"
 local GITHUB_API = "https://api.github.com/repos/hubivory/IvoryHub/commits?per_page=1"
 
+local httpGet do
+	local fn = request or http_request or (syn and syn.request)
+	if fn then
+		httpGet = function(url)
+			local res = fn({ Url = url, Method = "GET" })
+			return res and res.Body
+		end
+	else
+		httpGet = function(url)
+			return game:HttpGet(url, true)
+		end
+	end
+end
+
 local GameScripts = {
 	[7243409883] = "games/ElementalMagicArena.luau",
 	[116497287371701] = "games/Karinderya.luau",
@@ -49,10 +63,8 @@ local GameScripts = {
     [71874690745115] = "games/IvoryRivals.luau",
     [133215910299950] = "games/IvoryRivals.luau",
     [129604661913557] = "games/IvoryRivals.luau",
-    [17625359962] = "games/IvoryRivals.luau",
     [18126510175] = "games/IvoryRivals.luau",
     [7449423635] = "games/Bloxfruits.luau",
-    [79091703265657] = "games/Bloxfruits.luau",
     [4442272183] = "games/Bloxfruits.luau",
     [73902483975735] = "games/Bloxfruits.luau",
 	-- Add more: [PlaceId] = "games/ScriptName.luau"
@@ -70,15 +82,14 @@ if not ScriptFile then
 	--// No game script found, load universal splash screen
 	local commitHash = "main"
 	pcall(function()
-		local apiRes = request({ Url = GITHUB_API, Method = "GET" })
-		if apiRes and apiRes.Body then
-			local hash = apiRes.Body:match('"sha":"(%w+)"')
+		local body = httpGet(GITHUB_API)
+		if body then
+			local hash = body:match('"sha":"(%w+)"')
 			if hash then commitHash = hash end
 		end
 	end)
 	local url = GITHUB_RAW .. commitHash .. "/universal_script.luau"
-	local res = request({ Url = url, Method = "GET" })
-	local content = res and res.Body or nil
+	local content = httpGet(url)
 	if content then
 		if content:byte(1) == 0xEF and content:byte(2) == 0xBB and content:byte(3) == 0xBF then
 			content = content:sub(4)
@@ -94,9 +105,9 @@ local success, err = pcall(function()
 	-- Get latest commit hash to bypass CDN cache
 	local commitHash = "main"
 	pcall(function()
-		local apiRes = request({ Url = GITHUB_API, Method = "GET" })
-		if apiRes and apiRes.Body then
-			local hash = apiRes.Body:match('"sha":"(%w+)"')
+		local body = httpGet(GITHUB_API)
+		if body then
+			local hash = body:match('"sha":"(%w+)"')
 			if hash then
 				commitHash = hash
 			end
@@ -106,15 +117,14 @@ local success, err = pcall(function()
 	-- Pre-fetch Ivory Hub Library source code for game scripts
 	pcall(function()
 		local genv = getgenv()
-		genv._IvoryLibSrc = request({ Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua", Method = "GET" }).Body
+		genv._IvoryLibSrc = httpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua")
 		print("[Ivory Hub] Ivory Hub Library cached")
 	end)
 
 	local url = GITHUB_RAW .. commitHash .. "/" .. ScriptFile
-	local res = request({ Url = url, Method = "GET" })
-	local content = res and res.Body or nil
-	if not content then
-		error("HTTP fetch failed")
+	local content = httpGet(url)
+	if not content or #content == 0 then
+		error("HTTP fetch failed for " .. tostring(ScriptFile))
 	end
 	-- Strip UTF-8 BOM if present
 	if content:byte(1) == 0xEF and content:byte(2) == 0xBB and content:byte(3) == 0xBF then
