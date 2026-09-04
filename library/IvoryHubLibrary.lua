@@ -299,12 +299,18 @@ Elements.CreateLabel = function(parent, text)
     label.ZIndex = 3
     label.Parent = row
 
-    return {
+    local obj = {
         Instance = row,
         Set = function(self, newText)
             label.Text = newText or ""
         end,
     }
+    obj.CreateKeybind = function(self, name, kbConfig)
+        kbConfig = kbConfig or {}
+        kbConfig.Name = kbConfig.Name or name
+        return Elements.CreateKeybind(self.Instance.Parent, kbConfig)
+    end
+    return obj
 end
 
 -- ============================================================
@@ -764,6 +770,12 @@ Elements.CreateToggle = function(parent, config)
 		tw(rowScale, EASE_QUICK, { Scale = 1 })
 		toggleObject:Set(not toggleObject.Value, false)
 	end)
+
+	toggleObject.CreateKeybind = function(self, name, kbConfig)
+		kbConfig = kbConfig or {}
+		kbConfig.Name = kbConfig.Name or name
+		return Elements.CreateKeybind(self.Instance.Parent, kbConfig)
+	end
 
 	-- register hooks, then return
 	if Library._RegisterFlag and config.Flag then
