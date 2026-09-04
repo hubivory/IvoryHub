@@ -2554,6 +2554,17 @@ Elements.CreateColorPicker = function(parent, config)
 		end,
 	}
 
+	controlObject.CreateKeybind = function(self, name, kbConfig)
+		kbConfig = kbConfig or {}
+		kbConfig.Name = kbConfig.Name or name
+		return Elements.CreateKeybind(self.Instance.Parent, kbConfig)
+	end
+	controlObject.CreateColorPicker = function(self, name, cpConfig)
+		cpConfig = cpConfig or {}
+		cpConfig.Name = cpConfig.Name or name
+		return Elements.CreateColorPicker(self.Instance.Parent, cpConfig)
+	end
+
 	refreshVisuals()
 
 	if Library._RegisterFlag and flag then
