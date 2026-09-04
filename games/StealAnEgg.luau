@@ -2441,18 +2441,28 @@ end
 --  UI (Ivory Hub Sakura Edition)
 -- -------------------------------------------------------
 do
-	local LIB_SRC = getgenv()._IvoryLibSrc
-	if not LIB_SRC then
-		local ok, src = pcall(function()
-			return request({
-				Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua",
-				Method = "GET"
-			}).Body
-		end)
-		if ok then LIB_SRC = src end
+	local httpGet do
+		local fn = request or http_request or (syn and syn.request)
+		if fn then
+			httpGet = function(url)
+				local res = fn({ Url = url, Method = "GET" })
+				return res and res.Body
+			end
+		else
+			httpGet = function(url)
+				return game:HttpGet(url, true)
+			end
+		end
+	end
+
+	local LIB_SRC = httpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua")
+	if not LIB_SRC or #LIB_SRC == 0 then
+		error("[Ivory] Failed to fetch library. Check HTTP support.")
 	end
 	local Library = loadstring(LIB_SRC)()
-	if not Library then warn("[Ivory] Library load failed"); return end
+	if not Library then
+		error("[Ivory] Failed to compile library")
+	end
 
 	local Window = Library.CreateWindow({Name = "Ivory", Width = 460, Height = 360, Minimizable = true, NotifySide = "Right", ShowCustomCursor = true, CornerRadius = 4})
 

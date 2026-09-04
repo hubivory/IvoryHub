@@ -10,13 +10,30 @@ local LP = Players.LocalPlayer
 local VIM = game:GetService("VirtualInputManager")
 local Lighting = game:GetService("Lighting")
 
+local httpGet do
+	local fn = request or http_request or (syn and syn.request)
+	if fn then
+		httpGet = function(url)
+			local res = fn({ Url = url, Method = "GET" })
+			return res and res.Body
+		end
+	else
+		httpGet = function(url)
+			return game:HttpGet(url, true)
+		end
+	end
+end
+
+local LIB_SRC = httpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua")
+if not LIB_SRC or #LIB_SRC == 0 then
+	error("[Ivory] Failed to fetch library. Check HTTP support.")
+end
+local Library = loadstring(LIB_SRC)()
+if not Library then
+	error("[Ivory] Failed to compile library")
+end
+
 local genv = getgenv()
-local Library
-local ls = genv._IvoryLibSrc
-if ls then Library = loadstring(ls)()
-else local r = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/"
-Library = loadstring(game:HttpGet(r .. "Library.lua"))() end
-if not Library then warn("[Ivory] Load failed"); return end
 
 local Events = RS:WaitForChild("Events")
 local R = {
