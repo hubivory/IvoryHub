@@ -5658,6 +5658,24 @@ function Window:ToggleMinimize()
         for _, bar in ipairs(self._bracketBars or {}) do
             tw(bar, EASE_QUICK, { BackgroundTransparency = 0.4 })
         end
+
+        -- Clamp wrapper position so the restored window stays on-screen and
+        -- the title bar is always reachable (fixes "can't drag after restore
+        -- from top of screen").
+        task.defer(function()
+            if not self.Wrapper then return end
+            local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
+            local ww = (self._cardWidth or DEFAULT_WINDOW_WIDTH) + SHADOW_BUFFER * 2
+            local wh = (self._cardHeight or DEFAULT_WINDOW_HEIGHT) + SHADOW_BUFFER * 2
+            local pos = self.Wrapper.Position
+            local cx = pos.X.Scale * vp.X + pos.X.Offset
+            local cy = pos.Y.Scale * vp.Y + pos.Y.Offset
+            local halfW = ww / 2
+            local halfH = wh / 2
+            cx = math.max(halfW, math.min(vp.X - halfW, cx))
+            cy = math.max(halfH + 10, math.min(vp.Y - halfH, cy))
+            self.Wrapper.Position = UDim2.new(0, cx, 0, cy)
+        end)
     end
 
     if self.ResizeHandle then
@@ -6175,6 +6193,20 @@ Library.CreateWindow = function(config)
         end
     end)
 
+    -- Full-window drag surface: a transparent TextButton covering the entire
+    -- mainFrame at ZIndex 1. Interactive elements (buttons, toggles, sliders)
+    -- sit at ZIndex 2+ and capture input first, so clicking them doesn't
+    -- start a drag. Clicking empty space hits this surface instead.
+    local dragSurface = Instance.new("TextButton")
+    dragSurface.Name = "DragSurface"
+    dragSurface.Size = UDim2.new(1, 0, 1, 0)
+    dragSurface.BackgroundColor3 = Color3.new(0, 0, 0)
+    dragSurface.BackgroundTransparency = 1
+    dragSurface.Text = ""
+    dragSurface.AutoButtonColor = false
+    dragSurface.ZIndex = 1
+    dragSurface.Parent = mainFrame
+
     -- ---------------- Title bar ----------------
 
     local titleBar = Instance.new("Frame")
@@ -6272,6 +6304,29 @@ Library.CreateWindow = function(config)
     end))
 
     table.insert(self._connections, titleBar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end))
+
+    table.insert(self._connections, dragSurface.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = wrapper.Position
+            local changedConn
+            changedConn = input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                    if changedConn then
+                        changedConn:Disconnect()
+                    end
+                end
+            end)
+        end
+    end))
+
+    table.insert(self._connections, dragSurface.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
             dragInput = input
         end
