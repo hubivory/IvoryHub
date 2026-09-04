@@ -4750,6 +4750,8 @@ local PETAL_GRADIENTS = {
     { Theme.Mauve, Theme.BlossomLight },
 }
 
+local _petalFieldMeta = setmetatable({}, { __mode = "k" })
+
 local function createPetalField(parent, zIndex, count, sizeMin, sizeMax, speedMin, speedMax)
     local field = Instance.new("Frame")
     field.Name = "PetalField"
@@ -4762,7 +4764,8 @@ local function createPetalField(parent, zIndex, count, sizeMin, sizeMax, speedMi
     local camera = workspace.CurrentCamera
     local petals = {}
 
-    local function newPetal(initial, bounds)
+    local function newPetal(initial)
+        local vp = camera and camera.ViewportSize or Vector2.new(1280, 720)
         local size = math.random(sizeMin * 10, sizeMax * 10) / 10
         local petal = Instance.new("Frame")
         petal.Size = UDim2.fromOffset(size * 0.62, size * 1.4)
@@ -4786,13 +4789,10 @@ local function createPetalField(parent, zIndex, count, sizeMin, sizeMax, speedMi
         })
         gradient.Parent = petal
 
-        local w = bounds and bounds.X or (camera and camera.ViewportSize.X or 1280)
-        local h = bounds and bounds.Y or (camera and camera.ViewportSize.Y or 720)
-
         return {
             inst = petal,
-            x = math.random(0, math.floor(w)),
-            y = initial and math.random(-40, math.floor(h)) or -30,
+            x = math.random(0, math.floor(vp.X)),
+            y = initial and math.random(-40, math.floor(vp.Y)) or -30,
             speed = speedMin + math.random() * (speedMax - speedMin),
             swayAmp = 10 + math.random() * 20,
             swayFreq = 0.3 + math.random() * 0.6,
@@ -4808,13 +4808,10 @@ local function createPetalField(parent, zIndex, count, sizeMin, sizeMax, speedMi
         table.insert(petals, newPetal(true))
     end
 
-    field._petals = petals
-    field._newPetal = newPetal
-    field._sizeMin = sizeMin
-    field._sizeMax = sizeMax
-    field._speedMin = speedMin
-    field._speedMax = speedMax
-    field._zIndex = zIndex
+    _petalFieldMeta[field] = {
+        petals = petals,
+        newPetal = newPetal,
+    }
 
     task.spawn(function()
         while field.Parent do
@@ -5696,25 +5693,28 @@ Library.CreateWindow = function(config)
     end
 
     function self:SetPetalCount(count)
+        local totalFields = #self._petalFields
         local backCount = math.floor(count * 30 / 39)
         local frontCount = count - backCount
         local targets = { backCount, frontCount }
         for i, field in ipairs(self._petalFields) do
+            local meta = _petalFieldMeta[field]
+            if not meta then continue end
             local target = targets[i] or 0
-            local existing = #field._petals
+            local existing = #meta.petals
             if target > existing then
                 for _ = 1, target - existing do
-                    local p = field._newPetal(false)
-                    table.insert(field._petals, p)
+                    local p = meta.newPetal(false)
+                    table.insert(meta.petals, p)
                 end
             elseif target < existing then
                 for j = existing, target + 1, -1 do
-                    if field._petals[j] and field._petals[j].inst then
-                        field._petals[j].inst:Destroy()
+                    if meta.petals[j] and meta.petals[j].inst then
+                        meta.petals[j].inst:Destroy()
                     end
                 end
                 for _ = existing, target + 1, -1 do
-                    table.remove(field._petals)
+                    table.remove(meta.petals)
                 end
             end
         end
