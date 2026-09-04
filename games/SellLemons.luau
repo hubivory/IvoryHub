@@ -811,39 +811,75 @@ end
 
 local LIB_SRC = httpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua")
 if not LIB_SRC or #LIB_SRC == 0 then
-	error("[Ivory] Failed to fetch library. Check HTTP support.")
-end
-local Library = loadstring(LIB_SRC)()
-if not Library then
-	error("[Ivory] Failed to compile library")
-end
-
-if not Library then
-	warn("[Ivory] Library failed to load - aborting")
+	warn("[Ivory] Failed to fetch library. Check HTTP support.")
 	return
 end
+print("[Ivory] Library fetched, " .. #LIB_SRC .. " bytes")
+
+local okLoad, Library = pcall(loadstring, LIB_SRC)
+if not okLoad or not Library then
+	warn("[Ivory] Failed to compile library:", Library)
+	return
+end
+
+local okExec, libResult = pcall(Library)
+if not okExec or not libResult then
+	warn("[Ivory] Failed to execute library:", libResult)
+	return
+end
+Library = libResult
+
+print("[Ivory] Library loaded, CreateWindow=" .. tostring(Library.CreateWindow))
 
 if _G.__LEMON_WIN then
 	pcall(function() _G.__LEMON_WIN:Destroy() end)
 end
 
-local Window = Library.CreateWindow({Name = "Ivory", Width = 460, Height = 360, Minimizable = true, NotifySide = "Right", ShowCustomCursor = true, CornerRadius = 4})
+local okWin, Window = pcall(Library.CreateWindow, {Name = "Ivory", Width = 460, Height = 360, Minimizable = true, NotifySide = "Right", ShowCustomCursor = true, CornerRadius = 4})
+if not okWin or not Window then
+	warn("[Ivory] CreateWindow failed:", Window)
+	return
+end
+print("[Ivory] Window created")
 _G.__LEMON_WIN = Window
 
-local MainTab = Window:CreateTab({Name = "Main"})
-local SettingsTab = Window:CreateTab({Name = "Settings"})
+local okTab, MainTab = pcall(Window.CreateTab, Window, {Name = "Main"})
+if not okTab or not MainTab then
+	warn("[Ivory] CreateTab(Main) failed:", MainTab)
+	return
+end
+local _, SettingsTab = pcall(Window.CreateTab, Window, {Name = "Settings"})
 
-local AutoSub = MainTab:CreateSection("Automation")
-local FruitSub = MainTab:CreateSection("Fruit")
-local PrestigeSub = MainTab:CreateSection("Prestige")
-local StatusSub = MainTab:CreateSection("Status")
+print("[Ivory] Tabs created")
 
-local TycoonGroup = AutoSub:CreateSection("Tycoon")
-local MinigameGroup = AutoSub:CreateSection("Minigames")
+local okSec, AutoSub = pcall(MainTab.CreateSection, MainTab, "Automation")
+if not okSec or not AutoSub then
+	warn("[Ivory] CreateSection(Automation) failed:", AutoSub)
+	return
+end
+local _, FruitSub = pcall(MainTab.CreateSection, MainTab, "Fruit")
+local _, PrestigeSub = pcall(MainTab.CreateSection, MainTab, "Prestige")
+local _, StatusSub = pcall(MainTab.CreateSection, MainTab, "Status")
+
+local _, TycoonGroup = pcall(AutoSub.CreateSection, AutoSub, "Tycoon")
+local _, MinigameGroup = pcall(AutoSub.CreateSection, AutoSub, "Minigames")
+
+if not TycoonGroup then
+	warn("[Ivory] CreateSection(Tycoon) failed")
+	return
+end
+
+print("[Ivory] Sections created, building elements...")
+
+local function safeNotify(cfg)
+	if Library.Notify then
+		pcall(Library.Notify, cfg)
+	end
+end
 
 TycoonGroup:CreateButton({Name = "Join Discord For Dupe", Callback = function()
 	pcall(function() setclipboard("https://discord.gg/ivory") end)
-	Library.Notify({Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3})
+	safeNotify({Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3})
 end})
 
 TycoonGroup:CreateToggle({Name = "Auto Farm", CurrentValue = CONFIG.auto, Callback = function(v)
@@ -895,20 +931,25 @@ PrestigeControlGroup:CreateToggle({Name = "Auto Evolve", CurrentValue = CONFIG.a
 
 PrestigeControlGroup:CreateToggle({Name = "Auto Ascend", CurrentValue = CONFIG.autoAscend, Callback = function(v) CONFIG.autoAscend = v end})
 
-local EconomyGroup = StatusSub:CreateSection("Economy")
-local ActivityGroup = StatusSub:CreateSection("Activity")
+local EconomyGroup = StatusSub and StatusSub:CreateSection("Economy")
+local ActivityGroup = StatusSub and StatusSub:CreateSection("Activity")
 
-local MenuGroup = SettingsTab:CreateSection("Menu")
+local MenuGroup = SettingsTab and SettingsTab:CreateSection("Menu")
 
-MenuGroup:CreateButton({Name = "Test Notification", Callback = function()
-	Library.Notify({Title = "Ivory", Content = "Test notification!", Type = "Info", Duration = 3})
-end})
+if MenuGroup then
+	MenuGroup:CreateButton({Name = "Test Notification", Callback = function()
+		safeNotify({Title = "Ivory", Content = "Test notification!", Type = "Info", Duration = 3})
+	end})
 
-MenuGroup:CreateButton({Name = "Unload", Callback = function()
-	Library.Notify({Title = "Ivory", Content = "Unloaded!", Type = "Info", Duration = 2})
-	task.wait(1)
-	Library:Destroy()
-end})
+	MenuGroup:CreateButton({Name = "Unload", Callback = function()
+		safeNotify({Title = "Ivory", Content = "Unloaded!", Type = "Info", Duration = 2})
+		task.wait(1)
+		Library:Destroy()
+	end})
+end
+
+local economyLabel = EconomyGroup and EconomyGroup:CreateLabel("Loading...")
+local activityLabel = ActivityGroup and ActivityGroup:CreateLabel("Loading...")
 
 task.spawn(function()
 	while GEN == _G.__LEMON do
@@ -935,8 +976,8 @@ task.spawn(function()
 		actLines[#actLines + 1] = STATE.note
 		if STATE.blocked then actLines[#actLines + 1] = "Blocked: " .. STATE.blocked end
 
-		pcall(function() EconomyGroup:CreateLabel(table.concat(lines, "\n")) end)
-		pcall(function() ActivityGroup:CreateLabel(table.concat(actLines, "\n")) end)
+		if economyLabel then pcall(function() economyLabel.Text = table.concat(lines, "\n") end) end
+		if activityLabel then pcall(function() activityLabel.Text = table.concat(actLines, "\n") end) end
 
 		task.wait(0.5)
 	end
