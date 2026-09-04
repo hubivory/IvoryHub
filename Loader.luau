@@ -777,7 +777,7 @@ RunService.RenderStepped:Connect(function()
 		FOVCircle.Visible = false
 	end
 
-	if State.Aimbot and aimbotKeyDown then
+	if State.Aimbot then
 		local target = getNearestTarget()
 		if target and target.Character and target.Character:FindFirstChild(State.Aimbot_TargetPart) then
 			local targetPart = target.Character[State.Aimbot_TargetPart]
