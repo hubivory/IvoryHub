@@ -5196,6 +5196,9 @@ Tab._wrapSection = function(section)
                 cfg = nameOrConfig or {}
                 flagName = cfg.Flag
             end
+            if cfg.CurrentValue == nil and cfg.Default ~= nil then
+                cfg.CurrentValue = cfg.Default
+            end
             local obj = Elements.CreateToggle(section.Instance, cfg)
             if flagName and obj then
                 Library.Toggles[flagName] = obj
@@ -5213,6 +5216,9 @@ Tab._wrapSection = function(section)
             else
                 cfg = nameOrConfig or {}
             end
+            if cfg.CurrentValue == nil and cfg.Default ~= nil then
+                cfg.CurrentValue = cfg.Default
+            end
             return Elements.CreateSlider(section.Instance, cfg)
         end
         section.CreateDropdown = function(_, nameOrConfig, config)
@@ -5222,6 +5228,12 @@ Tab._wrapSection = function(section)
                 cfg.Text = cfg.Text or nameOrConfig
             else
                 cfg = nameOrConfig or {}
+            end
+            if cfg.Values and not cfg.Options then
+                cfg.Options = cfg.Values
+            end
+            if cfg.CurrentOption == nil and cfg.Value ~= nil then
+                cfg.CurrentOption = cfg.Value
             end
             return Elements.CreateDropdown(section.Instance, cfg)
         end
