@@ -5104,7 +5104,50 @@ function Tab:CreateDependencyBox()
     layout.SortOrder = Enum.SortOrder.LayoutOrder
     layout.Padding = UDim.new(0, 6)
     layout.Parent = frame
-    return Tab._wrapSection({Instance = frame, Set = function() end})
+    local wrapped = Tab._wrapSection({Instance = frame, Set = function() end})
+
+    local function checkDeps(deps)
+        for _, dep in ipairs(deps) do
+            local toggle, expected = dep[1], dep[2]
+            if toggle and toggle.Value ~= expected then
+                return false
+            end
+        end
+        return true
+    end
+
+    wrapped.SetupDependencies = function(_, deps)
+        local function applyState()
+            local met = checkDeps(deps)
+            frame.GroupTransparency = met and 0 or 0.7
+            for _, child in ipairs(frame:GetDescendants()) do
+                if child:IsA("GuiObject") then
+                    child.GroupTransparency = met and 0 or 0.7
+                end
+            end
+        end
+
+        for _, dep in ipairs(deps) do
+            local toggle = dep[1]
+            if toggle and toggle.Set then
+                local origCallback = nil
+                if toggle.Instance and toggle.Instance:IsA("TextButton") then
+                    for _, conn in ipairs(getconnections and getconnections(toggle.Instance.MouseButton1Click) or {}) do
+                        -- no-op, just checking
+                    end
+                end
+                local oldSet = toggle.Set
+                toggle.Set = function(self, value, silent)
+                    oldSet(self, value, silent)
+                    task.defer(applyState)
+                end
+            end
+        end
+
+        applyState()
+    end
+
+    return wrapped
 end
 
 Tab._wrapSection = function(section)
@@ -5186,7 +5229,44 @@ Tab._wrapSection = function(section)
             layout.SortOrder = Enum.SortOrder.LayoutOrder
             layout.Padding = UDim.new(0, 6)
             layout.Parent = frame
-            return Tab._wrapSection({Instance = frame, Set = function() end})
+            local wrapped = Tab._wrapSection({Instance = frame, Set = function() end})
+
+            local function checkDeps(deps)
+                for _, dep in ipairs(deps) do
+                    local toggle, expected = dep[1], dep[2]
+                    if toggle and toggle.Value ~= expected then
+                        return false
+                    end
+                end
+                return true
+            end
+
+            wrapped.SetupDependencies = function(_, deps)
+                local function applyState()
+                    local met = checkDeps(deps)
+                    frame.GroupTransparency = met and 0 or 0.7
+                    for _, child in ipairs(frame:GetDescendants()) do
+                        if child:IsA("GuiObject") then
+                            child.GroupTransparency = met and 0 or 0.7
+                        end
+                    end
+                end
+
+                for _, dep in ipairs(deps) do
+                    local toggle = dep[1]
+                    if toggle and toggle.Set then
+                        local oldSet = toggle.Set
+                        toggle.Set = function(self, value, silent)
+                            oldSet(self, value, silent)
+                            task.defer(applyState)
+                        end
+                    end
+                end
+
+                applyState()
+            end
+
+            return wrapped
         end
         return section
 end

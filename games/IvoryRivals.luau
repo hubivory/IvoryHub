@@ -2388,12 +2388,30 @@ hitSoundsTab:CreateSlider("SoundPitch", {
     end
 })
 
+local savedGunSoundVolumes = {}
+
+local function restoreGunSoundVolumes()
+    for sound, vol in pairs(savedGunSoundVolumes) do
+        pcall(function()
+            if sound and sound.Parent then
+                sound.Volume = vol
+            end
+        end)
+    end
+    table.clear(savedGunSoundVolumes)
+end
+
 hitSoundsTab:CreateToggle("DisableGunSounds", {
     Text = "disable gun sounds",
     Default = _G.Features.DisableGunSounds,
     Callback = function(val)
         _G.Features.DisableGunSounds = val
         if val then
+            for _, desc in ipairs(workspace:GetDescendants()) do
+                if desc:IsA("Sound") and desc.Volume > 0 then
+                    savedGunSoundVolumes[desc] = desc.Volume
+                end
+            end
             if getgenv().InstanceRefreshGunSoundMute then
                 getgenv().InstanceRefreshGunSoundMute()
             end
