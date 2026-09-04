@@ -14,10 +14,36 @@ local LocalPlayer = Players.LocalPlayer
 
 --// Load Ivory Hub Library
 local LIB_URL = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua"
-local function httpGet(url)
-	return request({ Url = url, Method = "GET" }).Body
+local httpGet do
+	local fn = request or http_request or (syn and syn.request)
+	if fn then
+		httpGet = function(url)
+			local res = fn({ Url = url, Method = "GET" })
+			return res and res.Body
+		end
+	else
+		httpGet = function(url)
+			return game:HttpGet(url, true)
+		end
+	end
 end
-local Library = loadstring(getgenv()._IvoryLibSrc or httpGet(LIB_URL))()
+
+local LIB_SRC = getgenv()._IvoryLibSrc
+if not LIB_SRC then
+	LIB_SRC = httpGet(LIB_URL)
+end
+if not LIB_SRC or #LIB_SRC == 0 then
+	error("[Ivory] Library source could not be loaded. Check your executor's HTTP support.")
+end
+
+local fn, loadErr = loadstring(LIB_SRC)
+if not fn then
+	error("[Ivory] Library compile error: " .. tostring(loadErr))
+end
+local Library = fn()
+if not Library then
+	error("[Ivory] Library did not return a valid module.")
+end
 
 --// Game info
 local PlaceId = game.PlaceId
