@@ -68,7 +68,9 @@ local GameScripts = {
     [4442272183] = "games/Bloxfruits.luau",
 	[73902483975735] = "games/Bloxfruits.luau",
 	[10756011174] = "games/Findneedle.lua",
-	-- [MVSD_PLACEID] = "games/MVSD.luau",  -- TODO: add MVSD game PlaceId
+	[12355337193] = "games/MVSD.luau",
+	[15385224902] = "games/MVSD.luau",
+	[13771457545] = "games/MVSD.luau",
 	-- Add more: [PlaceId] = "games/ScriptName.luau"
 }
 
