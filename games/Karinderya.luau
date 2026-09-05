@@ -1019,6 +1019,7 @@ task.spawn(function() while true do
         local char, hrp = getChar()
         if hrp then
             local myPos = hrp.Position
+            local VIM = game:GetService("VirtualInputManager")
             for _, obj in ipairs(Workspace:GetDescendants()) do
                 if obj:IsA("ProximityPrompt") and obj.Enabled then
                     local action = obj.ActionText:lower()
@@ -1030,10 +1031,18 @@ task.spawn(function() while true do
                                 local release = acquireTp()
                                 tp(pp.CFrame * CFrame.new(0, 3, 0))
                                 task.wait(0.15)
-                                fireproximityprompt(obj)
+                                -- Hold E for prompt's HoldDuration
+                                pcall(function()
+                                    local holdTime = obj.HoldDuration or 1
+                                    VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                                    task.delay(holdTime + 0.3, function()
+                                        pcall(function() VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game) end)
+                                    end)
+                                end)
+                                pcall(fireproximityprompt, obj)
                                 release()
                                 cleaned = cleaned + 1
-                                task.wait(0.3)
+                                task.wait(1)
                             end
                         end
                     end
