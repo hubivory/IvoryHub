@@ -1024,13 +1024,23 @@ task.spawn(function() while true do
                 if obj:IsA("ProximityPrompt") and obj.Enabled then
                     local action = obj.ActionText:lower()
                     if string.find(action, "clean") or string.find(action, "pick up") or string.find(action, "dispose") or string.find(action, "collect") then
-                        local pp = obj.Parent
-                        if pp and pp:IsA("BasePart") then
-                            local dist = (pp.Position - myPos).Magnitude
+                        -- Find a valid BasePart to teleport to (prompt, parent, or ancestor)
+                        local targetPart = nil
+                        if obj.Parent and obj.Parent:IsA("BasePart") then
+                            targetPart = obj.Parent
+                        else
+                            local ancestor = obj.Parent
+                            while ancestor and not ancestor:IsA("BasePart") do
+                                ancestor = ancestor.Parent
+                            end
+                            targetPart = ancestor
+                        end
+                        if targetPart then
+                            local dist = (targetPart.Position - myPos).Magnitude
                             if dist <= 50 then
                                 local release = acquireTp()
-                                tp(pp.CFrame * CFrame.new(0, 3, 0))
-                                task.wait(0.15)
+                                tp(targetPart.CFrame * CFrame.new(0, 3, 0))
+                                task.wait(0.2)
                                 -- Hold E for prompt's HoldDuration
                                 pcall(function()
                                     local holdTime = obj.HoldDuration or 1
@@ -1042,7 +1052,7 @@ task.spawn(function() while true do
                                 pcall(fireproximityprompt, obj)
                                 release()
                                 cleaned = cleaned + 1
-                                task.wait(1)
+                                task.wait(1.5)
                             end
                         end
                     end
