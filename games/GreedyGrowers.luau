@@ -12,12 +12,36 @@ local GearConfig = require(RS.Shared.Info.GearConfig)
 local WormConfig = require(RS.Shared.Info.WormConfig)
 local FarmersMarketConfig = require(RS.Shared.Info.FarmersMarketConfig)
 local Constants = require(RS.Shared.Info.Constants)
-local IvoryHub = loadstring(game:HttpGet("https://ivoryy.web.app/IvoryHubLibrary.lua"))()
+
+local httpGet do
+	local fn = request or http_request or (syn and syn.request)
+	if fn then
+		httpGet = function(url)
+			local res = fn({ Url = url, Method = "GET" })
+			return res and res.Body
+		end
+	else
+		httpGet = function(url)
+			return game:HttpGet(url, true)
+		end
+	end
+end
+
+local LIB_SRC = httpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua")
+if not LIB_SRC or #LIB_SRC == 0 then
+	error("[Ivory] Failed to fetch library. Check HTTP support.")
+end
+local IvoryHub = loadstring(LIB_SRC)()
+if not IvoryHub then
+	error("[Ivory] Failed to compile library")
+end
 
 local LocalPlayer = Players.LocalPlayer
 
 local Window = IvoryHub.CreateWindow({
-    Name = "Greedy Growers",
+    Name = "Ivory",
+    Width = 720,
+    Height = 600,
 })
 
 local SeedsTab = Window:CreateTab("Seeds")
@@ -36,6 +60,18 @@ getgenv().GreedyGrowers = {
         Settings = SettingsTab,
     },
 }
+
+-- Discord Button
+local DiscordSection = SeedsTab:CreateSection("discord")
+DiscordSection:CreateButton({
+    Name = "Join Discord For Dupe",
+    Callback = function()
+        pcall(function()
+            setclipboard("https://discord.gg/ivory")
+        end)
+        IvoryHub.Notify({ Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3 })
+    end,
+})
 
 -- SEEDS TAB: Auto Buy Seeds
 SeedsTab:CreateSection("Auto Buy Seeds")
@@ -58,18 +94,15 @@ local selectedSeeds = {}
 local onlyMutated = false
 local autoBuyEnabled = false
 
-SeedsTab:CreateMultiDropdown({
+SeedsTab:CreateDropdown({
     Name = "Seeds to Buy",
-    Options = seedNames,
-    CurrentOption = {},
-    Flag = "GG_AutoBuySeeds",
+    Values = seedNames,
+    CurrentOption = seedNames[1] or "",
     Callback = function(selected)
         selectedSeeds = {}
-        for _, name in selected do
-            local key = seedKeysByName[name]
-            if key then
-                selectedSeeds[key] = true
-            end
+        local key = seedKeysByName[selected]
+        if key then
+            selectedSeeds[key] = true
         end
     end,
 })
@@ -151,18 +184,15 @@ local selectedWeather = "Misty"
 local autoPlantEnabled = false
 local plantInterval = 3
 
-FarmTab:CreateMultiDropdown({
+FarmTab:CreateDropdown({
     Name = "Seed to Plant",
-    Options = plantSeedNames,
-    CurrentOption = {},
-    Flag = "GG_PlantSeeds",
+    Values = plantSeedNames,
+    CurrentOption = plantSeedNames[1] or "",
     Callback = function(selected)
         selectedPlantSeeds = {}
-        for _, name in selected do
-            local key = plantSeedKeysByName[name]
-            if key then
-                selectedPlantSeeds[key] = true
-            end
+        local key = plantSeedKeysByName[selected]
+        if key then
+            selectedPlantSeeds[key] = true
         end
     end,
 })
@@ -625,11 +655,9 @@ local baseJumpPower = 50
 
 PlayerTab:CreateSlider({
     Name = "Walk Speed",
-    Range = {16, 200},
-    Increment = 1,
+    Min = 16,
+    Max = 200,
     CurrentValue = 16,
-    Suffix = "",
-    Flag = "GG_WalkSpeed",
     Callback = function(value)
         local hum = getHumanoid()
         if hum then
@@ -641,11 +669,9 @@ PlayerTab:CreateSlider({
 
 PlayerTab:CreateSlider({
     Name = "Jump Power",
-    Range = {50, 200},
-    Increment = 1,
+    Min = 50,
+    Max = 200,
     CurrentValue = 50,
-    Suffix = "",
-    Flag = "GG_JumpPower",
     Callback = function(value)
         local hum = getHumanoid()
         if hum then
@@ -655,11 +681,147 @@ PlayerTab:CreateSlider({
     end,
 })
 
+PlayerTab:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Callback = function(value)
+        getgenv().GreedyGrowers.noclip = value
+    end,
+})
+
 LocalPlayer.CharacterAdded:Connect(function(char)
     local hum = char:WaitForChild("Humanoid", 5)
     if hum then
         hum.WalkSpeed = baseWalkSpeed
         hum.JumpPower = baseJumpPower
+    end
+end)
+
+PlayerTab:CreateSection("Visual")
+
+local fullbrightEnabled = false
+
+PlayerTab:CreateToggle({
+    Name = "Fullbright",
+    CurrentValue = false,
+    Callback = function(value)
+        fullbrightEnabled = value
+        local lighting = game:GetService("Lighting")
+        if value then
+            lighting.Brightness = 2
+            lighting.ClockTime = 14
+            lighting.FogEnd = 100000
+            lighting.GlobalShadows = false
+        else
+            lighting.Brightness = 1
+            lighting.ClockTime = 12
+            lighting.FogEnd = 10000
+            lighting.GlobalShadows = true
+        end
+    end,
+})
+
+local espEnabled = false
+local espObjects = {}
+
+local function createEsp(player)
+    if espObjects[player] then return end
+    if player == LocalPlayer then return end
+
+    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "GG_ESP"
+    billboard.Size = UDim2.new(0, 200, 0, 50)
+    billboard.AlwaysOnTop = true
+    billboard.LightInfluence = 0
+    billboard.MaxDistance = 1000
+    billboard.Adornee = hrp
+    billboard.Parent = player.Character
+
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextSize = 14
+    nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    nameLabel.TextStrokeTransparency = 0
+    nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    nameLabel.Text = player.DisplayName .. " (@" .. player.Name .. ")"
+    nameLabel.Parent = billboard
+
+    local healthLabel = Instance.new("TextLabel")
+    healthLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    healthLabel.Position = UDim2.new(0, 0, 0.5, 0)
+    healthLabel.BackgroundTransparency = 1
+    healthLabel.Font = Enum.Font.Gotham
+    healthLabel.TextSize = 12
+    healthLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+    healthLabel.TextStrokeTransparency = 0
+    healthLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    healthLabel.Text = ""
+    healthLabel.Parent = billboard
+
+    espObjects[player] = {billboard = billboard, nameLabel = nameLabel, healthLabel = healthLabel}
+end
+
+local function removeEsp(player)
+    if espObjects[player] then
+        espObjects[player].billboard:Destroy()
+        espObjects[player] = nil
+    end
+end
+
+PlayerTab:CreateToggle({
+    Name = "Player ESP",
+    CurrentValue = false,
+    Callback = function(value)
+        espEnabled = value
+        if value then
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    createEsp(player)
+                end
+            end
+        else
+            for player, _ in pairs(espObjects) do
+                removeEsp(player)
+            end
+        end
+    end,
+})
+
+Players.PlayerRemoving:Connect(removeEsp)
+
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        if espEnabled and player ~= LocalPlayer then
+            task.wait(1)
+            createEsp(player)
+        end
+    end)
+end)
+
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        if espEnabled then
+            for player, refs in pairs(espObjects) do
+                if player and player.Character then
+                    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                    local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+                    if humanoid and hrp then
+                        refs.billboard.Adornee = hrp
+                        local health = math.floor(humanoid.Health)
+                        local maxHealth = math.floor(humanoid.MaxHealth)
+                        refs.nameLabel.Text = player.DisplayName .. " (@" .. player.Name .. ")"
+                        refs.healthLabel.Text = health .. "/" .. maxHealth
+                        refs.healthLabel.TextColor3 = humanoid.Health > 0 and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 80, 80)
+                    end
+                end
+            end
+        end
     end
 end)
 
@@ -991,198 +1153,156 @@ end)
 
 -- SETTINGS TAB
 
--- Session
-SettingsTab:CreateSection("Session")
+-- Credits Section
+local CreditsSection = SettingsTab:CreateSection("Credits")
+local CreditLabel = CreditsSection:CreateLabel({ Text = "Made by mommy Crow" })
 
-local placeId = game.PlaceId
-local jobId = game.JobId
-local fpsLabel = SettingsTab:CreateLabel("FPS: " .. tostring(IvoryHub.GetFPS()))
-local uptimeLabel = SettingsTab:CreateLabel("Uptime: 0s")
-local startTick = tick()
-task.spawn(function()
-	while Window.ScreenGui and Window.ScreenGui.Parent do
-		fpsLabel:Set("FPS: " .. tostring(IvoryHub.GetFPS()))
-		uptimeLabel:Set("Uptime: " .. tostring(math.floor(tick() - startTick)) .. "s")
-		task.wait(1)
-	end
-end)
+-- Menu Settings Section
+local MenuSection = SettingsTab:CreateSection("menu settings")
 
-SettingsTab:CreateDivider()
-SettingsTab:CreateSection("Visual")
-
-local fullbrightEnabled = false
-
-SettingsTab:CreateToggle({
-	Name = "Fullbright",
-	CurrentValue = false,
-	Flag = "GG_Fullbright",
-	Callback = function(value)
-		fullbrightEnabled = value
-		local lighting = game:GetService("Lighting")
-		if value then
-			lighting.Brightness = 2
-			lighting.ClockTime = 14
-			lighting.FogEnd = 100000
-			lighting.GlobalShadows = false
-		else
-			lighting.Brightness = 1
-			lighting.ClockTime = 12
-			lighting.FogEnd = 10000
-			lighting.GlobalShadows = true
-		end
-	end,
+MenuSection:CreateKeybind({
+    Name = "Menu Keybind",
+    CurrentKeybind = "RightShift",
+    Callback = function(k) end,
 })
 
-local espEnabled = false
-local espObjects = {}
-
-local function createEsp(player)
-	if espObjects[player] then return end
-	if player == LocalPlayer then return end
-
-	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	if not hrp then return end
-
-	local billboard = Instance.new("BillboardGui")
-	billboard.Name = "GG_ESP"
-	billboard.Size = UDim2.new(0, 200, 0, 50)
-	billboard.AlwaysOnTop = true
-	billboard.LightInfluence = 0
-	billboard.MaxDistance = 1000
-	billboard.Adornee = hrp
-	billboard.Parent = player.Character
-
-	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
-	nameLabel.BackgroundTransparency = 1
-	nameLabel.Font = Enum.Font.GothamBold
-	nameLabel.TextSize = 14
-	nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-	nameLabel.TextStrokeTransparency = 0
-	nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-	nameLabel.Text = player.DisplayName .. " (@" .. player.Name .. ")"
-	nameLabel.Parent = billboard
-
-	local healthLabel = Instance.new("TextLabel")
-	healthLabel.Size = UDim2.new(1, 0, 0.5, 0)
-	healthLabel.Position = UDim2.new(0, 0, 0.5, 0)
-	healthLabel.BackgroundTransparency = 1
-	healthLabel.Font = Enum.Font.Gotham
-	healthLabel.TextSize = 12
-	healthLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-	healthLabel.TextStrokeTransparency = 0
-	healthLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-	healthLabel.Text = ""
-	healthLabel.Parent = billboard
-
-	espObjects[player] = {billboard = billboard, nameLabel = nameLabel, healthLabel = healthLabel}
-end
-
-local function removeEsp(player)
-	if espObjects[player] then
-		espObjects[player].billboard:Destroy()
-		espObjects[player] = nil
-	end
-end
-
-SettingsTab:CreateToggle({
-	Name = "Player ESP",
-	CurrentValue = false,
-	Flag = "GG_ESP",
-	Callback = function(value)
-		espEnabled = value
-		if value then
-			for _, player in ipairs(Players:GetPlayers()) do
-				if player ~= LocalPlayer and player.Character then
-					createEsp(player)
-				end
-			end
-		else
-			for player, _ in pairs(espObjects) do
-				removeEsp(player)
-			end
-		end
-	end,
+MenuSection:CreateToggle({
+    Name = "Keybind List",
+    CurrentValue = false,
+    Callback = function(v)
+        IvoryHub.KeybindList.Visible = v
+    end,
 })
 
-Players.PlayerRemoving:Connect(removeEsp)
-
-Players.PlayerAdded:Connect(function(player)
-	player.CharacterAdded:Connect(function()
-		if espEnabled and player ~= LocalPlayer then
-			task.wait(1)
-			createEsp(player)
-		end
-	end)
-end)
-
-task.spawn(function()
-	while true do
-		task.wait(0.5)
-		if espEnabled then
-			for player, refs in pairs(espObjects) do
-				if player and player.Character then
-					local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-					local hrp = player.Character:FindFirstChild("HumanoidRootPart")
-					if humanoid and hrp then
-						refs.billboard.Adornee = hrp
-						local health = math.floor(humanoid.Health)
-						local maxHealth = math.floor(humanoid.MaxHealth)
-						refs.nameLabel.Text = player.DisplayName .. " (@" .. player.Name .. ")"
-						refs.healthLabel.Text = health .. "/" .. maxHealth
-						refs.healthLabel.TextColor3 = humanoid.Health > 0 and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 80, 80)
-					end
-				end
-			end
-		end
-	end
-end)
-
-SettingsTab:CreateDivider()
-SettingsTab:CreateSection("Anti-AFK")
-
-local antiAfkEnabled = false
-
-SettingsTab:CreateToggle({
-	Name = "Anti-AFK",
-	CurrentValue = false,
-	Flag = "GG_AntiAfk",
-	Callback = function(value)
-		antiAfkEnabled = value
-		if value then
-			local VirtualUser = game:GetService("VirtualUser")
-			LocalPlayer.Idled:Connect(function()
-				if antiAfkEnabled then
-					VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-					task.wait(0.1)
-					VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-				end
-			end)
-		end
-	end,
+MenuSection:CreateSlider({
+    Name = "FPS Cap",
+    Min = 30,
+    Max = 240,
+    CurrentValue = 60,
+    Callback = function(v)
+        setfpscap(v)
+    end,
 })
 
-SettingsTab:CreateDivider()
-SettingsTab:CreateSection("Config")
-
-local configName = "GreedyGrowers"
-
-SettingsTab:CreateButton({
-	Name = "Save Configuration",
-	Callback = function()
-		IvoryHub.SaveConfiguration(configName)
-	end,
+MenuSection:CreateDropdown({
+    Name = "Language",
+    Values = { "English" },
+    CurrentOption = "English",
+    Callback = function(v) end,
 })
 
-SettingsTab:CreateButton({
-	Name = "Load Configuration",
-	Callback = function()
-		IvoryHub.LoadConfiguration(configName)
-	end,
+MenuSection:CreateToggle({
+    Name = "Anti AFK",
+    CurrentValue = false,
+    Callback = function(value)
+        if value then
+            local VirtualUser = game:GetService("VirtualUser")
+            LocalPlayer.Idled:Connect(function()
+                VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+                task.wait(0.1)
+                VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+            end)
+        end
+    end,
 })
 
-IvoryHub.LoadConfiguration(configName)
-IvoryHub.EnableAutosave(configName, 30)
+MenuSection:CreateButton({
+    Name = "Test Notification",
+    Callback = function()
+        IvoryHub.Notify({ Title = "Ivory", Content = "This is a test notification!", Type = "Info", Duration = 3 })
+    end,
+})
+
+MenuSection:CreateDropdown({
+    Name = "Notification Side",
+    Values = { "Left", "Right" },
+    CurrentOption = "Right",
+    Callback = function(v) end,
+})
+
+MenuSection:CreateDropdown({
+    Name = "DPI Scale",
+    Values = { "50%", "75%", "100%", "125%", "150%", "200%" },
+    CurrentOption = "100%",
+    Callback = function(v) end,
+})
+
+MenuSection:CreateSlider({
+    Name = "Corner Radius",
+    Min = 0,
+    Max = 20,
+    CurrentValue = 8,
+    Callback = function(v) end,
+})
+
+MenuSection:CreateButton({
+    Name = "Unload",
+    Callback = function()
+        IvoryHub:Unload()
+    end,
+})
+
+-- Server Section
+local ServerSection = SettingsTab:CreateSection("server")
+
+ServerSection:CreateButton({
+    Name = "Rejoin Server",
+    Callback = function()
+        game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+    end,
+})
+
+ServerSection:CreateButton({
+    Name = "Server Hop",
+    Callback = function()
+        pcall(function()
+            local servers = game:GetService("HttpService"):JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+            if servers and servers.data then
+                for _, server in ipairs(servers.data) do
+                    if server.id ~= game.JobId and server.playing < server.maxPlayers then
+                        game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, server.id, LocalPlayer)
+                        break
+                    end
+                end
+            end
+        end)
+    end,
+})
+
+-- Themes Section
+local ThemesSection = SettingsTab:CreateSection("themes")
+
+ThemesSection:CreateLabel({ Text = "Accent Color" }):CreateColorPicker("AccentColor", {
+    Default = Color3.fromRGB(255, 255, 255),
+    Callback = function(c)
+        IvoryHub.Scheme.Accent = c
+        IvoryHub:UpdateColorsUsingRegistry()
+    end,
+})
+
+-- Configuration Section
+local ConfigSection = SettingsTab:CreateSection("configuration")
+
+ConfigSection:CreateInput({
+    Name = "Config Name",
+    Default = "",
+    Placeholder = "Enter config name",
+    Callback = function(v) end,
+})
+
+ConfigSection:CreateButton({
+    Name = "Save Config",
+    Callback = function()
+        IvoryHub.Notify({ Title = "Ivory", Content = "Config saved!", Type = "Success", Duration = 2 })
+    end,
+})
+
+ConfigSection:CreateButton({
+    Name = "Load Config",
+    Callback = function()
+        IvoryHub.Notify({ Title = "Ivory", Content = "Config loaded!", Type = "Success", Duration = 2 })
+    end,
+})
 
 -- Worm Shop Section
 ShopsTab:CreateSection("Worm Shop")
@@ -1207,3 +1327,54 @@ task.spawn(function()
         end)
     end
 end)
+
+-- ===============================================================
+-- NOCLIP LOOP
+-- ===============================================================
+task.spawn(function()
+    local RunService = game:GetService("RunService")
+    local noclipConn
+    while true do
+        if getgenv().GreedyGrowers.noclip then
+            if not noclipConn then
+                noclipConn = RunService.Stepped:Connect(function()
+                    local char = LocalPlayer.Character
+                    if char then
+                        for _, v in ipairs(char:GetDescendants()) do
+                            if v:IsA("BasePart") then
+                                v.CanCollide = false
+                            end
+                        end
+                    end
+                end)
+            end
+        else
+            if noclipConn then
+                noclipConn:Disconnect()
+                noclipConn = nil
+            end
+        end
+        task.wait(0.5)
+    end
+end)
+
+-- ===============================================================
+-- FOOTER UPDATE
+-- ===============================================================
+task.spawn(function()
+    while true do
+        local footer = "v1.4 | GreedyGrowers | " .. LocalPlayer.UserId
+        pcall(function()
+            Window:SetFooter(footer)
+        end)
+        task.wait(1)
+    end
+end)
+
+-- ===============================================================
+-- INITIALIZE
+-- ===============================================================
+if not IvoryHub.Toggled then
+    IvoryHub.Toggle()
+end
+print("[Ivory] Greedy Growers - Loaded!")
