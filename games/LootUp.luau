@@ -10,6 +10,7 @@ local VirtualUser = game:GetService("VirtualUser")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local MarketplaceService = game:GetService("MarketplaceService")
+local VIM = game:GetService("VirtualInputManager")
 
 local plr = Players.LocalPlayer
 local PlaceId = game.PlaceId
@@ -817,9 +818,22 @@ local function skillOnCooldown(skillName)
 	return false
 end
 
+--// ═══════════════════════════════════════════════════════════
+--// COMBAT
+--// ═══════════════════════════════════════════════════════════
+-- VIM click triggers the game's own client combat handler which plays the
+-- swing animation, fires Combat:FireServer on its own, and handles hit
+-- detection.  Skills are fired remotely because the game processes them
+-- via the Combat remote directly.
+
+local function vimClick()
+	VIM:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+	task.wait(0.05)
+	VIM:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+end
+
 local function doSwing()
-	castSeq += 1
-	safeFire("Combat", "s", "Attack", castSeq)
+	vimClick()
 end
 
 local function doSkill(slot)
