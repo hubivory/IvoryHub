@@ -10,7 +10,6 @@ local VirtualUser = game:GetService("VirtualUser")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local MarketplaceService = game:GetService("MarketplaceService")
-local VIM = game:GetService("VirtualInputManager")
 
 local plr = Players.LocalPlayer
 local PlaceId = game.PlaceId
@@ -751,23 +750,6 @@ end
 --// COMBAT (remote-based - does not touch the mouse)
 --// ═══════════════════════════════════════════════════════════
 
--- Fallback input simulation (only used if the Combat remote is missing)
-local function vimClick()
-	VIM:SendMouseButtonEvent(0, 0, 0, true, game, 1)
-	task.wait(0.05)
-	VIM:SendMouseButtonEvent(0, 0, 0, false, game, 1)
-end
-
-local function vimSkill(slot)
-	local keys = { [1] = Enum.KeyCode.One, [2] = Enum.KeyCode.Two, [3] = Enum.KeyCode.Three }
-	local key = keys[slot]
-	if key then
-		VIM:SendKeyEvent(true, key, false, game)
-		task.wait(0.05)
-		VIM:SendKeyEvent(false, key, false, game)
-	end
-end
-
 -- The game's own client swings via Combat:FireServer("s", "Attack", seq) and
 -- casts skills via Combat:FireServer("s", skillName, seq). Using the same path
 -- keeps the mouse completely free so the UI stays clickable while farming.
@@ -835,22 +817,12 @@ local function skillOnCooldown(skillName)
 	return false
 end
 
-local combatRemoteAvailable = getRemote("Combat") ~= nil
-
 local function doSwing()
-	if combatRemoteAvailable then
-		castSeq += 1
-		safeFire("Combat", "s", "Attack", castSeq)
-	else
-		vimClick()
-	end
+	castSeq += 1
+	safeFire("Combat", "s", "Attack", castSeq)
 end
 
 local function doSkill(slot)
-	if not combatRemoteAvailable then
-		vimSkill(slot)
-		return
-	end
 	local skillName = skillNameForSlot(slot)
 	if not skillName then return end
 	if skillOnCooldown(skillName) then return end
@@ -942,12 +914,6 @@ local function collectLoop()
 			local seq = claimSeqForPos(drop.Position)
 			if seq then
 				safeFire("LootDrop", seq)
-			else
-				-- no seqId tracked: press E near the drop so the game's own
-				-- pickup logic (closest drop within 5 studs) claims it
-				VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-				task.wait(0.08)
-				VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
 			end
 			STATE.lootCollected += 1
 			STATE.phase = "looting"
