@@ -2543,7 +2543,7 @@ FruitStockGroup:CreateButton({Name="Check Fruit Stock", Callback=function()
 			Library:Notify({ Title = "Ivory", Description = msg, Type = "Info", Time = 10 })
 		end
 	end)
-end)
+end})
 
 FruitStockGroup:CreateButton({Name="Check ADV Stock", Callback=function()
 	pcall(function()
