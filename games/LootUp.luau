@@ -827,9 +827,11 @@ end
 -- via the Combat remote directly.
 
 local function vimClick()
-	VIM:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+	local vp = workspace.CurrentCamera.ViewportSize
+	local cx, cy = math.floor(vp.X / 2), math.floor(vp.Y / 2)
+	VIM:SendMouseButtonEvent(cx, cy, 0, true, game, 1)
 	task.wait(0.05)
-	VIM:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+	VIM:SendMouseButtonEvent(cx, cy, 0, false, game, 1)
 end
 
 local function doSwing()
@@ -921,6 +923,28 @@ local function collectLoop()
 	if not CONFIG.autoLoot then return end
 	local hrp = rootPart()
 	if not hrp then return end
+
+	-- First: try to collect from tracked seq queue (LootDrop events)
+	pruneSeqQueue()
+	for i = #dropSeqQueue, 1, -1 do
+		local entry = dropSeqQueue[i]
+		local dist = (entry.pos - hrp.Position).Magnitude
+		if dist < 20 then
+			tpTo(entry.pos)
+			task.wait(0.3)
+			safeFire("LootDrop", entry.seq)
+			-- Also press E in case the game requires proximity + key press
+			VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+			task.wait(0.05)
+			VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+			table.remove(dropSeqQueue, i)
+			STATE.lootCollected += 1
+			STATE.phase = "looting"
+			task.wait(0.2)
+		end
+	end
+
+	-- Second: try physical drops (BaseParts / Tools in workspace)
 	for _, drop in ipairs(getDrops()) do
 		if drop:IsA("BasePart") and drop.Parent then
 			tpTo(drop.Position)
@@ -935,6 +959,23 @@ local function collectLoop()
 		elseif drop:IsA("Tool") and drop:FindFirstChild("Handle") then
 			tpTo(drop.Handle.Position)
 			task.wait(0.15)
+		end
+	end
+
+	-- Third: if there are queued drops far away, walk toward the closest one
+	if #dropSeqQueue > 0 then
+		local closest, closestDist
+		for _, entry in ipairs(dropSeqQueue) do
+			local d = (entry.pos - hrp.Position).Magnitude
+			if not closestDist or d < closestDist then
+				closest = entry
+				closestDist = d
+			end
+		end
+		if closest and closestDist > 20 then
+			tpTo(closest.pos)
+			STATE.phase = "looting"
+			STATE.note = "Walking to loot (" .. math.floor(closestDist) .. "m)"
 		end
 	end
 end
