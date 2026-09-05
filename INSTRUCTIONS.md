@@ -174,6 +174,87 @@ local GameScripts = {
 }
 ```
 
+## Library Loading Pattern
+
+Always use this pattern to load the library (handles HTTP differences across executors):
+
+```lua
+local httpGet do
+    local fn = request or http_request or (syn and syn.request)
+    if fn then
+        httpGet = function(url)
+            local res = fn({ Url = url, Method = "GET" })
+            return res and res.Body
+        end
+    else
+        httpGet = function(url)
+            return game:HttpGet(url, true)
+        end
+    end
+end
+
+local LIB_SRC = httpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua")
+if not LIB_SRC or #LIB_SRC == 0 then
+    error("[Ivory] Failed to fetch library. Check HTTP support.")
+end
+local Library = loadstring(LIB_SRC)()
+if not Library then
+    error("[Ivory] Failed to compile library")
+end
+```
+
+## Difficulty Selection (Games with Difficulty)
+
+For games with difficulty modes (NORMAL, HARDCORE, NIGHTMARE), add a dropdown in the Lobby section:
+
+```lua
+cfg.difficulty = "NORMAL"
+
+LobbySection:CreateDropdown({
+    Name = "Difficulty",
+    Values = { "NORMAL", "HARDCORE", "NIGHTMARE" },
+    CurrentOption = "NORMAL",
+    Callback = function(v)
+        cfg.difficulty = v
+    end,
+})
+
+LobbySection:CreateButton({
+    Name = "Select Difficulty",
+    Callback = function()
+        -- Find and interact with difficulty selection
+        local difficultyPart = workspace:FindFirstChild("DifficultySelect")
+        if difficultyPart then
+            local prompt = difficultyPart:FindFirstChildOfClass("ProximityPrompt")
+            if prompt and prompt.Enabled then
+                local _, hrp = getChar()
+                if hrp then
+                    hrp.CFrame = difficultyPart.CFrame + Vector3.new(0, 3, 0)
+                    task.wait(0.5)
+                    fireproximityprompt(prompt)
+                end
+            end
+        end
+    end,
+})
+```
+
+Update the footer to show difficulty when in lobby:
+
+```lua
+task.spawn(function()
+    while true do
+        local location = isLobby() and "Lobby" or (isGame() and "Game" or "Unknown")
+        local diff = isLobby() and (" | " .. cfg.difficulty) or ""
+        local footer = "v1.4 | " .. location .. diff .. " | " .. LocalPlayer.UserId
+        pcall(function()
+            Window:SetFooter(footer)
+        end)
+        task.wait(1)
+    end
+end)
+```
+
 ## Checklist
 
 Before submitting a script, verify all of these:
