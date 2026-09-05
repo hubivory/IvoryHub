@@ -31,6 +31,10 @@ local LIB_SRC = httpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/mai
 if not LIB_SRC or #LIB_SRC == 0 then
 	error("[Ivory] Failed to fetch library. Check HTTP support.")
 end
+-- Strip UTF-8 BOM if present
+if LIB_SRC:byte(1) == 0xEF and LIB_SRC:byte(2) == 0xBB and LIB_SRC:byte(3) == 0xBF then
+	LIB_SRC = LIB_SRC:sub(4)
+end
 local IvoryHub = loadstring(LIB_SRC)()
 if not IvoryHub then
 	error("[Ivory] Failed to compile library")
