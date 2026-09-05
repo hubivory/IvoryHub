@@ -202,6 +202,7 @@ local cfg = {
     autoClaimCodes = false,
     autoPan = false,
     autoClean = false,
+    autoCleanTrash = false,
     autoWash = false,
     autoBuyFurniture = false,
     autoPlaceFurniture = false,
@@ -397,6 +398,7 @@ FoodBox:CreateToggle({Name = "Auto Reject Selected NPCs", CurrentValue = false, 
 
 FoodBox:CreateToggle({Name = "Auto Clean Tables", CurrentValue = false, Callback = function(s) cfg.autoClean = s end })
 FoodBox:CreateToggle({Name = "Auto Wash Dishes", CurrentValue = false, Callback = function(s) cfg.autoWash = s end })
+FoodBox:CreateToggle({Name = "Auto Clean Trash", CurrentValue = false, Tooltip = "Picks up leaves and trash piles on the street", Callback = function(s) cfg.autoCleanTrash = s end })
 FoodBox:CreateToggle({Name = "Auto Pan (Hit Runaway)", CurrentValue = false, Callback = function(s) cfg.autoPan = s end })
 FoodBox:CreateToggle({Name = "Auto Fix Chiller", CurrentValue = false, Callback = function(s) cfg.autoFixChiller = s end })
 
@@ -514,8 +516,8 @@ TPSec:CreateButton({Name = "Teleport to Shop", Callback = function() local s = W
 -- LOGS TAB
 local StatusSec = LogsTab:CreateSection("Status")
 local StatusLabels = {}
-local statusOrder = {"serve", "order", "drink", "codes", "pan", "clean", "wash", "buyFurn", "placeFurn", "buyIng", "boosts", "unlockTbl", "unlockMenu", "chiller", "merchant", "mysteryBox"}
-local statusNames = {serve="Serve", order="Order", drink="Drinks", codes="Codes", pan="Pan", clean="Clean", wash="Wash", buyFurn="Buy Furn", placeFurn="Place Furn", buyIng="Buy Ing", boosts="Boosts", unlockTbl="Unlock Tbl", unlockMenu="Unlock Menu", chiller="Chiller", merchant="Merchant", mysteryBox="Mystery Box"}
+local statusOrder = {"serve", "order", "drink", "codes", "pan", "clean", "wash", "trash", "buyFurn", "placeFurn", "buyIng", "boosts", "unlockTbl", "unlockMenu", "chiller", "merchant", "mysteryBox"}
+local statusNames = {serve="Serve", order="Order", drink="Drinks", codes="Codes", pan="Pan", clean="Clean", wash="Wash", trash="Trash", buyFurn="Buy Furn", placeFurn="Place Furn", buyIng="Buy Ing", boosts="Boosts", unlockTbl="Unlock Tbl", unlockMenu="Unlock Menu", chiller="Chiller", merchant="Merchant", mysteryBox="Mystery Box"}
 for _, key in ipairs(statusOrder) do
     StatusLabels[key] = StatusSec:CreateLabel({Name = statusNames[key] .. ": Idle", RichText = true})
 end
@@ -1007,6 +1009,46 @@ task.spawn(function() while true do
         setStatus("wash", "Disabled")
     end
     task.wait(2)
+end end)
+
+-- --- AUTO CLEAN TRASH (leaves, trash piles on street) ---
+task.spawn(function() while true do
+    if cfg.autoCleanTrash then
+        setStatus("trash", "Scanning...")
+        local cleaned = 0
+        local char, hrp = getChar()
+        if hrp then
+            local myPos = hrp.Position
+            for _, obj in ipairs(Workspace:GetDescendants()) do
+                if obj:IsA("ProximityPrompt") and obj.Enabled then
+                    local action = obj.ActionText:lower()
+                    if string.find(action, "clean") or string.find(action, "pick up") or string.find(action, "dispose") or string.find(action, "collect") then
+                        local pp = obj.Parent
+                        if pp and pp:IsA("BasePart") then
+                            local dist = (pp.Position - myPos).Magnitude
+                            if dist <= 50 then
+                                local release = acquireTp()
+                                tp(pp.CFrame * CFrame.new(0, 3, 0))
+                                task.wait(0.15)
+                                fireproximityprompt(obj)
+                                release()
+                                cleaned = cleaned + 1
+                                task.wait(0.3)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        if cleaned > 0 then
+            setStatus("trash", "Cleaned " .. cleaned)
+        else
+            setStatus("trash", "Nothing nearby")
+        end
+    else
+        setStatus("trash", "Disabled")
+    end
+    task.wait(3)
 end end)
 
 -- --- AUTO FIX CHILLER ---
