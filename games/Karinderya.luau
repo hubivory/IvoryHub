@@ -1016,53 +1016,66 @@ task.spawn(function() while true do
     if cfg.autoCleanTrash then
         setStatus("trash", "Scanning...")
         local cleaned = 0
-        local char, hrp = getChar()
+        local char = getChar()
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
         if hrp then
             local myPos = hrp.Position
             local VIM = game:GetService("VirtualInputManager")
+            local found = 0
+            local prompts = {}
             for _, obj in ipairs(Workspace:GetDescendants()) do
                 if obj:IsA("ProximityPrompt") and obj.Enabled then
-                    local action = obj.ActionText:lower()
+                    local action = (obj.ActionText or ""):lower()
+                    found = found + 1
                     if string.find(action, "clean") or string.find(action, "pick up") or string.find(action, "dispose") or string.find(action, "collect") then
-                        -- Find a valid BasePart to teleport to (prompt, parent, or ancestor)
-                        local targetPart = nil
-                        if obj.Parent and obj.Parent:IsA("BasePart") then
-                            targetPart = obj.Parent
-                        else
-                            local ancestor = obj.Parent
-                            while ancestor and not ancestor:IsA("BasePart") do
-                                ancestor = ancestor.Parent
-                            end
-                            targetPart = ancestor
-                        end
-                        if targetPart then
-                            local dist = (targetPart.Position - myPos).Magnitude
-                            if dist <= 50 then
-                                local release = acquireTp()
-                                tp(targetPart.CFrame * CFrame.new(0, 3, 0))
-                                task.wait(0.2)
-                                -- Hold E for prompt's HoldDuration
-                                pcall(function()
-                                    local holdTime = obj.HoldDuration or 1
-                                    VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-                                    task.delay(holdTime + 0.3, function()
-                                        pcall(function() VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game) end)
-                                    end)
-                                end)
-                                pcall(fireproximityprompt, obj)
-                                release()
-                                cleaned = cleaned + 1
-                                task.wait(1.5)
-                            end
-                        end
+                        table.insert(prompts, obj)
                     end
                 end
             end
+            setStatus("trash", found .. " prompts, " .. #prompts .. " match")
+            task.wait(0.5)
+            for _, obj in ipairs(prompts) do
+                local targetPart = nil
+                if obj.Parent and obj.Parent:IsA("BasePart") then
+                    targetPart = obj.Parent
+                else
+                    local ancestor = obj.Parent
+                    while ancestor and not ancestor:IsA("BasePart") do
+                        if ancestor:IsA("Model") and ancestor.PrimaryPart then
+                            targetPart = ancestor.PrimaryPart
+                            break
+                        end
+                        ancestor = ancestor.Parent
+                    end
+                    if not targetPart and ancestor and ancestor:IsA("BasePart") then
+                        targetPart = ancestor
+                    end
+                end
+                if targetPart then
+                    local dist = (targetPart.Position - myPos).Magnitude
+                    if dist <= 50 then
+                        local release = acquireTp()
+                        tp(targetPart.CFrame * CFrame.new(0, 3, 0))
+                        task.wait(0.2)
+                        pcall(function()
+                            local holdTime = obj.HoldDuration or 1
+                            VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                            task.delay(holdTime + 0.3, function()
+                                pcall(function() VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game) end)
+                            end)
+                        end)
+                        pcall(fireproximityprompt, obj)
+                        release()
+                        cleaned = cleaned + 1
+                        task.wait(1.5)
+                    end
+                end
+            end
+        else
+            setStatus("trash", "No HRP")
         end
         if cleaned > 0 then
             setStatus("trash", "Cleaned " .. cleaned)
-        else
-            setStatus("trash", "Nothing nearby")
         end
     else
         setStatus("trash", "Disabled")
