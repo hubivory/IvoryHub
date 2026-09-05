@@ -1402,8 +1402,8 @@ FruitGroup:CreateToggle({Name = "Auto Store Fruits", CurrentValue = false,
 	end,
 })
 
-local MoonPhaseLabel = FruitGroup:CreateLabel({Text="Moon: detecting..."})
-local FruitTimerLabel = FruitGroup:CreateLabel({Text="Next fruit in: calculating..."})
+local MoonPhaseLabel = FruitGroup:CreateLabel("Moon: detecting...")
+local FruitTimerLabel = FruitGroup:CreateLabel("Next fruit in: calculating...")
 
 FruitGroup:CreateButton({Name="Reset Fruit Timer", Callback=function()
 	STATE.LastFruitSeen = os.time()
@@ -1429,9 +1429,9 @@ task.spawn(function()
 				local texId = sky.MoonTextureId
 				local id = texId:match("%d+")
 				if id and MOON_TEXTURES[id] then
-					MoonPhaseLabel:UpdateText("Moon: " .. MOON_TEXTURES[id])
+					MoonPhaseLabel:Set("Moon: " .. MOON_TEXTURES[id])
 				else
-					MoonPhaseLabel:UpdateText("Moon: Waiting...")
+					MoonPhaseLabel:Set("Moon: Waiting...")
 				end
 			end
 
@@ -1466,19 +1466,19 @@ task.spawn(function()
 	while task.wait(1) do
 		pcall(function()
 			if STATE.LastFruitSeen == 0 then
-				FruitTimerLabel:UpdateText("Next fruit in: searching...")
+				FruitTimerLabel:Set("Next fruit in: searching...")
 			else
 				local elapsed = os.time() - STATE.LastFruitSeen
 				local remaining = math.max(0, STATE.FruitRespawnTime - elapsed)
 				if remaining <= 0 then
-					FruitTimerLabel:UpdateText("Next fruit in: soon")
+					FruitTimerLabel:Set("Next fruit in: soon")
 				else
 					local mins = math.floor(remaining / 60)
 					local secs = remaining % 60
 					local dayOfWeek = os.date("*t").wday
 					local isWeekend = (dayOfWeek == 1 or dayOfWeek == 7)
 					local serverType = isWeekend and "Private" or "Public"
-					FruitTimerLabel:UpdateText("Next fruit in: " .. mins .. "m " .. secs .. "s (" .. serverType .. ")")
+					FruitTimerLabel:Set("Next fruit in: " .. mins .. "m " .. secs .. "s (" .. serverType .. ")")
 				end
 			end
 		end)
@@ -3416,15 +3416,16 @@ CraftGroup:CreateButton({Name="Buy Geppo", Callback=function()
 	pcall(function() CommF:InvokeServer("BuyHaki", "Geppo") end)
 end})
 
-Library:OnConfigurationLoad(function(config) end)
-Library:OnConfigurationSave(function(config) end)
+-- Configuration hooks (IvoryHubLibrary does not support these; no-op)
 
 local CreditGroup = SettingsTab:CreateSection("Credits")
-local CreditLabel = CreditGroup:CreateLabel({Text=""})
-local CreditTL = CreditLabel and CreditLabel.TextLabel
-CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-CreditTL.Font = Enum.Font.GothamBold
-CreditTL.TextSize = 26
+local CreditLabel = CreditGroup:CreateLabel("Made by mommy Crow")
+local CreditTL = CreditLabel and CreditLabel.Instance and CreditLabel.Instance:FindFirstChild("LabelText", true)
+if CreditTL then
+	CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
+	CreditTL.Font = Enum.Font.GothamBold
+	CreditTL.TextSize = 26
+end
 
 task.spawn(function()
 	local full = "Made by mommy Crow"
@@ -3433,15 +3434,15 @@ task.spawn(function()
 		local shown = ""
 		for i = 1, #full do
 			shown = shown .. full:sub(i, i)
-			CreditLabel:UpdateText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
+			if CreditLabel and CreditLabel.Set then CreditLabel:Set(shown .. cursor) end
+			if CreditTL then CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180) end
 			task.wait(math.random(4, 9) / 100)
 		end
 		task.wait(2)
 		for i = #full, 1, -1 do
 			shown = full:sub(1, i - 1)
-			CreditLabel:UpdateText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
+			if CreditLabel and CreditLabel.Set then CreditLabel:Set(shown .. cursor) end
+			if CreditTL then CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180) end
 			task.wait(math.random(2, 5) / 100)
 		end
 		task.wait(0.8)
