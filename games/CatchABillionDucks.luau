@@ -991,60 +991,21 @@ end)
 
 -- ===============================================================
 -- LOBBY: AUTO JOIN GAME LOOP
+-- Uses the game's own Queue API via Value.Queue
 -- ===============================================================
 task.spawn(function()
 	while true do
 		if cfg.autoJoinGame and isLobby() then
 			pcall(function()
-				-- Select difficulty first
-				local difficultyGui = LocalPlayer.PlayerGui:FindFirstChild("DifficultyGui")
-					or LocalPlayer.PlayerGui:FindFirstChild("Difficulty")
-				if difficultyGui then
-					-- Look for difficulty button
-					for _, btn in ipairs(difficultyGui:GetDescendants()) do
-						if btn:IsA("TextButton") or btn:IsA("ImageButton") then
-							if btn.Name:upper():find(cfg.difficulty:upper()) then
-								btn.MouseButton1Click:Fire()
-								task.wait(0.5)
-								break
-							end
-						end
-					end
-				end
+				-- Map our config difficulty to the game's mode name
+				local modeMap = {
+					NORMAL = "Normal",
+					HARDCORE = "Hardcore",
+					NIGHTMARE = "Nightmare",
+				}
+				local mode = modeMap[cfg.difficulty] or "Normal"
 
-				-- Also try proximity prompts for difficulty selection
-				local difficultyPart = workspace:FindFirstChild("DifficultySelect")
-					or workspace.Ume and workspace.Ume:FindFirstChild("DifficultySelect")
-				if difficultyPart then
-					local prompt = difficultyPart:FindFirstChildOfClass("ProximityPrompt")
-					if prompt and prompt.Enabled then
-						local _, hrp = getChar()
-						if hrp then
-							hrp.CFrame = difficultyPart.CFrame + Vector3.new(0, 3, 0)
-							task.wait(0.5)
-							fireproximityprompt(prompt)
-							task.wait(1)
-
-							-- After opening menu, select the difficulty
-							task.wait(0.5)
-							local gui = LocalPlayer.PlayerGui:FindFirstChild("DifficultyGui")
-								or LocalPlayer.PlayerGui:FindFirstChild("Difficulty")
-							if gui then
-								for _, btn in ipairs(gui:GetDescendants()) do
-									if btn:IsA("TextButton") or btn:IsA("ImageButton") then
-										if btn.Name:upper():find(cfg.difficulty:upper()) then
-											btn.MouseButton1Click:Fire()
-											task.wait(0.5)
-											break
-										end
-									end
-								end
-							end
-						end
-					end
-				end
-
-				-- Join queue
+				-- Teleport to Queue_Teleport stand to trigger zone entry
 				local queue = workspace:FindFirstChild("Queue")
 				if queue then
 					local _, hrp = getChar()
@@ -1052,11 +1013,23 @@ task.spawn(function()
 						for _, v in ipairs(queue:GetDescendants()) do
 							if v:IsA("BasePart") and v.Name == "RootPart" then
 								hrp.CFrame = v.CFrame + Vector3.new(0, 3, 0)
-								task.wait(1)
 								break
 							end
 						end
 					end
+				end
+
+				-- Wait for server to open the party queue
+				task.wait(3)
+
+				-- Use the game's Queue API to configure and create
+				if Value and Value.Queue then
+					Value.Queue.ChooseMode(mode)
+					task.wait(0.3)
+					Value.Queue.ChooseSize(5)
+					task.wait(0.3)
+					Value.Queue.CreateParty()
+					print("[Ivory] Auto Join: Creating party (mode=" .. mode .. ")")
 				end
 			end)
 		end
