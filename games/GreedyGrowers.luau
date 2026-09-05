@@ -29,9 +29,6 @@ end
 
 local LIB_SRC = getgenv()._IvoryLibSrc
 if not LIB_SRC or #LIB_SRC == 0 then
-	LIB_SRC = httpGet("https://ivoryy.web.app/IvoryHubLibrary.lua")
-end
-if not LIB_SRC or #LIB_SRC == 0 then
 	LIB_SRC = httpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua")
 end
 if not LIB_SRC or #LIB_SRC == 0 then
