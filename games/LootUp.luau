@@ -121,6 +121,7 @@ local STATE = {
 	rebirths = 0,
 	statsUpgraded = 0,
 	potionsUsed = 0,
+	worldRequestCooldown = 0,
 }
 
 --// ═══════════════════════════════════════════════════════════
@@ -171,23 +172,15 @@ FarmSection:CreateDropdown({
 	Callback = function(v)
 		local num = tonumber(v:match("%d+")) or 1
 		CONFIG.farmWorld = num
-		STATE.note = "Switching to World " .. num
-		local worldFolder = workspace:FindFirstChild("Map")
-		if worldFolder then
-			local worldObj = worldFolder:FindFirstChild("World" .. num) or worldFolder:FindFirstChild("World " .. num)
-			if worldObj then
-				local teleportPart = worldObj:FindFirstChildWhichIsA("BasePart")
-					or worldObj:FindFirstChildWhichIsA("Model") and worldObj:FindFirstChildWhichIsA("Model"):FindFirstChildWhichIsA("BasePart")
-				if teleportPart then
-					tpTo(teleportPart.Position)
-					STATE.note = "Teleported to World " .. num
-				else
-					STATE.note = "World " .. num .. " found but no part"
-				end
-			else
-				STATE.note = "World " .. num .. " not found"
-			end
+		STATE.note = "World " .. num .. " selected"
+		buildWorldRegions()
+		local unlocked = RepCache.Data and RepCache.Data.Worlds
+		if unlocked and unlocked["World" .. num] ~= true then
+			STATE.note = "World " .. num .. " is locked"
+			return
 		end
+		safeFire("TeleportZone", "World" .. num, 1)
+		STATE.note = "Traveling to World " .. num
 	end,
 })
 
@@ -532,10 +525,76 @@ local function tpTo(pos)
 	end
 end
 
-local function getClosestEnemy(maxDist)
+--// World regions: each world's map area lives under workspace.Map (e.g. "World1",
+--// "World 5"). Enemies carry no World attribute, so classify them by distance to
+--// the nearest world region center.
+local worldRegions = {}
+local worldRegionsBuilt = false
+
+local function buildWorldRegions()
+	local map = workspace:FindFirstChild("Map")
+	if not map then return end
+	worldRegions = {}
+	for _, obj in ipairs(map:GetChildren()) do
+		local num = tonumber(obj.Name:match("^World%s?(%d+)$"))
+		if num then
+			local center
+			local ok, size, cf = pcall(function()
+				local sz, box = obj:GetBoundingBox()
+				return sz, box
+			end)
+			if ok and cf then
+				center = cf.Position
+			else
+				local sum = Vector3.new(0, 0, 0)
+				local count = 0
+				for _, d in ipairs(obj:GetDescendants()) do
+					if d:IsA("BasePart") then
+						sum += d.Position
+						count += 1
+						if count >= 100 then break end
+					end
+				end
+				if count > 0 then
+					center = sum / count
+				end
+			end
+			if center then
+				worldRegions[num] = center
+			end
+		end
+	end
+	worldRegionsBuilt = true
+end
+
+local enemyWorldCache = setmetatable({}, { __mode = "k" })
+local function enemyWorldNum(enemy)
+	if not worldRegionsBuilt then buildWorldRegions() end
+	local cached = enemyWorldCache[enemy]
+	if cached then return cached end
+	local part = enemy:FindFirstChild("HumanoidRootPart") or enemy:FindFirstChild("Head")
+	if not part then return nil end
+	local pos = part.Position
+	local bestNum, bestDist
+	for num, center in pairs(worldRegions) do
+		local dist = (center - pos).Magnitude
+		if not bestDist or dist < bestDist then
+			bestNum = num
+			bestDist = dist
+		end
+	end
+	enemyWorldCache[enemy] = bestNum
+	return bestNum
+end
+
+local function getClosestEnemy(maxDist, worldNum)
 	maxDist = maxDist or 500
 	local hrp = rootPart()
 	if not hrp then return nil end
+	local function worldMatches(mob)
+		if not worldNum then return true end
+		return enemyWorldNum(mob) == worldNum
+	end
 	local closest, closestDist
 	local enemies = workspace:FindFirstChild("Enemies")
 	if enemies then
@@ -543,7 +602,7 @@ local function getClosestEnemy(maxDist)
 			if mob:IsA("Model") then
 				local hum = mob:FindFirstChild("Humanoid")
 				local hrp2 = mob:FindFirstChild("HumanoidRootPart") or mob:FindFirstChild("Head")
-				if hum and hrp2 and hum.Health > 0 then
+				if hum and hrp2 and hum.Health > 0 and worldMatches(mob) then
 					local dist = (hrp2.Position - hrp.Position).Magnitude
 					if dist < maxDist and (not closestDist or dist < closestDist) then
 						closest = mob
@@ -558,7 +617,7 @@ local function getClosestEnemy(maxDist)
 			if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj ~= plr.Character then
 				local hum = obj:FindFirstChild("Humanoid")
 				local hrp2 = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head")
-				if hum and hrp2 and hum.Health > 0 then
+				if hum and hrp2 and hum.Health > 0 and worldMatches(obj) then
 					local dist = (hrp2.Position - hrp.Position).Magnitude
 					if dist < maxDist and (not closestDist or dist < closestDist) then
 						closest = obj
@@ -581,7 +640,63 @@ local function getDrops()
 			end
 		end
 	end
+	for _, obj in ipairs(workspace:GetChildren()) do
+		if obj:IsA("BasePart") and obj.Name == "LootDrop" and obj:GetAttribute("BasePos") ~= nil then
+			table.insert(drops, obj)
+		end
+	end
 	return drops
+end
+
+--// Physical loot drops are rendered client-side as "LootDrop" parts parented
+--// to workspace. The server assigns each drop a seqId; to collect you must be
+--// near the drop and fire Net.Events.LootDrop with that seqId (same thing the
+--// game does when you press E). Track seqIds by hooking the "i"/"c" events.
+local dropSeqQueue = {}
+local function pruneSeqQueue()
+	local now = os.clock()
+	for i = #dropSeqQueue, 1, -1 do
+		if now - dropSeqQueue[i].time > 120 then
+			table.remove(dropSeqQueue, i)
+		end
+	end
+end
+
+local function trackDropSeqs()
+	local events = Net and Net:FindFirstChild("Events")
+	local ldEvent = events and events:FindFirstChild("LootDrop")
+	if not ldEvent then return end
+	ldEvent.OnClientEvent:Connect(function(kind, ...)
+		if kind == "i" then
+			local args = { ... }
+			local pos = args[1]
+			local seq = args[3]
+			if pos and seq then
+				table.insert(dropSeqQueue, { pos = pos, seq = seq, time = os.clock() })
+				if #dropSeqQueue > 100 then table.remove(dropSeqQueue, 1) end
+			end
+		elseif kind == "c" then
+			local seq = select(1, ...)
+			for i = #dropSeqQueue, 1, -1 do
+				if dropSeqQueue[i].seq == seq then
+					table.remove(dropSeqQueue, i)
+					break
+				end
+			end
+		end
+	end)
+end
+
+local function claimSeqForPos(pos)
+	pruneSeqQueue()
+	for i, entry in ipairs(dropSeqQueue) do
+		if (entry.pos - pos).Magnitude < 4 then
+			local seq = entry.seq
+			table.remove(dropSeqQueue, i)
+			return seq
+		end
+	end
+	return nil
 end
 
 local function shortNumber(n)
@@ -633,9 +748,10 @@ local function stopNoclip()
 end
 
 --// ═══════════════════════════════════════════════════════════
---// COMBAT (via VirtualInputManager - bypasses anti-exploit)
+--// COMBAT (remote-based - does not touch the mouse)
 --// ═══════════════════════════════════════════════════════════
 
+-- Fallback input simulation (only used if the Combat remote is missing)
 local function vimClick()
 	VIM:SendMouseButtonEvent(0, 0, 0, true, game, 1)
 	task.wait(0.05)
@@ -652,13 +768,123 @@ local function vimSkill(slot)
 	end
 end
 
+-- The game's own client swings via Combat:FireServer("s", "Attack", seq) and
+-- casts skills via Combat:FireServer("s", skillName, seq). Using the same path
+-- keeps the mouse completely free so the UI stays clickable while farming.
+local castSeq = 0
+local RepCache = { Data = {}, Cooldowns = {} }
+
+local function applyRepUpdate(ch, key, val)
+	local node = RepCache[ch]
+	if not node then
+		node = {}
+		RepCache[ch] = node
+	end
+	if key == "_CH" then
+		if val == "_DEL" then RepCache[ch] = {} end
+		return
+	end
+	local parts = {}
+	for part in string.gmatch(key, "[^.]+") do
+		table.insert(parts, part)
+	end
+	local n = node
+	for i = 1, #parts - 1 do
+		if type(n[parts[i]]) ~= "table" then n[parts[i]] = {} end
+		n = n[parts[i]]
+	end
+	if val == "_DEL" or val == nil then
+		n[parts[#parts]] = nil
+	else
+		n[parts[#parts]] = val
+	end
+end
+
+local function hookReplication()
+	local repEvent = Net and Net:FindFirstChild("Events") and Net.Events:FindFirstChild("Replication")
+	if not repEvent then return end
+	repEvent.OnClientEvent:Connect(function(kind, payload)
+		if kind == "f" then
+			for ch, data in pairs(payload) do
+				RepCache[ch] = data
+			end
+		elseif kind == "s" then
+			for ch, changes in pairs(payload) do
+				for key, val in pairs(changes) do
+					applyRepUpdate(ch, key, val)
+				end
+			end
+		end
+	end)
+	task.spawn(function()
+		pcall(function() repEvent:FireServer("f") end)
+	end)
+end
+
+local function skillNameForSlot(slot)
+	local skills = RepCache.Data and RepCache.Data.Skills
+	if not skills then return nil end
+	return skills[tostring(slot)]
+end
+
+local function skillOnCooldown(skillName)
+	local cd = RepCache.Cooldowns and RepCache.Cooldowns[skillName]
+	if cd and cd[1] and cd[1] - workspace:GetServerTimeNow() > 0 then
+		return true
+	end
+	return false
+end
+
+local combatRemoteAvailable = getRemote("Combat") ~= nil
+
+local function doSwing()
+	if combatRemoteAvailable then
+		castSeq += 1
+		safeFire("Combat", "s", "Attack", castSeq)
+	else
+		vimClick()
+	end
+end
+
+local function doSkill(slot)
+	if not combatRemoteAvailable then
+		vimSkill(slot)
+		return
+	end
+	local skillName = skillNameForSlot(slot)
+	if not skillName then return end
+	if skillOnCooldown(skillName) then return end
+	castSeq += 1
+	safeFire("Combat", "s", skillName, castSeq)
+end
+
 --// ═══════════════════════════════════════════════════════════
 --// CORE LOOPS
 --// ═══════════════════════════════════════════════════════════
 
 local function farmLoop()
 	if not CONFIG.autoFarm then return end
-	local enemy = getClosestEnemy(500)
+	local targetWorld = CONFIG.farmWorld
+	local wanted = "World" .. targetWorld
+	local current = RepCache.Data and RepCache.Data.CurrentWorld
+	local unlocked = RepCache.Data and RepCache.Data.Worlds
+	local effectiveWorld = targetWorld
+	if current and unlocked then
+		if unlocked[wanted] ~= true then
+			-- selected world is locked: keep farming the world we are in
+			local curNum = tonumber(current:match("%d+"))
+			if curNum then effectiveWorld = curNum end
+			STATE.note = "World " .. targetWorld .. " locked - farming World " .. (curNum or "?")
+		elseif current ~= wanted then
+			local now = os.clock()
+			if now - STATE.worldRequestCooldown > 8 then
+				STATE.worldRequestCooldown = now
+				STATE.note = "Traveling to World " .. targetWorld
+				safeFire("TeleportZone", wanted, 1)
+			end
+		end
+	end
+	local enemy = getClosestEnemy(500, effectiveWorld)
 	if enemy then
 		STATE.phase = "farming"
 		local hrp = rootPart()
@@ -673,40 +899,64 @@ local function farmLoop()
 				task.wait(0.1)
 			end
 		end
-		if CONFIG.autoSwing then vimClick() end
+		if CONFIG.autoSwing then doSwing() end
 		if CONFIG.autoSkills then
-			if CONFIG.skillSlot1 then vimSkill(1) end
-			if CONFIG.skillSlot2 then vimSkill(2) end
-			if CONFIG.skillSlot3 then vimSkill(3) end
+			if CONFIG.skillSlot1 then doSkill(1) end
+			if CONFIG.skillSlot2 then doSkill(2) end
+			if CONFIG.skillSlot3 then doSkill(3) end
 		end
 	else
 		STATE.phase = "searching"
 		local enemies = workspace:FindFirstChild("Enemies")
+		local pool = {}
 		if enemies then
-			local children = enemies:GetChildren()
-			if #children > 0 then
-				local target = children[math.random(1, #children)]
-				if target:IsA("Model") then
-					local p = target:GetPivot()
-					if p then tpTo(p.Position) end
+			for _, child in ipairs(enemies:GetChildren()) do
+				if child:IsA("Model")
+					and child:FindFirstChild("Humanoid")
+					and child:FindFirstChild("Humanoid").Health > 0
+					and enemyWorldNum(child) == effectiveWorld then
+					table.insert(pool, child)
 				end
 			end
+		end
+		if #pool > 0 then
+			local target = pool[math.random(1, #pool)]
+			local p = target:GetPivot()
+			if p then tpTo(p.Position) end
+		elseif current == ("World" .. effectiveWorld) then
+			-- already in the right world but nothing alive nearby: roam to its center
+			local center = worldRegions[effectiveWorld]
+			if center then tpTo(center) end
 		end
 	end
 end
 
 local function collectLoop()
 	if not CONFIG.autoLoot then return end
+	local hrp = rootPart()
+	if not hrp then return end
 	for _, drop in ipairs(getDrops()) do
-		if drop:IsA("BasePart") then
+		if drop:IsA("BasePart") and drop.Parent then
 			tpTo(drop.Position)
-			task.wait(0.15)
+			task.wait(0.3)
+			local seq = claimSeqForPos(drop.Position)
+			if seq then
+				safeFire("LootDrop", seq)
+			else
+				-- no seqId tracked: press E near the drop so the game's own
+				-- pickup logic (closest drop within 5 studs) claims it
+				VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+				task.wait(0.08)
+				VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+			end
+			STATE.lootCollected += 1
+			STATE.phase = "looting"
+			task.wait(0.2)
 		elseif drop:IsA("Tool") and drop:FindFirstChild("Handle") then
 			tpTo(drop.Handle.Position)
 			task.wait(0.15)
 		end
 	end
-	safeFire("LootDrop")
 end
 
 local function questLoop()
@@ -775,11 +1025,11 @@ local function dungeonLoop()
 				ehrp.Position
 			)
 		end
-		if CONFIG.autoSwing then vimClick() end
+		if CONFIG.autoSwing then doSwing() end
 		if CONFIG.autoSkills then
-			if CONFIG.skillSlot1 then vimSkill(1) end
-			if CONFIG.skillSlot2 then vimSkill(2) end
-			if CONFIG.skillSlot3 then vimSkill(3) end
+			if CONFIG.skillSlot1 then doSkill(1) end
+			if CONFIG.skillSlot2 then doSkill(2) end
+			if CONFIG.skillSlot3 then doSkill(3) end
 		end
 	end
 	if CONFIG.dungeonLeave then
@@ -801,11 +1051,11 @@ local function towerLoop()
 				ehrp.Position
 			)
 		end
-		if CONFIG.autoSwing then vimClick() end
+		if CONFIG.autoSwing then doSwing() end
 		if CONFIG.autoSkills then
-			if CONFIG.skillSlot1 then vimSkill(1) end
-			if CONFIG.skillSlot2 then vimSkill(2) end
-			if CONFIG.skillSlot3 then vimSkill(3) end
+			if CONFIG.skillSlot1 then doSkill(1) end
+			if CONFIG.skillSlot2 then doSkill(2) end
+			if CONFIG.skillSlot3 then doSkill(3) end
 		end
 	end
 end
@@ -824,11 +1074,11 @@ local function infiniteTowerLoop()
 				ehrp.Position
 			)
 		end
-		if CONFIG.autoSwing then vimClick() end
+		if CONFIG.autoSwing then doSwing() end
 		if CONFIG.autoSkills then
-			if CONFIG.skillSlot1 then vimSkill(1) end
-			if CONFIG.skillSlot2 then vimSkill(2) end
-			if CONFIG.skillSlot3 then vimSkill(3) end
+			if CONFIG.skillSlot1 then doSkill(1) end
+			if CONFIG.skillSlot2 then doSkill(2) end
+			if CONFIG.skillSlot3 then doSkill(3) end
 		end
 	end
 end
@@ -943,6 +1193,9 @@ task.spawn(function()
 end)
 
 -- Core loops (combat runs every 0.3s via farmLoop, no separate swing loop)
+trackDropSeqs()
+hookReplication()
+buildWorldRegions()
 loop(0.3, "autoFarm", farmLoop)
 loop(1, "autoLoot", collectLoop)
 loop(3, "autoQuests", questLoop)
@@ -963,10 +1216,10 @@ loop(1, "autoDodge", dodgeLoop)
 -- Status update loop
 task.spawn(function()
 	while true do
-		PhaseLabel:SetText("Phase: " .. STATE.phase)
-		NoteLabel:SetText("Note: " .. STATE.note)
-		KillsLabel:SetText("Kills: " .. STATE.kills)
-		LootLabel:SetText("Loot: " .. STATE.lootCollected)
+		PhaseLabel:Set("Phase: " .. STATE.phase)
+		NoteLabel:Set("Note: " .. STATE.note)
+		KillsLabel:Set("Kills: " .. STATE.kills)
+		LootLabel:Set("Loot: " .. STATE.lootCollected)
 		task.wait(0.5)
 	end
 end)
