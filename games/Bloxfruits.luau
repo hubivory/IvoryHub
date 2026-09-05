@@ -53,16 +53,14 @@ local httpGet = function(url)
 	return nil
 end
 
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = loadstring(httpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(httpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(httpGet(repo .. "addons/SaveManager.lua"))()
-
-local Options = Library.Options
-local Toggles = Library.Toggles
-
-Library.ForceCheckbox = false
-Library.ShowToggleFrameInKeybinds = true
+local LIB_SRC = httpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua")
+if not LIB_SRC or #LIB_SRC == 0 then
+    error("[Ivory] Failed to fetch library. Check HTTP support.")
+end
+local Library = loadstring(LIB_SRC)()
+if not Library then
+    error("[Ivory] Failed to compile library")
+end
 
 local Monster, NameQuest, LevelQuest, NameCheckQuest, CFrameQ, CFrameMon
 
@@ -1063,56 +1061,36 @@ local function getMaterialList()
 	return MaterialList[currentWorld] or {}
 end
 
-local Window = Library:CreateWindow({
-	Title = "Ivory",
-	Icon = "swords",
-	Footer = {
-		"v2.0 |",
-		{ Text = "Game", Copyable = true },
-		"|",
-		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
-	},
-	CopyableFooter = true,
-	FuzzySearch = true,
-	SearchValues = true,
-	Minimizable = true,
-	MinimizeKeybind = Enum.KeyCode.RightBracket,
-	MinimizedWidth = 280,
-	NotifySide = "Right",
-	ShowCustomCursor = true,
-	SearchKeybind = Enum.KeyCode.F,
-	CornerRadius = 4,
-	Animations = {
-		ToggleWindow = false,
-		TabSwitch = false,
-		Groupbox = false,
-		Dropdown = false,
-		KeyPicker = false,
-		SubTabUnderline = true,
+local Window = Library.CreateWindow({
+	Name = "Ivory",
+	LoadingTitle = "Ivory Hub",
+	LoadingSubtitle = "Loading...",
+	ConfigurationSaving = {
+		Enabled = true,
+		FolderName = "IvoryHub",
+		FileName = "Bloxfruits"
 	},
 })
 
-local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
-local CombatTab = Window:AddTab({ Name = "Combat", Icon = "swords" })
-local TeleportTab = Window:AddTab({ Name = "Teleport", Icon = "map" })
-local VisualsTab = Window:AddTab({ Name = "Visuals", Icon = "eye" })
-local PlayerTab = Window:AddTab({ Name = "Player", Icon = "user" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
+local MainTab = Window:CreateTab("Main", "home")
+local CombatTab = Window:CreateTab("Combat", "swords")
+local TeleportTab = Window:CreateTab("Teleport", "map")
+local VisualsTab = Window:CreateTab("Visuals", "eye")
+local PlayerTab = Window:CreateTab("Player", "user")
+local SettingsTab = Window:CreateTab("Settings", "settings")
 
-local FarmSub = MainTab:AddSubTab("Farming", "zap")
-local DiscordGroup = FarmSub:AddLeftGroupbox("Community", "users")
-DiscordGroup:AddButton("Join Discord For Dupe", function()
+local FarmSub = MainTab:CreateSection("Farming")
+local DiscordGroup = FarmSub:CreateSection("Community")
+DiscordGroup:CreateButton({Name="Join Discord For Dupe", Callback=function()
 	pcall(function() setclipboard("https://discord.gg/MCWYKBdB4E") end)
 	Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 })
-end)
-DiscordGroup:AddLabel("Click above to join our Discord for dupes, updates & more!")
+end})
+DiscordGroup:CreateLabel({Text="Click above to join our Discord for dupes, updates & more!"})
 
-local FarmGroup = FarmSub:AddRightGroupbox("Auto Farm", "cpu")
-local ChestGroup = FarmSub:AddLeftGroupbox("Chests", "package")
+local FarmGroup = FarmSub:CreateSection("Auto Farm")
+local ChestGroup = FarmSub:CreateSection("Chests")
 
-FarmGroup:AddToggle("AutoFarm", {
-	Text = "Auto Farm Level",
-	Default = false,
+FarmGroup:CreateToggle({Name = "Auto Farm Level", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoFarm = v
 		if v then
@@ -1250,32 +1228,25 @@ FarmGroup:AddToggle("AutoFarm", {
 			detachFloat()
 		end
 	end,
-}):AddKeyPicker("AutoFarmKey", {
-	Default = "None", Text = "Auto Farm Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
-
-FarmGroup:AddDropdown("FarmMethod", {
-	Values = { "Quest", "Nearest" }, Default = "Quest", Text = "Farm Method",
+FarmGroup:CreateDropdown({Name = "Farm Method", Options = { "Quest", "Nearest" }, CurrentOption = "Quest",
 	Callback = function(v) STATE.AutoFarmMethod = v end,
 })
 
-FarmGroup:AddDropdown("WeaponType", {
-	Values = { "Melee", "Sword", "Gun", "Blox Fruit" }, Default = "Melee", Text = "Weapon Type",
+FarmGroup:CreateDropdown({Name = "Weapon Type", Options = { "Melee", "Sword", "Gun", "Blox Fruit" }, CurrentOption = "Melee",
 	Callback = function(v) STATE.SelectedWeapon = v end,
 })
 
-FarmGroup:AddButton("Refresh Quest", function()
+FarmGroup:CreateButton({Name="Refresh Quest", Callback=function()
 	pcall(function() CheckQuest() end)
-end)
+end})
 
-FarmGroup:AddButton("Stop Farming", function()
+FarmGroup:CreateButton({Name="Stop Farming", Callback=function()
 	STATE.AutoFarm = false
 	detachFloat()
-end)
+end})
 
-ChestGroup:AddToggle("AutoChest", {
-	Text = "Auto Farm Chests",
-	Default = false,
+ChestGroup:CreateToggle({Name = "Auto Farm Chests", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoChest = v
 		if v then
@@ -1302,11 +1273,9 @@ ChestGroup:AddToggle("AutoChest", {
 			end)
 		end
 	end,
-}):AddKeyPicker("AutoChestKey", {
-	Default = "None", Text = "Chest Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
-ChestGroup:AddButton("Collect All Chests", function()
+ChestGroup:CreateButton({Name="Collect All Chests", Callback=function()
 	task.spawn(function()
 		local hrp = getHRP()
 		if not hrp then return end
@@ -1323,12 +1292,10 @@ ChestGroup:AddButton("Collect All Chests", function()
 		end
 		Library:Notify({ Title = "Ivory", Description = "Collected all chests!", Type = "Success", Time = 3 })
 	end)
-end)
+end})
 
-local FruitGroup = FarmSub:AddLeftGroupbox("Fruits", "apple")
-	FruitGroup:AddToggle("AutoFruit", {
-	Text = "Auto Collect Fruits",
-	Default = false,
+local FruitGroup = FarmSub:CreateSection("Fruits")
+	FruitGroup:CreateToggle({Name = "Auto Collect Fruits", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoFruit = v
 		if v then
@@ -1408,13 +1375,9 @@ local FruitGroup = FarmSub:AddLeftGroupbox("Fruits", "apple")
 			end
 		end
 	end,
-}):AddKeyPicker("AutoFruitKey", {
-	Default = "None", Text = "Fruit Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
-FruitGroup:AddToggle("AutoStoreFruit", {
-	Text = "Auto Store Fruits",
-	Default = false,
+FruitGroup:CreateToggle({Name = "Auto Store Fruits", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoStoreFruit = v
 		if v then
@@ -1439,16 +1402,16 @@ FruitGroup:AddToggle("AutoStoreFruit", {
 	end,
 })
 
-local MoonPhaseLabel = FruitGroup:AddLabel("Moon: detecting...")
-local FruitTimerLabel = FruitGroup:AddLabel("Next fruit in: calculating...")
+local MoonPhaseLabel = FruitGroup:CreateLabel({Text="Moon: detecting..."})
+local FruitTimerLabel = FruitGroup:CreateLabel({Text="Next fruit in: calculating..."})
 
-FruitGroup:AddButton("Reset Fruit Timer", function()
+FruitGroup:CreateButton({Name="Reset Fruit Timer", Callback=function()
 	STATE.LastFruitSeen = os.time()
 	Library:Notify({ Title = "Ivory", Description = "Fruit timer reset! Counting down...", Type = "Success", Time = 3 })
-end)
+end})
 
-FruitGroup:AddLabel("Auto Collect: tweens to spawned fruits on map")
-FruitGroup:AddLabel("Auto Store: stores all fruits in inventory")
+FruitGroup:CreateLabel({Text="Auto Collect: tweens to spawned fruits on map"})
+FruitGroup:CreateLabel({Text="Auto Store: stores all fruits in inventory"})
 
 local MOON_TEXTURES = {
 	["9709149431"] = "Full Moon (100%)",
@@ -1466,9 +1429,9 @@ task.spawn(function()
 				local texId = sky.MoonTextureId
 				local id = texId:match("%d+")
 				if id and MOON_TEXTURES[id] then
-					MoonPhaseLabel:SetText("Moon: " .. MOON_TEXTURES[id])
+					MoonPhaseLabel:UpdateText("Moon: " .. MOON_TEXTURES[id])
 				else
-					MoonPhaseLabel:SetText("Moon: Waiting...")
+					MoonPhaseLabel:UpdateText("Moon: Waiting...")
 				end
 			end
 
@@ -1503,19 +1466,19 @@ task.spawn(function()
 	while task.wait(1) do
 		pcall(function()
 			if STATE.LastFruitSeen == 0 then
-				FruitTimerLabel:SetText("Next fruit in: searching...")
+				FruitTimerLabel:UpdateText("Next fruit in: searching...")
 			else
 				local elapsed = os.time() - STATE.LastFruitSeen
 				local remaining = math.max(0, STATE.FruitRespawnTime - elapsed)
 				if remaining <= 0 then
-					FruitTimerLabel:SetText("Next fruit in: soon")
+					FruitTimerLabel:UpdateText("Next fruit in: soon")
 				else
 					local mins = math.floor(remaining / 60)
 					local secs = remaining % 60
 					local dayOfWeek = os.date("*t").wday
 					local isWeekend = (dayOfWeek == 1 or dayOfWeek == 7)
 					local serverType = isWeekend and "Private" or "Public"
-					FruitTimerLabel:SetText("Next fruit in: " .. mins .. "m " .. secs .. "s (" .. serverType .. ")")
+					FruitTimerLabel:UpdateText("Next fruit in: " .. mins .. "m " .. secs .. "s (" .. serverType .. ")")
 				end
 			end
 		end)
@@ -1525,18 +1488,14 @@ end)
 -- ========================================
 -- EXTENDED FARMING (Phase 1)
 -- ========================================
-local ExtFarmSub = MainTab:AddSubTab("Extended", "plus-circle")
+local ExtFarmSub = MainTab:CreateSection("Extended")
 
 -- Boss Farm
-local BossFarmGroup = ExtFarmSub:AddLeftGroupbox("Boss Farm", "skull")
-BossFarmGroup:AddDropdown("SelectedBoss", {
-	Values = (function() local t = {"All"}; for _, b in ipairs(getBossList()) do table.insert(t, b) end; return t end)(),
-	Default = "All", Text = "Select Boss",
+local BossFarmGroup = ExtFarmSub:CreateSection("Boss Farm")
+BossFarmGroup:CreateDropdown({Name = "Select Boss", Options = (function() local t = {"All"}; for _, b in ipairs(getBossList()) do table.insert(t, b) end; return t end)(), CurrentOption = "All",
 	Callback = function(v) STATE.SelectedBoss = v end,
 })
-BossFarmGroup:AddToggle("AutoBossFarm", {
-	Text = "Auto Farm Boss",
-	Default = false,
+BossFarmGroup:CreateToggle({Name = "Auto Farm Boss", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoBossFarm = v
 		if v then
@@ -1631,21 +1590,14 @@ BossFarmGroup:AddToggle("AutoBossFarm", {
 			detachFloat()
 		end
 	end,
-}):AddKeyPicker("BossFarmKey", {
-	Default = "None", Text = "Boss Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
 -- Material Farm
-local MatFarmGroup = ExtFarmSub:AddRightGroupbox("Material Farm", "layers")
-MatFarmGroup:AddDropdown("SelectedMaterial", {
-	Values = getMaterialList(),
-	Default = (function() local ml = getMaterialList(); return ml[1] or "Leather + Scrap Metal" end)(),
-	Text = "Select Material",
+local MatFarmGroup = ExtFarmSub:CreateSection("Material Farm")
+MatFarmGroup:CreateDropdown({Name = "Select Material", Options = getMaterialList(), CurrentOption = (function() local ml = getMaterialList(); return ml[1] or "Leather + Scrap Metal" end)(),
 	Callback = function(v) STATE.SelectedMaterial = v end,
 })
-MatFarmGroup:AddToggle("AutoMaterialFarm", {
-	Text = "Auto Farm Material",
-	Default = false,
+MatFarmGroup:CreateToggle({Name = "Auto Farm Material", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoMaterial = v
 		if v then
@@ -1743,16 +1695,12 @@ MatFarmGroup:AddToggle("AutoMaterialFarm", {
 			detachFloat()
 		end
 	end,
-}):AddKeyPicker("MaterialKey", {
-	Default = "None", Text = "Material Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
 -- Bone / Cake Prince / Factory / Pirate Raid
-local SpecialFarmGroup = ExtFarmSub:AddLeftGroupbox("Special Farms", "star")
+local SpecialFarmGroup = ExtFarmSub:CreateSection("Special Farms")
 
-SpecialFarmGroup:AddToggle("AutoBone", {
-	Text = "Auto Farm Bone",
-	Default = false,
+SpecialFarmGroup:CreateToggle({Name = "Auto Farm Bone", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoBone = v
 		if v then
@@ -1816,13 +1764,9 @@ SpecialFarmGroup:AddToggle("AutoBone", {
 			detachFloat()
 		end
 	end,
-}):AddKeyPicker("BoneKey", {
-	Default = "None", Text = "Bone Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
-SpecialFarmGroup:AddToggle("AutoCakePrince", {
-	Text = "Auto Cake Prince",
-	Default = false,
+SpecialFarmGroup:CreateToggle({Name = "Auto Cake Prince", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoCakePrince = v
 		if v then
@@ -1884,13 +1828,9 @@ SpecialFarmGroup:AddToggle("AutoCakePrince", {
 			detachFloat()
 		end
 	end,
-}):AddKeyPicker("CakePrinceKey", {
-	Default = "None", Text = "Cake Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
-SpecialFarmGroup:AddToggle("AutoFactory", {
-	Text = "Auto Factory Raid",
-	Default = false,
+SpecialFarmGroup:CreateToggle({Name = "Auto Factory Raid", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoFactory = v
 		if v then
@@ -1940,9 +1880,7 @@ SpecialFarmGroup:AddToggle("AutoFactory", {
 	end,
 })
 
-SpecialFarmGroup:AddToggle("AutoPirateRaid", {
-	Text = "Auto Pirate Raid",
-	Default = false,
+SpecialFarmGroup:CreateToggle({Name = "Auto Pirate Raid", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoPirateRaid = v
 		if v then
@@ -1981,16 +1919,13 @@ SpecialFarmGroup:AddToggle("AutoPirateRaid", {
 })
 
 -- Mastery Farm & Kill Nearest
-local MasteryGroup = ExtFarmSub:AddRightGroupbox("Mastery / Kill", "target")
+local MasteryGroup = ExtFarmSub:CreateSection("Mastery / Kill")
 
-MasteryGroup:AddDropdown("MasteryType", {
-	Values = { "Fruit", "Gun", "Sword" }, Default = "Fruit", Text = "Mastery Type",
+MasteryGroup:CreateDropdown({Name = "Mastery Type", Options = { "Fruit", "Gun", "Sword" }, CurrentOption = "Fruit",
 	Callback = function(v) STATE.MasteryType = v end,
 })
 
-MasteryGroup:AddToggle("AutoMastery", {
-	Text = "Auto Mastery Farm",
-	Default = false,
+MasteryGroup:CreateToggle({Name = "Auto Mastery Farm", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoMastery = v
 		if v then
@@ -2099,13 +2034,9 @@ MasteryGroup:AddToggle("AutoMastery", {
 			detachFloat()
 		end
 	end,
-}):AddKeyPicker("MasteryKey", {
-	Default = "None", Text = "Mastery Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
-MasteryGroup:AddToggle("AutoKillNearest", {
-	Text = "Kill Nearest Mob",
-	Default = false,
+MasteryGroup:CreateToggle({Name = "Kill Nearest Mob", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoKillNearest = v
 		if v then
@@ -2159,15 +2090,11 @@ MasteryGroup:AddToggle("AutoKillNearest", {
 			detachFloat()
 		end
 	end,
-}):AddKeyPicker("KillNearestKey", {
-	Default = "None", Text = "Kill Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
 -- Auto Ken (Observation Haki)
-local KenGroup = ExtFarmSub:AddLeftGroupbox("Auto Haki", "shield")
-KenGroup:AddToggle("AutoKen", {
-	Text = "Auto Ken (Observation)",
-	Default = false,
+local KenGroup = ExtFarmSub:CreateSection("Auto Haki")
+KenGroup:CreateToggle({Name = "Auto Ken (Observation)", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoKen = v
 		if v then
@@ -2186,9 +2113,7 @@ KenGroup:AddToggle("AutoKen", {
 	end,
 })
 
-KenGroup:AddToggle("AutoBuso", {
-	Text = "Auto Buso Haki",
-	Default = false,
+KenGroup:CreateToggle({Name = "Auto Buso Haki", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoBuso = v
 		if v then
@@ -2208,22 +2133,19 @@ KenGroup:AddToggle("AutoBuso", {
 })
 
 -- Auto Team Selection
-KenGroup:AddDropdown("AutoTeam", {
-	Values = { "Pirates", "Marines" }, Default = "Pirates", Text = "Auto Team",
+KenGroup:CreateDropdown({Name = "Auto Team", Options = { "Pirates", "Marines" }, CurrentOption = "Pirates",
 	Callback = function(v) STATE.AutoTeam = v end,
 })
-KenGroup:AddButton("Join Team", function()
+KenGroup:CreateButton({Name="Join Team", Callback=function()
 	pcall(function() CommF:InvokeServer("SetTeam", STATE.AutoTeam) end)
 	Library:Notify({ Title = "Ivory", Description = "Joined " .. STATE.AutoTeam, Type = "Success", Time = 3 })
-end)
+end})
 
-local RaidSub = MainTab:AddSubTab("Raids", "shield")
-local RaidGroup = RaidSub:AddLeftGroupbox("Raid Control", "zap")
-local RaidSet = RaidSub:AddRightGroupbox("Raid Settings", "settings")
+local RaidSub = MainTab:CreateSection("Raids")
+local RaidGroup = RaidSub:CreateSection("Raid Control")
+local RaidSet = RaidSub:CreateSection("Raid Settings")
 
-RaidGroup:AddToggle("AutoRaid", {
-	Text = "Auto Raid",
-	Default = false,
+RaidGroup:CreateToggle({Name = "Auto Raid", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoRaid = v
 		if v then
@@ -2302,44 +2224,36 @@ RaidGroup:AddToggle("AutoRaid", {
 			end)
 		end
 	end,
-}):AddKeyPicker("AutoRaidKey", {
-	Default = "None", Text = "Raid Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
-RaidGroup:AddButton("Start Raid", function()
+RaidGroup:CreateButton({Name="Start Raid", Callback=function()
 	pcall(function()
 		CommF:InvokeServer("RaidsNpc", "Select", STATE.RaidType)
 		task.wait(1)
 		CommF:InvokeServer("RaidsNpc", "Start")
 	end)
-end)
+end})
 
-RaidGroup:AddButton("Buy Raid Chip", function()
+RaidGroup:CreateButton({Name="Buy Raid Chip", Callback=function()
 	pcall(function() CommF:InvokeServer("RaidsNpc", "Buy", STATE.RaidType) end)
-end)
+end})
 
-RaidSet:AddDropdown("RaidType", {
-	Values = { "Light", "Dark", "Magma", "Quake", "Human", "Snow", "Ice", "Flame", "Bird", "Dragon" },
-	Default = "Light", Text = "Raid Type",
+RaidSet:CreateDropdown({Name = "Raid Type", Options = { "Light", "Dark", "Magma", "Quake", "Human", "Snow", "Ice", "Flame", "Bird", "Dragon" }, CurrentOption = "Light",
 	Callback = function(v) STATE.RaidType = v end,
 })
 
 -- ========================================
 -- SEA EVENTS (Phase 2)
 -- ========================================
-local SeaEventSub = MainTab:AddSubTab("Sea Events", "anchor")
-local SeaEventGroup = SeaEventSub:AddLeftGroupbox("Event Farm", "ship")
-local SeaEventSettings = SeaEventSub:AddRightGroupbox("Settings", "sliders")
+local SeaEventSub = MainTab:CreateSection("Sea Events")
+local SeaEventGroup = SeaEventSub:CreateSection("Event Farm")
+local SeaEventSettings = SeaEventSub:CreateSection("Settings")
 
-SeaEventGroup:AddDropdown("SeaEventMode", {
-	Values = SeaEventNames,
-	Default = "Shark", Text = "Event Type",
+SeaEventGroup:CreateDropdown({Name = "Event Type", Options = SeaEventNames, CurrentOption = "Shark",
 	Callback = function(v) STATE.SeaEventMode = v end,
 })
 
-SeaEventGroup:AddToggle("AutoSeaEvent", {
-	Text = "Auto Sea Event",
-	Default = false,
+SeaEventGroup:CreateToggle({Name = "Auto Sea Event", CurrentValue = false,
 	Callback = function(v)
 		STATE.SeaEvents = v
 		if v then
@@ -2381,13 +2295,9 @@ SeaEventGroup:AddToggle("AutoSeaEvent", {
 			end)
 		end
 	end,
-}):AddKeyPicker("SeaEventKey", {
-	Default = "None", Text = "Sea Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
-SeaEventGroup:AddToggle("AutoFrozen", {
-	Text = "Auto Frozen Dimension",
-	Default = false,
+SeaEventGroup:CreateToggle({Name = "Auto Frozen Dimension", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoFrozen = v
 		if v then
@@ -2421,9 +2331,7 @@ SeaEventGroup:AddToggle("AutoFrozen", {
 	end,
 })
 
-SeaEventGroup:AddToggle("AutoKitsune", {
-	Text = "Auto Kitsune Island",
-	Default = false,
+SeaEventGroup:CreateToggle({Name = "Auto Kitsune Island", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoKitsune = v
 		if v then
@@ -2459,9 +2367,7 @@ SeaEventGroup:AddToggle("AutoKitsune", {
 	end,
 })
 
-SeaEventGroup:AddToggle("AutoPrehistoric", {
-	Text = "Auto Prehistoric Island",
-	Default = false,
+SeaEventGroup:CreateToggle({Name = "Auto Prehistoric Island", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoPrehistoric = v
 		if v then
@@ -2487,9 +2393,7 @@ SeaEventGroup:AddToggle("AutoPrehistoric", {
 	end,
 })
 
-SeaEventGroup:AddToggle("AutoMirage", {
-	Text = "Auto Mirage Island",
-	Default = false,
+SeaEventGroup:CreateToggle({Name = "Auto Mirage Island", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoMirage = v
 		if v then
@@ -2523,34 +2427,27 @@ SeaEventGroup:AddToggle("AutoMirage", {
 	end,
 })
 
-SeaEventSettings:AddSlider("BringRange", {
-	Text = "Bring Range", Default = 235, Min = 50, Max = 500, Rounding = 0,
+SeaEventSettings:CreateSlider({Name = "Bring Range", Range = {50, 500}, Increment = 1, CurrentValue = 235,
 	Callback = function(v) STATE.BringRange = v end,
 })
-SeaEventSettings:AddSlider("MaxBring", {
-	Text = "Max Bring Mobs", Default = 3, Min = 1, Max = 10, Rounding = 0,
+SeaEventSettings:CreateSlider({Name = "Max Bring Mobs", Range = {1, 10}, Increment = 1, CurrentValue = 3,
 	Callback = function(v) STATE.MaxBringMobs = v end,
 })
-SeaEventSettings:AddSlider("FarmHeight", {
-	Text = "Farm Height", Default = 20, Min = 5, Max = 50, Rounding = 0,
+SeaEventSettings:CreateSlider({Name = "Farm Height", Range = {5, 50}, Increment = 1, CurrentValue = 20,
 	Callback = function(v) STATE.FarmHeight = v end,
 })
 
 -- ========================================
 -- FRUIT SYSTEM (Phase 5)
 -- ========================================
-local FruitSystemSub = MainTab:AddSubTab("Fruits+", "apple")
-local FruitSniperGroup = FruitSystemSub:AddLeftGroupbox("Fruit Sniper", "crosshair")
-local FruitStockGroup = FruitSystemSub:AddRightGroupbox("Stock Checker", "package")
+local FruitSystemSub = MainTab:CreateSection("Fruits+")
+local FruitSniperGroup = FruitSystemSub:CreateSection("Fruit Sniper")
+local FruitStockGroup = FruitSystemSub:CreateSection("Stock Checker")
 
-FruitSniperGroup:AddDropdown("SniperFruit", {
-	Values = FruitShopList,
-	Default = "Dragon", Text = "Sniper Target",
+FruitSniperGroup:CreateDropdown({Name = "Sniper Target", Options = FruitShopList, CurrentOption = "Dragon",
 	Callback = function(v) STATE.SniperFruit = v end,
 })
-FruitSniperGroup:AddToggle("AutoFruitSniper", {
-	Text = "Auto Buy Sniper Fruit",
-	Default = false,
+FruitSniperGroup:CreateToggle({Name = "Auto Buy Sniper Fruit", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoFruitSniper = v
 		if v then
@@ -2576,9 +2473,7 @@ FruitSniperGroup:AddToggle("AutoFruitSniper", {
 	end,
 })
 
-FruitSniperGroup:AddToggle("AutoRandomFruit", {
-	Text = "Auto Random Fruit",
-	Default = false,
+FruitSniperGroup:CreateToggle({Name = "Auto Random Fruit", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoRandomFruit = v
 		if v then
@@ -2615,7 +2510,7 @@ FruitSniperGroup:AddToggle("AutoRandomFruit", {
 	end,
 })
 
-FruitSniperGroup:AddButton("Drop All Fruits", function()
+FruitSniperGroup:CreateButton({Name="Drop All Fruits", Callback=function()
 	pcall(function()
 		for _, tool in ipairs(LocalPlayer.Backpack:GetChildren()) do
 			if tool:IsA("Tool") and tool.Name:find("Fruit") then
@@ -2635,9 +2530,9 @@ FruitSniperGroup:AddButton("Drop All Fruits", function()
 		end
 		Library:Notify({ Title = "Ivory", Description = "Dropped all fruits!", Type = "Success", Time = 3 })
 	end)
-end)
+end})
 
-FruitStockGroup:AddButton("Check Fruit Stock", function()
+FruitStockGroup:CreateButton({Name="Check Fruit Stock", Callback=function()
 	pcall(function()
 		local stock = CommF:InvokeServer("getStock")
 		if stock then
@@ -2650,7 +2545,7 @@ FruitStockGroup:AddButton("Check Fruit Stock", function()
 	end)
 end)
 
-FruitStockGroup:AddButton("Check ADV Stock", function()
+FruitStockGroup:CreateButton({Name="Check ADV Stock", Callback=function()
 	pcall(function()
 		local stock = CommF:InvokeServer("getStock")
 		-- Also check Advanced Dealer
@@ -2663,11 +2558,9 @@ FruitStockGroup:AddButton("Check ADV Stock", function()
 			Library:Notify({ Title = "Ivory", Description = msg, Type = "Info", Time = 10 })
 		end
 	end)
-end)
+end})
 
-FruitStockGroup:AddToggle("AutoBerry", {
-	Text = "Auto Collect Berry",
-	Default = false,
+FruitStockGroup:CreateToggle({Name = "Auto Collect Berry", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoBerry = v
 		if v then
@@ -2695,11 +2588,11 @@ FruitStockGroup:AddToggle("AutoBerry", {
 -- ========================================
 -- RACE V4 (Phase 4)
 -- ========================================
-local RaceV4Sub = TeleportTab:AddSubTab("Race V4", "users")
-local TempleGroup = RaceV4Sub:AddLeftGroupbox("Temple of Time", "landmark")
-local TrialsGroup = RaceV4Sub:AddRightGroupbox("Trials & Training", "target")
+local RaceV4Sub = TeleportTab:CreateSection("Race V4")
+local TempleGroup = RaceV4Sub:CreateSection("Temple of Time")
+local TrialsGroup = RaceV4Sub:CreateSection("Trials & Training")
 
-TempleGroup:AddButton("Teleport to Temple", function()
+TempleGroup:CreateButton({Name="Teleport to Temple", Callback=function()
 	-- Teleport to Temple of Time
 	local map = Workspace:FindFirstChild("Map")
 	if map then
@@ -2711,9 +2604,9 @@ TempleGroup:AddButton("Teleport to Temple", function()
 	end
 	-- Try CommF teleport
 	pcall(function() CommF:InvokeServer("requestEntrance", Vector3.new(-12462, 378, -7543)) end)
-end)
+end})
 
-TempleGroup:AddButton("Pull Lever", function()
+TempleGroup:CreateButton({Name="Pull Lever", Callback=function()
 	pcall(function()
 		for _, obj in ipairs(workspace:GetDescendants()) do
 			if obj:IsA("ProximityPrompt") and obj.ActionText == "Pull" then
@@ -2721,11 +2614,9 @@ TempleGroup:AddButton("Pull Lever", function()
 			end
 		end
 	end)
-end)
+end})
 
-TempleGroup:AddToggle("RaceV4Train", {
-	Text = "Auto Train V4",
-	Default = false,
+TempleGroup:CreateToggle({Name = "Auto Train V4", CurrentValue = false,
 	Callback = function(v)
 		STATE.RaceV4Train = v
 		if v then
@@ -2760,18 +2651,16 @@ TempleGroup:AddToggle("RaceV4Train", {
 	end,
 })
 
-TrialsGroup:AddButton("Auto Complete Trials", function()
+TrialsGroup:CreateButton({Name="Auto Complete Trials", Callback=function()
 	-- Auto attempt race trials
 	pcall(function()
 		CommF:InvokeServer("RaceV4Progress", "Check")
 		task.wait(1)
 		CommF:InvokeServer("RaceV4Progress", "Begin")
 	end)
-end)
+end})
 
-TrialsGroup:AddToggle("AutoLookAtMoon", {
-	Text = "Auto Look At Moon",
-	Default = false,
+TrialsGroup:CreateToggle({Name = "Auto Look At Moon", CurrentValue = false,
 	Callback = function(v)
 		STATE.RaceV4Moon = v
 		if v then
@@ -2793,42 +2682,35 @@ TrialsGroup:AddToggle("AutoLookAtMoon", {
 	end,
 })
 
-TrialsGroup:AddButton("Teleport to Ancient One", function()
+TrialsGroup:CreateButton({Name="Teleport to Ancient One", Callback=function()
 	pcall(function()
 		CommF:InvokeServer("requestEntrance", Vector3.new(-12462, 378, -7543))
 	end)
-end)
+end})
 
-local CombatSub = CombatTab:AddSubTab("Bounty", "crosshair")
-local BountyGroup = CombatSub:AddLeftGroupbox("Bounty Farm", "target")
-local BountySet = CombatSub:AddRightGroupbox("Settings", "sliders")
+local CombatSub = CombatTab:CreateSection("Bounty")
+local BountyGroup = CombatSub:CreateSection("Bounty Farm")
+local BountySet = CombatSub:CreateSection("Settings")
 
-local SkillsSub = CombatTab:AddSubTab("Skills", "zap")
-local SkillsGroup = SkillsSub:AddLeftGroupbox("Auto Skills", "swords")
-local SkillsSet = SkillsSub:AddRightGroupbox("Skill Config", "sliders")
+local SkillsSub = CombatTab:CreateSection("Skills")
+local SkillsGroup = SkillsSub:CreateSection("Auto Skills")
+local SkillsSet = SkillsSub:CreateSection("Skill Config")
 
-SkillsGroup:AddToggle("AutoSkill", {
-	Text = "Auto Use Skills",
-	Default = false,
+SkillsGroup:CreateToggle({Name = "Auto Use Skills", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoSkill = v
 	end,
-}):AddKeyPicker("AutoSkillKey", {
-	Default = "None", Text = "Skill Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
-SkillsSet:AddToggle("SkillZ", { Text = "Skill Z", Default = true, Callback = function(v) STATE.SkillZ = v end })
-SkillsSet:AddToggle("SkillX", { Text = "Skill X", Default = true, Callback = function(v) STATE.SkillX = v end })
-SkillsSet:AddToggle("SkillC", { Text = "Skill C", Default = true, Callback = function(v) STATE.SkillC = v end })
-SkillsSet:AddToggle("SkillV", { Text = "Skill V", Default = true, Callback = function(v) STATE.SkillV = v end })
-SkillsSet:AddToggle("SkillF", { Text = "Skill F", Default = false, Callback = function(v) STATE.FruitSkills.F = v end })
+SkillsSet:CreateToggle({Name = "Skill Z", CurrentValue = true, Callback = function(v) STATE.SkillZ = v end })
+SkillsSet:CreateToggle({Name = "Skill X", CurrentValue = true, Callback = function(v) STATE.SkillX = v end })
+SkillsSet:CreateToggle({Name = "Skill C", CurrentValue = true, Callback = function(v) STATE.SkillC = v end })
+SkillsSet:CreateToggle({Name = "Skill V", CurrentValue = true, Callback = function(v) STATE.SkillV = v end })
+SkillsSet:CreateToggle({Name = "Skill F", CurrentValue = false, Callback = function(v) STATE.FruitSkills.F = v end })
 
-SkillsGroup:AddLabel("Uses fruit skills automatically during combat")
+SkillsGroup:CreateLabel({Text="Uses fruit skills automatically during combat"})
 
-BountyGroup:AddToggle("AutoBounty", {
-	Text = "Auto Bounty Farm",
-	Default = false,
-	Risky = true,
+BountyGroup:CreateToggle({Name = "Auto Bounty Farm", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoBounty = v
 		if v then
@@ -2891,30 +2773,25 @@ BountyGroup:AddToggle("AutoBounty", {
 			detachFloat()
 		end
 	end,
-}):AddKeyPicker("BountyKey", {
-	Default = "None", Text = "Bounty Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
-BountyGroup:AddButton("Stop Bounty", function()
+BountyGroup:CreateButton({Name="Stop Bounty", Callback=function()
 	STATE.AutoBounty = false
 	detachFloat()
-end)
+end})
 
-BountySet:AddSlider("BountyDist", {
-	Text = "Follow Distance", Default = 20, Min = 5, Max = 50, Rounding = 0,
+BountySet:CreateSlider({Name = "Follow Distance", Range = {5, 50}, Increment = 1, CurrentValue = 20,
 	Callback = function(v) STATE.BountyDistance = v end,
 })
 
 -- ========================================
 -- PVP SECTION (Phase 8)
 -- ========================================
-local PvPSub = CombatTab:AddSubTab("PvP", "swords")
-local PvPGroup = PvPSub:AddLeftGroupbox("Combat", "crosshair")
-local PvPSettings = PvPSub:AddRightGroupbox("Settings", "sliders")
+local PvPSub = CombatTab:CreateSection("PvP")
+local PvPGroup = PvPSub:CreateSection("Combat")
+local PvPSettings = PvPSub:CreateSection("Settings")
 
-PvPGroup:AddToggle("AutoClick", {
-	Text = "Auto Click",
-	Default = false,
+PvPGroup:CreateToggle({Name = "Auto Click", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoClick = v
 		if v then
@@ -2934,9 +2811,7 @@ PvPGroup:AddToggle("AutoClick", {
 	end,
 })
 
-PvPGroup:AddToggle("ToggleCombat", {
-	Text = "Toggle Combat (Mob)",
-	Default = false,
+PvPGroup:CreateToggle({Name = "Toggle Combat (Mob)", CurrentValue = false,
 	Callback = function(v)
 		STATE.ToggleCombat = v
 		if v then
@@ -2967,10 +2842,7 @@ PvPGroup:AddToggle("ToggleCombat", {
 	end,
 })
 
-PvPGroup:AddToggle("KillAura", {
-	Text = "Kill Aura (All Nearby)",
-	Default = false,
-	Risky = true,
+PvPGroup:CreateToggle({Name = "Kill Aura (All Nearby)", CurrentValue = false,
 	Callback = function(v)
 		STATE.KillAura = v
 		if v then
@@ -2996,10 +2868,7 @@ PvPGroup:AddToggle("KillAura", {
 	end,
 })
 
-PvPGroup:AddToggle("GunAura", {
-	Text = "Gun Aura",
-	Default = false,
-	Risky = true,
+PvPGroup:CreateToggle({Name = "Gun Aura", CurrentValue = false,
 	Callback = function(v)
 		STATE.GunAuraEnabled = v
 		if v then
@@ -3034,25 +2903,20 @@ PvPGroup:AddToggle("GunAura", {
 	end,
 })
 
-PvPSettings:AddDropdown("AimMethod", {
-	Values = { "AimBot Skill", "Auto Aimbots" }, Default = "AimBot Skill", Text = "Aim Method",
+PvPSettings:CreateDropdown({Name = "Aim Method", Options = { "AimBot Skill", "Auto Aimbots" }, CurrentOption = "AimBot Skill",
 	Callback = function(v) STATE.AimMethod = v end,
 })
-PvPSettings:AddSlider("GunAuraRange", {
-	Text = "Gun Range", Default = 500, Min = 100, Max = 2000, Rounding = 0,
+PvPSettings:CreateSlider({Name = "Gun Range", Range = {100, 2000}, Increment = 1, CurrentValue = 500,
 	Callback = function(v) STATE.GunAuraRange = v end,
 })
-PvPSettings:AddSlider("ClickDelay", {
-	Text = "Click Delay", Default = 0.1, Min = 0.01, Max = 1, Rounding = 2,
+PvPSettings:CreateSlider({Name = "Click Delay", Range = {0.01, 1}, Increment = 0.01, CurrentValue = 0.1,
 	Callback = function(v) STATE.ClickDelay = v end,
 })
 
-local StatsSub = CombatTab:AddSubTab("Stats", "bar-chart")
-local StatsGroup = StatsSub:AddLeftGroupbox("Auto Stats", "cpu")
+local StatsSub = CombatTab:CreateSection("Stats")
+local StatsGroup = StatsSub:CreateSection("Auto Stats")
 
-StatsGroup:AddToggle("AutoStats", {
-	Text = "Auto Allocate Stats",
-	Default = false,
+StatsGroup:CreateToggle({Name = "Auto Allocate Stats", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoStats = v
 		if v then
@@ -3064,39 +2928,35 @@ StatsGroup:AddToggle("AutoStats", {
 			end)
 		end
 	end,
-}):AddKeyPicker("AutoStatsKey", {
-	Default = "None", Text = "Stats Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
-StatsGroup:AddDropdown("StatType", {
-	Values = { "Melee", "Defense", "Sword", "Gun", "Demon Fruit" }, Default = "Melee", Text = "Stat Type",
+StatsGroup:CreateDropdown({Name = "Stat Type", Options = { "Melee", "Defense", "Sword", "Gun", "Demon Fruit" }, CurrentOption = "Melee",
 	Callback = function(v) STATE.StatType = v end,
 })
 
-StatsGroup:AddSlider("StatAmount", {
-	Text = "Points Per Click", Default = 1, Min = 1, Max = 100, Rounding = 0,
+StatsGroup:CreateSlider({Name = "Points Per Click", Range = {1, 100}, Increment = 1, CurrentValue = 1,
 	Callback = function(v) STATE.StatAmount = v end,
 })
 
-StatsGroup:AddButton("Reset Stats", function()
+StatsGroup:CreateButton({Name="Reset Stats", Callback=function()
 	pcall(function() CommF:InvokeServer("BuyTrait", "Reset") end)
-end)
+end})
 
-local TeleSub1 = TeleportTab:AddSubTab("Islands", "map-pin")
-local Sea1Group = TeleSub1:AddLeftGroupbox("Sea 1", "compass")
-local Sea2Group = TeleSub1:AddRightGroupbox("Sea 2", "compass")
+local TeleSub1 = TeleportTab:CreateSection("Islands")
+local Sea1Group = TeleSub1:CreateSection("Sea 1")
+local Sea2Group = TeleSub1:CreateSection("Sea 2")
 
 for _, island in ipairs({"Windmill", "MarineStart", "Jungle", "Pirate", "Desert", "Ice", "MarineBase", "Sky", "Prison", "Colosseum", "Magma", "Fishmen", "Fountain"}) do
-	Sea1Group:AddButton(island, function() teleportToIsland(island) end)
+	Sea1Group:CreateButton({Name=island, Callback=function() teleportToIsland(island) end})
 end
 
 for _, island in ipairs({"DarkArea", "Cafe", "Ship", "Usoapp", "Forgotten", "Cursed", "Hydra", "Roundtable", "Mansion", "Castle", "Temple"}) do
-	Sea2Group:AddButton(island, function() teleportToIsland(island) end)
+	Sea2Group:CreateButton({Name=island, Callback=function() teleportToIsland(island) end})
 end
 
-local TeleSub2 = TeleportTab:AddSubTab("NPCs", "user")
-local QuestNPCGroup = TeleSub2:AddLeftGroupbox("Quest NPCs", "scroll")
-local ShopNPCGroup = TeleSub2:AddRightGroupbox("Shop NPCs", "shopping-cart")
+local TeleSub2 = TeleportTab:CreateSection("NPCs")
+local QuestNPCGroup = TeleSub2:CreateSection("Quest NPCs")
+local ShopNPCGroup = TeleSub2:CreateSection("Shop NPCs")
 
 local QuestNPCData = {
 	{"BanditQuest1", 1}, {"MarineQuest", 1}, {"JungleQuest", 1}, {"BuggyQuest1", 1},
@@ -3104,24 +2964,22 @@ local QuestNPCData = {
 	{"PrisonerQuest", 1}, {"ColosseumQuest", 1}, {"MagmaQuest", 1}, {"FishmanQuest", 1},
 }
 for _, data in ipairs(QuestNPCData) do
-	QuestNPCGroup:AddButton(data[1], function()
+	QuestNPCGroup:CreateButton({Name=data[1], Callback=function()
 		pcall(function() CommF:InvokeServer("StartQuest", data[1], data[2]) end)
-	end)
+	end})
 end
 
 for _, npc in ipairs({"Sword Dealer", "Archangel", "Master of Enhancement", "Expert Swordsman", "Blox Fruits Dealer"}) do
-	ShopNPCGroup:AddButton(npc, function()
+	ShopNPCGroup:CreateButton({Name=npc, Callback=function()
 		pcall(function() CommF:InvokeServer("Buy" .. npc:gsub("%s+", "")) end)
-	end)
+	end})
 end
 
-local ESPSub = VisualsTab:AddSubTab("ESP", "eye")
-local ESPGroup = ESPSub:AddLeftGroupbox("Player ESP", "users")
-local WorldESP = ESPSub:AddRightGroupbox("World ESP", "globe")
+local ESPSub = VisualsTab:CreateSection("ESP")
+local ESPGroup = ESPSub:CreateSection("Player ESP")
+local WorldESP = ESPSub:CreateSection("World ESP")
 
-ESPGroup:AddToggle("ESPEnabled", {
-	Text = "Enable ESP",
-	Default = false,
+ESPGroup:CreateToggle({Name = "Enable ESP", CurrentValue = false,
 	Callback = function(v)
 		STATE.ESP = v
 		if v then
@@ -3132,81 +2990,70 @@ ESPGroup:AddToggle("ESPEnabled", {
 			clearESP()
 		end
 	end,
-}):AddKeyPicker("ESPKey", {
-	Default = "None", Text = "ESP Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
-ESPGroup:AddToggle("ESPPlayers", {
-	Text = "Player ESP", Default = false,
+ESPGroup:CreateToggle({Name = "Player ESP", CurrentValue = false,
 	Callback = function(v) STATE.ESPPlayers = v end,
 })
 
-WorldESP:AddToggle("ESPFruits", {
-	Text = "Fruit ESP", Default = false,
+WorldESP:CreateToggle({Name = "Fruit ESP", CurrentValue = false,
 	Callback = function(v) STATE.ESPFruits = v end,
 })
 
-WorldESP:AddToggle("ESPChests", {
-	Text = "Chest ESP", Default = false,
+WorldESP:CreateToggle({Name = "Chest ESP", CurrentValue = false,
 	Callback = function(v) STATE.ESPChests = v end,
 })
 
-WorldESP:AddToggle("ESPIsland", {
-	Text = "Island ESP", Default = false,
+WorldESP:CreateToggle({Name = "Island ESP", CurrentValue = false,
 	Callback = function(v) STATE.ESPIsland = v end,
 })
 
-WorldESP:AddToggle("ESPFlower", {
-	Text = "Flower ESP", Default = false,
+WorldESP:CreateToggle({Name = "Flower ESP", CurrentValue = false,
 	Callback = function(v) STATE.ESPFlower = v end,
 })
 
-WorldESP:AddToggle("ESPGear", {
-	Text = "Gear ESP", Default = false,
+WorldESP:CreateToggle({Name = "Gear ESP", CurrentValue = false,
 	Callback = function(v) STATE.ESPGear = v end,
 })
 
-WorldESP:AddToggle("ESPAdvDealer", {
-	Text = "Adv Dealer ESP", Default = false,
+WorldESP:CreateToggle({Name = "Adv Dealer ESP", CurrentValue = false,
 	Callback = function(v) STATE.ESPAdvDealer = v end,
 })
 
-WorldESP:AddToggle("ESPHakiColor", {
-	Text = "Haki Color ESP", Default = false,
+WorldESP:CreateToggle({Name = "Haki Color ESP", CurrentValue = false,
 	Callback = function(v) STATE.ESPHakiColor = v end,
 })
 
-WorldESP:AddToggle("ESPBerry", {
-	Text = "Berry ESP", Default = false,
+WorldESP:CreateToggle({Name = "Berry ESP", CurrentValue = false,
 	Callback = function(v) STATE.ESPBerry = v end,
 })
 
-ESPGroup:AddLabel("ESP Color"):AddColorPicker("ESPColor", {
-	Default = Color3.fromRGB(255, 100, 100), Title = "ESP Color",
+ESPGroup:CreateLabel({Text="ESP Color"})
+ESPGroup:CreateColorPicker({Name = "ESP Color", CurrentColor = Color3.fromRGB(255, 100, 100),
 	Callback = function(v) STATE.ESPColor = v end,
 })
 
-local WorldSub = VisualsTab:AddSubTab("World", "globe")
-local WorldGroup = WorldSub:AddLeftGroupbox("Lighting", "sun")
+local WorldSub = VisualsTab:CreateSection("World")
+local WorldGroup = WorldSub:CreateSection("Lighting")
 
-WorldGroup:AddButton("Full Bright", function()
+WorldGroup:CreateButton({Name="Full Bright", Callback=function()
 	Lighting.Brightness = 2
 	Lighting.ClockTime = 14
-end)
+end})
 
-WorldGroup:AddButton("Remove Fog", function()
+WorldGroup:CreateButton({Name="Remove Fog", Callback=function()
 	Lighting.FogEnd = 999999
 	Lighting.FogStart = 0
-end)
+end})
 
-WorldGroup:AddButton("Reset Lighting", function()
+WorldGroup:CreateButton({Name="Reset Lighting", Callback=function()
 	Lighting.Brightness = 1
 	Lighting.ClockTime = 12
 	Lighting.FogEnd = 100000
 	Lighting.FogStart = 0
-end)
+end})
 
-WorldGroup:AddButton("Fast Mode", function()
+WorldGroup:CreateButton({Name="Fast Mode", Callback=function()
 	for _, obj in ipairs(workspace:GetDescendants()) do
 		if obj:IsA("BasePart") then
 			obj.Material = Enum.Material.SmoothPlastic
@@ -3230,18 +3077,17 @@ WorldGroup:AddButton("Fast Mode", function()
 		Terrain.WaterReflectance = 0
 	end
 	Library:Notify({ Title = "Ivory", Description = "Fast Mode enabled", Type = "Info", Time = 3 })
-end)
+end})
 
-local MoveSub = PlayerTab:AddSubTab("Movement", "move")
-local SpeedGroup = MoveSub:AddLeftGroupbox("Speed", "zap")
-local JumpGroup = MoveSub:AddRightGroupbox("Jump", "arrow-up")
+local MoveSub = PlayerTab:CreateSection("Movement")
+local SpeedGroup = MoveSub:CreateSection("Speed")
+local JumpGroup = MoveSub:CreateSection("Jump")
 
-SpeedGroup:AddToggle("SpeedBoost", {
-	Text = "Speed Boost", Risky = true, Default = false,
+SpeedGroup:CreateToggle({Name = "Speed Boost", CurrentValue = false,
 	Callback = function(v)
 		if v then
 			task.spawn(function()
-				while Toggles.SpeedBoost and Toggles.SpeedBoost.Value do
+				while STATE.SpeedBoost do
 					pcall(function() local h = getHum(); if h then h.WalkSpeed = STATE.WalkSpeed end end)
 					task.wait(0.1)
 				end
@@ -3250,34 +3096,24 @@ SpeedGroup:AddToggle("SpeedBoost", {
 			pcall(function() local h = getHum(); if h then h.WalkSpeed = 16 end end)
 		end
 	end,
-}):AddKeyPicker("SpeedKey", {
-	Default = "None", Text = "Speed Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
-SpeedGroup:AddSlider("WalkSpeed", {
-	Text = "Walk Speed", Default = 16, Min = 16, Max = 325, Rounding = 0,
+SpeedGroup:CreateSlider({Name = "Walk Speed", Range = {16, 325}, Increment = 1, CurrentValue = 16,
 	Callback = function(v) STATE.WalkSpeed = v end,
 })
 
-JumpGroup:AddToggle("InfJump", {
-	Text = "Infinite Jump", Default = false,
+JumpGroup:CreateToggle({Name = "Infinite Jump", CurrentValue = false,
 	Callback = function(v) STATE.InfiniteJump = v; setInfiniteJump(v) end,
-}):AddKeyPicker("InfJumpKey", {
-	Default = "None", Text = "Jump Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
-JumpGroup:AddToggle("Noclip", {
-	Text = "Noclip", Default = false,
+JumpGroup:CreateToggle({Name = "Noclip", CurrentValue = false,
 	Callback = function(v) STATE.Noclip = v; setNoclip(v) end,
-}):AddKeyPicker("NoclipKey", {
-	Default = "None", Text = "Noclip Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
-local MiscSub = PlayerTab:AddSubTab("Misc", "settings")
-local MiscGroup = MiscSub:AddLeftGroupbox("Utilities", "tool")
+local MiscSub = PlayerTab:CreateSection("Misc")
+local MiscGroup = MiscSub:CreateSection("Utilities")
 
-MiscGroup:AddToggle("WalkOnWater", {
-	Text = "Walk on Water", Default = false,
+MiscGroup:CreateToggle({Name = "Walk on Water", CurrentValue = false,
 	Callback = function(v)
 		STATE.WalkOnWater = v
 		if v then
@@ -3307,12 +3143,9 @@ MiscGroup:AddToggle("WalkOnWater", {
 			if ww then ww:Destroy() end
 		end
 	end,
-}):AddKeyPicker("WaterKey", {
-	Default = "None", Text = "Water Key", Mode = "Toggle", SyncToggleState = true, NoUI = false,
 })
 
-MiscGroup:AddToggle("AntiAFK", {
-	Text = "Anti AFK", Default = false,
+MiscGroup:CreateToggle({Name = "Anti AFK", CurrentValue = false,
 	Callback = function(v)
 		STATE.AntiAFK = v
 		if v then
@@ -3325,7 +3158,7 @@ MiscGroup:AddToggle("AntiAFK", {
 	end,
 })
 
-MiscGroup:AddButton("Redeem All Codes", function()
+MiscGroup:CreateButton({Name="Redeem All Codes", Callback=function()
 	task.spawn(function()
 		local ok, raw = pcall(function() return game:HttpGet("https://pastebin.com/raw/cLp2LXrs") end)
 		if ok and raw then
@@ -3339,31 +3172,31 @@ MiscGroup:AddButton("Redeem All Codes", function()
 			Library:Notify({ Title = "Ivory", Description = "Redeemed " .. #codes .. " codes!", Type = "Success", Time = 3 })
 		end
 	end)
-end)
+end})
 
-MiscGroup:AddButton("Toggle Damage UI", function()
+MiscGroup:CreateButton({Name="Toggle Damage UI", Callback=function()
 	pcall(function()
 		local dmg = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("GUI"):FindFirstChild("DamageCounter")
 		if dmg then dmg.Enabled = not dmg.Enabled end
 	end)
-end)
+end})
 
-MiscGroup:AddButton("Toggle Notifications", function()
+MiscGroup:CreateButton({Name="Toggle Notifications", Callback=function()
 	pcall(function()
 		local n = LocalPlayer.PlayerGui:FindFirstChild("Notifications")
 		if n then n.Enabled = not n.Enabled end
 	end)
-end)
+end})
 
-MiscGroup:AddButton("Buso Haki", function()
+MiscGroup:CreateButton({Name="Buso Haki", Callback=function()
 	pcall(function() CommF:InvokeServer("Buso") end)
-end)
+end})
 
-MiscGroup:AddButton("Rejoin Server", function()
+MiscGroup:CreateButton({Name="Rejoin Server", Callback=function()
 	TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
-end)
+end})
 
-MiscGroup:AddButton("Server Hop", function()
+MiscGroup:CreateButton({Name="Server Hop", Callback=function()
 	task.spawn(function()
 		local servers = {}
 		local cursor = nil
@@ -3385,9 +3218,9 @@ MiscGroup:AddButton("Server Hop", function()
 			TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(#servers)], LocalPlayer)
 		end
 	end)
-end)
+end})
 
-MiscGroup:AddButton("Admin Detection Hop", function()
+MiscGroup:CreateButton({Name="Admin Detection Hop", Callback=function()
 	task.spawn(function()
 		while true do
 			task.wait(10)
@@ -3415,18 +3248,18 @@ MiscGroup:AddButton("Admin Detection Hop", function()
 								cursor = data.nextPageCursor
 							until not cursor
 							if #servers > 0 then
-								TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(#servers)], LocalPlayer)
-							end
-							return
+				TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(#servers)], LocalPlayer)
 						end
+						return
 					end
 				end
-			end)
+			end
+		end)
 		end
 	end)
-end)
+end})
 
-MiscGroup:AddButton("Low CPU Mode", function()
+MiscGroup:CreateButton({Name="Low CPU Mode", Callback=function()
 	pcall(function()
 		Lighting.GlobalShadows = false
 		Lighting.FogEnd = 9e9
@@ -3455,16 +3288,15 @@ MiscGroup:AddButton("Low CPU Mode", function()
 		end
 		Library:Notify({ Title = "Ivory", Description = "Low CPU mode enabled", Type = "Info", Time = 3 })
 	end)
-end)
+end})
 
 -- ========================================
 -- PLAYER SUBTABS: Infinite Abilities, Buy, Craft
 -- ========================================
-local PlayerMiscSub = PlayerTab:AddSubTab("Abilities", "star")
+local PlayerMiscSub = PlayerTab:CreateSection("Abilities")
 
-local AbilityGroup = PlayerMiscSub:AddLeftGroupbox("Infinite Abilities", "zap")
-AbilityGroup:AddToggle("InfiniteEnergy", {
-	Text = "Infinite Energy", Default = false,
+local AbilityGroup = PlayerMiscSub:CreateSection("Infinite Abilities")
+AbilityGroup:CreateToggle({Name = "Infinite Energy", CurrentValue = false,
 	Callback = function(v)
 		STATE.InfiniteEnergy = v
 		if v then
@@ -3483,8 +3315,7 @@ AbilityGroup:AddToggle("InfiniteEnergy", {
 	end,
 })
 
-AbilityGroup:AddToggle("InfiniteSoru", {
-	Text = "Infinite Soru", Default = false,
+AbilityGroup:CreateToggle({Name = "Infinite Soru", CurrentValue = false,
 	Callback = function(v)
 		STATE.InfiniteSoru = v
 		if v then
@@ -3511,8 +3342,7 @@ AbilityGroup:AddToggle("InfiniteSoru", {
 	end,
 })
 
-AbilityGroup:AddToggle("InfiniteObservation", {
-	Text = "Infinite Observation", Default = false,
+AbilityGroup:CreateToggle({Name = "Infinite Observation", CurrentValue = false,
 	Callback = function(v)
 		STATE.InfiniteObservation = v
 		if v then
@@ -3523,84 +3353,75 @@ AbilityGroup:AddToggle("InfiniteObservation", {
 	end,
 })
 
-local BuyGroup = PlayerMiscSub:AddRightGroupbox("Shop", "shopping-cart")
+local BuyGroup = PlayerMiscSub:CreateSection("Shop")
 
-BuyGroup:AddDropdown("BuyMelee", {
-	Values = FightingStyleShop, Default = "None", Text = "Buy Melee",
+BuyGroup:CreateDropdown({Name = "Buy Melee", Options = FightingStyleShop, CurrentOption = "None",
 	Callback = function(v) STATE.BuyMelee = v end,
 })
-BuyGroup:AddButton("Buy Selected Melee", function()
+BuyGroup:CreateButton({Name="Buy Selected Melee", Callback=function()
 	if STATE.BuyMelee ~= "None" then
 		pcall(function() CommF:InvokeServer("Buy" .. STATE.BuyMelee:gsub("%s+", "")) end)
 		Library:Notify({ Title = "Ivory", Description = "Buying " .. STATE.BuyMelee, Type = "Info", Time = 3 })
 	end
-end)
+end})
 
-BuyGroup:AddDropdown("BuySword", {
-	Values = SwordShop, Default = "None", Text = "Buy Sword",
+BuyGroup:CreateDropdown({Name = "Buy Sword", Options = SwordShop, CurrentOption = "None",
 	Callback = function(v) STATE.BuySword = v end,
 })
-BuyGroup:AddButton("Buy Selected Sword", function()
+BuyGroup:CreateButton({Name="Buy Selected Sword", Callback=function()
 	if STATE.BuySword ~= "None" then
 		pcall(function() CommF:InvokeServer("Buy" .. STATE.BuySword:gsub("%s+", "")) end)
 		Library:Notify({ Title = "Ivory", Description = "Buying " .. STATE.BuySword, Type = "Info", Time = 3 })
 	end
-end)
+end})
 
-BuyGroup:AddDropdown("BuyAccessory", {
-	Values = AccessoryShop, Default = "None", Text = "Buy Accessory",
+BuyGroup:CreateDropdown({Name = "Buy Accessory", Options = AccessoryShop, CurrentOption = "None",
 	Callback = function(v) STATE.BuyAccessory = v end,
 })
-BuyGroup:AddButton("Buy Selected Accessory", function()
+BuyGroup:CreateButton({Name="Buy Selected Accessory", Callback=function()
 	if STATE.BuyAccessory ~= "None" then
 		pcall(function() CommF:InvokeServer("Buy" .. STATE.BuyAccessory:gsub("%s+", "")) end)
 		Library:Notify({ Title = "Ivory", Description = "Buying " .. STATE.BuyAccessory, Type = "Info", Time = 3 })
 	end
-end)
+end})
 
-local CraftGroup = PlayerMiscSub:AddLeftGroupbox("Craft / Race", "hammer")
-CraftGroup:AddDropdown("CraftItem", {
-	Values = SeaEventShopItems, Default = "None", Text = "Craft Sea Item",
+local CraftGroup = PlayerMiscSub:CreateSection("Craft / Race")
+CraftGroup:CreateDropdown({Name = "Craft Sea Item", Options = SeaEventShopItems, CurrentOption = "None",
 	Callback = function(v) STATE.CraftItem = v end,
 })
-CraftGroup:AddButton("Craft Selected Item", function()
+CraftGroup:CreateButton({Name="Craft Selected Item", Callback=function()
 	if STATE.CraftItem ~= "None" then
 		pcall(function() CommF:InvokeServer("CraftItem", STATE.CraftItem) end)
 		Library:Notify({ Title = "Ivory", Description = "Crafting " .. STATE.CraftItem, Type = "Info", Time = 3 })
 	end
-end)
+end})
 
-CraftGroup:AddDropdown("ChangeRace", {
-	Values = { "Ghoul", "Cyborg" }, Default = "None", Text = "Change Race",
+CraftGroup:CreateDropdown({Name = "Change Race", Options = { "Ghoul", "Cyborg" }, CurrentOption = "None",
 	Callback = function(v) STATE.ChangeRace = v end,
 })
-CraftGroup:AddButton("Buy Race Change", function()
+CraftGroup:CreateButton({Name="Buy Race Change", Callback=function()
 	if STATE.ChangeRace ~= "None" then
 		pcall(function() CommF:InvokeServer("Buy" .. STATE.ChangeRace) end)
 		Library:Notify({ Title = "Ivory", Description = "Buying " .. STATE.ChangeRace .. " race", Type = "Info", Time = 3 })
 	end
-end)
+end})
 
-CraftGroup:AddButton("Buy Haki (Flowing)", function()
+CraftGroup:CreateButton({Name="Buy Haki (Flowing)", Callback=function()
 	pcall(function() CommF:InvokeServer("Buso", 1) end)
-end)
-CraftGroup:AddButton("Buy Soru", function()
+end})
+CraftGroup:CreateButton({Name="Buy Soru", Callback=function()
 	pcall(function() CommF:InvokeServer("BuyHaki", "Soru") end)
-end)
-CraftGroup:AddButton("Buy Geppo", function()
+end})
+CraftGroup:CreateButton({Name="Buy Geppo", Callback=function()
 	pcall(function() CommF:InvokeServer("BuyHaki", "Geppo") end)
-end)
+end})
 
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub")
-SaveManager:SetSubFolder("game")
-local CreditGroup = SettingsTab:AddLeftGroupbox("Credits", "heart")
-local CreditLabel = CreditGroup:AddLabel({ Text = "", Size = 26, DoesWrap = true })
-local CreditTL = CreditLabel.TextLabel
+Library:OnConfigurationLoad(function(config) end)
+Library:OnConfigurationSave(function(config) end)
+
+local CreditGroup = SettingsTab:CreateSection("Credits")
+local CreditLabel = CreditGroup:CreateLabel({Text=""})
+local CreditTL = CreditLabel and CreditLabel.TextLabel
 CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
 CreditTL.Font = Enum.Font.GothamBold
 CreditTL.TextSize = 26
@@ -3612,14 +3433,14 @@ task.spawn(function()
 		local shown = ""
 		for i = 1, #full do
 			shown = shown .. full:sub(i, i)
-			CreditLabel:SetText(shown .. cursor)
+			CreditLabel:UpdateText(shown .. cursor)
 			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
 			task.wait(math.random(4, 9) / 100)
 		end
 		task.wait(2)
 		for i = #full, 1, -1 do
 			shown = full:sub(1, i - 1)
-			CreditLabel:SetText(shown .. cursor)
+			CreditLabel:UpdateText(shown .. cursor)
 			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
 			task.wait(math.random(2, 5) / 100)
 		end
@@ -3627,55 +3448,33 @@ task.spawn(function()
 	end
 end)
 
-ThemeManager:ApplyToTab(SettingsTab)
-SaveManager:BuildConfigSection(SettingsTab)
+local MenuGroup = SettingsTab:CreateSection("Menu")
 
-local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "wrench")
-
-MenuGroup:AddToggle("KeybindMenuOpen", {
-	Default = Library.KeybindFrame.Visible, Text = "Open Keybind Menu",
-	Callback = function(v) Library.KeybindFrame.Visible = v end,
+MenuGroup:CreateToggle({Name = "Open Keybind Menu", CurrentValue = false,
+	Callback = function(v) if Library.KeybindFrame then Library.KeybindFrame.Visible = v end end,
 })
 
-MenuGroup:AddToggle("ShowCustomCursor", {
-	Text = "Custom Cursor", Default = Library.ShowCustomCursor,
-	Callback = function(v) Library.ShowCustomCursor = v end,
-})
-
-MenuGroup:AddButton("Test Notification", function()
+MenuGroup:CreateButton({Name="Test Notification", Callback=function()
 	Library:Notify({ Title = "Ivory", Description = "Works!", Time = 4 })
-end)
+end})
 
-MenuGroup:AddDropdown("NotificationSide", {
-	Values = { "Left", "Right" }, Default = "Right", Text = "Notification Side",
+MenuGroup:CreateDropdown({Name = "Notification Side", Options = { "Left", "Right" }, CurrentOption = "Right",
 	Callback = function(v) Library:SetNotifySide(v) end,
 })
 
-MenuGroup:AddDropdown("DPIDropdown", {
-	Values = { "50%", "75%", "100%", "125%", "150%", "175%", "200%" }, Default = "100%", Text = "DPI Scale",
+MenuGroup:CreateDropdown({Name = "DPI Scale", Options = { "50%", "75%", "100%", "125%", "150%", "175%", "200%" }, CurrentOption = "100%",
 	Callback = function(v) Library:SetDPIScale(tonumber(v:gsub("%%", ""))) end,
 })
 
-MenuGroup:AddSlider("UICornerSlider", {
-	Text = "Corner Radius", Default = Library.CornerRadius, Min = 0, Max = 20, Rounding = 0,
-	Callback = function(v) Window:SetCornerRadius(v) end,
-})
+MenuGroup:CreateDivider()
 
-	MenuGroup:AddDivider()
-
-MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", {
-	Default = "RightShift", NoUI = true, Text = "Menu keybind",
-})
-MenuGroup:AddButton("Unload", function()
+MenuGroup:CreateButton({Name="Unload", Callback=function()
 	clearESP()
 	setNoclip(false)
 	setInfiniteJump(false)
 	detachFloat()
 	Library:Unload()
-end)
-
-Library.ToggleKeybind = Options.MenuKeybind
-SaveManager:LoadAutoloadConfig()
+end})
 
 pcall(function()
 	CommF:InvokeServer("Buso")
