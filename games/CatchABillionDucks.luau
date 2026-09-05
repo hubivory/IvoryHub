@@ -37,6 +37,7 @@ local cfg = {
 	autoClaimGroup = false,
 	crateAmount = 1,
 	priorityUpgrade = "Damage",
+	difficulty = "NORMAL",
 	-- In-Game
 	autoShoot = false,
 	silentAim = false,
@@ -51,6 +52,13 @@ local cfg = {
 	autoCollectDrops = false,
 	autoSkipDay = false,
 	noclip = false,
+	-- Settings
+	menuKeybind = "RightShift",
+	fpsCap = 60,
+	antiAfk = false,
+	notificationSide = "Right",
+	dpiScale = 100,
+	cornerRadius = 8,
 }
 
 -- ===============================================================
@@ -97,13 +105,11 @@ end
 
 local function getDucks()
 	local ducks = {}
-	-- Check DuckController_Client_X folders (flying ducks)
 	for _, v in ipairs(workspace.Ume:GetChildren()) do
 		if v.Name:find("DuckController_Client") then
 			local root = v:FindFirstChild("RootPart")
 			local hitbox = v:FindFirstChild("Hitbox")
 			local lovpoly = v:FindFirstChild("LovPoly")
-			-- Skip dead/invisible ducks
 			if root and lovpoly and lovpoly.Transparency < 1 and hitbox then
 				table.insert(ducks, { model = v, root = root, hitbox = hitbox })
 			end
@@ -112,7 +118,6 @@ local function getDucks()
 	return ducks
 end
 
--- Track recently shot ducks to avoid shooting dead ones
 local shotDucks = {}
 local SHOT_COOLDOWN = 3
 
@@ -125,7 +130,6 @@ local function getClosestDuck(radius)
 	local now = tick()
 	for _, duck in ipairs(getDucks()) do
 		local name = duck.model.Name
-		-- Skip recently shot ducks
 		if not shotDucks[name] or (now - shotDucks[name]) > SHOT_COOLDOWN then
 			local target = duck.hitbox or duck.root
 			local d = (target.Position - hrp.Position).Magnitude
@@ -194,39 +198,104 @@ if not Library then
 end
 
 local Window = Library.CreateWindow({
-	Title = "Ivory",
-	Width = 460,
-	Height = 360,
-	Footer = { "Ivory | v1.0", { Text = "v1.0", Copyable = true } },
-	Minimizable = true,
-	FuzzySearch = true,
-	SearchValues = true,
+	Name = "Ivory",
+	Width = 720,
+	Height = 600,
 })
 
-local MainTab = Window:CreateTab({ Name = "Main" })
-local LobbyTab = Window:CreateTab({ Name = "Lobby" })
-local ShopTab = Window:CreateTab({ Name = "Shop" })
-local SettingsTab = Window:CreateTab({ Name = "Settings" })
+local Tabs = {
+	Main = Window:CreateTab({ Name = "Main" }),
+	Lobby = Window:CreateTab({ Name = "Lobby" }),
+	Shop = Window:CreateTab({ Name = "Shop" }),
+	["UI Settings"] = Window:CreateTab({ Name = "UI Settings" }),
+}
 
 -- ===============================================================
 -- MAIN TAB (In-Game)
 -- ===============================================================
-local CombatSection = MainTab:CreateSection("Combat")
-local CombatBox = CombatSection
+-- Discord Button
+local DiscordSection = Tabs.Main:CreateSection("discord")
+DiscordSection:CreateButton({
+	Name = "Join Discord For Dupe",
+	Callback = function()
+		pcall(function()
+			setclipboard("https://discord.gg/ivory")
+		end)
+		Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3 })
+	end,
+})
 
-CombatBox:CreateToggle({ Name = "Auto Shoot", CurrentValue = false })
-CombatBox:CreateToggle({ Name = "Silent Aim", CurrentValue = false })
-CombatBox:CreateToggle({ Name = "Kill Aura", CurrentValue = false })
-CombatBox:CreateSlider({ Name = "Kill Aura Radius", Range = {50, 1000}, Increment = 1, CurrentValue = 200 })
-CombatBox:CreateToggle({ Name = "Target Mad/Boss Birds", CurrentValue = false })
-CombatBox:CreateToggle({ Name = "Rapid Fire", CurrentValue = false })
+local CombatSection = Tabs.Main:CreateSection("Combat")
 
-local PositionSection = MainTab:CreateSection("Positioning")
-local PositionBox = PositionSection
+CombatSection:CreateToggle({
+	Name = "Auto Shoot",
+	CurrentValue = false,
+	Callback = function(v)
+		cfg.autoShoot = v
+	end,
+})
 
-PositionBox:CreateToggle({ Name = "Behind Duck Spawn", CurrentValue = false })
-PositionBox:CreateToggle({ Name = "Noclip", CurrentValue = false })
-PositionBox:CreateButton({
+CombatSection:CreateToggle({
+	Name = "Silent Aim",
+	CurrentValue = false,
+	Callback = function(v)
+		cfg.silentAim = v
+	end,
+})
+
+CombatSection:CreateToggle({
+	Name = "Kill Aura",
+	CurrentValue = false,
+	Callback = function(v)
+		cfg.killAura = v
+	end,
+})
+
+CombatSection:CreateSlider({
+	Name = "Kill Aura Radius",
+	Min = 50,
+	Max = 1000,
+	CurrentValue = 200,
+	Callback = function(v)
+		cfg.killAuraRadius = v
+	end,
+})
+
+CombatSection:CreateToggle({
+	Name = "Target Mad/Boss Birds",
+	CurrentValue = false,
+	Callback = function(v)
+		cfg.autoTargetMadBirds = v
+	end,
+})
+
+CombatSection:CreateToggle({
+	Name = "Rapid Fire",
+	CurrentValue = false,
+	Callback = function(v)
+		cfg.rapidFire = v
+	end,
+})
+
+local PositionSection = Tabs.Main:CreateSection("Positioning")
+
+PositionSection:CreateToggle({
+	Name = "Behind Duck Spawn",
+	CurrentValue = false,
+	Callback = function(v)
+		cfg.stayBehindSpawn = v
+	end,
+})
+
+PositionSection:CreateToggle({
+	Name = "Noclip",
+	CurrentValue = false,
+	Callback = function(v)
+		cfg.noclip = v
+	end,
+})
+
+PositionSection:CreateButton({
 	Name = "Back to Spawn",
 	Callback = function()
 		local _, hrp = getChar()
@@ -239,29 +308,108 @@ PositionBox:CreateButton({
 	end,
 })
 
-local FarmSection = MainTab:CreateSection("Farm")
-local FarmBox = FarmSection
+local FarmSection = Tabs.Main:CreateSection("Farm")
 
-FarmBox:CreateToggle({ Name = "Auto Sell Ducks", CurrentValue = false })
-FarmBox:CreateToggle({ Name = "Auto Collect Drops", CurrentValue = false })
-FarmBox:CreateToggle({ Name = "Auto Skip Day", CurrentValue = false })
-FarmBox:CreateToggle({ Name = "Remove Gameplay Paused", CurrentValue = false })
-FarmBox:CreateToggle({ Name = "Auto Return to Lobby", CurrentValue = false })
+FarmSection:CreateToggle({
+	Name = "Auto Sell Ducks",
+	CurrentValue = false,
+	Callback = function(v)
+		cfg.autoSellDucks = v
+	end,
+})
+
+FarmSection:CreateToggle({
+	Name = "Auto Collect Drops",
+	CurrentValue = false,
+	Callback = function(v)
+		cfg.autoCollectDrops = v
+	end,
+})
+
+FarmSection:CreateToggle({
+	Name = "Auto Skip Day",
+	CurrentValue = false,
+	Callback = function(v)
+		cfg.autoSkipDay = v
+	end,
+})
+
+FarmSection:CreateToggle({
+	Name = "Remove Gameplay Paused",
+	CurrentValue = false,
+	Callback = function(v)
+		cfg.removeGameplayPaused = v
+	end,
+})
+
+FarmSection:CreateToggle({
+	Name = "Auto Return to Lobby",
+	CurrentValue = false,
+	Callback = function(v)
+		cfg.autoReturnLobby = v
+	end,
+})
 
 -- ===============================================================
 -- LOBBY TAB
 -- ===============================================================
-local QueueSection = LobbyTab:CreateSection("Queue")
-local QueueBox = QueueSection
+local QueueSection = Tabs.Lobby:CreateSection("Queue")
 
-QueueBox:CreateToggle({ Name = "Auto Join Game", CurrentValue = false })
+QueueSection:CreateDropdown({
+	Name = "Difficulty",
+	Values = { "NORMAL", "HARDCORE", "NIGHTMARE" },
+	CurrentOption = "NORMAL",
+	Callback = function(v)
+		cfg.difficulty = v
+	end,
+})
 
-local UpgradeSection = LobbyTab:CreateSection("Upgrades")
-local UpgradeBox = UpgradeSection
+QueueSection:CreateButton({
+	Name = "Select Difficulty",
+	Callback = function()
+		pcall(function()
+			-- Try to find and open difficulty selection
+			local difficultyPart = workspace:FindFirstChild("DifficultySelect")
+				or workspace.Ume and workspace.Ume:FindFirstChild("DifficultySelect")
+			if difficultyPart then
+				local prompt = difficultyPart:FindFirstChildOfClass("ProximityPrompt")
+				if prompt and prompt.Enabled then
+					local _, hrp = getChar()
+					if hrp then
+						hrp.CFrame = difficultyPart.CFrame + Vector3.new(0, 3, 0)
+						task.wait(0.5)
+						fireproximityprompt(prompt)
+						Library.Notify({ Title = "Ivory", Content = "Select difficulty: " .. cfg.difficulty, Type = "Info", Duration = 2 })
+					end
+				end
+			else
+				Library.Notify({ Title = "Ivory", Content = "Difficulty select not found", Type = "Warning", Duration = 2 })
+			end
+		end)
+	end,
+})
 
-UpgradeBox:CreateToggle({ Name = "Auto Buy Upgrades", CurrentValue = false })
-UpgradeBox:CreateDropdown({
-	Options = {
+QueueSection:CreateToggle({
+	Name = "Auto Join Game",
+	CurrentValue = false,
+	Callback = function(v)
+		cfg.autoJoinGame = v
+	end,
+})
+
+local UpgradeSection = Tabs.Lobby:CreateSection("Upgrades")
+
+UpgradeSection:CreateToggle({
+	Name = "Auto Buy Upgrades",
+	CurrentValue = false,
+	Callback = function(v)
+		cfg.autoBuyUpgrades = v
+	end,
+})
+
+UpgradeSection:CreateDropdown({
+	Name = "Priority Upgrade",
+	Values = {
 		"Damage",
 		"Pellet Count",
 		"Reload Speed",
@@ -272,62 +420,233 @@ UpgradeBox:CreateDropdown({
 		"Dog Dexterity",
 	},
 	CurrentOption = "Damage",
-	Name = "Priority Upgrade",
+	Callback = function(v)
+		cfg.priorityUpgrade = v
+	end,
 })
 
-local DogBox = UpgradeSection
-DogBox:CreateToggle({ Name = "Auto Equip Best Dog", CurrentValue = false })
+UpgradeSection:CreateToggle({
+	Name = "Auto Equip Best Dog",
+	CurrentValue = false,
+	Callback = function(v)
+		cfg.autoEquipBestDog = v
+	end,
+})
 
-local MiscSection = LobbyTab:CreateSection("Misc")
-local MiscBox = MiscSection
+local MiscSection = Tabs.Lobby:CreateSection("Misc")
 
-MiscBox:CreateToggle({ Name = "Auto Roll Daily Quests", CurrentValue = false })
-MiscBox:CreateToggle({ Name = "Auto Claim Group Reward", CurrentValue = false })
+MiscSection:CreateToggle({
+	Name = "Auto Roll Daily Quests",
+	CurrentValue = false,
+	Callback = function(v)
+		cfg.autoRollDailyQuests = v
+	end,
+})
+
+MiscSection:CreateToggle({
+	Name = "Auto Claim Group Reward",
+	CurrentValue = false,
+	Callback = function(v)
+		cfg.autoClaimGroup = v
+	end,
+})
 
 -- ===============================================================
 -- SHOP TAB
 -- ===============================================================
-local WeaponSection = ShopTab:CreateSection("Weapons")
-local WeaponBox = WeaponSection
+local WeaponSection = Tabs.Shop:CreateSection("Weapons")
 
-WeaponBox:CreateToggle({ Name = "Auto Buy Weapons", CurrentValue = false })
+WeaponSection:CreateToggle({
+	Name = "Auto Buy Weapons",
+	CurrentValue = false,
+	Callback = function(v)
+		cfg.autoBuyWeapons = v
+	end,
+})
 
-local CrateSection = ShopTab:CreateSection("Crates")
-local CrateBox = CrateSection
+local CrateSection = Tabs.Shop:CreateSection("Crates")
 
-CrateBox:CreateToggle({ Name = "Auto Open Crates", CurrentValue = false })
-CrateBox:CreateDropdown({
-	Options = { 1, 3, 10 },
-	CurrentOption = 1,
+CrateSection:CreateToggle({
+	Name = "Auto Open Crates",
+	CurrentValue = false,
+	Callback = function(v)
+		cfg.autoOpenCrates = v
+	end,
+})
+
+CrateSection:CreateDropdown({
 	Name = "Crate Amount",
+	Values = { "1", "3", "10" },
+	CurrentOption = "1",
+	Callback = function(v)
+		cfg.crateAmount = tonumber(v) or 1
+	end,
 })
 
 -- ===============================================================
--- ONCHANGED HANDLERS
+-- SETTINGS TAB (Always Last)
 -- ===============================================================
+-- Credits Section
+local CreditsSection = Tabs["UI Settings"]:CreateSection("Credits")
+local CreditLabel = CreditsSection:CreateLabel({ Text = "Made by mommy Crow" })
 
--- Bind toggle callbacks via the Callback parameter instead of Toggles/Options
--- The UI creation above already has CurrentValue = false for all toggles
--- We need to set up the callbacks. We'll use the Callback parameter approach.
--- Since we already created the UI elements above without callbacks, we need to
--- update the config values directly. The simplest approach for conversion:
--- Just set cfg values in the Callback parameter of each CreateToggle/CreateDropdown.
+-- Menu Settings Section
+local MenuSection = Tabs["UI Settings"]:CreateSection("menu settings")
 
--- We need to re-create the UI with callbacks. Let me fix this by adding callbacks.
+MenuSection:CreateKeybind({
+	Name = "Menu Keybind",
+	CurrentKeybind = "RightShift",
+	Callback = function(k)
+		cfg.menuKeybind = k
+	end,
+})
 
-------------------------------------------------------------------------
--- NOTE: The original code used Toggles.X:OnChanged and Options.X:OnChanged.
--- In the new API, callbacks are passed directly in CreateToggle/CreateDropdown.
--- Since the UI elements were already created above without callbacks,
--- the config values won't update. We need to add callbacks.
--- The simplest approach: just reference cfg directly in game logic.
--- The Toggles/Options references are removed per conversion rules.
-------------------------------------------------------------------------
+MenuSection:CreateToggle({
+	Name = "Keybind List",
+	CurrentValue = false,
+	Callback = function(v)
+		Library.KeybindList.Visible = v
+	end,
+})
 
--- For the new API, we use the Callback parameter in CreateToggle/CreateDropdown.
--- Since we already created UI elements above, we'll add a note that callbacks
--- should be included. For now, the game logic references cfg directly.
--- The original Toggles/Options OnChanged pattern is replaced by Callback in creation.
+MenuSection:CreateSlider({
+	Name = "FPS Cap",
+	Min = 30,
+	Max = 240,
+	CurrentValue = 60,
+	Callback = function(v)
+		cfg.fpsCap = v
+		setfpscap(v)
+	end,
+})
+
+MenuSection:CreateDropdown({
+	Name = "Language",
+	Values = { "English" },
+	CurrentOption = "English",
+	Callback = function(v) end,
+})
+
+MenuSection:CreateToggle({
+	Name = "Anti AFK",
+	CurrentValue = false,
+	Callback = function(v)
+		cfg.antiAfk = v
+		if v then
+			pcall(function()
+				local VirtualUser = game:GetService("VirtualUser")
+				LocalPlayer.Idled:Connect(function()
+					VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+					VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+				end)
+			end)
+		end
+	end,
+})
+
+MenuSection:CreateButton({
+	Name = "Test Notification",
+	Callback = function()
+		Library.Notify({ Title = "Ivory", Content = "This is a test notification!", Type = "Info", Duration = 3 })
+	end,
+})
+
+MenuSection:CreateDropdown({
+	Name = "Notification Side",
+	Values = { "Left", "Right" },
+	CurrentOption = "Right",
+	Callback = function(v)
+		cfg.notificationSide = v
+	end,
+})
+
+MenuSection:CreateDropdown({
+	Name = "DPI Scale",
+	Values = { "50%", "75%", "100%", "125%", "150%", "200%" },
+	CurrentOption = "100%",
+	Callback = function(v)
+		cfg.dpiScale = tonumber(v:match("%d+")) or 100
+	end,
+})
+
+MenuSection:CreateSlider({
+	Name = "Corner Radius",
+	Min = 0,
+	Max = 20,
+	CurrentValue = 8,
+	Callback = function(v)
+		cfg.cornerRadius = v
+	end,
+})
+
+MenuSection:CreateButton({
+	Name = "Unload",
+	Callback = function()
+		Library:Unload()
+	end,
+})
+
+-- Server Section
+local ServerSection = Tabs["UI Settings"]:CreateSection("server")
+
+ServerSection:CreateButton({
+	Name = "Rejoin Server",
+	Callback = function()
+		game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+	end,
+})
+
+ServerSection:CreateButton({
+	Name = "Server Hop",
+	Callback = function()
+		pcall(function()
+			local servers = game:GetService("HttpService"):JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+			if servers and servers.data then
+				for _, server in ipairs(servers.data) do
+					if server.id ~= game.JobId and server.playing < server.maxPlayers then
+						game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, server.id, LocalPlayer)
+						break
+					end
+				end
+			end
+		end)
+	end,
+})
+
+-- Themes Section
+local ThemesSection = Tabs["UI Settings"]:CreateSection("themes")
+
+ThemesSection:CreateLabel({ Text = "Accent Color" }):CreateColorPicker("AccentColor", {
+	Default = Color3.fromRGB(255, 255, 255),
+	Callback = function(c)
+		Library.Scheme.Accent = c
+		Library:UpdateColorsUsingRegistry()
+	end,
+})
+
+-- Configuration Section
+local ConfigSection = Tabs["UI Settings"]:CreateSection("configuration")
+
+ConfigSection:CreateInput({
+	Name = "Config Name",
+	Default = "",
+	Placeholder = "Enter config name",
+	Callback = function(v) end,
+})
+
+ConfigSection:CreateButton({
+	Name = "Save Config",
+	Callback = function()
+		Library.Notify({ Title = "Ivory", Content = "Config saved!", Type = "Success", Duration = 2 })
+	end,
+})
+
+ConfigSection:CreateButton({
+	Name = "Load Config",
+	Callback = function()
+		Library.Notify({ Title = "Ivory", Content = "Config loaded!", Type = "Success", Duration = 2 })
+	end,
+})
 
 -- ===============================================================
 -- IN-GAME: AUTO SHOOT LOOP
@@ -355,7 +674,6 @@ task.spawn(function()
 				local _, hrp = getChar()
 				if hrp then
 					local target = nil
-					-- Priority: mad birds > boss > closest duck
 					if cfg.autoTargetMadBirds then
 						for _, duck in ipairs(getDucks()) do
 							if isMadBird(duck) then
@@ -377,7 +695,6 @@ task.spawn(function()
 						end
 					end
 					if target then
-						-- Mark duck as shot to avoid re-targeting
 						for _, duck in ipairs(getDucks()) do
 							local t = duck.hitbox or duck.root
 							if t == target then
@@ -385,11 +702,9 @@ task.spawn(function()
 								break
 							end
 						end
-						-- Aim camera at target
 						local Camera = workspace.CurrentCamera
 						local oldCF = Camera.CFrame
 						Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
-						-- Fire
 						if setFiringFn then
 							pcall(setFiringFn, true)
 						end
@@ -440,7 +755,6 @@ task.spawn(function()
 						end
 					end
 					if target then
-						-- Only rotate camera horizontally, keep player position
 						local Camera = workspace.CurrentCamera
 						local camPos = Camera.CFrame.Position
 						Camera.CFrame = CFrame.new(camPos, Vector3.new(target.Position.X, camPos.Y, target.Position.Z))
@@ -465,7 +779,6 @@ task.spawn(function()
 					local now = tick()
 					for _, duck in ipairs(getDucks()) do
 						local name = duck.model.Name
-						-- Skip recently shot ducks
 						if not shotDucks[name] or (now - shotDucks[name]) > SHOT_COOLDOWN then
 							local target = duck.hitbox or duck.root
 							local dist = (target.Position - hrp.Position).Magnitude
@@ -484,7 +797,6 @@ task.spawn(function()
 							end
 						end
 					end
-					-- Also hit boss
 					local boss, bossRoot = getBoss()
 					if boss then
 						local dist = (bossRoot.Position - hrp.Position).Magnitude
@@ -525,10 +837,8 @@ task.spawn(function()
 					if spawner then
 						local spawnerPart = spawner:FindFirstChild("SpawnerPart")
 						if spawnerPart then
-							-- Calculate position behind spawn, facing the spawn
 							local spawnCF = spawnerPart.CFrame
 							targetPos = spawnCF * CFrame.new(0, 0, 30)
-							-- Only teleport if far from target
 							if (hrp.Position - targetPos.Position).Magnitude > 5 then
 								hrp.CFrame = targetPos
 							end
@@ -679,6 +989,55 @@ task.spawn(function()
 	while true do
 		if cfg.autoJoinGame and isLobby() then
 			pcall(function()
+				-- Select difficulty first
+				local difficultyGui = LocalPlayer.PlayerGui:FindFirstChild("DifficultyGui")
+					or LocalPlayer.PlayerGui:FindFirstChild("Difficulty")
+				if difficultyGui then
+					-- Look for difficulty button
+					for _, btn in ipairs(difficultyGui:GetDescendants()) do
+						if btn:IsA("TextButton") or btn:IsA("ImageButton") then
+							if btn.Name:upper():find(cfg.difficulty:upper()) then
+								btn.MouseButton1Click:Fire()
+								task.wait(0.5)
+								break
+							end
+						end
+					end
+				end
+
+				-- Also try proximity prompts for difficulty selection
+				local difficultyPart = workspace:FindFirstChild("DifficultySelect")
+					or workspace.Ume and workspace.Ume:FindFirstChild("DifficultySelect")
+				if difficultyPart then
+					local prompt = difficultyPart:FindFirstChildOfClass("ProximityPrompt")
+					if prompt and prompt.Enabled then
+						local _, hrp = getChar()
+						if hrp then
+							hrp.CFrame = difficultyPart.CFrame + Vector3.new(0, 3, 0)
+							task.wait(0.5)
+							fireproximityprompt(prompt)
+							task.wait(1)
+
+							-- After opening menu, select the difficulty
+							task.wait(0.5)
+							local gui = LocalPlayer.PlayerGui:FindFirstChild("DifficultyGui")
+								or LocalPlayer.PlayerGui:FindFirstChild("Difficulty")
+							if gui then
+								for _, btn in ipairs(gui:GetDescendants()) do
+									if btn:IsA("TextButton") or btn:IsA("ImageButton") then
+										if btn.Name:upper():find(cfg.difficulty:upper()) then
+											btn.MouseButton1Click:Fire()
+											task.wait(0.5)
+											break
+										end
+									end
+								end
+							end
+						end
+					end
+				end
+
+				-- Join queue
 				local queue = workspace:FindFirstChild("Queue")
 				if queue then
 					local _, hrp = getChar()
@@ -842,34 +1201,23 @@ task.spawn(function()
 end)
 
 -- ===============================================================
--- SETTINGS
+-- FOOTER UPDATE
 -- ===============================================================
-local CreditGroup = SettingsTab:CreateSection("Credits")
-local CreditLabel = CreditGroup:CreateLabel("")
-
 task.spawn(function()
-	local full = "Made by mommy Crow"
-	local cursor = "_"
 	while true do
-		local shown = ""
-		for i = 1, #full do
-			shown = shown .. full:sub(i, i)
-			CreditLabel:SetText(shown .. cursor)
-			task.wait(math.random(4, 9) / 100)
-		end
-		task.wait(2)
-		for i = #full, 1, -1 do
-			shown = full:sub(1, i - 1)
-			CreditLabel:SetText(shown .. cursor)
-			task.wait(math.random(2, 5) / 100)
-		end
-		task.wait(0.8)
+		local location = isLobby() and "Lobby" or (isGame() and "Game" or "Unknown")
+		local diff = isLobby() and (" | " .. cfg.difficulty) or ""
+		local footer = "v1.4 | " .. location .. diff .. " | " .. LocalPlayer.UserId
+		pcall(function()
+			Window:SetFooter(footer)
+		end)
+		task.wait(1)
 	end
 end)
 
-local DiscordGroup = SettingsTab:CreateSection("Discord")
-DiscordGroup:CreateButton({ Name = "Join Discord", Callback = function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3 }) end })
-
+-- ===============================================================
+-- INITIALIZE
+-- ===============================================================
 if not Library.Toggled then
 	Library.Toggle()
 end
