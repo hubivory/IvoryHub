@@ -226,7 +226,7 @@ DiscordSection:CreateButton({
 	Name = "Join Discord For Dupe",
 	Callback = function()
 		pcall(function()
-			setclipboard("https://discord.gg/ivory")
+			setclipboard("https://discord.gg/H9T7CHBEZX")
 		end)
 		Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3 })
 	end,
