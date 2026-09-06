@@ -244,18 +244,57 @@ for _, area in ipairs(CombatAreaData and CombatAreaData.Areas or {}) do
 	end
 end
 
+local AllFish = {
+	{Id = "RawShrimp", Name = "Raw Shrimp", Area = "Shallow Shores", AreaId = "ShallowShores", Level = 1},
+	{Id = "RawLobster", Name = "Raw Lobster", Area = "Shallow Shores", AreaId = "ShallowShores", Level = 40},
+	{Id = "RawCrab", Name = "Raw Crab", Area = "Shallow Shores", AreaId = "ShallowShores", Level = 60},
+	{Id = "RawSardine", Name = "Raw Sardine", Area = "Shrapnel River", AreaId = "ShrapnelRiver", Level = 5},
+	{Id = "RawHerring", Name = "Raw Herring", Area = "Shrapnel River", AreaId = "ShrapnelRiver", Level = 10},
+	{Id = "RawCarp", Name = "Raw Carp", Area = "Shrapnel River", AreaId = "ShrapnelRiver", Level = 65},
+	{Id = "RawBlowfish", Name = "Raw Blowfish", Area = "Trench of Despair", AreaId = "TrenchOfDespair", Level = 8},
+	{Id = "RawPoisonFish", Name = "Raw Poison Fish", Area = "Trench of Despair", AreaId = "TrenchOfDespair", Level = 24},
+	{Id = "RawAnglerfish", Name = "Raw Anglerfish", Area = "Trench of Despair", AreaId = "TrenchOfDespair", Level = 50},
+	{Id = "RawCaveFish", Name = "Raw Cave Fish", Area = "Trench of Despair", AreaId = "TrenchOfDespair", Level = 75},
+	{Id = "RawTrout", Name = "Raw Trout", Area = "Lemvor Pier", AreaId = "LemvorPier", Level = 20},
+	{Id = "RawSalmon", Name = "Raw Salmon", Area = "Lemvor Pier", AreaId = "LemvorPier", Level = 28},
+	{Id = "RawFanfish", Name = "Raw Fanfish", Area = "Lemvor Pier", AreaId = "LemvorPier", Level = 55},
+	{Id = "RawSwordfish", Name = "Raw Swordfish", Area = "Open Waters", AreaId = "OpenWaters", Level = 50},
+	{Id = "RawMantaRay", Name = "Raw Manta Ray", Area = "Open Waters", AreaId = "OpenWaters", Level = 85},
+	{Id = "RawShark", Name = "Raw Shark", Area = "Barren Ocean", AreaId = "BarrenOcean", Level = 70},
+	{Id = "RawWhale", Name = "Raw Whale", Area = "Barren Ocean", AreaId = "BarrenOcean", Level = 95},
+	{Id = "LeapingTrout", Name = "Leaping Trout", Area = "Barbarian Fishing", AreaId = "BarbarianFishing", Level = 20},
+	{Id = "LeapingSalmon", Name = "Leaping Salmon", Area = "Barbarian Fishing", AreaId = "BarbarianFishing", Level = 35},
+	{Id = "LeapingBroadFish", Name = "Leaping Broad Fish", Area = "Barbarian Fishing", AreaId = "BarbarianFishing", Level = 70},
+	{Id = "RawSeahorse", Name = "Raw Seahorse", Area = "Secret Area", AreaId = "SecretArea", Level = 13},
+	{Id = "RawSkeletonFish", Name = "Raw Skeleton Fish", Area = "Secret Area", AreaId = "SecretArea", Level = 40},
+	{Id = "RawMagicFish", Name = "Raw Magic Fish", Area = "Secret Area", AreaId = "SecretArea", Level = 80},
+	{Id = "RawLavaFish", Name = "Raw Lava Fish", Area = "Magma Lake", AreaId = "MagmaLake", Level = 100},
+	{Id = "RawMagmaFish", Name = "Raw Magma Fish", Area = "Magma Lake", AreaId = "MagmaLake", Level = 105},
+	{Id = "RawMagmaEel", Name = "Raw Magma Eel", Area = "Magma Lake", AreaId = "MagmaLake", Level = 112},
+	{Id = "RawSpikeFish", Name = "Raw Spike Fish", Area = "Jungle Waters", AreaId = "JungleWaters", Level = 101},
+	{Id = "RawBlueCrab", Name = "Raw Blue Crab", Area = "Jungle Waters", AreaId = "JungleWaters", Level = 104},
+	{Id = "RawLargeBlowfish", Name = "Raw Large Blowfish", Area = "Jungle Waters", AreaId = "JungleWaters", Level = 106},
+	{Id = "RawRockfish", Name = "Raw Rockfish", Area = "Static Valley", AreaId = "StaticValley", Level = 102},
+	{Id = "RawStaticJellyfish", Name = "Raw Static Jellyfish", Area = "Static Valley", AreaId = "StaticValley", Level = 108},
+	{Id = "RawFrostCrab", Name = "Raw Frost Crab", Area = "Frozen Sea", AreaId = "FrozenSea", Level = 110},
+	{Id = "RawFrozenMantaRay", Name = "Raw Frozen Manta Ray", Area = "Frozen Sea", AreaId = "FrozenSea", Level = 113},
+	{Id = "RawGhostFish", Name = "Raw Ghost Fish", Area = "Midnight Lagoon", AreaId = "MidnightLagoon", Level = 115},
+	{Id = "RawTerrorfish", Name = "Raw Terrorfish", Area = "Midnight Lagoon", AreaId = "MidnightLagoon", Level = 118},
+	{Id = "RawMysticSeahorse", Name = "Raw Mystic Seahorse", Area = "Mystic Pond", AreaId = "MysticPond", Level = 116},
+	{Id = "RawMysticShark", Name = "Raw Mystic Shark", Area = "Mystic Pond", AreaId = "MysticPond", Level = 120},
+	{Id = "RawMackerel", Name = "Raw Mackerel", Area = "Fisherman's Enclave", AreaId = "FishermansEnclave", Level = 18},
+	{Id = "RawHalibut", Name = "Raw Halibut", Area = "Fisherman's Enclave", AreaId = "FishermansEnclave", Level = 34},
+	{Id = "RawTilapia", Name = "Raw Tilapia", Area = "Fisherman's Enclave", AreaId = "FishermansEnclave", Level = 75},
+}
+
 local fishNames = {}
 local fishIds = {}
 local fishAreas = {}
-for _, area in ipairs(FishingConfig.Areas or {}) do
-	if area.Fish then
-		for _, fish in ipairs(area.Fish) do
-			local label = fish.Name .. " (" .. area.Name .. ")"
-			table.insert(fishNames, label)
-			fishIds[#fishNames] = fish.Id
-			fishAreas[#fishNames] = area.Id
-		end
-	end
+for _, fish in ipairs(AllFish) do
+	local label = fish.Name .. " (" .. fish.Area .. " Lv" .. fish.Level .. ")"
+	table.insert(fishNames, label)
+	fishIds[#fishNames] = fish.Id
+	fishAreas[#fishNames] = fish.AreaId
 end
 
 local cookingRecipeNames = {}
