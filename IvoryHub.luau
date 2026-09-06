@@ -78,6 +78,7 @@ local GameScripts = {
 
 local UniverseScripts = {
 	[4777817887] = "games/Bladeball_BAC.luau",
+	[10548152848] = "games/Runeheaven.luau",
 	-- Add more: [UniverseId] = "games/ScriptName.luau"
 }
 
