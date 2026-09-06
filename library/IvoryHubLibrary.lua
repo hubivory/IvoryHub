@@ -6384,41 +6384,7 @@ Library.CreateWindow = function(config)
     local cubeMarkWidth, cubeMarkHeight = buildIvoryWordmark(cubeMarkInner, Theme.TextPrimary, 0.45)
     cubeMarkInner.Size = UDim2.fromOffset(cubeMarkWidth, cubeMarkHeight)
 
-    local cubeDivider = Instance.new("Frame")
-    cubeDivider.LayoutOrder = 2
-    cubeDivider.Size = UDim2.new(0, 1, 0, 14)
-    cubeDivider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    cubeDivider.BackgroundTransparency = 0.75
-    cubeDivider.BorderSizePixel = 0
-    cubeDivider.ZIndex = 3
-    cubeDivider.Parent = cubeMarkHolder
 
-    local cubeStatsLabel = Instance.new("TextLabel")
-    cubeStatsLabel.LayoutOrder = 3
-    cubeStatsLabel.BackgroundTransparency = 1
-    cubeStatsLabel.Size = UDim2.fromOffset(0, 20)
-    cubeStatsLabel.AutomaticSize = Enum.AutomaticSize.X
-    cubeStatsLabel.Font = Font.Body
-    cubeStatsLabel.TextSize = TextSizes.SM
-    cubeStatsLabel.TextColor3 = Theme.TextSecondary
-    cubeStatsLabel.TextXAlignment = Enum.TextXAlignment.Left
-    cubeStatsLabel.Text = ""
-    cubeStatsLabel.ZIndex = 3
-    cubeStatsLabel.Parent = cubeMarkHolder
-
-    task.spawn(function()
-        while cubeMarkHolder.Parent do
-            if cubeMarkHolder.Visible and Library.GetFPS then
-                local parts = { tostring(Library.GetFPS()) .. " FPS" }
-                local ping = Library.GetPing and Library.GetPing()
-                if ping then
-                    table.insert(parts, tostring(ping) .. "ms")
-                end
-                cubeStatsLabel.Text = table.concat(parts, "  |  ")
-            end
-            task.wait(0.5)
-        end
-    end)
 
     -- ---------------- Sidebar ----------------
 
