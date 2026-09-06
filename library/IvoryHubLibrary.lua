@@ -6009,77 +6009,7 @@ Library.CreateWindow = function(config)
     local BRACKET_INSET = 18
     local BRACKET_LEG = 14
     local BRACKET_THICKNESS = 1.5
-    local bracketBars = {}
-
-    local function makeBracketBar(anchor, position, sizeW, sizeH)
-        local bar = Instance.new("Frame")
-        bar.Name = "CornerAccent"
-        bar.AnchorPoint = anchor
-        bar.Position = position
-        bar.Size = UDim2.new(0, sizeW, 0, sizeH)
-        bar.BackgroundColor3 = Theme.Blossom
-        bar.BackgroundTransparency = 0.4
-        bar.BorderSizePixel = 0
-        bar.ZIndex = 1
-        bar.Parent = wrapper
-        local barCorner = Instance.new("UICorner")
-        barCorner.CornerRadius = Radius.Pill
-        barCorner.Parent = bar
-        table.insert(bracketBars, bar)
-        return bar
-    end
-
-    local BRACKET_TL = UDim2.new(0, BRACKET_INSET, 0, BRACKET_INSET)
-    local BRACKET_TR = UDim2.new(1, -BRACKET_INSET, 0, BRACKET_INSET)
-    local BRACKET_BL = UDim2.new(0, BRACKET_INSET, 1, -BRACKET_INSET)
-    local BRACKET_BR = UDim2.new(1, -BRACKET_INSET, 1, -BRACKET_INSET)
-
-    -- AnchorPoint's "free" axis (the one along the leg's own length) has to
-    -- point TOWARD mainFrame's corner, not away from it - anchor(0,_) pins
-    -- the bar's LEFT edge to the vertex so it extends rightward, anchor(1,_)
-    -- pins the RIGHT edge so it extends leftward, and likewise for top/
-    -- bottom on the vertical legs. Each pair below was previously reversed,
-    -- which sent every leg out toward the wrapper's raw edge instead of in
-    -- toward the card.
-    makeBracketBar(Vector2.new(0, 0.5), BRACKET_TL, BRACKET_LEG, BRACKET_THICKNESS)
-    makeBracketBar(Vector2.new(0.5, 0), BRACKET_TL, BRACKET_THICKNESS, BRACKET_LEG)
-    makeBracketBar(Vector2.new(1, 0.5), BRACKET_TR, BRACKET_LEG, BRACKET_THICKNESS)
-    makeBracketBar(Vector2.new(0.5, 0), BRACKET_TR, BRACKET_THICKNESS, BRACKET_LEG)
-    makeBracketBar(Vector2.new(0, 0.5), BRACKET_BL, BRACKET_LEG, BRACKET_THICKNESS)
-    makeBracketBar(Vector2.new(0.5, 1), BRACKET_BL, BRACKET_THICKNESS, BRACKET_LEG)
-    makeBracketBar(Vector2.new(1, 0.5), BRACKET_BR, BRACKET_LEG, BRACKET_THICKNESS)
-    makeBracketBar(Vector2.new(0.5, 1), BRACKET_BR, BRACKET_THICKNESS, BRACKET_LEG)
-
-    self._bracketBars = bracketBars
-
-    if Library._RegisterAccentBound then
-        Library._RegisterAccentBound(function(color)
-            for _, bar in ipairs(bracketBars) do
-                if bar.Parent then
-                    bar.BackgroundColor3 = color
-                end
-            end
-        end)
-    end
-
-    task.spawn(function()
-        while wrapper.Parent do
-            local breatheIn = TweenInfo.new(3.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-            for _, bar in ipairs(bracketBars) do
-                if not self._minimized then
-                    tw(bar, breatheIn, { BackgroundTransparency = 0.15 })
-                end
-            end
-            task.wait(3.4)
-            local breatheOut = TweenInfo.new(3.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-            for _, bar in ipairs(bracketBars) do
-                if not self._minimized then
-                    tw(bar, breatheOut, { BackgroundTransparency = 0.4 })
-                end
-            end
-            task.wait(3.4)
-        end
-    end)
+    self._bracketBars = {}
 
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "MainFrame"
