@@ -1,34 +1,3 @@
--- ===============================================================
--- KEY SYSTEM - Load and wait for validation
--- ===============================================================
-local _k = getgenv()._k
-if not _k or not _k.v then
-	local KS_SRC do
-		local fn = request or http_request or (syn and syn.request)
-		if fn then
-			local res = fn({ Url = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/IvoryKeySystem_Real.luau", Method = "GET" })
-			KS_SRC = res and res.Body
-		else
-			KS_SRC = game:HttpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/IvoryKeySystem_Real.luau", true)
-		end
-	end
-	if KS_SRC and #KS_SRC > 0 then
-		if KS_SRC:byte(1) == 0xEF and KS_SRC:byte(2) == 0xBB and KS_SRC:byte(3) == 0xBF then
-			KS_SRC = KS_SRC:sub(4)
-		end
-		loadstring(KS_SRC)()
-	end
-	_k = getgenv()._k
-	while true do
-		task.wait(0.2)
-		if _k and _k.v then break end
-		if not _k then
-			warn("[Ivory] Key system failed to load")
-			return
-		end
-	end
-end
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -738,7 +707,6 @@ end)
 task.spawn(function()
 	while true do
 		task.wait(1)
-		if not _k or not _k.v then continue end
 		if not State.Combat_AutoFight then continue end
 		if State.Combat_MonsterId == "" then continue end
 		if State.Auto_LoopEnabled then continue end
@@ -767,7 +735,6 @@ end)
 task.spawn(function()
 	while true do
 		task.wait(1)
-		if not _k or not _k.v then continue end
 		if not State.Fishing_AutoFish then continue end
 		if State.Fishing_FishId == "" then continue end
 		if State.Auto_LoopEnabled then continue end
@@ -785,7 +752,6 @@ end)
 task.spawn(function()
 	while true do
 		task.wait(1)
-		if not _k or not _k.v then continue end
 		if not State.Cooking_AutoCook then continue end
 		if State.Cooking_RecipeId == "" then continue end
 		if State.Auto_LoopEnabled then continue end
@@ -803,7 +769,6 @@ end)
 task.spawn(function()
 	while true do
 		task.wait(2)
-		if not _k or not _k.v then continue end
 		if not State.Farming_AutoFarm then continue end
 		if State.Auto_LoopEnabled and not State.Auto_FarmOnFullHp then continue end
 
@@ -846,7 +811,6 @@ local autoLoopPhase = "idle"
 task.spawn(function()
 	while true do
 		task.wait(1)
-		if not _k or not _k.v then continue end
 		if not State.Auto_LoopEnabled then
 			autoLoopPhase = "idle"
 			continue
