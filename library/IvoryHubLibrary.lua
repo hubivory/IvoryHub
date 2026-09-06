@@ -5826,8 +5826,20 @@ Library.CreateWindow = function(config)
     -- Ambient sakura petals: a sparse layer drifting behind the window,
     -- and a few petals drifting in front of it, parented to a clip frame
     -- inside wrapper so they stay inside the GUI window only.
-    self._petalClip = nil
-    self._petalFields = {}
+    local petalClip = Instance.new("Frame")
+    petalClip.Name = "PetalClip"
+    petalClip.Size = UDim2.new(0, self._cardWidth, 0, self._cardHeight)
+    petalClip.AnchorPoint = Vector2.new(0.5, 0.5)
+    petalClip.Position = UDim2.new(0.5, 0, 0.5, 0)
+    petalClip.BackgroundTransparency = 1
+    petalClip.ClipsDescendants = true
+    petalClip.ZIndex = 50
+    petalClip.Parent = wrapper
+    self._petalClip = petalClip
+
+    local petalBack = createPetalField(petalClip, -1, 30, 1.5, 4, 16, 34)
+    local petalFront = createPetalField(petalClip, 60, 9, 2.5, 5, 26, 46)
+    self._petalFields = { petalBack, petalFront }
 
     -- Petal control API: toggle visibility and adjust count
     function self:SetPetalsEnabled(enabled)
