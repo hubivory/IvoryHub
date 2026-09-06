@@ -70,7 +70,6 @@ local Window = Library.CreateWindow({
 
 local CONFIG = {
 	autoFarm = false,
-	autoSwing = true,
 	autoLoot = false,
 	autoSkills = false,
 	autoQuests = false,
@@ -155,11 +154,6 @@ FarmSection:CreateToggle({
 	Name = "Auto Farm",
 	CurrentValue = false,
 	Callback = function(v) CONFIG.autoFarm = v end,
-})
-FarmSection:CreateToggle({
-	Name = "Auto Swing",
-	CurrentValue = true,
-	Callback = function(v) CONFIG.autoSwing = v end,
 })
 FarmSection:CreateToggle({
 	Name = "Auto Collect Loot",
@@ -699,7 +693,7 @@ end
 local function claimSeqForPos(pos)
 	pruneSeqQueue()
 	for i, entry in ipairs(dropSeqQueue) do
-		if (entry.pos - pos).Magnitude < 4 then
+		if (entry.pos - pos).Magnitude < 10 then
 			local seq = entry.seq
 			table.remove(dropSeqQueue, i)
 			return seq
@@ -827,26 +821,6 @@ local function skillOnCooldown(skillName)
 	return false
 end
 
---// ═══════════════════════════════════════════════════════════
---// COMBAT
---// ═══════════════════════════════════════════════════════════
--- VIM click triggers the game's own client combat handler which plays the
--- swing animation, fires Combat:FireServer on its own, and handles hit
--- detection.  Skills are fired remotely because the game processes them
--- via the Combat remote directly.
-
-local function vimClick()
-	local vp = workspace.CurrentCamera.ViewportSize
-	local cx, cy = math.floor(vp.X / 2), math.floor(vp.Y / 2)
-	VIM:SendMouseButtonEvent(cx, cy, 0, true, game, 1)
-	task.wait(0.05)
-	VIM:SendMouseButtonEvent(cx, cy, 0, false, game, 1)
-end
-
-local function doSwing()
-	vimClick()
-end
-
 local function doSkill(slot)
 	local skillName = skillNameForSlot(slot)
 	if not skillName then return end
@@ -900,7 +874,6 @@ local function farmLoop()
 			task.wait(CONFIG.stallDelay)
 		end
 		STATE.lastTarget = enemy
-		if CONFIG.autoSwing then doSwing() end
 		if CONFIG.autoSkills then
 			if CONFIG.skillSlot1 then doSkill(1) end
 			if CONFIG.skillSlot2 then doSkill(2) end
@@ -967,12 +940,22 @@ local function collectLoop()
 			if seq then
 				safeFire("LootDrop", seq)
 			end
+			-- Always press E as fallback for proximity collection
+			VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+			task.wait(0.05)
+			VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
 			STATE.lootCollected += 1
 			STATE.phase = "looting"
 			task.wait(0.2)
 		elseif drop:IsA("Tool") and drop:FindFirstChild("Handle") then
 			tpTo(drop.Handle.Position)
 			task.wait(0.15)
+			VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+			task.wait(0.05)
+			VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+			STATE.lootCollected += 1
+			STATE.phase = "looting"
+			task.wait(0.2)
 		end
 	end
 
@@ -1060,7 +1043,6 @@ local function dungeonLoop()
 				ehrp.Position
 			)
 		end
-		if CONFIG.autoSwing then doSwing() end
 		if CONFIG.autoSkills then
 			if CONFIG.skillSlot1 then doSkill(1) end
 			if CONFIG.skillSlot2 then doSkill(2) end
@@ -1086,7 +1068,6 @@ local function towerLoop()
 				ehrp.Position
 			)
 		end
-		if CONFIG.autoSwing then doSwing() end
 		if CONFIG.autoSkills then
 			if CONFIG.skillSlot1 then doSkill(1) end
 			if CONFIG.skillSlot2 then doSkill(2) end
@@ -1109,7 +1090,6 @@ local function infiniteTowerLoop()
 				ehrp.Position
 			)
 		end
-		if CONFIG.autoSwing then doSwing() end
 		if CONFIG.autoSkills then
 			if CONFIG.skillSlot1 then doSkill(1) end
 			if CONFIG.skillSlot2 then doSkill(2) end
