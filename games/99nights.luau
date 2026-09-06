@@ -192,7 +192,7 @@ task.spawn(function()
 	end
 end)
 
-DiscordSection:CreateButton({Name = "Copy Discord Link", Callback = function() pcall(function() setclipboard("https://discord.gg/ivory") end); notify("Discord Link Copied!", "Success") end})
+DiscordSection:CreateButton({Name = "Copy Discord Link", Callback = function() pcall(function() setclipboard("https://discord.gg/H9T7CHBEZX") end); notify("Discord Link Copied!", "Success") end})
 
 local AutoTab = Window:CreateTab({Name = "Automation"})
 local AutoSection = AutoTab:CreateSection("Automation")
