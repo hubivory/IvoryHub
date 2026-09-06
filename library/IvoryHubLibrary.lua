@@ -6162,7 +6162,7 @@ Library.CreateWindow = function(config)
 
     task.spawn(function()
         while true do
-            if cubeMarkHolder.Visible and Library.GetFPS then
+            if Library.GetFPS then
                 local parts = { tostring(Library.GetFPS()) .. " FPS" }
                 local ping = Library.GetPing and Library.GetPing()
                 if ping then
