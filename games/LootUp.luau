@@ -101,7 +101,7 @@ local CONFIG = {
 	statAmount = 1,
 	sellRarity = 1,
 	farmWorld = 1,
-	maxMonsterHP = math.huge,
+	stallDelay = 0,
 	skillSlot1 = true,
 	skillSlot2 = true,
 	skillSlot3 = true,
@@ -185,14 +185,12 @@ FarmSection:CreateDropdown({
 	end,
 })
 FarmSection:CreateSlider({
-	Name = "Max Monster HP",
-	Range = {0, 1000000},
-	Increment = 1000,
+	Name = "Kill Stall (s)",
+	Range = {0, 5},
+	Increment = 0.1,
 	CurrentValue = 0,
-	Suffix = "",
-	Callback = function(v)
-		CONFIG.maxMonsterHP = (v == 0) and math.huge or v
-	end,
+	Suffix = "s",
+	Callback = function(v) CONFIG.stallDelay = v end,
 })
 
 local EquipSection = MainTab:CreateSection("Equipment")
@@ -614,14 +612,12 @@ local function getClosestEnemy(maxDist, worldNum)
 				local hum = mob:FindFirstChild("Humanoid")
 				local hrp2 = mob:FindFirstChild("HumanoidRootPart") or mob:FindFirstChild("Head")
 			if hum and hrp2 and hum.Health > 0 and worldMatches(mob) then
-				if hum.MaxHealth <= CONFIG.maxMonsterHP then
-					local dist = (hrp2.Position - hrp.Position).Magnitude
-					if dist < maxDist and (not closestDist or dist < closestDist) then
-						closest = mob
-						closestDist = dist
-					end
+				local dist = (hrp2.Position - hrp.Position).Magnitude
+				if dist < maxDist and (not closestDist or dist < closestDist) then
+					closest = mob
+					closestDist = dist
 				end
-				end
+			end
 			end
 		end
 	end
@@ -631,14 +627,12 @@ local function getClosestEnemy(maxDist, worldNum)
 				local hum = obj:FindFirstChild("Humanoid")
 				local hrp2 = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head")
 			if hum and hrp2 and hum.Health > 0 and worldMatches(obj) then
-				if hum.MaxHealth <= CONFIG.maxMonsterHP then
-					local dist = (hrp2.Position - hrp.Position).Magnitude
-					if dist < maxDist and (not closestDist or dist < closestDist) then
-						closest = obj
-						closestDist = dist
-					end
+				local dist = (hrp2.Position - hrp.Position).Magnitude
+				if dist < maxDist and (not closestDist or dist < closestDist) then
+					closest = obj
+					closestDist = dist
 				end
-				end
+			end
 			end
 		end
 	end
@@ -908,6 +902,7 @@ local function farmLoop()
 			if CONFIG.skillSlot2 then doSkill(2) end
 			if CONFIG.skillSlot3 then doSkill(3) end
 		end
+		if CONFIG.stallDelay > 0 then task.wait(CONFIG.stallDelay) end
 	else
 		STATE.phase = "searching"
 		local enemies = workspace:FindFirstChild("Enemies")
