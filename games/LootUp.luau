@@ -186,7 +186,7 @@ FarmSection:CreateDropdown({
 })
 FarmSection:CreateSlider({
 	Name = "Kill Stall (s)",
-	Range = {0, 5},
+	Range = {0, 30},
 	Increment = 0.1,
 	CurrentValue = 0,
 	Suffix = "s",
