@@ -3868,7 +3868,6 @@ local function createHudScreenGui(name)
             screenGui.Parent = playerGui
         end
     end
-    end
     return screenGui
 end
 
