@@ -101,6 +101,7 @@ local CONFIG = {
 	statAmount = 1,
 	sellRarity = 1,
 	farmWorld = 1,
+	maxMonsterHP = math.huge,
 	skillSlot1 = true,
 	skillSlot2 = true,
 	skillSlot3 = true,
@@ -181,6 +182,16 @@ FarmSection:CreateDropdown({
 		end
 		safeFire("TeleportZone", "World" .. num, 1)
 		STATE.note = "Traveling to World " .. num
+	end,
+})
+FarmSection:CreateSlider({
+	Name = "Max Monster HP",
+	Range = {0, 1000000},
+	Increment = 1000,
+	CurrentValue = 0,
+	Suffix = "",
+	Callback = function(v)
+		CONFIG.maxMonsterHP = (v == 0) and math.huge or v
 	end,
 })
 
@@ -602,12 +613,14 @@ local function getClosestEnemy(maxDist, worldNum)
 			if mob:IsA("Model") then
 				local hum = mob:FindFirstChild("Humanoid")
 				local hrp2 = mob:FindFirstChild("HumanoidRootPart") or mob:FindFirstChild("Head")
-				if hum and hrp2 and hum.Health > 0 and worldMatches(mob) then
+			if hum and hrp2 and hum.Health > 0 and worldMatches(mob) then
+				if hum.MaxHealth <= CONFIG.maxMonsterHP then
 					local dist = (hrp2.Position - hrp.Position).Magnitude
 					if dist < maxDist and (not closestDist or dist < closestDist) then
 						closest = mob
 						closestDist = dist
 					end
+				end
 				end
 			end
 		end
@@ -617,12 +630,14 @@ local function getClosestEnemy(maxDist, worldNum)
 			if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj ~= plr.Character then
 				local hum = obj:FindFirstChild("Humanoid")
 				local hrp2 = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head")
-				if hum and hrp2 and hum.Health > 0 and worldMatches(obj) then
+			if hum and hrp2 and hum.Health > 0 and worldMatches(obj) then
+				if hum.MaxHealth <= CONFIG.maxMonsterHP then
 					local dist = (hrp2.Position - hrp.Position).Magnitude
 					if dist < maxDist and (not closestDist or dist < closestDist) then
 						closest = obj
 						closestDist = dist
 					end
+				end
 				end
 			end
 		end
