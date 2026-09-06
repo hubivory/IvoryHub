@@ -6264,7 +6264,9 @@ Library.CreateWindow = function(config)
     minimizeBarCorner.Parent = minimizeBar
 
     closeButton.MouseButton1Click:Connect(function()
-        self:Destroy()
+        Library:AnimateClose(wrapper, uiScale, mainCorner, function()
+            self:Destroy()
+        end)
     end)
 
     minimizeButton.MouseButton1Click:Connect(function()
@@ -6602,10 +6604,46 @@ Library.CreateWindow = function(config)
         end)
     end
 
-    -- ---------------- Entrance animation ----------------
+    -- ---------------- Gradient accent on header ----------------
+    local headerGradient = Instance.new("UIGradient")
+    headerGradient.Rotation = 90
+    headerGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Theme.Blossom),
+        ColorSequenceKeypoint.new(0.5, Theme.BlossomLight),
+        ColorSequenceKeypoint.new(1, Theme.Blossom),
+    })
+    headerGradient.Parent = mainFrame
+    table.insert(Library._GradientAccents, headerGradient)
 
-    tw(wrapper, EASE_SPRING, {GroupTransparency = 0})
-    tw(uiScale, EASE_SPRING, {Scale = 1})
+    task.spawn(function()
+        while headerGradient.Parent do
+            headerGradient.Rotation = (headerGradient.Rotation + 0.2) % 360
+            RunService.Heartbeat:Wait()
+        end
+    end)
+
+    -- ---------------- Accent shimmer on title bar ----------------
+    Library:AddAccentShimmer(titleBar, 3)
+
+    -- ---------------- Floating particles ----------------
+    Library:SpawnFloatingParticles(screenGui, Theme.Blossom, 10)
+
+    -- ---------------- Background blur ----------------
+    Library._BlurFrame = Library:AddBackgroundBlur(screenGui, 0)
+
+    -- ---------------- Status bar ----------------
+    Library:AddStatusBar(mainFrame)
+
+    -- ---------------- Entrance animation ----------------
+    Library:AnimateOpen(wrapper, uiScale, mainCorner)
+
+    -- ---------------- RightShift toggle ----------------
+    table.insert(self._connections, UserInputService.InputBegan:Connect(function(input, processed)
+        if processed then return end
+        if input.KeyCode == Enum.KeyCode.RightShift then
+            Library:Toggle()
+        end
+    end))
 
     -- ---------------- Floating mobile buttons (outside the UI) ----------------
     local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
@@ -6780,6 +6818,885 @@ function Library:SetAccent(color)
     if Library.SetAccentColor then
         Library.SetAccentColor(color)
     end
+end
+
+-- ============================================================
+-- IVORY HUB - FULL FEATURE SET
+-- Theme presets, animation, gradient accent, particles, blur,
+-- status bar, player list, server info, settings, config, etc.
+-- ============================================================
+
+-- ============================================================
+-- THEME PRESETS
+-- ============================================================
+Library.ThemePresets = {
+    Zero = {
+        Plum900 = Color3.fromRGB(18, 18, 22),
+        Plum800 = Color3.fromRGB(24, 24, 30),
+        Plum700 = Color3.fromRGB(32, 32, 40),
+        Plum600 = Color3.fromRGB(42, 42, 52),
+        Blossom = Color3.fromRGB(120, 120, 140),
+        BlossomLight = Color3.fromRGB(180, 180, 200),
+        Mauve = Color3.fromRGB(80, 80, 95),
+        Petal = Color3.fromRGB(200, 200, 215),
+        TextPrimary = Color3.fromRGB(240, 240, 245),
+        TextSecondary = Color3.fromRGB(160, 160, 170),
+        TextTertiary = Color3.fromRGB(100, 100, 110),
+    },
+    Sakura = {
+        Plum900 = Color3.fromRGB(16, 9, 13),
+        Plum800 = Color3.fromRGB(30, 17, 23),
+        Plum700 = Color3.fromRGB(46, 25, 33),
+        Plum600 = Color3.fromRGB(64, 36, 46),
+        Blossom = Color3.fromRGB(247, 36, 130),
+        BlossomLight = Color3.fromRGB(255, 200, 217),
+        Mauve = Color3.fromRGB(120, 88, 100),
+        Petal = Color3.fromRGB(255, 226, 233),
+        TextPrimary = Color3.fromRGB(252, 240, 244),
+        TextSecondary = Color3.fromRGB(198, 168, 178),
+        TextTertiary = Color3.fromRGB(140, 112, 122),
+    },
+    Ocean = {
+        Plum900 = Color3.fromRGB(8, 14, 24),
+        Plum800 = Color3.fromRGB(14, 24, 40),
+        Plum700 = Color3.fromRGB(22, 36, 58),
+        Plum600 = Color3.fromRGB(32, 50, 78),
+        Blossom = Color3.fromRGB(40, 140, 230),
+        BlossomLight = Color3.fromRGB(120, 200, 255),
+        Mauve = Color3.fromRGB(60, 90, 130),
+        Petal = Color3.fromRGB(160, 210, 250),
+        TextPrimary = Color3.fromRGB(230, 240, 252),
+        TextSecondary = Color3.fromRGB(150, 175, 210),
+        TextTertiary = Color3.fromRGB(90, 115, 155),
+    },
+    Forest = {
+        Plum900 = Color3.fromRGB(10, 16, 10),
+        Plum800 = Color3.fromRGB(18, 28, 18),
+        Plum700 = Color3.fromRGB(28, 42, 28),
+        Plum600 = Color3.fromRGB(40, 58, 40),
+        Blossom = Color3.fromRGB(60, 180, 80),
+        BlossomLight = Color3.fromRGB(140, 225, 150),
+        Mauve = Color3.fromRGB(60, 100, 65),
+        Petal = Color3.fromRGB(170, 230, 175),
+        TextPrimary = Color3.fromRGB(230, 245, 230),
+        TextSecondary = Color3.fromRGB(150, 185, 155),
+        TextTertiary = Color3.fromRGB(90, 125, 95),
+    },
+    Sunset = {
+        Plum900 = Color3.fromRGB(20, 10, 8),
+        Plum800 = Color3.fromRGB(36, 18, 14),
+        Plum700 = Color3.fromRGB(54, 28, 20),
+        Plum600 = Color3.fromRGB(74, 40, 28),
+        Blossom = Color3.fromRGB(255, 120, 40),
+        BlossomLight = Color3.fromRGB(255, 190, 120),
+        Mauve = Color3.fromRGB(150, 80, 55),
+        Petal = Color3.fromRGB(255, 215, 180),
+        TextPrimary = Color3.fromRGB(252, 242, 235),
+        TextSecondary = Color3.fromRGB(200, 160, 140),
+        TextTertiary = Color3.fromRGB(140, 100, 85),
+    },
+    Purple = {
+        Plum900 = Color3.fromRGB(12, 8, 20),
+        Plum800 = Color3.fromRGB(22, 14, 36),
+        Plum700 = Color3.fromRGB(34, 22, 54),
+        Plum600 = Color3.fromRGB(48, 32, 74),
+        Blossom = Color3.fromRGB(140, 80, 240),
+        BlossomLight = Color3.fromRGB(200, 160, 255),
+        Mauve = Color3.fromRGB(90, 60, 140),
+        Petal = Color3.fromRGB(215, 190, 255),
+        TextPrimary = Color3.fromRGB(242, 235, 252),
+        TextSecondary = Color3.fromRGB(175, 155, 210),
+        TextTertiary = Color3.fromRGB(115, 95, 155),
+    },
+    Midnight = {
+        Plum900 = Color3.fromRGB(6, 6, 12),
+        Plum800 = Color3.fromRGB(12, 12, 22),
+        Plum700 = Color3.fromRGB(20, 20, 34),
+        Plum600 = Color3.fromRGB(30, 30, 48),
+        Blossom = Color3.fromRGB(100, 100, 220),
+        BlossomLight = Color3.fromRGB(160, 160, 250),
+        Mauve = Color3.fromRGB(60, 60, 120),
+        Petal = Color3.fromRGB(180, 180, 240),
+        TextPrimary = Color3.fromRGB(220, 220, 245),
+        TextSecondary = Color3.fromRGB(140, 140, 175),
+        TextTertiary = Color3.fromRGB(85, 85, 120),
+    },
+    Rose = {
+        Plum900 = Color3.fromRGB(18, 8, 12),
+        Plum800 = Color3.fromRGB(32, 14, 22),
+        Plum700 = Color3.fromRGB(48, 22, 34),
+        Plum600 = Color3.fromRGB(66, 32, 48),
+        Blossom = Color3.fromRGB(220, 60, 100),
+        BlossomLight = Color3.fromRGB(255, 150, 175),
+        Mauve = Color3.fromRGB(130, 65, 85),
+        Petal = Color3.fromRGB(255, 200, 215),
+        TextPrimary = Color3.fromRGB(250, 238, 242),
+        TextSecondary = Color3.fromRGB(195, 155, 170),
+        TextTertiary = Color3.fromRGB(135, 95, 110),
+    },
+    Gold = {
+        Plum900 = Color3.fromRGB(18, 14, 6),
+        Plum800 = Color3.fromRGB(32, 24, 10),
+        Plum700 = Color3.fromRGB(48, 36, 16),
+        Plum600 = Color3.fromRGB(66, 50, 24),
+        Blossom = Color3.fromRGB(240, 190, 40),
+        BlossomLight = Color3.fromRGB(255, 225, 120),
+        Mauve = Color3.fromRGB(150, 115, 50),
+        Petal = Color3.fromRGB(255, 235, 170),
+        TextPrimary = Color3.fromRGB(252, 248, 235),
+        TextSecondary = Color3.fromRGB(200, 180, 140),
+        TextTertiary = Color3.fromRGB(140, 120, 80),
+    },
+}
+
+function Library:ApplyThemePreset(presetName)
+    local preset = Library.ThemePresets[presetName]
+    if not preset then return end
+    for k, v in pairs(preset) do
+        Theme[k] = v
+    end
+    Library._AccentColor = preset.Blossom
+    local screenGui = Library.ScreenGui
+    if not screenGui then return end
+    for _, desc in ipairs(screenGui:GetDescendants()) do
+        pcall(function()
+            if desc:IsA("Frame") or desc:IsA("ScrollingFrame") or desc:IsA("CanvasGroup") then
+                for tokenName, color in pairs(preset) do
+                    if desc.BackgroundColor3 == Theme[tokenName] or (desc.Name and string.find(desc.Name, tokenName)) then
+                        desc.BackgroundColor3 = color
+                    end
+                end
+            end
+            if desc:IsA("TextLabel") or desc:IsA("TextButton") or desc:IsA("TextBox") then
+                if desc.TextColor3 then
+                    for _, key in ipairs({"TextPrimary", "TextSecondary", "TextTertiary"}) do
+                        if desc.TextColor3 == Theme[key] then
+                            desc.TextColor3 = preset[key]
+                        end
+                    end
+                end
+            end
+        end)
+    end
+    if Library.SetAccentColor then
+        Library.SetAccentColor(preset.Blossom)
+    end
+end
+
+-- ============================================================
+-- ANIMATION SPEED MULTIPLIER
+-- ============================================================
+Library.AnimationSpeed = 1
+
+Library.AnimationStyle = "Drop"
+
+Library.AnimationStyles = {
+    Drop = { open = "DropBounce", close = "DropBounce" },
+    Spin = { open = "Spin", close = "Spin" },
+    Ripple = { open = "Ripple", close = "Ripple" },
+    Swing = { open = "Swing", close = "Swing" },
+}
+
+function Library:AnimateOpen(wrapper, uiScale, mainCorner)
+    local speed = Library.AnimationSpeed
+    local style = Library.AnimationStyle
+
+    if style == "Spin" then
+        wrapper.GroupTransparency = 1
+        uiScale.Scale = 0.3
+        wrapper.Rotation = 180
+        tw(wrapper, TweenInfo.new(0.45 * speed, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {GroupTransparency = 0, Rotation = 0})
+        tw(uiScale, TweenInfo.new(0.45 * speed, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1})
+    elseif style == "Ripple" then
+        wrapper.GroupTransparency = 1
+        uiScale.Scale = 0
+        tw(wrapper, TweenInfo.new(0.5 * speed, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {GroupTransparency = 0})
+        tw(uiScale, TweenInfo.new(0.5 * speed, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {Scale = 1})
+    elseif style == "Swing" then
+        wrapper.GroupTransparency = 1
+        uiScale.Scale = 0.7
+        wrapper.Rotation = -15
+        tw(wrapper, TweenInfo.new(0.5 * speed, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {GroupTransparency = 0, Rotation = 0})
+        tw(uiScale, TweenInfo.new(0.5 * speed, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1})
+    else
+        -- Drop-Bounce (default)
+        wrapper.GroupTransparency = 1
+        uiScale.Scale = 0.5
+        wrapper.Position = UDim2.new(0.5, 0, -0.5, 0)
+        tw(wrapper, TweenInfo.new(0.3 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {GroupTransparency = 0})
+        tw(wrapper, TweenInfo.new(0.5 * speed, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, 0, 0.5, 0)})
+        tw(uiScale, TweenInfo.new(0.4 * speed, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1})
+    end
+end
+
+function Library:AnimateClose(wrapper, uiScale, mainCorner, callback)
+    local speed = Library.AnimationSpeed
+    local style = Library.AnimationStyle
+
+    if style == "Spin" then
+        tw(wrapper, TweenInfo.new(0.3 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {GroupTransparency = 1, Rotation = 180})
+        tw(uiScale, TweenInfo.new(0.3 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0.3})
+        task.delay(0.35 * speed, function() if callback then callback() end end)
+    elseif style == "Ripple" then
+        tw(wrapper, TweenInfo.new(0.3 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {GroupTransparency = 1})
+        tw(uiScale, TweenInfo.new(0.3 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0})
+        task.delay(0.35 * speed, function() if callback then callback() end end)
+    elseif style == "Swing" then
+        tw(wrapper, TweenInfo.new(0.35 * speed, Enum.EasingStyle.Back, Enum.EasingDirection.In), {GroupTransparency = 1, Rotation = 15})
+        tw(uiScale, TweenInfo.new(0.35 * speed, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Scale = 0.7})
+        task.delay(0.4 * speed, function() if callback then callback() end end)
+    else
+        -- Drop-Bounce (default)
+        tw(wrapper, TweenInfo.new(0.25 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {GroupTransparency = 1})
+        tw(wrapper, TweenInfo.new(0.4 * speed, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Position = UDim2.new(0.5, 0, 1.2, 0)})
+        tw(uiScale, TweenInfo.new(0.3 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0.5})
+        task.delay(0.45 * speed, function() if callback then callback() end end)
+    end
+end
+
+-- ============================================================
+-- GRADIENT ACCENT
+-- ============================================================
+Library._GradientAccents = {}
+
+-- ============================================================
+-- FLOATING PARTICLES
+-- ============================================================
+Library._FloatingParticles = {}
+
+function Library:SpawnFloatingParticles(screenGui, color, count)
+    count = count or 12
+    for i = 1, count do
+        local particle = Instance.new("Frame")
+        particle.Name = "FloatingParticle"
+        particle.AnchorPoint = Vector2.new(0.5, 0.5)
+        particle.Size = UDim2.new(0, math.random(3, 6), 0, math.random(3, 6))
+        particle.BackgroundColor3 = color or Theme.Blossom
+        particle.BackgroundTransparency = math.random(85, 95) / 100
+        particle.BorderSizePixel = 0
+        particle.ZIndex = 0
+        particle.Position = UDim2.new(math.random(), 0, 1.1, 0)
+        particle.Parent = screenGui
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = Radius.Pill
+        corner.Parent = particle
+
+        table.insert(Library._FloatingParticles, particle)
+
+        task.spawn(function()
+            local speed = math.random(20, 50) / 10
+            local drift = (math.random() - 0.5) * 0.3
+            local startX = particle.Position.X.Scale
+            while particle.Parent do
+                local dt = RunService.Heartbeat:Wait()
+                local newPos = particle.Position.Y.Scale - dt / speed
+                if newPos < -0.1 then
+                    newPos = 1.1
+                    startX = math.random()
+                end
+                particle.Position = UDim2.new(
+                    startX + math.sin(tick() * drift) * 0.05, 0,
+                    newPos, 0
+                )
+            end
+        end)
+    end
+end
+
+-- ============================================================
+-- ACCENT SHIMMER
+-- ============================================================
+function Library:AddAccentShimmer(parent, zIndex)
+    local shimmer = Instance.new("Frame")
+    shimmer.Name = "AccentShimmer"
+    shimmer.AnchorPoint = Vector2.new(0, 0.5)
+    shimmer.Position = UDim2.new(-0.3, 0, 0.5, 0)
+    shimmer.Size = UDim2.new(0.15, 0, 1.5, 0)
+    shimmer.Rotation = 20
+    shimmer.BackgroundColor3 = Color3.new(1, 1, 1)
+    shimmer.BackgroundTransparency = 0.92
+    shimmer.BorderSizePixel = 0
+    shimmer.ZIndex = zIndex or 3
+    shimmer.Parent = parent
+
+    local shimmerCorner = Instance.new("UICorner")
+    shimmerCorner.CornerRadius = Radius.Pill
+    shimmerCorner.Parent = shimmer
+
+    task.spawn(function()
+        while shimmer.Parent do
+            shimmer.Position = UDim2.new(-0.3, 0, 0.5, 0)
+            tw(shimmer, TweenInfo.new(2.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                Position = UDim2.new(1.3, 0, 0.5, 0)
+            })
+            task.wait(4)
+        end
+    end)
+
+    return shimmer
+end
+
+-- ============================================================
+-- BACKGROUND BLUR
+-- ============================================================
+function Library:AddBackgroundBlur(screenGui, intensity)
+    intensity = intensity or 0.5
+    local blurFrame = Instance.new("Frame")
+    blurFrame.Name = "BackgroundBlur"
+    blurFrame.Size = UDim2.new(1, 0, 1, 0)
+    blurFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+    blurFrame.BackgroundTransparency = 1 - intensity
+    blurFrame.BorderSizePixel = 0
+    blurFrame.ZIndex = -2
+    blurFrame.Parent = screenGui
+
+    pcall(function()
+        local blur = Instance.new("UIBlurEffect")
+        blur.Size = math.floor(intensity * 30)
+        blur.Parent = blurFrame
+    end)
+
+    return blurFrame
+end
+
+-- ============================================================
+-- STATUS BAR
+-- ============================================================
+function Library:AddStatusBar(mainFrame)
+    local statusBar = Instance.new("Frame")
+    statusBar.Name = "StatusBar"
+    statusBar.Size = UDim2.new(1, 0, 0, 22)
+    statusBar.Position = UDim2.new(0, 0, 1, -22)
+    statusBar.BackgroundColor3 = Theme.Plum900
+    statusBar.BackgroundTransparency = 0.3
+    statusBar.BorderSizePixel = 0
+    statusBar.ZIndex = 4
+    statusBar.Parent = mainFrame
+
+    local statusCorner = Instance.new("UICorner")
+    statusCorner.CornerRadius = UDim.new(0, 10)
+    statusCorner.Parent = statusBar
+
+    local statusLayout = Instance.new("UIListLayout")
+    statusLayout.FillDirection = Enum.FillDirection.Horizontal
+    statusLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    statusLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    statusLayout.Padding = UDim.new(0, 12)
+    statusLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    statusLayout.Parent = statusBar
+
+    local function makeStatusLabel(name, text, order)
+        local label = Instance.new("TextLabel")
+        label.Name = name
+        label.LayoutOrder = order
+        label.BackgroundTransparency = 1
+        label.Size = UDim2.new(0, 0, 1, 0)
+        label.AutomaticSize = Enum.AutomaticSize.X
+        label.Font = Font.Body
+        label.TextSize = TextSizes.XS
+        label.TextColor3 = Theme.TextTertiary
+        label.Text = text
+        label.ZIndex = 4
+        label.Parent = statusBar
+        return label
+    end
+
+    local function makeSep(order)
+        local sep = Instance.new("Frame")
+        sep.LayoutOrder = order
+        sep.Size = UDim2.new(0, 1, 0, 10)
+        sep.BackgroundColor3 = Theme.TextTertiary
+        sep.BackgroundTransparency = 0.6
+        sep.BorderSizePixel = 0
+        sep.ZIndex = 4
+        sep.Parent = statusBar
+        return sep
+    end
+
+    makeStatusLabel("StatusLeft", "IVORY HUB", 1)
+    makeSep(2)
+    makeStatusLabel("StatusVersion", "v2.0", 3)
+    makeSep(4)
+    local fpsLabel = makeStatusLabel("StatusFPS", "0 FPS", 5)
+    makeSep(6)
+    local pingLabel = makeStatusLabel("StatusPing", "0ms", 7)
+
+    task.spawn(function()
+        while statusBar.Parent do
+            if Library.GetFPS then
+                fpsLabel.Text = tostring(Library.GetFPS()) .. " FPS"
+            end
+            if Library.GetPing then
+                local ping = Library.GetPing()
+                if ping then
+                    pingLabel.Text = tostring(ping) .. "ms"
+                end
+            end
+            task.wait(0.5)
+        end
+    end)
+
+    return statusBar
+end
+
+-- ============================================================
+-- Typewriter Effect
+-- ============================================================
+-- Library:Typewriter(textLabel, text, speed)
+--   Animates text character-by-character into a TextLabel.
+--   Returns the coroutine so callers can :Cancel() it.
+--   speed = seconds per character (default 0.03)
+
+function Library:Typewriter(label, text, speed)
+    if not label then return nil end
+    text = tostring(text or "")
+    speed = tonumber(speed) or 0.03
+
+    local cor = coroutine.create(function()
+        label.Text = ""
+        for i = 1, #text do
+            label.Text = string.sub(text, 1, i)
+            task.wait(speed)
+        end
+    end)
+    coroutine.resume(cor)
+    return cor
+end
+
+-- ============================================================
+-- Text Customization
+-- ============================================================
+-- Library:SetTextAppearance(config)
+--   Applies font, text size, and text color to every TextLabel and
+--   TextButton currently inside the ScreenGui. Call again after
+--   adding new elements to re-apply.
+--
+--   config = {
+--       Font      = Enum.Font.GothamBold,
+--       TextSize  = 14,
+--       TextColor = Color3.new(1, 1, 1),
+--   }
+--   All fields are optional; omitted fields leave existing values.
+
+function Library:SetTextAppearance(config)
+    config = config or {}
+    local screenGui = Library.ScreenGui
+    if not screenGui then return end
+
+    for _, desc in ipairs(screenGui:GetDescendants()) do
+        if desc:IsA("TextLabel") or desc:IsA("TextButton") then
+            pcall(function()
+                if config.Font then desc.Font = config.Font end
+                if config.TextSize then desc.TextSize = config.TextSize end
+                if config.TextColor then desc.TextColor3 = config.TextColor end
+            end)
+        end
+    end
+end
+
+-- ============================================================
+-- EXAMPLE USAGE / AUTO-TAB SETUP
+-- ============================================================
+-- When Library.CreateWindow is called, it returns the Window object.
+-- The consuming script calls Window:CreateTab("...") to get tabs.
+-- Below is a helper that auto-creates the Main, Visuals, and Settings
+-- tabs with all the built-in features wired up.
+-- ============================================================
+
+function Library.SetupDefaultTabs(Window)
+    -- ===================== MAIN TAB =====================
+    local MainTab = Window:CreateTab("Main")
+    local MainSection = MainTab:CreateSection("Player List")
+
+    local function refreshPlayerList()
+        for _, child in ipairs(MainSection.Instance:GetChildren()) do
+            if child:IsA("Frame") then
+                child:Destroy()
+            end
+        end
+        for _, player in ipairs(Players:GetPlayers()) do
+            local row = MainSection:CreateButton({
+                Name = player.DisplayName .. " (@" .. player.Name .. ")",
+                Callback = function()
+                    if Library.Notify then
+                        Library.Notify({
+                            Title = "Player Info",
+                            Content = "Name: " .. player.Name .. "\nDisplayName: " .. player.DisplayName .. "\nUserId: " .. player.UserId,
+                            Duration = 4,
+                        })
+                    end
+                end,
+            })
+
+            local tpBtn = MainSection:CreateButton({
+                Name = "TP to " .. player.DisplayName,
+                Callback = function()
+                    local lp = Players.LocalPlayer
+                    local char = lp and lp.Character
+                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                    local targetChar = player.Character
+                    local targetHRP = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+                    if hrp and targetHRP then
+                        hrp.CFrame = targetHRP.CFrame + Vector3.new(3, 0, 0)
+                        if Library.Notify then
+                            Library.Notify({
+                                Title = "Teleported",
+                                Content = "Teleported to " .. player.DisplayName,
+                                Duration = 2,
+                            })
+                        end
+                    end
+                end,
+            })
+        end
+    end
+
+    refreshPlayerList()
+
+    MainSection:CreateButton({
+        Name = "Refresh Player List",
+        Callback = refreshPlayerList,
+    })
+
+    -- ===================== VISUALS TAB =====================
+    local VisualsTab = Window:CreateTab("Visuals")
+    local VisualsSection = VisualsTab:CreateSection("Server Info")
+
+    local placeId = game.PlaceId or 0
+    local jobId = game.JobId or "N/A"
+    local serverPlayers = #Players:GetPlayers()
+    local maxPlayers = Players.MaxPlayers or 0
+
+    VisualsSection:CreateParagraph({
+        Title = "Server Details",
+        Content = "Place ID: " .. tostring(placeId) .. "\nJob ID: " .. string.sub(jobId, 1, 20) .. "...\nPlayers: " .. serverPlayers .. "/" .. maxPlayers .. "\nGame: " .. (game:GetService("MarketplaceService"):GetProductInfo(placeId).Name or "Unknown"),
+    })
+
+    -- ===================== SETTINGS TAB =====================
+    local SettingsTab = Window:CreateTab("Settings")
+
+    -- Theme Presets Section
+    local ThemeSection = SettingsTab:CreateSection("Theme Presets")
+
+    local themeNames = {}
+    for name in pairs(Library.ThemePresets) do
+        table.insert(themeNames, name)
+    end
+    table.sort(themeNames)
+
+    ThemeSection:CreateDropdown({
+        Name = "Theme Preset",
+        Options = themeNames,
+        Callback = function(value)
+            Library:ApplyThemePreset(value)
+            if Library.Notify then
+                Library.Notify({
+                    Title = "Theme Changed",
+                    Content = "Applied " .. value .. " theme",
+                    Duration = 2,
+                })
+            end
+        end,
+    })
+
+    -- Animation Section
+    local AnimSection = SettingsTab:CreateSection("Animation")
+
+    AnimSection:CreateDropdown({
+        Name = "Animation Style",
+        Options = {"Drop", "Spin", "Ripple", "Swing"},
+        Callback = function(value)
+            Library.AnimationStyle = value
+        end,
+    })
+
+    AnimSection:CreateSlider({
+        Name = "Animation Speed",
+        Min = 0.1,
+        Max = 5,
+        Default = 1,
+        Callback = function(value)
+            Library.AnimationSpeed = value
+        end,
+    })
+
+    -- Appearance Section
+    local AppearanceSection = SettingsTab:CreateSection("Appearance")
+
+    AppearanceSection:CreateToggle({
+        Name = "Gradient Accent",
+        Default = true,
+        Callback = function(value)
+            if Library._GradientAccents then
+                for _, grad in ipairs(Library._GradientAccents) do
+                    pcall(function() grad.Transparency = value and NumberSequence.new(0) or NumberSequence.new(1) end)
+                end
+            end
+        end,
+    })
+
+    AppearanceSection:CreateToggle({
+        Name = "Floating Particles",
+        Default = true,
+        Callback = function(value)
+            if value then
+                Library:SpawnFloatingParticles(Library.ScreenGui, Theme.Blossom, 10)
+            else
+                for _, p in ipairs(Library._FloatingParticles) do
+                    pcall(function() p:Destroy() end)
+                end
+                Library._FloatingParticles = {}
+            end
+        end,
+    })
+
+    AppearanceSection:CreateToggle({
+        Name = "Flat Mode (No Aura)",
+        Default = false,
+        Callback = function(value)
+            local gui = Library.ScreenGui
+            if not gui then return end
+            for _, desc in ipairs(gui:GetDescendants()) do
+                pcall(function()
+                    if desc.Name == "Aura" or desc.Name == "GlowBlob" then
+                        desc.Visible = not value
+                    end
+                end)
+            end
+        end,
+    })
+
+    AppearanceSection:CreateSlider({
+        Name = "Background Blur Intensity",
+        Min = 0,
+        Max = 1,
+        Default = 0,
+        Callback = function(value)
+            local gui = Library.ScreenGui
+            if not gui then return end
+            local blur = gui:FindFirstChild("BackgroundBlur")
+            if blur then
+                blur.BackgroundTransparency = 1 - value
+                local blurEffect = blur:FindFirstChildOfClass("UIBlurEffect")
+                if blurEffect then
+                    blurEffect.Size = math.floor(value * 30)
+                end
+            end
+        end,
+    })
+
+    AppearanceSection:CreateToggle({
+        Name = "Corner Radius (Rounded)",
+        Default = true,
+        Callback = function(value)
+            local gui = Library.ScreenGui
+            if not gui then return end
+            for _, desc in ipairs(gui:GetDescendants()) do
+                pcall(function()
+                    if desc:IsA("UICorner") then
+                        if value then
+                            desc.CornerRadius = Radius.XL
+                        else
+                            desc.CornerRadius = UDim.new(0, 0)
+                        end
+                    end
+                end)
+            end
+        end,
+    })
+
+    -- Text Section
+    local TextSection = SettingsTab:CreateSection("Text")
+
+    local fontOptions = {"GothamBold", "Gotham", "GothamBlack", "GothamMedium", "Code", "Highway", "SciFi", "Cartoon", "Arial"}
+    TextSection:CreateDropdown({
+        Name = "Font Style",
+        Options = fontOptions,
+        Callback = function(value)
+            Library:SetTextAppearance({ Font = Enum.Font[value] })
+        end,
+    })
+
+    TextSection:CreateSlider({
+        Name = "Font Size",
+        Min = 8,
+        Max = 24,
+        Default = 13,
+        Callback = function(value)
+            Library:SetTextAppearance({ TextSize = value })
+        end,
+    })
+
+    local textColor = {1, 1, 1}
+    TextSection:CreateColorPicker({
+        Name = "Text Color",
+        Default = Color3.new(1, 1, 1),
+        Callback = function(color)
+            textColor = {color.R, color.G, color.B}
+            Library:SetTextAppearance({ TextColor = color })
+        end,
+    })
+
+    -- Typewriter Section
+    local TypewriterSection = SettingsTab:CreateSection("Typewriter")
+
+    local typewriterEnabled = false
+    local typewriterSpeed = 0.03
+
+    TypewriterSection:CreateToggle({
+        Name = "Typewriter Effect",
+        Default = false,
+        Callback = function(value)
+            typewriterEnabled = value
+        end,
+    })
+
+    TypewriterSection:CreateSlider({
+        Name = "Typewriter Speed",
+        Min = 0.01,
+        Max = 0.2,
+        Default = 0.03,
+        Callback = function(value)
+            typewriterSpeed = value
+        end,
+    })
+
+    Library._TypewriterEnabled = false
+    Library._TypewriterSpeed = 0.03
+
+    TypewriterSection:CreateButton({
+        Name = "Apply Typewriter to Notifications",
+        Callback = function()
+            Library._TypewriterEnabled = typewriterEnabled
+            Library._TypewriterSpeed = typewriterSpeed
+            if Library.Notify then
+                Library.Notify({
+                    Title = "Typewriter",
+                    Content = "Typewriter effect " .. (typewriterEnabled and "enabled" or "disabled") .. " at " .. tostring(typewriterSpeed) .. "s/char",
+                    Duration = 3,
+                })
+            end
+        end,
+    })
+
+    -- Config Section
+    local ConfigSection = SettingsTab:CreateSection("Configuration")
+
+    ConfigSection:CreateButton({
+        Name = "Save Configuration",
+        Callback = function()
+            if Library.SaveConfiguration then
+                Library.SaveConfiguration("IvoryHub_config")
+            end
+        end,
+    })
+
+    ConfigSection:CreateButton({
+        Name = "Load Configuration",
+        Callback = function()
+            if Library.LoadConfiguration then
+                Library.LoadConfiguration("IvoryHub_config")
+            end
+        end,
+    })
+
+    ConfigSection:CreateButton({
+        Name = "Export Config (Copy)",
+        Callback = function()
+            pcall(function()
+                local config = {}
+                if Library.Flags then
+                    for flagName, controlObject in pairs(Library.Flags) do
+                        pcall(function()
+                            config[flagName] = controlObject.Value
+                        end)
+                    end
+                end
+                local encoded = HttpService:JSONEncode(config)
+                if setclipboard then
+                    setclipboard(encoded)
+                end
+                if Library.Notify then
+                    Library.Notify({
+                        Title = "Config Exported",
+                        Content = "Configuration copied to clipboard (" .. #encoded .. " chars)",
+                        Duration = 3,
+                    })
+                end
+            end)
+        end,
+    })
+
+    ConfigSection:CreateButton({
+        Name = "Import Config (Paste)",
+        Callback = function()
+            pcall(function()
+                local raw = getclipboard and getclipboard() or ""
+                if raw and raw ~= "" then
+                    local config = HttpService:JSONDecode(raw)
+                    if Library.Flags then
+                        for flagName, value in pairs(config) do
+                            local controlObject = Library.Flags[flagName]
+                            if controlObject and controlObject.Set then
+                                controlObject:Set(value)
+                            end
+                        end
+                    end
+                    if Library.Notify then
+                        Library.Notify({
+                            Title = "Config Imported",
+                            Content = "Configuration loaded from clipboard",
+                            Duration = 3,
+                        })
+                    end
+                end
+            end)
+        end,
+    })
+
+    -- Test & Info Section
+    local TestSection = SettingsTab:CreateSection("Test & Info")
+
+    TestSection:CreateButton({
+        Name = "Test Notification",
+        Callback = function()
+            if Library.Notify then
+                Library.Notify({
+                    Title = "Ivory Hub",
+                    Content = "This is a test notification from the Settings tab!",
+                    Duration = 4,
+                })
+            end
+        end,
+    })
+
+    TestSection:CreateButton({
+        Name = "Copy Discord Link",
+        Callback = function()
+            pcall(function()
+                if setclipboard then
+                    setclipboard("https://discord.gg/ivoryhub")
+                end
+                if Library.Notify then
+                    Library.Notify({
+                        Title = "Discord",
+                        Content = "Discord invite link copied to clipboard!",
+                        Duration = 3,
+                    })
+                end
+            end)
+        end,
+    })
+
+    TestSection:CreateButton({
+        Name = "Close GUI (Destroy)",
+        Callback = function()
+            Library:Unload()
+        end,
+    })
+
+    return MainTab, VisualsTab, SettingsTab
 end
 
 getgenv().IvoryHub = Library
