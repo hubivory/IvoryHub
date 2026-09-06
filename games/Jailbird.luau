@@ -1,4 +1,4 @@
--- Join Discord For Free Keys | discord.gg/MCWYKBdB4E
+-- Join Discord For Free Keys! | discord.gg/MCWYKBdB4E
 
 --[[ Jailbird Full Suite - IvoryHubLibrary
   PlaceId: 14939963714 (InMatch) / 14772802900 (Lobby)
