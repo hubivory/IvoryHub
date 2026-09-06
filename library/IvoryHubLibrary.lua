@@ -5591,6 +5591,7 @@ function Window:ToggleMinimize()
             self._closeButton.Visible = false
         end
         if self._cubeMarkHolder then
+            self._cubeMarkHolder.Parent = self.MainFrame
             self._cubeMarkHolder.Visible = true
         end
         if self.Sidebar then
@@ -5625,6 +5626,10 @@ function Window:ToggleMinimize()
         end
         if self._closeButton then
             self._closeButton.Visible = true
+        end
+        if self._cubeMarkHolder then
+            self._cubeMarkHolder.Visible = false
+            self._cubeMarkHolder.Parent = nil
         end
         if self.Sidebar then
             self.Sidebar.Visible = true
@@ -6114,7 +6119,7 @@ Library.CreateWindow = function(config)
     cubeMarkHolder.BackgroundTransparency = 1
     cubeMarkHolder.Visible = false
     cubeMarkHolder.ZIndex = 3
-    cubeMarkHolder.Parent = mainFrame
+    cubeMarkHolder.Parent = nil
     self._cubeMarkHolder = cubeMarkHolder
 
     local cubeLayout = Instance.new("UIListLayout")
@@ -6680,6 +6685,10 @@ Library.ThemePresets = {
 function Library:ApplyThemePreset(presetName)
     local preset = Library.ThemePresets[presetName]
     if not preset then return end
+    local oldTheme = {}
+    for k, v in pairs(Theme) do
+        oldTheme[k] = v
+    end
     for k, v in pairs(preset) do
         Theme[k] = v
     end
@@ -6690,7 +6699,7 @@ function Library:ApplyThemePreset(presetName)
         pcall(function()
             if desc:IsA("Frame") or desc:IsA("ScrollingFrame") or desc:IsA("CanvasGroup") then
                 for tokenName, color in pairs(preset) do
-                    if desc.BackgroundColor3 == Theme[tokenName] or (desc.Name and string.find(desc.Name, tokenName)) then
+                    if oldTheme[tokenName] and desc.BackgroundColor3 == oldTheme[tokenName] then
                         desc.BackgroundColor3 = color
                     end
                 end
@@ -6698,10 +6707,15 @@ function Library:ApplyThemePreset(presetName)
             if desc:IsA("TextLabel") or desc:IsA("TextButton") or desc:IsA("TextBox") then
                 if desc.TextColor3 then
                     for _, key in ipairs({"TextPrimary", "TextSecondary", "TextTertiary"}) do
-                        if desc.TextColor3 == Theme[key] then
+                        if oldTheme[key] and desc.TextColor3 == oldTheme[key] then
                             desc.TextColor3 = preset[key]
                         end
                     end
+                end
+            end
+            if desc:IsA("UIStroke") then
+                if oldTheme.Blossom and desc.Color == oldTheme.Blossom then
+                    desc.Color = preset.Blossom
                 end
             end
         end)
