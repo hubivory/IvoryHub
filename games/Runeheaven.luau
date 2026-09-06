@@ -505,6 +505,10 @@ AutoSection:CreateToggle({
 AutoSection:CreateLabel({ Text = "Current Phase: Idle" })
 local phaseLabel = Tabs.Auto:CreateSection("status")
 local statusLabel = phaseLabel:CreateLabel({ Text = "Waiting..." })
+local statusTextLabel = nil
+pcall(function()
+	statusTextLabel = statusLabel and statusLabel.TextLabel
+end)
 
 -- ═══════════════════════════════════════════════════════════
 -- MISC TAB
@@ -975,7 +979,10 @@ task.spawn(function()
 		local hp, maxHp = getCombatHp()
 		local hpPct = math.floor((hp / maxHp) * 100)
 		local phase = State.Auto_LoopEnabled and autoLoopPhase or "manual"
-		statusLabel:Update({ Text = "HP: " .. hpPct .. "% | Phase: " .. phase })
+		local txt = "HP: " .. hpPct .. "% | Phase: " .. phase
+		if statusTextLabel then
+			statusTextLabel.Text = txt
+		end
 	end
 end)
 
