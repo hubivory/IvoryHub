@@ -5569,7 +5569,36 @@ function Window:ToggleMinimize()
         self._expandedWidth = self._cardWidth
         self._expandedHeight = self._cardHeight
 
-        self.MainFrame.Visible = false
+        tw(self.MainFrame, EASE_SPRING, { Size = UDim2.fromOffset(MINIMIZED_PILL_WIDTH, MINIMIZED_PILL_HEIGHT) })
+        applyShadowMetrics(self, MINIMIZED_PILL_WIDTH, MINIMIZED_PILL_HEIGHT, EASE_SPRING)
+        if self._mainCorner then
+            tw(self._mainCorner, EASE_SPRING, { CornerRadius = Radius.Pill })
+        end
+
+        if self.TitleBar then
+            tw(self.TitleBar, EASE_SPRING, { Size = UDim2.fromScale(1, 1) })
+        end
+        if self._titleMarkHolder then
+            self._titleMarkHolder.Visible = false
+        end
+        if self._titleLabel then
+            self._titleLabel.Visible = false
+        end
+        if self._minimizeButton then
+            self._minimizeButton.Visible = false
+        end
+        if self._closeButton then
+            self._closeButton.Visible = false
+        end
+        if self._cubeMarkHolder then
+            self._cubeMarkHolder.Visible = true
+        end
+        if self.Sidebar then
+            self.Sidebar.Visible = false
+        end
+        if self.ContentArea then
+            self.ContentArea.Visible = false
+        end
     else
         local restoreWidth = self._expandedWidth or self._cardWidth or DEFAULT_WINDOW_WIDTH
         local restoreHeight = self._expandedHeight or self._cardHeight or DEFAULT_WINDOW_HEIGHT
@@ -5577,7 +5606,7 @@ function Window:ToggleMinimize()
         self._cardWidth, self._cardHeight = restoreWidth, restoreHeight
 
         self.MainFrame.Visible = true
-        self.MainFrame.Size = UDim2.fromOffset(restoreWidth, restoreHeight)
+        tw(self.MainFrame, EASE_SPRING, { Size = UDim2.fromOffset(restoreWidth, restoreHeight) })
         applyShadowMetrics(self, restoreWidth, restoreHeight, EASE_SPRING)
         if self._mainCorner then
             tw(self._mainCorner, EASE_SPRING, { CornerRadius = Radius.XL })
@@ -5602,15 +5631,6 @@ function Window:ToggleMinimize()
         end
         if self.ContentArea then
             self.ContentArea.Visible = true
-        end
-        if self.Aura then
-            tw(self.Aura, EASE_QUICK, { BackgroundTransparency = 0.92 })
-        end
-        for _, blob in ipairs(self._glowBlobs or {}) do
-            tw(blob, EASE_QUICK, { BackgroundTransparency = 0 })
-        end
-        for _, bar in ipairs(self._bracketBars or {}) do
-            tw(bar, EASE_QUICK, { BackgroundTransparency = 0.4 })
         end
 
         -- Clamp wrapper position so the restored window stays on-screen and
