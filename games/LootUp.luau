@@ -896,15 +896,19 @@ local function farmLoop()
 				task.wait(0.1)
 			end
 		end
+		if CONFIG.stallDelay > 0 and enemy ~= STATE.lastTarget then
+			task.wait(CONFIG.stallDelay)
+		end
+		STATE.lastTarget = enemy
 		if CONFIG.autoSwing then doSwing() end
 		if CONFIG.autoSkills then
 			if CONFIG.skillSlot1 then doSkill(1) end
 			if CONFIG.skillSlot2 then doSkill(2) end
 			if CONFIG.skillSlot3 then doSkill(3) end
 		end
-		if CONFIG.stallDelay > 0 then task.wait(CONFIG.stallDelay) end
 	else
 		STATE.phase = "searching"
+		STATE.lastTarget = nil
 		local enemies = workspace:FindFirstChild("Enemies")
 		local pool = {}
 		if enemies then
