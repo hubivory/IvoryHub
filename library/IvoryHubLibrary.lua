@@ -5766,134 +5766,13 @@ Library.CreateWindow = function(config)
     -- plain `wrapper = ...` (no `local`) at its actual creation point.
     local wrapper
 
-    local aura = Instance.new("Frame")
-    aura.Name = "Aura"
-    aura.AnchorPoint = Vector2.new(0.5, 0.5)
-    -- Starts at the same screen-center scale wrapper itself starts at, then
-    -- the tracking connection set up once wrapper exists (see below, after
-    -- wrapper's own creation) keeps it synced as the window gets dragged -
-    -- can't read wrapper.Position directly here since wrapper is still nil
-    -- at this point in the function.
-    aura.Position = UDim2.fromScale(0.5, 0.5)
-    aura.Size = UDim2.new(0, self._cardWidth + 260, 0, self._cardHeight + 260)
-    aura.BackgroundColor3 = Theme.Blossom
-    aura.BackgroundTransparency = 1
-    aura.BorderSizePixel = 0
-    -- Negative, not 1: under ZIndexBehavior.Global a nested object's ZIndex
-    -- is compared directly against every OTHER object in the ScreenGui,
-    -- ignoring ancestors entirely - mainFrame's own ZIndex 2 does not lift
-    -- its content above a same-ZIndex ambient effect parented elsewhere.
-    -- Content elements default to ZIndex 1 (unset), so this has to sit
-    -- strictly below that, not tie with it, or it can paint over cards
-    -- buried deep inside the window.
-    aura.ZIndex = -1
-    aura.Parent = screenGui
-    local auraCorner = Instance.new("UICorner")
-    auraCorner.CornerRadius = Radius.Pill
-    auraCorner.Parent = aura
-    local auraScale = Instance.new("UIScale")
-    auraScale.Parent = aura
-    self.Aura = aura
-    tw(aura, EASE_SLOW, { BackgroundTransparency = 0.97 })
-
-    if Library._RegisterAccentBound then
-        Library._RegisterAccentBound(function(color)
-            if aura.Parent then
-                tw(aura, EASE_QUICK, { BackgroundColor3 = color })
-            end
-        end)
-    end
-
-    task.spawn(function()
-        while aura.Parent do
-            tw(auraScale, TweenInfo.new(3.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Scale = 1.08 })
-            tw(aura, TweenInfo.new(3.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.98 })
-            task.wait(3.4)
-            tw(auraScale, TweenInfo.new(3.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Scale = 1 })
-            tw(aura, TweenInfo.new(3.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.97 })
-            task.wait(3.4)
-        end
-    end)
-
-    -- ---------------- Ambient gradient glow ----------------
-    -- Two large soft blobs drifting slowly on independent orbits behind
+    self.Aura = nil
     -- the window, each with its own blossom/petal/mauve UIGradient that
     -- keeps rotating - replaces the old fixed ray-burst spokes with
     -- something softer and genuinely in motion, matching the marketing
     -- site's gradient glow treatment. ZIndex -1 for the same reason as
     -- the aura above.
-    local glowBlobs = {}
-
-    local function makeGlowBlob(size, driftRadius, driftPeriod, startAngle)
-        local blob = Instance.new("Frame")
-        blob.Name = "GlowBlob"
-        blob.AnchorPoint = Vector2.new(0.5, 0.5)
-        -- Starts at the same screen-center scale wrapper starts at (can't
-        -- read wrapper.Position here - wrapper doesn't exist yet at this
-        -- point in CreateWindow). The per-frame loop below re-reads
-        -- wrapper.Position on every frame once it does exist, so from the
-        -- next frame on this orbits the window's current position instead
-        -- of a fixed screen center.
-        blob.Position = UDim2.fromScale(0.5, 0.5)
-        blob.Size = UDim2.fromOffset(size, size)
-        blob.BackgroundColor3 = Theme.Blossom
-        blob.BackgroundTransparency = 0
-        blob.BorderSizePixel = 0
-        blob.ZIndex = -1
-        blob.Parent = screenGui
-
-        local blobCorner = Instance.new("UICorner")
-        blobCorner.CornerRadius = Radius.Pill
-        blobCorner.Parent = blob
-
-        local gradient = Instance.new("UIGradient")
-        gradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Theme.Blossom),
-            ColorSequenceKeypoint.new(0.5, Theme.Petal),
-            ColorSequenceKeypoint.new(1, Theme.Mauve),
-        })
-        gradient.Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0.92),
-            NumberSequenceKeypoint.new(0.5, 0.97),
-            NumberSequenceKeypoint.new(1, 1),
-        })
-        gradient.Parent = blob
-
-        table.insert(glowBlobs, blob)
-
-        if Library._RegisterAccentBound then
-            Library._RegisterAccentBound(function(color)
-                if gradient.Parent then
-                    gradient.Color = ColorSequence.new({
-                        ColorSequenceKeypoint.new(0, color),
-                        ColorSequenceKeypoint.new(0.5, Theme.Petal),
-                        ColorSequenceKeypoint.new(1, Theme.Mauve),
-                    })
-                end
-            end)
-        end
-
-        task.spawn(function()
-            local t = startAngle
-            while blob.Parent do
-                local dt = RunService.Heartbeat:Wait()
-                t = t + dt * (2 * math.pi / driftPeriod)
-                local base = wrapper.Position
-                blob.Position = UDim2.new(
-                    base.X.Scale, base.X.Offset + math.cos(t) * driftRadius,
-                    base.Y.Scale, base.Y.Offset + math.sin(t) * driftRadius
-                )
-                gradient.Rotation = (gradient.Rotation + dt * 8) % 360
-            end
-        end)
-
-        return blob
-    end
-
-    makeGlowBlob(self._cardWidth + 260, 90, 22, 0)
-    makeGlowBlob(self._cardHeight + 200, 70, 17, math.pi)
-
-    self._glowBlobs = glowBlobs
+    self._glowBlobs = {}
 
     -- Wrapper is a CanvasGroup so the whole window (card + shadow bleed) can
     -- fade and scale in as one unit, and so the shadow layers are allowed to
@@ -5947,20 +5826,8 @@ Library.CreateWindow = function(config)
     -- Ambient sakura petals: a sparse layer drifting behind the window,
     -- and a few petals drifting in front of it, parented to a clip frame
     -- inside wrapper so they stay inside the GUI window only.
-    local petalClip = Instance.new("Frame")
-    petalClip.Name = "PetalClip"
-    petalClip.Size = UDim2.new(0, self._cardWidth, 0, self._cardHeight)
-    petalClip.AnchorPoint = Vector2.new(0.5, 0.5)
-    petalClip.Position = UDim2.new(0.5, 0, 0.5, 0)
-    petalClip.BackgroundTransparency = 1
-    petalClip.ClipsDescendants = true
-    petalClip.ZIndex = 50
-    petalClip.Parent = wrapper
-    self._petalClip = petalClip
-
-    local petalBack = createPetalField(petalClip, -1, 30, 1.5, 4, 16, 34)
-    local petalFront = createPetalField(petalClip, 60, 9, 2.5, 5, 26, 46)
-    self._petalFields = { petalBack, petalFront }
+    self._petalClip = nil
+    self._petalFields = {}
 
     -- Petal control API: toggle visibility and adjust count
     function self:SetPetalsEnabled(enabled)
@@ -6043,41 +5910,6 @@ Library.CreateWindow = function(config)
     mainStroke.Transparency = 0.55
     mainStroke.Thickness = 1.2
     mainStroke.Parent = mainFrame
-
-    -- Living glass edge: the highlight slowly drifts around the border.
-    local mainStrokeGradient = Instance.new("UIGradient")
-    mainStrokeGradient.Rotation = 105
-    mainStrokeGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(0.5, Theme.Blossom),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255)),
-    })
-    mainStrokeGradient.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 0.15),
-        NumberSequenceKeypoint.new(0.5, 0.85),
-        NumberSequenceKeypoint.new(1, 0.2),
-    })
-    mainStrokeGradient.Parent = mainStroke
-    self._mainStrokeGradient = mainStrokeGradient
-
-    if Library._RegisterAccentBound then
-        Library._RegisterAccentBound(function(color)
-            if mainStrokeGradient.Parent then
-                mainStrokeGradient.Color = ColorSequence.new({
-                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-                    ColorSequenceKeypoint.new(0.5, color),
-                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255)),
-                })
-            end
-        end)
-    end
-
-    task.spawn(function()
-        while mainStroke.Parent do
-            mainStrokeGradient.Rotation = (mainStrokeGradient.Rotation + 0.15) % 360
-            RunService.Heartbeat:Wait()
-        end
-    end)
 
     -- Full-window drag surface: a transparent TextButton covering the entire
     -- mainFrame at ZIndex 1. Interactive elements (buttons, toggles, sliders)
@@ -6491,11 +6323,9 @@ Library.CreateWindow = function(config)
 
 
 
-    -- ---------------- Accent shimmer on title bar ----------------
-    Library:AddAccentShimmer(titleBar, 3)
+
 
     -- ---------------- Floating particles ----------------
-    Library:SpawnFloatingParticles(screenGui, Theme.Blossom, 10)
 
     -- ---------------- Background blur ----------------
     Library._BlurFrame = Library:AddBackgroundBlur(screenGui, 0)
