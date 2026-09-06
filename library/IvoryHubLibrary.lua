@@ -6559,23 +6559,7 @@ Library.CreateWindow = function(config)
         end)
     end
 
-    -- ---------------- Gradient accent on header ----------------
-    local headerGradient = Instance.new("UIGradient")
-    headerGradient.Rotation = 90
-    headerGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Theme.Blossom),
-        ColorSequenceKeypoint.new(0.5, Theme.BlossomLight),
-        ColorSequenceKeypoint.new(1, Theme.Blossom),
-    })
-    headerGradient.Parent = mainFrame
-    table.insert(Library._GradientAccents, headerGradient)
 
-    task.spawn(function()
-        while headerGradient.Parent do
-            headerGradient.Rotation = (headerGradient.Rotation + 0.2) % 360
-            RunService.Heartbeat:Wait()
-        end
-    end)
 
     -- ---------------- Accent shimmer on title bar ----------------
     Library:AddAccentShimmer(titleBar, 3)
