@@ -894,7 +894,7 @@ local espDropdown
 do
 	local tab = Window:CreateTab("combat")
 
-	DiscordLabel = tab:CreateSection("Discord"):CreateLabel({ Text = "Join Discord For Free Keys" })
+	DiscordLabel = tab:CreateSection("Discord"):CreateLabel({ Text = "Join Discord For Free Keys!" })
 	tab:CreateSection("Discord"):CreateButton({ Name = "Copy Discord Link", Callback = function()
 		pcall(function() setclipboard("https://discord.gg/MCWYKBdB4E") end)
 		Library.Notify({ Title = "Ivory", Content = "Discord Link Copied!", Type = "Success", Duration = 3 })
@@ -1091,7 +1091,7 @@ end
 task.spawn(function()
 	task.wait(2)
 	local purpleColor = Color3.fromRGB(128, 0, 255)
-	local fullText = "Join Discord For Free Keys"
+	local fullText = "Join Discord For Free Keys!"
 	local cursor = "_"
 	local function styleDc()
 		pcall(function()
