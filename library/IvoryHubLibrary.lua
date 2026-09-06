@@ -3022,7 +3022,7 @@ local function NotifyEnsureHolder()
     holder.Name = "LootNotifyHolder"
     holder.ResetOnSpawn = false
     holder.IgnoreGuiInset = true
-    holder.DisplayOrder = 999
+    holder.DisplayOrder = 99999
     holder.Parent = NotifyGetGuiParent()
 
     local container = Instance.new("Frame")
@@ -3855,17 +3855,19 @@ local function createHudScreenGui(name)
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = name
     screenGui.ResetOnSpawn = false
-    screenGui.DisplayOrder = 10000
+    screenGui.DisplayOrder = 99999
     screenGui.IgnoreGuiInset = true
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-    local player = Players.LocalPlayer
-    local playerGui = player and (player:FindFirstChildOfClass("PlayerGui") or player:WaitForChild("PlayerGui"))
-    if playerGui then
-        screenGui.Parent = playerGui
-    else
-        pcall(function()
-            screenGui.Parent = game:GetService("CoreGui")
-        end)
+    local success = pcall(function()
+        screenGui.Parent = game:GetService("CoreGui")
+    end)
+    if not success then
+        local player = Players.LocalPlayer
+        local playerGui = player and (player:FindFirstChildOfClass("PlayerGui") or player:WaitForChild("PlayerGui"))
+        if playerGui then
+            screenGui.Parent = playerGui
+        end
+    end
     end
     return screenGui
 end
@@ -5731,20 +5733,21 @@ Library.CreateWindow = function(config)
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "LootUI"
     screenGui.ResetOnSpawn = false
-    screenGui.DisplayOrder = 9999
+    screenGui.DisplayOrder = 99999
+    screenGui.IgnoreGuiInset = true
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 
-    -- Always parent to PlayerGui for maximum executor compatibility.
-    -- CoreGui parenting can silently fail on Potassium and other executors
-    -- (pcall succeeds but the ScreenGui never renders).
-    local player = Players.LocalPlayer
-    local playerGui = player and (player:FindFirstChildOfClass("PlayerGui") or player:WaitForChild("PlayerGui"))
-    if playerGui then
-        screenGui.Parent = playerGui
-    else
-        pcall(function()
-            screenGui.Parent = game:GetService("CoreGui")
-        end)
+    -- Parent to CoreGui first so the UI renders above the Roblox escape menu.
+    -- PlayerGui fallback if CoreGui parenting fails (some executors).
+    local success = pcall(function()
+        screenGui.Parent = game:GetService("CoreGui")
+    end)
+    if not success then
+        local player = Players.LocalPlayer
+        local playerGui = player and (player:FindFirstChildOfClass("PlayerGui") or player:WaitForChild("PlayerGui"))
+        if playerGui then
+            screenGui.Parent = playerGui
+        end
     end
 
     local self = setmetatable({}, Window)
