@@ -1,5 +1,13 @@
 {
   "name": "ivoryhub",
   "version": "1.0.0",
-  "main": "backend/worker.js"
+  "main": "backend/worker.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "firebase": "^11.6.0",
+    "wrangler": "^3.0.0"
+  }
 }

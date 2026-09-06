@@ -28,114 +28,80 @@ end
 
 wait(0.5)
 
-local repo = "https://raw.githubusercontent.com/joustingmatch/ObsidianUltra/main/"
-local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
-
-local Options = Library.Options
-local Toggles = Library.Toggles
-
-Library.ForceCheckbox = false
-Library.ShowToggleFrameInKeybinds = true
-
-local Window = Library:CreateWindow({
-	Title = "Ivory",
-	NotifySide = "Right",
-	ShowCustomCursor = false,
-	Footer = {
-		"v1.4 |",
-		{ Text = "Blade Ball", Copyable = true },
-		"|",
-		{ Text = tostring(LocalPlayer.UserId), Copyable = true },
-	},
-	CopyableFooter = true,
-	FuzzySearch = true,
-	SearchValues = true,
-	Minimizable = true,
-	MinimizeKeybind = Enum.KeyCode.RightBracket,
-})
---// Patch window icon to use custom image
-local IVORY_ICON = "rbxassetid://79379082636309"
-task.spawn(function()
-	task.wait()
-	local function trySetIcon(parent)
-		for _, gui in ipairs(parent:GetChildren()) do
-			if gui:IsA("ScreenGui") then
-				for _, obj in ipairs(gui:GetDescendants()) do
-					if obj:IsA("ImageLabel") and obj.Size.X.Offset >= 20 and obj.Size.X.Offset <= 40 and obj.Size.Y.Offset >= 20 and obj.Size.Y.Offset <= 40 then
-						local par = obj.Parent
-						if par then
-							for _, sib in ipairs(par:GetChildren()) do
-								if sib:IsA("TextLabel") and sib.Text == "Ivory" then
-									obj.Image = IVORY_ICON
-									obj.ImageRectOffset = Vector2.new(0, 0)
-									obj.ImageRectSize = Vector2.new(0, 0)
-									return true
-								end
-							end
-						end
-					end
-				end
-			end
+local httpGet = function(url)
+	local ok, res = pcall(function()
+		return request({ Url = url, Method = "GET" })
+	end)
+	if ok and res and res.Body then
+		local body = res.Body
+		if body:byte(1) == 0xEF and body:byte(2) == 0xBB and body:byte(3) == 0xBF then
+			body = body:sub(4)
 		end
-		return false
+		return body
 	end
-	pcall(function() trySetIcon(CoreGui) end)
-	pcall(function() trySetIcon(LocalPlayer.PlayerGui) end)
-end)
+	return nil
+end
 
-local Tabs = {
-	Combat = Window:AddTab({ Name = "Combat", Icon = "swords", Description = "Auto parry" }),
-	ESP = Window:AddTab({ Name = "ESP", Icon = "swords", Description = "Ball & player ESP" }),
-	Settings = Window:AddTab({ Name = "Settings", Icon = "swords", Description = "UI settings" }),
-}
+local LIB_SRC = httpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua")
+if not LIB_SRC or #LIB_SRC == 0 then
+	error("[Ivory] Failed to fetch library. Check HTTP support.")
+end
+local Library = loadstring(LIB_SRC)()
+if not Library then
+	error("[Ivory] Failed to compile library")
+end
+
+local Window = Library.CreateWindow({ Name = "Blade Ball" })
+
+local CombatTab = Window:CreateTab("Combat")
+local ESPTab = Window:CreateTab("ESP")
+local SettingsTab = Window:CreateTab("Settings")
 
 -- ═══════════════════════════════════════════════════════════
 -- COMBAT TAB
 -- ═══════════════════════════════════════════════════════════
 
-local Disclaimer1Group = Tabs.Combat:AddLeftGroupbox("Disclaimer!", "alert-triangle")
-Disclaimer1Group:AddLabel('<font color="#FFB7C5"><b>!! Works best at 50 ping or under !!</b></font>', true)
+CombatTab:CreateSection("Disclaimer")
+CombatTab:CreateLabel("!! Works best at 50 ping or under !!")
+CombatTab:CreateLabel("!! Keep Roblox focused for auto parry !!")
+CombatTab:CreateDivider()
 
-local Disclaimer2Group = Tabs.Combat:AddRightGroupbox("Disclaimer!", "alert-triangle")
-Disclaimer2Group:AddLabel('<font color="#FFB7C5"><b>!! Keep Roblox focused for auto parry !!</b></font>', true)
+CombatTab:CreateSection("Auto Parry")
 
-local ParryGroup = Tabs.Combat:AddLeftGroupbox("Auto Parry", "shield")
-
-ParryGroup:AddToggle("AutoParry", {
-	Text = "Auto Parry",
-	Default = true,
-	Tooltip = "Clicks when ball targets you, adapts to ping",
+local AutoParryToggle = CombatTab:CreateToggle({
+	Name = "Auto Parry",
+	CurrentValue = true,
+	TrackActive = true,
+	Flag = "AutoParry",
 })
 
-ParryGroup:AddSlider("ParryDist", {
-	Text = "Parry Distance",
-	Default = 30,
-	Min = 8,
-	Max = 60,
-	Rounding = 0,
+local ParryDistSlider = CombatTab:CreateSlider({
+	Name = "Parry Distance",
+	Range = { 8, 60 },
+	Increment = 1,
+	CurrentValue = 30,
+	Flag = "ParryDist",
 })
 
-ParryGroup:AddSlider("ParryCooldown", {
-	Text = "Cooldown (ms)",
-	Default = 350,
-	Min = 100,
-	Max = 600,
-	Rounding = 0,
+local ParryCooldownSlider = CombatTab:CreateSlider({
+	Name = "Cooldown (ms)",
+	Range = { 100, 600 },
+	Increment = 10,
+	CurrentValue = 350,
+	Flag = "ParryCooldown",
 })
 
-ParryGroup:AddDropdown("PingPreset", {
-	Text = "Your Ping Range",
-	Values = {"50", "75", "100", "125", "150", "175", "200+"},
-	Default = "50",
-	Tooltip = "Tell it your ping so it calibrates better",
+local PingPresetDropdown = CombatTab:CreateDropdown({
+	Name = "Your Ping Range",
+	Options = { "50", "75", "100", "125", "150", "175", "200+" },
+	CurrentOption = "50",
+	Flag = "PingPreset",
 })
 
-ParryGroup:AddButton({
-	Text = "Apply Preset",
-	Func = function()
-		local ping = Options.PingPreset.Value
+CombatTab:CreateButton({
+	Name = "Apply Preset",
+	Callback = function()
+		local ping = Library.Flags.PingPreset and Library.Flags.PingPreset.Value
 		local presets = {
 			["50"]   = { dist = 30, cd = 350 },
 			["75"]   = { dist = 32, cd = 380 },
@@ -147,91 +113,110 @@ ParryGroup:AddButton({
 		}
 		local p = presets[ping]
 		if p then
-			Options.ParryDist:SetValue(p.dist)
-			Options.ParryCooldown:SetValue(p.cd)
+			if Library.Flags.ParryDist then Library.Flags.ParryDist:Set(p.dist) end
+			if Library.Flags.ParryCooldown then Library.Flags.ParryCooldown:Set(p.cd) end
 		end
 	end,
 })
 
-local ClashGroup = Tabs.Combat:AddRightGroupbox("Clash", "zap")
+CombatTab:CreateDivider()
+CombatTab:CreateSection("Clash")
 
-local ClashToggle = ClashGroup:AddToggle("ClashMode", {
-	Text = "Clash Mode",
-	Default = false,
-	Tooltip = "Spams clicks when ON",
+local ClashModeToggle = CombatTab:CreateToggle({
+	Name = "Clash Mode",
+	CurrentValue = false,
+	TrackActive = true,
+	Flag = "ClashMode",
 })
 
-ClashToggle:AddKeyPicker("ClashKeybind", { Default = "V", Text = "Clash keybind" })
+CombatTab:CreateKeybind({
+	Name = "Clash Keybind",
+	CurrentKeybind = "V",
+	Flag = "ClashKeybind",
+	ChangedCallback = function(key) end,
+})
 
-ClashGroup:AddSlider("ClashCPS", {
-	Text = "Clash CPS",
-	Default = 30,
-	Min = 10,
-	Max = 60,
-	Rounding = 0,
-	Tooltip = "Clicks per second during clash mode",
+CombatTab:CreateSlider({
+	Name = "Clash CPS",
+	Range = { 10, 60 },
+	Increment = 1,
+	CurrentValue = 30,
+	Flag = "ClashCPS",
 })
 
 -- ═══════════════════════════════════════════════════════════
 -- ESP TAB
 -- ═══════════════════════════════════════════════════════════
 
-local BallGroup = Tabs.ESP:AddLeftGroupbox("Ball ESP", "circle")
+ESPTab:CreateSection("Ball ESP")
 
-BallGroup:AddToggle("BallESP", {
-	Text = "Ball ESP",
-	Default = true,
+ESPTab:CreateToggle({
+	Name = "Ball ESP",
+	CurrentValue = true,
+	TrackActive = true,
+	Flag = "BallESP",
 })
 
-BallGroup:AddToggle("TargetTag", {
-	Text = "Target Nametag",
-	Default = true,
+ESPTab:CreateToggle({
+	Name = "Target Nametag",
+	CurrentValue = true,
+	TrackActive = true,
+	Flag = "TargetTag",
 })
 
-BallGroup:AddToggle("VelocityTag", {
-	Text = "Velocity Display",
-	Default = true,
+ESPTab:CreateToggle({
+	Name = "Velocity Display",
+	CurrentValue = true,
+	TrackActive = true,
+	Flag = "VelocityTag",
 })
 
-BallGroup:AddSlider("BoxThickness", {
-	Text = "Box Thickness",
-	Default = 5,
-	Min = 1,
-	Max = 10,
-	Rounding = 0,
+ESPTab:CreateSlider({
+	Name = "Box Thickness",
+	Range = { 1, 10 },
+	Increment = 1,
+	CurrentValue = 5,
+	Flag = "BoxThickness",
 })
 
-BallGroup:AddSlider("BoxPadding", {
-	Text = "Box Padding",
-	Default = 10,
-	Min = 0,
-	Max = 30,
-	Rounding = 0,
+ESPTab:CreateSlider({
+	Name = "Box Padding",
+	Range = { 0, 30 },
+	Increment = 1,
+	CurrentValue = 10,
+	Flag = "BoxPadding",
 })
 
-local PlayerGroup = Tabs.ESP:AddLeftGroupbox("Player ESP", "users")
+ESPTab:CreateDivider()
+ESPTab:CreateSection("Player ESP")
 
-PlayerGroup:AddToggle("PlayerESP", {
-	Text = "Player ESP",
-	Default = true,
-	Tooltip = "Highlights all players blueish-purple",
+ESPTab:CreateToggle({
+	Name = "Player ESP",
+	CurrentValue = true,
+	TrackActive = true,
+	Flag = "PlayerESP",
 })
 
 -- ═══════════════════════════════════════════════════════════
 -- SETTINGS TAB
 -- ═══════════════════════════════════════════════════════════
 
-local MenuGroup = Tabs.Settings:AddLeftGroupbox("Menu", "wrench")
-MenuGroup:AddLabel("Menu bind")
-	:AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
+SettingsTab:CreateSection("Menu")
 
-local CreditGroup = Tabs.Settings:AddLeftGroupbox("Credits", "heart")
-local CreditLabel = CreditGroup:AddLabel({ Text = "", Size = 26, DoesWrap = true })
-local CreditTL = CreditLabel.TextLabel
-CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
-CreditTL.Font = Enum.Font.GothamBold
-CreditTL.TextSize = 26
+SettingsTab:CreateKeybind({
+	Name = "Menu Keybind",
+	CurrentKeybind = "RightShift",
+	NoUI = true,
+	Flag = "MenuKeybind",
+	ChangedCallback = function(key)
+		Library.SetMenuKeybind(Enum.KeyCode[key] or Enum.KeyCode.RightShift)
+	end,
+})
 
+SettingsTab:CreateDivider()
+SettingsTab:CreateSection("Credits")
+
+local CreditLabel = SettingsTab:CreateLabel("")
 task.spawn(function()
 	local full = "Made by mommy Crow"
 	local cursor = "_"
@@ -239,49 +224,46 @@ task.spawn(function()
 		local shown = ""
 		for i = 1, #full do
 			shown = shown .. full:sub(i, i)
-			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
+			CreditLabel:Set(shown .. cursor)
 			task.wait(math.random(4, 9) / 100)
 		end
 		task.wait(2)
 		for i = #full, 1, -1 do
 			shown = full:sub(1, i - 1)
-			CreditLabel:SetText(shown .. cursor)
-			CreditTL.TextColor3 = Color3.fromRGB(255, 105, 180)
+			CreditLabel:Set(shown .. cursor)
 			task.wait(math.random(2, 5) / 100)
 		end
 		task.wait(0.8)
 	end
 end)
 
-MenuGroup:AddButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 }) end)
-MenuGroup:AddButton("Unload", function()
-	pcall(function()
-		for _, obj in ipairs(CoreGui:GetChildren()) do
-			if obj.Name == "IvoryBallESP" or obj.Name == "IvoryBallTag" or obj.Name == "IvoryVelTag" or obj.Name == "IvoryPing" or obj.Name == "IvoryClashBtn" then
-				obj:Destroy()
+SettingsTab:CreateButton({
+	Name = "Join Discord",
+	Callback = function()
+		pcall(function() setclipboard("https://discord.gg/ivory") end)
+		Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3 })
+	end,
+})
+
+SettingsTab:CreateButton({
+	Name = "Unload",
+	Callback = function()
+		pcall(function()
+			for _, obj in ipairs(CoreGui:GetChildren()) do
+				if obj.Name == "IvoryBallESP" or obj.Name == "IvoryBallTag" or obj.Name == "IvoryVelTag" or obj.Name == "IvoryPing" or obj.Name == "IvoryClashBtn" then
+					obj:Destroy()
+				end
 			end
-		end
-		for _, plr in ipairs(Players:GetPlayers()) do
-			if plr.Character then
-				local hl = plr.Character:FindFirstChild("IvoryHighlight")
-				if hl then hl:Destroy() end
+			for _, plr in ipairs(Players:GetPlayers()) do
+				if plr.Character then
+					local hl = plr.Character:FindFirstChild("IvoryHighlight")
+					if hl then hl:Destroy() end
+				end
 			end
-		end
-	end)
-	Library:Unload()
-end)
-Library.ToggleKeybind = Options.MenuKeybind
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:SetFolder("IvoryHub")
-SaveManager:SetFolder("IvoryHub/bladeball")
-SaveManager:SetSubFolder("place")
-ThemeManager:ApplyToTab(Tabs["Settings"])
-SaveManager:BuildConfigSection(Tabs["Settings"])
-SaveManager:LoadAutoloadConfig()
+		end)
+		Library.Unload()
+	end,
+})
 
 -- ═══════════════════════════════════════════════════════════
 -- HELPERS
@@ -290,12 +272,14 @@ SaveManager:LoadAutoloadConfig()
 local PINK = Color3.fromRGB(255, 183, 197)
 local PURPLE = Color3.fromRGB(140, 100, 255)
 
-local function HasToggle(name)
-	return Toggles[name] ~= nil
+local function ToggleOn(flagName)
+	local flag = Library.Flags[flagName]
+	return flag ~= nil and flag.Value == true
 end
 
-local function ToggleOn(name)
-	return HasToggle(name) and Toggles[name].Value
+local function GetFlagValue(flagName)
+	local flag = Library.Flags[flagName]
+	return flag and flag.Value or nil
 end
 
 local function GetVisibleBall()
@@ -520,12 +504,12 @@ spawn(function()
 					local vpY = cam.ViewportSize.Y
 					local fov = cam.FieldOfView
 					local pxPerStud = vpY / (2 * dist * math.tan(math.rad(fov / 2)))
-					local boxPx = (ballDiam * pxPerStud) + (Options.BoxPadding and Options.BoxPadding.Value or 10)
+					local boxPx = (ballDiam * pxPerStud) + (GetFlagValue("BoxPadding") or 10)
 
 					BallGui.Size = UDim2.new(0, boxPx, 0, boxPx)
 					BallGui.Adornee = visBall
 					BallGui.Enabled = true
-					BoxStroke.Thickness = Options.BoxThickness and Options.BoxThickness.Value or 5
+					BoxStroke.Thickness = GetFlagValue("BoxThickness") or 5
 					DistLabel.Text = math.floor((visBall.Position - myRoot.Position).Magnitude) .. "m"
 				end
 			else
@@ -583,12 +567,12 @@ local ClashHeld = false
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
 	pcall(function()
-		local kp = Options.ClashKeybind
+		local kp = Library.Flags.ClashKeybind
 		if kp and kp.Value and typeof(kp.Value) == "string" and kp.Value ~= "None" and kp.Value ~= "Unknown" then
 			if input.KeyCode == Enum.KeyCode[kp.Value] then
-				local toggle = Toggles.ClashMode
+				local toggle = Library.Flags.ClashMode
 				if toggle then
-					toggle:SetValue(not toggle.Value)
+					toggle:Set(not toggle.Value, false)
 				end
 			end
 		end
@@ -612,8 +596,8 @@ spawn(function()
 			local now = tick()
 
 			if ToggleOn("AutoParry") then
-				local baseDist = Options.ParryDist and Options.ParryDist.Value or 30
-				local baseCD = Options.ParryCooldown and Options.ParryCooldown.Value or 350
+				local baseDist = GetFlagValue("ParryDist") or 30
+				local baseCD = GetFlagValue("ParryCooldown") or 350
 
 				-- Faster ball = parry from much further away
 				local speed = realBall.AssemblyLinearVelocity.Magnitude
@@ -698,7 +682,7 @@ spawn(function()
 	while true do
 		wait(0.1)
 		pcall(function()
-			if Toggles.ClashMode and Toggles.ClashMode.Value then
+			if ToggleOn("ClashMode") then
 				if isrbxactive() then
 					-- Don't click if mouse is over the menu
 					local mouseOverMenu = false
@@ -706,14 +690,14 @@ spawn(function()
 						local mousePos = UserInputService:GetMouseLocation()
 						local guiObjects = game:GetService("CoreGui"):GetGuiObjectsAtPosition(mousePos.X, mousePos.Y)
 						for _, obj in ipairs(guiObjects) do
-							if obj:FindFirstAncestor("Obsidian") then
+							if obj:FindFirstAncestor("LootUI") then
 								mouseOverMenu = true
 								break
 							end
 						end
 					end)
 					if not mouseOverMenu then
-						local cps = Options.ClashCPS and Options.ClashCPS.Value or 30
+						local cps = GetFlagValue("ClashCPS") or 30
 						local interval = math.max(1 / cps, 0.016)
 						mouse1click()
 						wait(interval)

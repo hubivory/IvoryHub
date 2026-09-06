@@ -6782,5 +6782,6 @@ function Library:SetAccent(color)
     end
 end
 
+getgenv().IvoryHub = Library
 
 return Library

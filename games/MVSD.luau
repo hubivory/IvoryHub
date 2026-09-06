@@ -17,6 +17,7 @@ if getName then
 end
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua"))()
+local Options = Library.Flags
 local Toggles = Library.Toggles or {}
 
 local Players = game:GetService("Players")
@@ -34,8 +35,8 @@ local HttpService = game:GetService("HttpService")
 local Camera = Workspace.CurrentCamera
 local Player = Players.LocalPlayer
 
-local Window = Library:CreateWindow({
-    Title = "Ivory",
+local Window = Library.CreateWindow({
+    Name = "Ivory",
     Width = 720,
     Height = 600,
 })

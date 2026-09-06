@@ -77,7 +77,7 @@ local Library = loadstring(LIB_SRC)()
 if not Library then
 	error("[Ivory] Failed to compile library")
 end
-local Options = Library.Options
+local Options = Library.Flags
 local Toggles = Library.Toggles
 
 local Window = Library.CreateWindow({Name = "Ivory", Width = 460, Height = 360})
@@ -147,8 +147,8 @@ ParrySection:CreateButton({
 		}
 		local p = presets[ping]
 		if p then
-			Options.ParryDist:SetValue(p.dist)
-			Options.ParryCooldown:SetValue(p.cd)
+			Options.ParryDist:Set(p.dist)
+			Options.ParryCooldown:Set(p.cd)
 		end
 	end,
 })

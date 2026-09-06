@@ -323,60 +323,50 @@ local function toTarget(Pos)
 	local speed = 315
 	local origin = hrp.Position
 	local target = RealTarget.Position
-	local flyHeight = math.max(origin.Y, target.Y) + 80
 
-	-- If we're close horizontally or already high enough, just tween directly
-	if math.abs(origin.Y - target.Y) < 30 or (math.abs(origin.X - target.X) < 50 and math.abs(origin.Z - target.Z) < 50) then
-		local tweenInfo = TweenInfo.new(dist / speed, Enum.EasingStyle.Linear)
+	local function tweenTo(cf)
+		local d = (cf.Position - hrp.Position).Magnitude
+		if d < 5 then return end
+		local info = TweenInfo.new(d / speed, Enum.EasingStyle.Linear)
 		pcall(function()
-			tweenActive = TweenService:Create(hrp, tweenInfo, {CFrame = RealTarget})
-			tweenActive:Play()
-		end)
-		return
-	end
-
-	-- Phase 1: Fly straight up to safe height
-	local upEnd = CFrame.new(Vector3.new(origin.X, flyHeight, origin.Z))
-	local upDist = (flyHeight - origin.Y)
-	if upDist > 5 then
-		local upTween = TweenInfo.new(upDist / speed, Enum.EasingStyle.Linear)
-		pcall(function()
-			tweenActive = TweenService:Create(hrp, upTween, {CFrame = upEnd})
+			tweenActive = TweenService:Create(hrp, info, {CFrame = cf})
 			tweenActive:Play()
 			tweenActive.Completed:Wait()
 		end)
 	end
 
-	-- Phase 2: Fly horizontally to target XZ
-	hrp = getHRP()
-	if not hrp then return end
-	local midEnd = CFrame.new(Vector3.new(target.X, flyHeight, target.Z))
-	local hDist = (Vector3.new(target.X, 0, target.Z) - Vector3.new(origin.X, 0, origin.Z)).Magnitude
-	if hDist > 5 then
-		local hTween = TweenInfo.new(hDist / speed, Enum.EasingStyle.Linear)
-		pcall(function()
-			tweenActive = TweenService:Create(hrp, hTween, {CFrame = midEnd})
-			tweenActive:Play()
-			tweenActive.Completed:Wait()
-		end)
-	end
+	-- Raycast to check if path is clear (cast from above ground to avoid floor detection)
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+	rayParams.FilterDescendantsInstances = {lp.Character}
+	local originUp = Vector3.new(origin.X, origin.Y + 15, origin.Z)
+	local targetUp = Vector3.new(target.X, target.Y + 15, target.Z)
+	local dir = (targetUp - originUp)
+	local rayResult = workspace:Raycast(originUp, dir, rayParams)
 
-	-- Phase 3: Drop down to target
-	hrp = getHRP()
-	if not hrp then return end
-	local downDist = (flyHeight - target.Y)
-	if downDist > 5 then
-		local downTween = TweenInfo.new(downDist / speed, Enum.EasingStyle.Linear)
-		pcall(function()
-			tweenActive = TweenService:Create(hrp, downTween, {CFrame = RealTarget})
-			tweenActive:Play()
-			tweenActive.Completed:Wait()
-		end)
-	end
+	if not rayResult then
+		-- Path is clear: ground-level tween directly
+		tweenTo(RealTarget)
+		hrp = getHRP()
+		if hrp then hrp.CFrame = RealTarget end
+	else
+		-- Wall detected: fly up to clear it, tween over, drop down
+		local highestY = math.max(origin.Y, target.Y) + 200
+		local upCF = CFrame.new(Vector3.new(origin.X, highestY, origin.Z))
+		local overCF = CFrame.new(Vector3.new(target.X, highestY, target.Z))
+		local downCF = CFrame.new(target)
 
-	hrp = getHRP()
-	if hrp then
-		hrp.CFrame = RealTarget
+		tweenTo(upCF)
+		hrp = getHRP()
+		if not hrp then return end
+
+		tweenTo(overCF)
+		hrp = getHRP()
+		if not hrp then return end
+
+		tweenTo(downCF)
+		hrp = getHRP()
+		if hrp then hrp.CFrame = RealTarget end
 	end
 end
 
@@ -1061,6 +1051,7 @@ local function getMaterialList()
 	return MaterialList[currentWorld] or {}
 end
 
+warn("[BF] Creating window...")
 local Window = Library.CreateWindow({
 	Name = "Ivory",
 	LoadingTitle = "Ivory Hub",
@@ -1071,14 +1062,18 @@ local Window = Library.CreateWindow({
 		FileName = "Bloxfruits"
 	},
 })
+warn("[BF] Window created")
 
+warn("[BF] Creating tabs...")
 local MainTab = Window:CreateTab("Main", "home")
 local CombatTab = Window:CreateTab("Combat", "swords")
 local TeleportTab = Window:CreateTab("Teleport", "map")
 local VisualsTab = Window:CreateTab("Visuals", "eye")
 local PlayerTab = Window:CreateTab("Player", "user")
 local SettingsTab = Window:CreateTab("Settings", "settings")
+warn("[BF] Tabs created")
 
+warn("[BF] Building MainTab sections...")
 local FarmSub = MainTab:CreateSection("Farming")
 local DiscordGroup = FarmSub:CreateSection("Community")
 DiscordGroup:CreateButton({Name="Join Discord For Dupe", Callback=function()
@@ -2588,9 +2583,13 @@ FruitStockGroup:CreateToggle({Name = "Auto Collect Berry", CurrentValue = false,
 -- ========================================
 -- RACE V4 (Phase 4)
 -- ========================================
+warn("[BF] Building TeleportTab...")
 local RaceV4Sub = TeleportTab:CreateSection("Race V4")
+warn("[BF] RaceV4Sub created")
 local TempleGroup = RaceV4Sub:CreateSection("Temple of Time")
+warn("[BF] TempleGroup created")
 local TrialsGroup = RaceV4Sub:CreateSection("Trials & Training")
+warn("[BF] TrialsGroup created")
 
 TempleGroup:CreateButton({Name="Teleport to Temple", Callback=function()
 	-- Teleport to Temple of Time
@@ -2659,6 +2658,7 @@ TrialsGroup:CreateButton({Name="Auto Complete Trials", Callback=function()
 		CommF:InvokeServer("RaceV4Progress", "Begin")
 	end)
 end})
+warn("[BF] Trials buttons done")
 
 TrialsGroup:CreateToggle({Name = "Auto Look At Moon", CurrentValue = false,
 	Callback = function(v)
@@ -2687,6 +2687,7 @@ TrialsGroup:CreateButton({Name="Teleport to Ancient One", Callback=function()
 		CommF:InvokeServer("requestEntrance", Vector3.new(-12462, 378, -7543))
 	end)
 end})
+warn("[BF] TeleportTab elements done")
 
 local CombatSub = CombatTab:CreateSection("Bounty")
 local BountyGroup = CombatSub:CreateSection("Bounty Farm")
@@ -2709,6 +2710,7 @@ SkillsSet:CreateToggle({Name = "Skill V", CurrentValue = true, Callback = functi
 SkillsSet:CreateToggle({Name = "Skill F", CurrentValue = false, Callback = function(v) STATE.FruitSkills.F = v end })
 
 SkillsGroup:CreateLabel({Text="Uses fruit skills automatically during combat"})
+warn("[BF] CombatTab elements done")
 
 BountyGroup:CreateToggle({Name = "Auto Bounty Farm", CurrentValue = false,
 	Callback = function(v)
@@ -3476,9 +3478,12 @@ MenuGroup:CreateButton({Name="Unload", Callback=function()
 	detachFloat()
 	Library:Unload()
 end})
+warn("[BF] SettingsTab done")
 
-pcall(function()
-	CommF:InvokeServer("Buso")
+task.spawn(function()
+	pcall(function()
+		CommF:InvokeServer("Buso")
+	end)
 end)
 
 Library:Notify({

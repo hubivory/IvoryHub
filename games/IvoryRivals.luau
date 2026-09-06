@@ -147,7 +147,7 @@ if not Library then
 	error("[Ivory] Failed to compile library")
 end
 
-local Options = Library.Options or {}
+local Options = Library.Flags or {}
 local Toggles = Library.Toggles or {}
 getgenv().Toggles = Toggles
 getgenv().Options = Options
@@ -183,8 +183,8 @@ local function applyInstanceUiLayering()
 end
 getgenv().InstanceApplyUiLayering = applyInstanceUiLayering
 
-local Window = Library:CreateWindow({
-    Title = "Ivory Hub",
+local Window = Library.CreateWindow({
+    Name = "Ivory Hub",
     Width = 700,
     Height = 600,
 })

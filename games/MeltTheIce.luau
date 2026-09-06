@@ -212,8 +212,8 @@ local function setInfiniteJump(on)
 	end
 end
 
-local Window = Library:CreateWindow({
-	Title = "Melt The Ice",
+local Window = Library.CreateWindow({
+	Name = "Melt The Ice",
 })
 
 local MainTab = Window:CreateTab({ Name = "Main", Icon = "swords" })
@@ -233,7 +233,7 @@ MeltGroup:CreateToggle("AutoMelt", {
 	Text = "Auto Melt Ice",
 	Default = false,
 	Callback = function(v) STATE.AutoMelt = v end,
-}):AddKeyPicker("AutoMeltKey", {
+}):CreateKeybind("AutoMeltKey", {
 	Default = "None",
 	Text = "Auto Melt Key",
 	Mode = "Toggle",
@@ -245,7 +245,7 @@ SellGroup:CreateToggle("AutoSell", {
 	Text = "Auto Sell",
 	Default = false,
 	Callback = function(v) STATE.AutoSell = v end,
-}):AddKeyPicker("AutoSellKey", {
+}):CreateKeybind("AutoSellKey", {
 	Default = "None",
 	Text = "Auto Sell Key",
 	Mode = "Toggle",
@@ -465,7 +465,7 @@ SpeedGroup:CreateToggle("Noclip", {
 		STATE.Noclip = v
 		setNoclip(v)
 	end,
-}):AddKeyPicker("NoclipKey", {
+}):CreateKeybind("NoclipKey", {
 	Default = "None",
 	Text = "Noclip Key",
 	Mode = "Toggle",
@@ -493,7 +493,7 @@ JumpGroup:CreateToggle("InfJump", {
 		STATE.InfiniteJump = v
 		setInfiniteJump(v)
 	end,
-}):AddKeyPicker("InfJumpKey", {
+}):CreateKeybind("InfJumpKey", {
 	Default = "None",
 	Text = "Infinite Jump Key",
 	Mode = "Toggle",
@@ -511,7 +511,7 @@ ESPGroup:CreateToggle("ESPEnabled", {
 		STATE.ESP = v
 		if v then updateESP() else clearESP() end
 	end,
-}):AddKeyPicker("ESPKey", {
+}):CreateKeybind("ESPKey", {
 	Default = "None",
 	Text = "ESP Key",
 	Mode = "Toggle",
@@ -528,7 +528,7 @@ ESPGroup:CreateToggle("ESPDistance", {
 	end,
 })
 
-ESPGroup:CreateLabel("ESP Color"):AddColorPicker("ESPColor", {
+ESPGroup:CreateLabel("ESP Color"):CreateColorPicker("ESPColor", {
 	Default = Color3.fromRGB(255, 100, 100),
 	Title = "ESP Color",
 	Callback = function(v)
@@ -610,7 +610,7 @@ MenuGroup:CreateSlider("UICornerSlider", {
 	Callback = function(v) Window:SetCornerRadius(v) end,
 })
 MenuGroup:CreateDivider()
-MenuGroup:CreateLabel("Menu bind"):AddKeyPicker("MenuKeybind", {
+MenuGroup:CreateLabel("Menu bind"):CreateKeybind("MenuKeybind", {
 	Default = "RightShift",
 	NoUI = true,
 	Text = "Menu keybind",
