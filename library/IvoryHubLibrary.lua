@@ -6685,10 +6685,14 @@ Library.ThemePresets = {
 function Library:ApplyThemePreset(presetName)
     local preset = Library.ThemePresets[presetName]
     if not preset then return end
-    local oldTheme = {}
-    for k, v in pairs(Theme) do
-        oldTheme[k] = v
+    -- Build reverse map: old Color3 -> token name from current Theme
+    local reverseMap = {}
+    for tokenName, oldColor in pairs(Theme) do
+        if typeof(oldColor) == "Color3" then
+            reverseMap[oldColor] = tokenName
+        end
     end
+    -- Update Theme table with new preset values
     for k, v in pairs(preset) do
         Theme[k] = v
     end
@@ -6698,24 +6702,21 @@ function Library:ApplyThemePreset(presetName)
     for _, desc in ipairs(screenGui:GetDescendants()) do
         pcall(function()
             if desc:IsA("Frame") or desc:IsA("ScrollingFrame") or desc:IsA("CanvasGroup") then
-                for tokenName, color in pairs(preset) do
-                    if oldTheme[tokenName] and desc.BackgroundColor3 == oldTheme[tokenName] then
-                        desc.BackgroundColor3 = color
-                    end
+                local tokenName = reverseMap[desc.BackgroundColor3]
+                if tokenName and preset[tokenName] then
+                    desc.BackgroundColor3 = preset[tokenName]
                 end
             end
             if desc:IsA("TextLabel") or desc:IsA("TextButton") or desc:IsA("TextBox") then
-                if desc.TextColor3 then
-                    for _, key in ipairs({"TextPrimary", "TextSecondary", "TextTertiary"}) do
-                        if oldTheme[key] and desc.TextColor3 == oldTheme[key] then
-                            desc.TextColor3 = preset[key]
-                        end
-                    end
+                local tokenName = reverseMap[desc.TextColor3]
+                if tokenName and preset[tokenName] then
+                    desc.TextColor3 = preset[tokenName]
                 end
             end
             if desc:IsA("UIStroke") then
-                if oldTheme.Blossom and desc.Color == oldTheme.Blossom then
-                    desc.Color = preset.Blossom
+                local tokenName = reverseMap[desc.Color]
+                if tokenName and preset[tokenName] then
+                    desc.Color = preset[tokenName]
                 end
             end
         end)
