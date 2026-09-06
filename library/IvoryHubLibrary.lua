@@ -6161,7 +6161,7 @@ Library.CreateWindow = function(config)
     cubeStatsLabel.Parent = cubeMarkHolder
 
     task.spawn(function()
-        while cubeMarkHolder.Parent do
+        while true do
             if cubeMarkHolder.Visible and Library.GetFPS then
                 local parts = { tostring(Library.GetFPS()) .. " FPS" }
                 local ping = Library.GetPing and Library.GetPing()
