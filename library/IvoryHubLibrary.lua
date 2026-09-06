@@ -3858,15 +3858,14 @@ local function createHudScreenGui(name)
     screenGui.DisplayOrder = 99999
     screenGui.IgnoreGuiInset = true
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-    local success = pcall(function()
-        screenGui.Parent = game:GetService("CoreGui")
-    end)
-    if not success then
-        local player = Players.LocalPlayer
-        local playerGui = player and (player:FindFirstChildOfClass("PlayerGui") or player:WaitForChild("PlayerGui"))
-        if playerGui then
-            screenGui.Parent = playerGui
-        end
+    local player = Players.LocalPlayer
+    local playerGui = player and (player:FindFirstChildOfClass("PlayerGui") or player:WaitForChild("PlayerGui"))
+    if playerGui then
+        screenGui.Parent = playerGui
+    else
+        pcall(function()
+            screenGui.Parent = game:GetService("CoreGui")
+        end)
     end
     return screenGui
 end
@@ -5736,17 +5735,14 @@ Library.CreateWindow = function(config)
     screenGui.IgnoreGuiInset = true
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 
-    -- Parent to CoreGui first so the UI renders above the Roblox escape menu.
-    -- PlayerGui fallback if CoreGui parenting fails (some executors).
-    local success = pcall(function()
-        screenGui.Parent = game:GetService("CoreGui")
-    end)
-    if not success then
-        local player = Players.LocalPlayer
-        local playerGui = player and (player:FindFirstChildOfClass("PlayerGui") or player:WaitForChild("PlayerGui"))
-        if playerGui then
-            screenGui.Parent = playerGui
-        end
+    local player = Players.LocalPlayer
+    local playerGui = player and (player:FindFirstChildOfClass("PlayerGui") or player:WaitForChild("PlayerGui"))
+    if playerGui then
+        screenGui.Parent = playerGui
+    else
+        pcall(function()
+            screenGui.Parent = game:GetService("CoreGui")
+        end)
     end
 
     local self = setmetatable({}, Window)
