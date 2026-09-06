@@ -73,6 +73,7 @@ local GameScripts = {
 	[13771457545] = "games/MVSD.luau",
 	[74102906764176] = "games/GreedyGrowers.luau",
 	[114118947106321] = "games/Runeheaven.luau",
+	[120189115846709] = "games/TTK.luau",
 	-- Add more: [PlaceId] = "games/ScriptName.luau"
 }
 
