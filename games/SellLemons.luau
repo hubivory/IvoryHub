@@ -878,7 +878,7 @@ local function safeNotify(cfg)
 end
 
 TycoonGroup:CreateButton({Name = "Join Discord For Dupe", Callback = function()
-	pcall(function() setclipboard("https://discord.gg/ivory") end)
+	pcall(function() setclipboard("https://discord.gg/H9T7CHBEZX") end)
 	safeNotify({Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3})
 end})
 
