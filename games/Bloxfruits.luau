@@ -337,7 +337,6 @@ local function toTarget(Pos)
 	end
 
 	local done = false
-	local isDropping = false
 
 	toTargetConn = RunService.RenderStepped:Connect(function(dt)
 		if done then return end
@@ -345,8 +344,8 @@ local function toTarget(Pos)
 		if not hrp then done = true; toTargetConn:Disconnect(); toTargetConn = nil; return end
 
 		local current = hrp.Position
-		local toTarget = targetPos - current
-		local dist = toTarget.Magnitude
+		local moveDir = targetPos - current
+		local dist = moveDir.Magnitude
 		if dist < 10 then
 			done = true
 			toTargetConn:Disconnect()
@@ -354,39 +353,9 @@ local function toTarget(Pos)
 			return
 		end
 
-		-- Once dropping, stay dropping
-		if not isDropping then
-			local horizDist = Vector3.new(toTarget.X, 0, toTarget.Z).Magnitude
-			if horizDist < 25 then
-				isDropping = true
-			end
-		end
-
 		local spd = STATE.TweenSpeed or 600
-		local newPos
-
-		if isDropping then
-			-- Drop phase: move straight toward target
-			local dropTarget = targetPos + Vector3.new(0, 30, 0)
-			local dropDir = dropTarget - current
-			local dropStep = math.min(spd * dt, dropDir.Magnitude)
-			if dropDir.Magnitude > 1 then
-				newPos = current + dropDir.Unit * dropStep
-			else
-				newPos = dropTarget
-			end
-		else
-			-- Fly phase: climb to 60, move in XZ toward target
-			local flyY = 60
-			local targetPoint = Vector3.new(targetPos.X, flyY, targetPos.Z)
-			local moveDir = targetPoint - current
-			if moveDir.Magnitude > 1 then
-				local step = math.min(spd * dt, moveDir.Magnitude)
-				newPos = current + moveDir.Unit * step
-			else
-				newPos = targetPoint
-			end
-		end
+		local step = math.min(spd * dt, dist)
+		local newPos = current + (moveDir / dist) * step
 
 		-- Floor: never below ground
 		local rayParams = RaycastParams.new()
@@ -403,7 +372,7 @@ local function toTarget(Pos)
 			newPos = Vector3.new(newPos.X, 10, newPos.Z)
 		end
 
-		hrp.CFrame = CFrame.new(newPos, Vector3.new(targetPos.X, newPos.Y, targetPos.Z))
+		hrp.CFrame = CFrame.new(newPos)
 	end)
 
 	local timeout = dist / speed + 1
