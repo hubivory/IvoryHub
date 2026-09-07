@@ -323,7 +323,7 @@ local function toTarget(Pos)
 		return
 	end
 
-	local speed = 315
+	local speed = 250
 	local origin = hrp.Position
 	local target = RealTarget.Position
 
@@ -338,6 +338,15 @@ local function toTarget(Pos)
 		end)
 	end
 
+	-- Use Humanoid:MoveTo for ground-level movement (less detectable)
+	if dist <= 500 then
+		pcall(function()
+			hum:MoveTo(target)
+		end)
+		task.wait(math.clamp(dist / 16, 0.3, 3))
+		return
+	end
+
 	-- Raycast to check if path is clear (cast from above ground to avoid floor detection)
 	local rayParams = RaycastParams.new()
 	rayParams.FilterType = Enum.RaycastFilterType.Exclude
@@ -350,8 +359,6 @@ local function toTarget(Pos)
 	if not rayResult then
 		-- Path is clear: ground-level tween directly
 		tweenTo(RealTarget)
-		hrp = getHRP()
-		if hrp then hrp.CFrame = RealTarget end
 	else
 		-- Wall detected: fly up to clear it, tween over, drop down
 		local highestY = math.max(origin.Y, target.Y) + 200
@@ -368,8 +375,6 @@ local function toTarget(Pos)
 		if not hrp then return end
 
 		tweenTo(downCF)
-		hrp = getHRP()
-		if hrp then hrp.CFrame = RealTarget end
 	end
 end
 
