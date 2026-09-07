@@ -337,10 +337,6 @@ local function toTarget(Pos)
 		return
 	end
 
-	-- Freeze humanoid so it doesn't walk during tween
-	local hum = getHum()
-	if hum then hum.PlatformStand = true end
-
 	local speed = 1200
 	local done = false
 
@@ -425,8 +421,6 @@ local function toTarget(Pos)
 		elapsed = elapsed + 0.016
 	end
 	if toTargetConn and toTargetConn.Connected then toTargetConn:Disconnect(); toTargetConn = nil end
-	local hum2 = getHum()
-	if hum2 then hum2.PlatformStand = false end
 
 	isMoving = false
 end
@@ -1193,8 +1187,7 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 											local mobPos = mobHRP.Position
 											hrp.CFrame = CFrame.new(mobPos + Vector3.new(0, 30, 5), mobPos)
 											hrp.Velocity = Vector3.zero
-											hrp.RotVelocity = Vector3.zero
-											hum.PlatformStand = true
+										hrp.RotVelocity = Vector3.zero
 										end
 									end
 									task.wait(0.1)
@@ -1246,18 +1239,14 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 											local distToMob = hrp and (hrp.Position - mobHRP.Position).Magnitude or 999
 
 											if distToMob > 20 then
-												local hum = getHum()
-												if hum then hum.PlatformStand = false end
 												toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
 											else
 												hrp = getHRP()
-												local hum = getHum()
-												if hrp and hum then
+												if hrp then
 													local mobPos = mobHRP.Position
 													hrp.CFrame = CFrame.new(mobPos + Vector3.new(0, 30, 5), mobPos)
 													hrp.Velocity = Vector3.zero
 													hrp.RotVelocity = Vector3.zero
-													hum.PlatformStand = true
 												end
 											end
 
