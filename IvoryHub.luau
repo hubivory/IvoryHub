@@ -76,6 +76,7 @@ local GameScripts = {
 	[120189115846709] = "games/TTK.luau",
 	[14939963714] = "games/Jailbird.luau",
 	[14772802900] = "games/Jailbird.luau",
+	[3101667897] = "games/LegendsOfSpeed.luau",
 	-- Add more: [PlaceId] = "games/ScriptName.luau"
 }
 
