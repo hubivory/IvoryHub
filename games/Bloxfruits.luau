@@ -346,70 +346,29 @@ local function toTarget(Pos)
 		if not hrp then done = true; toTargetConn:Disconnect(); toTargetConn = nil; return end
 
 		local current = hrp.Position
-		local dir = (targetPos - current)
-		local flatDir = Vector3.new(dir.X, 0, dir.Z)
-		if flatDir.Magnitude < 3 then
+		local toTarget = targetPos - current
+		local dist = toTarget.Magnitude
+		if dist < 10 then
 			done = true
 			toTargetConn:Disconnect()
 			toTargetConn = nil
 			return
 		end
-		flatDir = flatDir.Unit
 
-		local step = math.min(speed * dt, flatDir.Magnitude)
-		local newPos = current + flatDir * step
+		-- Fly high to clear all obstacles, drop when close
+		local flyHeight = 60
+		local dropDist = 30
+		local newPos
 
-		-- Wall avoidance: raycast forward, slide or go over
-		local rayParams = RaycastParams.new()
-		rayParams.FilterType = Enum.RaycastFilterType.Exclude
-		rayParams.FilterDescendantsInstances = {LocalPlayer.Character}
-		local origin = current + Vector3.new(0, 3, 0)
-
-		-- Cast forward to detect walls
-		local wallRay = workspace:Raycast(origin, flatDir * 6, rayParams)
-		if wallRay then
-			-- Cast up to find wall height
-			local wallTop = workspace:Raycast(wallRay.Position, Vector3.new(0, 100, 0), rayParams)
-			local topY = wallTop and (wallTop.Position.Y + 8) or (current.Y + 30)
-
-			-- Try slide along wall first
-			local normal = wallRay.Normal
-			local slide = flatDir - flatDir:Dot(normal) * normal
-			local slidUp = false
-			if slide.Magnitude > 0.01 then
-				slide = slide.Unit
-				local slideRay = workspace:Raycast(origin, slide * 6, rayParams)
-				if not slideRay then
-					newPos = current + slide * step
-					slidUp = true
-				end
-			end
-
-			-- If slide didn't work, go over the wall
-			if not slidUp then
-				-- Move up above the wall, then forward
-				local upDist = topY - current.Y
-				if upDist > 1 then
-					newPos = current + Vector3.new(0, math.min(upDist + 5, step), 0)
-				else
-					-- Already above wall height, go forward
-					newPos = current + flatDir * step + Vector3.new(0, 5, 0)
-				end
-			end
-		end
-
-		-- Ground follow: always stay above terrain
-		local groundRay = workspace:Raycast(newPos + Vector3.new(0, 100, 0), Vector3.new(0, -300, 0), rayParams)
-		if groundRay then
-			local groundY = groundRay.Position.Y + 5
-			if newPos.Y < groundY then
-				newPos = Vector3.new(newPos.X, groundY, newPos.Z)
-			end
-		end
-
-		-- Never go below water level
-		if newPos.Y < -3 then
-			newPos = Vector3.new(newPos.X, 10, newPos.Z)
+		if dist < dropDist then
+			-- Close to target: drop down to it
+			newPos = targetPos + Vector3.new(0, 30, 0)
+		else
+			-- Far: fly at safe height, move in XZ
+			local flatDir = Vector3.new(toTarget.X, 0, toTarget.Z)
+			if flatDir.Magnitude > 1 then flatDir = flatDir.Unit end
+			local step = math.min(speed * dt, dist)
+			newPos = Vector3.new(current.X + flatDir.X * step, flyHeight, current.Z + flatDir.Z * step)
 		end
 
 		hrp.CFrame = CFrame.new(newPos, Vector3.new(targetPos.X, newPos.Y, targetPos.Z))
