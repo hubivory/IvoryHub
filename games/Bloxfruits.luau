@@ -337,7 +337,7 @@ local function toTarget(Pos)
 		return
 	end
 
-	local speed = 350
+	local speed = 550
 	local done = false
 
 	toTargetConn = RunService.RenderStepped:Connect(function(dt)
