@@ -341,7 +341,7 @@ local function toTarget(Pos)
 	toTargetConn = RunService.RenderStepped:Connect(function(dt)
 		if done then return end
 		hrp = getHRP()
-		if not hrp then done = true; toTargetConn:Disconnect(); toTargetConn = nil; return end
+		if not hrp then done = true; toTargetConn:Disconnect(); toTargetConn = nil; isMoving = false; return end
 
 		local current = hrp.Position
 		local moveDir = targetPos - current
@@ -350,6 +350,7 @@ local function toTarget(Pos)
 			done = true
 			toTargetConn:Disconnect()
 			toTargetConn = nil
+			isMoving = false
 			return
 		end
 
