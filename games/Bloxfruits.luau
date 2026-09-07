@@ -291,10 +291,14 @@ end
 
 local tweenActive = nil
 local isMoving = false
+local toTargetConn = nil
 
 local function toTarget(Pos)
 	if isMoving then return end
 	isMoving = true
+
+	-- Cancel any previous RenderStepped conn
+	if toTargetConn then pcall(function() toTargetConn:Disconnect() end); toTargetConn = nil end
 
 	local hrp = getHRP()
 	if not hrp then isMoving = false return end
@@ -309,7 +313,6 @@ local function toTarget(Pos)
 	end)
 
 	if hum.Health <= 0 then
-		if tweenActive then pcall(function() tweenActive:Cancel() end) end
 		repeat task.wait() until getHum() and getHum().Health > 0
 		task.wait(0.2)
 		hrp = getHRP()
@@ -334,39 +337,49 @@ local function toTarget(Pos)
 		return
 	end
 
-	-- Manual tween via RenderStepped: server sees small per-frame CFrame deltas
-	-- instead of a suspicious TweenService interpolation
 	local speed = 350
-	local conn
 	local done = false
-	local startPos = hrp.Position
 
-	conn = RunService.RenderStepped:Connect(function(dt)
+	toTargetConn = RunService.RenderStepped:Connect(function(dt)
 		if done then return end
 		hrp = getHRP()
-		if not hrp then done = true; conn:Disconnect(); return end
+		if not hrp then done = true; toTargetConn:Disconnect(); toTargetConn = nil; return end
 
 		local current = hrp.Position
 		local remaining = (targetPos - current).Magnitude
 		if remaining < 10 then
 			done = true
-			conn:Disconnect()
+			toTargetConn:Disconnect()
+			toTargetConn = nil
 			return
 		end
 
+		-- Move in XZ toward target, keep Y above ground via raycast
+		local dir = (targetPos - current)
+		local flatDir = Vector3.new(dir.X, 0, dir.Z)
+		if flatDir.Magnitude > 0 then flatDir = flatDir.Unit end
 		local step = math.min(speed * dt, remaining)
-		local direction = (targetPos - current).Unit
-		hrp.CFrame = CFrame.new(current + direction * step, targetPos)
+		local newPos = current + flatDir * step
+
+		-- Raycast down to find ground and stay above it
+		local rayParams = RaycastParams.new()
+		rayParams.FilterType = Enum.RaycastFilterType.Exclude
+		rayParams.FilterDescendantsInstances = {LocalPlayer.Character}
+		local rayResult = workspace:Raycast(newPos + Vector3.new(0, 50, 0), Vector3.new(0, -200, 0), rayParams)
+		if rayResult then
+			newPos = Vector3.new(newPos.X, rayResult.Position.Y + 5, newPos.Z)
+		end
+
+		hrp.CFrame = CFrame.new(newPos, Vector3.new(targetPos.X, newPos.Y, targetPos.Z))
 	end)
 
-	-- Wait until done
 	local timeout = dist / speed + 1
 	local elapsed = 0
 	while not done and elapsed < timeout do
 		task.wait(0.016)
 		elapsed = elapsed + 0.016
 	end
-	if conn and conn.Connected then conn:Disconnect() end
+	if toTargetConn and toTargetConn.Connected then toTargetConn:Disconnect(); toTargetConn = nil end
 
 	isMoving = false
 end
@@ -1149,8 +1162,8 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 							-- Use CheckQuest() to determine what to farm, then go farm it
 							CheckQuest()
 
-							-- Try to accept quest periodically (fire-and-forget)
-							if tick() - lastQuestAttempt >= 3 then
+							-- Only try to accept quest if we haven't recently
+							if tick() - lastQuestAttempt >= 30 then
 								lastQuestAttempt = tick()
 								pcall(function() CommF:InvokeServer("StartQuest", NameQuest, LevelQuest) end)
 							end
