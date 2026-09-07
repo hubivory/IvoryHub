@@ -39,27 +39,30 @@ task.spawn(function()
 	RegisterHit = Net and Net:WaitForChild("RE/RegisterHit", 10)
 end)
 
-local httpGet = function(url)
-	local ok, res = pcall(function()
-		return request({ Url = url, Method = "GET" })
-	end)
-	if ok and res and res.Body then
-		local body = res.Body
-		if body:byte(1) == 0xEF and body:byte(2) == 0xBB and body:byte(3) == 0xBF then
-			body = body:sub(4)
+local httpGet do
+	local fn = request or http_request or (syn and syn.request)
+	if fn then
+		httpGet = function(url)
+			local res = fn({ Url = url, Method = "GET" })
+			return res and res.Body
 		end
-		return body
+	else
+		httpGet = function(url)
+			return game:HttpGet(url, true)
+		end
 	end
-	return nil
 end
 
 local LIB_SRC = httpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua")
 if not LIB_SRC or #LIB_SRC == 0 then
-    error("[Ivory] Failed to fetch library. Check HTTP support.")
+	error("[Ivory] Failed to fetch library. Check HTTP support.")
+end
+if LIB_SRC:byte(1) == 0xEF and LIB_SRC:byte(2) == 0xBB and LIB_SRC:byte(3) == 0xBF then
+	LIB_SRC = LIB_SRC:sub(4)
 end
 local Library = loadstring(LIB_SRC)()
 if not Library then
-    error("[Ivory] Failed to compile library")
+	error("[Ivory] Failed to compile library")
 end
 
 local Monster, NameQuest, LevelQuest, NameCheckQuest, CFrameQ, CFrameMon
@@ -1054,6 +1057,8 @@ end
 warn("[BF] Creating window...")
 local Window = Library.CreateWindow({
 	Name = "Ivory",
+	Width = 720,
+	Height = 600,
 	LoadingTitle = "Ivory Hub",
 	LoadingSubtitle = "Loading...",
 	ConfigurationSaving = {
@@ -1065,20 +1070,28 @@ local Window = Library.CreateWindow({
 warn("[BF] Window created")
 
 warn("[BF] Creating tabs...")
-local MainTab = Window:CreateTab("Main", "home")
-local CombatTab = Window:CreateTab("Combat", "swords")
-local TeleportTab = Window:CreateTab("Teleport", "map")
-local VisualsTab = Window:CreateTab("Visuals", "eye")
-local PlayerTab = Window:CreateTab("Player", "user")
-local SettingsTab = Window:CreateTab("Settings", "settings")
+local CombatTab = Window:CreateTab({ Name = "Combat" })
+local VisualsTab = Window:CreateTab({ Name = "Visuals" })
+local WorldTab = Window:CreateTab({ Name = "World" })
+local MiscTab = Window:CreateTab({ Name = "Misc" })
+local SettingsTab = Window:CreateTab({ Name = "UI Settings" })
 warn("[BF] Tabs created")
 
-warn("[BF] Building MainTab sections...")
-local FarmSub = MainTab:CreateSection("Farming")
+task.spawn(function()
+	while true do
+		pcall(function()
+			Window:SetFooter("v1.4 | Game | " .. LocalPlayer.UserId)
+		end)
+		task.wait(1)
+	end
+end)
+
+warn("[BF] Building CombatTab sections...")
+local FarmSub = CombatTab:CreateSection("Farming")
 local DiscordGroup = FarmSub:CreateSection("Community")
 DiscordGroup:CreateButton({Name="Join Discord For Dupe", Callback=function()
-	pcall(function() setclipboard("https://discord.gg/H9T7CHBEZX") end)
-	Library:Notify({ Title = "Ivory", Description = "Discord link copied!", Type = "Success", Time = 3 })
+	pcall(function() setclipboard("https://discord.gg/ivory") end)
+	Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Type = "success", Duration = 3 })
 end})
 DiscordGroup:CreateLabel({Text="Click above to join our Discord for dupes, updates & more!"})
 
@@ -1285,7 +1298,7 @@ ChestGroup:CreateButton({Name="Collect All Chests", Callback=function()
 				end
 			end
 		end
-		Library:Notify({ Title = "Ivory", Description = "Collected all chests!", Type = "Success", Time = 3 })
+		Library.Notify({ Title = "Ivory", Content = "Collected all chests!", Type = "success", Duration = 3 })
 	end)
 end})
 
@@ -1402,7 +1415,7 @@ local FruitTimerLabel = FruitGroup:CreateLabel("Next fruit in: calculating...")
 
 FruitGroup:CreateButton({Name="Reset Fruit Timer", Callback=function()
 	STATE.LastFruitSeen = os.time()
-	Library:Notify({ Title = "Ivory", Description = "Fruit timer reset! Counting down...", Type = "Success", Time = 3 })
+	Library.Notify({ Title = "Ivory", Content = "Fruit timer reset! Counting down...", Type = "success", Duration = 3 })
 end})
 
 FruitGroup:CreateLabel({Text="Auto Collect: tweens to spawned fruits on map"})
@@ -1483,7 +1496,7 @@ end)
 -- ========================================
 -- EXTENDED FARMING (Phase 1)
 -- ========================================
-local ExtFarmSub = MainTab:CreateSection("Extended")
+local ExtFarmSub = CombatTab:CreateSection("Extended")
 
 -- Boss Farm
 local BossFarmGroup = ExtFarmSub:CreateSection("Boss Farm")
@@ -2133,10 +2146,10 @@ KenGroup:CreateDropdown({Name = "Auto Team", Options = { "Pirates", "Marines" },
 })
 KenGroup:CreateButton({Name="Join Team", Callback=function()
 	pcall(function() CommF:InvokeServer("SetTeam", STATE.AutoTeam) end)
-	Library:Notify({ Title = "Ivory", Description = "Joined " .. STATE.AutoTeam, Type = "Success", Time = 3 })
+	Library.Notify({ Title = "Ivory", Content = "Joined " .. STATE.AutoTeam, Type = "success", Duration = 3 })
 end})
 
-local RaidSub = MainTab:CreateSection("Raids")
+local RaidSub = CombatTab:CreateSection("Raids")
 local RaidGroup = RaidSub:CreateSection("Raid Control")
 local RaidSet = RaidSub:CreateSection("Raid Settings")
 
@@ -2240,7 +2253,7 @@ RaidSet:CreateDropdown({Name = "Raid Type", Options = { "Light", "Dark", "Magma"
 -- ========================================
 -- SEA EVENTS (Phase 2)
 -- ========================================
-local SeaEventSub = MainTab:CreateSection("Sea Events")
+local SeaEventSub = CombatTab:CreateSection("Sea Events")
 local SeaEventGroup = SeaEventSub:CreateSection("Event Farm")
 local SeaEventSettings = SeaEventSub:CreateSection("Settings")
 
@@ -2435,7 +2448,7 @@ SeaEventSettings:CreateSlider({Name = "Farm Height", Range = {5, 50}, Increment 
 -- ========================================
 -- FRUIT SYSTEM (Phase 5)
 -- ========================================
-local FruitSystemSub = MainTab:CreateSection("Fruits+")
+local FruitSystemSub = CombatTab:CreateSection("Fruits+")
 local FruitSniperGroup = FruitSystemSub:CreateSection("Fruit Sniper")
 local FruitStockGroup = FruitSystemSub:CreateSection("Stock Checker")
 
@@ -2454,7 +2467,7 @@ FruitSniperGroup:CreateToggle({Name = "Auto Buy Sniper Fruit", CurrentValue = fa
 							for _, item in ipairs(stock) do
 								if item[1] == STATE.SniperFruit then
 									CommF:InvokeServer("BuyFruit", item[1])
-									Library:Notify({ Title = "Ivory", Description = "Bought " .. item[1] .. "!", Type = "Success", Time = 5 })
+									Library.Notify({ Title = "Ivory", Content = "Bought " .. item[1] .. "!", Type = "success", Duration = 5 })
 									STATE.AutoFruitSniper = false
 									return
 								end
@@ -2493,7 +2506,7 @@ FruitSniperGroup:CreateToggle({Name = "Auto Random Fruit", CurrentValue = false,
 					end)
 
 					if cooldownSeconds > 0 then
-						Library:Notify({ Title = "Ivory", Description = "Random fruit on cooldown — waiting " .. math.ceil(cooldownSeconds / 60) .. " min", Type = "Info", Time = 3 })
+						Library.Notify({ Title = "Ivory", Content = "Random fruit on cooldown — waiting " .. math.ceil(cooldownSeconds / 60) .. " min", Type = "info", Duration = 3 })
 						task.wait(cooldownSeconds + 5)
 					else
 						pcall(function() CommF:InvokeServer("Cousin", "Buy") end)
@@ -2523,7 +2536,7 @@ FruitSniperGroup:CreateButton({Name="Drop All Fruits", Callback=function()
 				end
 			end
 		end
-		Library:Notify({ Title = "Ivory", Description = "Dropped all fruits!", Type = "Success", Time = 3 })
+		Library.Notify({ Title = "Ivory", Content = "Dropped all fruits!", Type = "success", Duration = 3 })
 	end)
 end})
 
@@ -2535,7 +2548,7 @@ FruitStockGroup:CreateButton({Name="Check Fruit Stock", Callback=function()
 			for _, item in ipairs(stock) do
 				msg = msg .. item[1] .. " - $" .. tostring(item[2]) .. "\n"
 			end
-			Library:Notify({ Title = "Ivory", Description = msg, Type = "Info", Time = 10 })
+			Library.Notify({ Title = "Ivory", Content = msg, Type = "info", Duration = 10 })
 		end
 	end)
 end})
@@ -2550,7 +2563,7 @@ FruitStockGroup:CreateButton({Name="Check ADV Stock", Callback=function()
 			for _, item in ipairs(advStock) do
 				msg = msg .. item[1] .. " - $" .. tostring(item[2]) .. "\n"
 			end
-			Library:Notify({ Title = "Ivory", Description = msg, Type = "Info", Time = 10 })
+			Library.Notify({ Title = "Ivory", Content = msg, Type = "info", Duration = 10 })
 		end
 	end)
 end})
@@ -2583,8 +2596,8 @@ FruitStockGroup:CreateToggle({Name = "Auto Collect Berry", CurrentValue = false,
 -- ========================================
 -- RACE V4 (Phase 4)
 -- ========================================
-warn("[BF] Building TeleportTab...")
-local RaceV4Sub = TeleportTab:CreateSection("Race V4")
+warn("[BF] Building WorldTab...")
+local RaceV4Sub = WorldTab:CreateSection("Race V4")
 warn("[BF] RaceV4Sub created")
 local TempleGroup = RaceV4Sub:CreateSection("Temple of Time")
 warn("[BF] TempleGroup created")
@@ -2687,7 +2700,7 @@ TrialsGroup:CreateButton({Name="Teleport to Ancient One", Callback=function()
 		CommF:InvokeServer("requestEntrance", Vector3.new(-12462, 378, -7543))
 	end)
 end})
-warn("[BF] TeleportTab elements done")
+warn("[BF] WorldTab elements done")
 
 local CombatSub = CombatTab:CreateSection("Bounty")
 local BountyGroup = CombatSub:CreateSection("Bounty Farm")
@@ -2944,7 +2957,7 @@ StatsGroup:CreateButton({Name="Reset Stats", Callback=function()
 	pcall(function() CommF:InvokeServer("BuyTrait", "Reset") end)
 end})
 
-local TeleSub1 = TeleportTab:CreateSection("Islands")
+local TeleSub1 = WorldTab:CreateSection("Islands")
 local Sea1Group = TeleSub1:CreateSection("Sea 1")
 local Sea2Group = TeleSub1:CreateSection("Sea 2")
 
@@ -2956,7 +2969,7 @@ for _, island in ipairs({"DarkArea", "Cafe", "Ship", "Usoapp", "Forgotten", "Cur
 	Sea2Group:CreateButton({Name=island, Callback=function() teleportToIsland(island) end})
 end
 
-local TeleSub2 = TeleportTab:CreateSection("NPCs")
+local TeleSub2 = WorldTab:CreateSection("NPCs")
 local QuestNPCGroup = TeleSub2:CreateSection("Quest NPCs")
 local ShopNPCGroup = TeleSub2:CreateSection("Shop NPCs")
 
@@ -3030,10 +3043,7 @@ WorldESP:CreateToggle({Name = "Berry ESP", CurrentValue = false,
 	Callback = function(v) STATE.ESPBerry = v end,
 })
 
-ESPGroup:CreateLabel({Text="ESP Color"})
-ESPGroup:CreateColorPicker({Name = "ESP Color", CurrentColor = Color3.fromRGB(255, 100, 100),
-	Callback = function(v) STATE.ESPColor = v end,
-})
+ESPGroup:CreateLabel({Text = "ESP Color"}):CreateColorPicker("ESPColor", {Default = Color3.fromRGB(255, 100, 100), Callback = function(v) STATE.ESPColor = v end})
 
 local WorldSub = VisualsTab:CreateSection("World")
 local WorldGroup = WorldSub:CreateSection("Lighting")
@@ -3078,10 +3088,10 @@ WorldGroup:CreateButton({Name="Fast Mode", Callback=function()
 		Terrain.WaterTransparency = 1
 		Terrain.WaterReflectance = 0
 	end
-	Library:Notify({ Title = "Ivory", Description = "Fast Mode enabled", Type = "Info", Time = 3 })
+	Library.Notify({ Title = "Ivory", Content = "Fast Mode enabled", Type = "info", Duration = 3 })
 end})
 
-local MoveSub = PlayerTab:CreateSection("Movement")
+local MoveSub = MiscTab:CreateSection("Movement")
 local SpeedGroup = MoveSub:CreateSection("Speed")
 local JumpGroup = MoveSub:CreateSection("Jump")
 
@@ -3112,7 +3122,7 @@ JumpGroup:CreateToggle({Name = "Noclip", CurrentValue = false,
 	Callback = function(v) STATE.Noclip = v; setNoclip(v) end,
 })
 
-local MiscSub = PlayerTab:CreateSection("Misc")
+local MiscSub = MiscTab:CreateSection("Misc")
 local MiscGroup = MiscSub:CreateSection("Utilities")
 
 MiscGroup:CreateToggle({Name = "Walk on Water", CurrentValue = false,
@@ -3171,7 +3181,7 @@ MiscGroup:CreateButton({Name="Redeem All Codes", Callback=function()
 				pcall(function() redeemRemote:InvokeServer(code) end)
 				task.wait(0.2)
 			end
-			Library:Notify({ Title = "Ivory", Description = "Redeemed " .. #codes .. " codes!", Type = "Success", Time = 3 })
+			Library.Notify({ Title = "Ivory", Content = "Redeemed " .. #codes .. " codes!", Type = "success", Duration = 3 })
 		end
 	end)
 end})
@@ -3230,7 +3240,7 @@ MiscGroup:CreateButton({Name="Admin Detection Hop", Callback=function()
 				for _, plr in ipairs(Players:GetPlayers()) do
 					for _, adminName in ipairs(AdminNames) do
 						if plr.Name:lower():find(adminName:lower()) then
-							Library:Notify({ Title = "Ivory", Description = "Admin detected: " .. plr.Name .. " - Hopping!", Type = "Warning", Time = 5 })
+							Library.Notify({ Title = "Ivory", Content = "Admin detected: " .. plr.Name .. " - Hopping!", Type = "warning", Duration = 5 })
 							task.wait(1)
 							-- hop to new server
 							local servers = {}
@@ -3288,14 +3298,14 @@ MiscGroup:CreateButton({Name="Low CPU Mode", Callback=function()
 				obj.Reflectance = 0
 			end
 		end
-		Library:Notify({ Title = "Ivory", Description = "Low CPU mode enabled", Type = "Info", Time = 3 })
+		Library.Notify({ Title = "Ivory", Content = "Low CPU mode enabled", Type = "info", Duration = 3 })
 	end)
 end})
 
 -- ========================================
 -- PLAYER SUBTABS: Infinite Abilities, Buy, Craft
 -- ========================================
-local PlayerMiscSub = PlayerTab:CreateSection("Abilities")
+local PlayerMiscSub = MiscTab:CreateSection("Abilities")
 
 local AbilityGroup = PlayerMiscSub:CreateSection("Infinite Abilities")
 AbilityGroup:CreateToggle({Name = "Infinite Energy", CurrentValue = false,
@@ -3363,7 +3373,7 @@ BuyGroup:CreateDropdown({Name = "Buy Melee", Options = FightingStyleShop, Curren
 BuyGroup:CreateButton({Name="Buy Selected Melee", Callback=function()
 	if STATE.BuyMelee ~= "None" then
 		pcall(function() CommF:InvokeServer("Buy" .. STATE.BuyMelee:gsub("%s+", "")) end)
-		Library:Notify({ Title = "Ivory", Description = "Buying " .. STATE.BuyMelee, Type = "Info", Time = 3 })
+		Library.Notify({ Title = "Ivory", Content = "Buying " .. STATE.BuyMelee, Type = "info", Duration = 3 })
 	end
 end})
 
@@ -3373,7 +3383,7 @@ BuyGroup:CreateDropdown({Name = "Buy Sword", Options = SwordShop, CurrentOption 
 BuyGroup:CreateButton({Name="Buy Selected Sword", Callback=function()
 	if STATE.BuySword ~= "None" then
 		pcall(function() CommF:InvokeServer("Buy" .. STATE.BuySword:gsub("%s+", "")) end)
-		Library:Notify({ Title = "Ivory", Description = "Buying " .. STATE.BuySword, Type = "Info", Time = 3 })
+		Library.Notify({ Title = "Ivory", Content = "Buying " .. STATE.BuySword, Type = "info", Duration = 3 })
 	end
 end})
 
@@ -3383,7 +3393,7 @@ BuyGroup:CreateDropdown({Name = "Buy Accessory", Options = AccessoryShop, Curren
 BuyGroup:CreateButton({Name="Buy Selected Accessory", Callback=function()
 	if STATE.BuyAccessory ~= "None" then
 		pcall(function() CommF:InvokeServer("Buy" .. STATE.BuyAccessory:gsub("%s+", "")) end)
-		Library:Notify({ Title = "Ivory", Description = "Buying " .. STATE.BuyAccessory, Type = "Info", Time = 3 })
+		Library.Notify({ Title = "Ivory", Content = "Buying " .. STATE.BuyAccessory, Type = "info", Duration = 3 })
 	end
 end})
 
@@ -3394,7 +3404,7 @@ CraftGroup:CreateDropdown({Name = "Craft Sea Item", Options = SeaEventShopItems,
 CraftGroup:CreateButton({Name="Craft Selected Item", Callback=function()
 	if STATE.CraftItem ~= "None" then
 		pcall(function() CommF:InvokeServer("CraftItem", STATE.CraftItem) end)
-		Library:Notify({ Title = "Ivory", Description = "Crafting " .. STATE.CraftItem, Type = "Info", Time = 3 })
+		Library.Notify({ Title = "Ivory", Content = "Crafting " .. STATE.CraftItem, Type = "info", Duration = 3 })
 	end
 end})
 
@@ -3404,7 +3414,7 @@ CraftGroup:CreateDropdown({Name = "Change Race", Options = { "Ghoul", "Cyborg" }
 CraftGroup:CreateButton({Name="Buy Race Change", Callback=function()
 	if STATE.ChangeRace ~= "None" then
 		pcall(function() CommF:InvokeServer("Buy" .. STATE.ChangeRace) end)
-		Library:Notify({ Title = "Ivory", Description = "Buying " .. STATE.ChangeRace .. " race", Type = "Info", Time = 3 })
+		Library.Notify({ Title = "Ivory", Content = "Buying " .. STATE.ChangeRace .. " race", Type = "info", Duration = 3 })
 	end
 end})
 
@@ -3418,7 +3428,9 @@ CraftGroup:CreateButton({Name="Buy Geppo", Callback=function()
 	pcall(function() CommF:InvokeServer("BuyHaki", "Geppo") end)
 end})
 
--- Configuration hooks (IvoryHubLibrary does not support these; no-op)
+-- ═══════════════════════════════════════════════════════════
+-- UI SETTINGS TAB
+-- ═══════════════════════════════════════════════════════════
 
 local CreditGroup = SettingsTab:CreateSection("Credits")
 local CreditLabel = CreditGroup:CreateLabel("Made by mommy Crow")
@@ -3451,33 +3463,185 @@ task.spawn(function()
 	end
 end)
 
-local MenuGroup = SettingsTab:CreateSection("Menu")
+local MenuSection = SettingsTab:CreateSection("Menu Settings")
 
-MenuGroup:CreateToggle({Name = "Open Keybind Menu", CurrentValue = false,
+MenuSection:CreateKeybind({
+	Name = "Menu Keybind",
+	CurrentKeybind = "RightShift",
+})
+
+MenuSection:CreateToggle({
+	Name = "Open Keybind Menu",
+	CurrentValue = false,
 	Callback = function(v) if Library.KeybindFrame then Library.KeybindFrame.Visible = v end end,
 })
 
-MenuGroup:CreateButton({Name="Test Notification", Callback=function()
-	Library:Notify({ Title = "Ivory", Description = "Works!", Time = 4 })
+MenuSection:CreateSlider({
+	Name = "FPS Cap",
+	Range = {30, 240},
+	Increment = 10,
+	CurrentValue = 240,
+	Callback = function(v) pcall(function() settings().Rendering.FrameRateCap = v end) end,
+})
+
+MenuSection:CreateDropdown({
+	Name = "Language",
+	Options = { "English", "Spanish", "Portuguese", "Turkish", "Indonesian", "Japanese", "Chinese" },
+	CurrentOption = "English",
+	Callback = function(v) Library.Notify({ Title = "Ivory", Content = "Language set to " .. v, Type = "info", Duration = 2 }) end,
+})
+
+MenuSection:CreateToggle({
+	Name = "Anti AFK",
+	CurrentValue = false,
+	Callback = function(v)
+		STATE.AntiAFK = v
+		if v then
+			LOCAL_AFK_CONN = LocalPlayer.Idled:Connect(function()
+				VirtualUser:ClickButton2(Vector2.new(0, 0))
+			end)
+		else
+			if LOCAL_AFK_CONN then LOCAL_AFK_CONN:Disconnect() end
+		end
+	end,
+})
+
+MenuSection:CreateToggle({
+	Name = "Custom Cursor",
+	CurrentValue = false,
+	Callback = function(v) Library.ShowCustomCursor = v end,
+})
+
+MenuSection:CreateButton({Name = "Test Notification", Callback = function()
+	Library.Notify({ Title = "Ivory", Content = "This is a test notification!", Type = "info", Duration = 3 })
 end})
 
-MenuGroup:CreateDropdown({Name = "Notification Side", Options = { "Left", "Right" }, CurrentOption = "Right",
+MenuSection:CreateDropdown({
+	Name = "Notification Side",
+	Options = { "Left", "Right" },
+	CurrentOption = "Right",
 	Callback = function(v) Library:SetNotifySide(v) end,
 })
 
-MenuGroup:CreateDropdown({Name = "DPI Scale", Options = { "50%", "75%", "100%", "125%", "150%", "175%", "200%" }, CurrentOption = "100%",
+MenuSection:CreateDropdown({
+	Name = "DPI Scale",
+	Options = { "50%", "75%", "100%", "125%", "150%", "175%", "200%" },
+	CurrentOption = "100%",
 	Callback = function(v) Library:SetDPIScale(tonumber(v:gsub("%%", ""))) end,
 })
 
-MenuGroup:CreateDivider()
+MenuSection:CreateSlider({
+	Name = "Corner Radius",
+	Range = {0, 20},
+	Increment = 1,
+	CurrentValue = 8,
+	Callback = function(v) pcall(function() Window:SetCornerRadius(v) end) end,
+})
 
-MenuGroup:CreateButton({Name="Unload", Callback=function()
+MenuSection:CreateButton({Name = "Unload", Callback = function()
 	clearESP()
 	setNoclip(false)
 	setInfiniteJump(false)
 	detachFloat()
 	Library:Unload()
 end})
+
+local ServerSection = SettingsTab:CreateSection("Server")
+
+ServerSection:CreateButton({Name = "Rejoin Server", Callback = function()
+	TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+end})
+
+ServerSection:CreateButton({Name = "Server Hop", Callback = function()
+	task.spawn(function()
+		local servers = {}
+		local cursor = nil
+		repeat
+			local url = ("https://games.roblox.com/v1/games/%s/servers/Public?limit=100%s"):format(
+				game.PlaceId, cursor and "&cursor=" .. HttpService:UrlEncode(cursor) or ""
+			)
+			local ok, res = pcall(function() return HttpService:GetAsync(url) end)
+			if not ok then break end
+			local data = HttpService:JSONDecode(res)
+			for _, s in ipairs(data.data) do
+				if s.id ~= game.JobId and s.playing < s.maxPlayers then
+					table.insert(servers, s.id)
+				end
+			end
+			cursor = data.nextPageCursor
+		until not cursor
+		if #servers > 0 then
+			TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(#servers)], LocalPlayer)
+		end
+	end)
+end})
+
+ServerSection:CreateButton({Name = "Copy JobId", Callback = function()
+	pcall(function() setclipboard(game.JobId) end)
+	Library.Notify({ Title = "Ivory", Content = "JobId copied!", Type = "success", Duration = 2 })
+end})
+
+local ThemesSection = SettingsTab:CreateSection("Themes")
+
+ThemesSection:CreateLabel({Text = "Accent Color"}):CreateColorPicker("AccentColor", {
+	Default = Color3.fromRGB(255, 105, 180),
+	Callback = function(v) Library.Scheme.Accent = v; Library:UpdateColorsUsingRegistry() end,
+})
+
+ThemesSection:CreateLabel({Text = "Background Color"}):CreateColorPicker("BackgroundColor", {
+	Default = Color3.fromRGB(16, 9, 13),
+	Callback = function(v) Library.Scheme.Background = v; Library:UpdateColorsUsingRegistry() end,
+})
+
+ThemesSection:CreateLabel({Text = "Text Color"}):CreateColorPicker("TextColor", {
+	Default = Color3.fromRGB(252, 240, 244),
+	Callback = function(v) Library.Scheme.Text = v; Library:UpdateColorsUsingRegistry() end,
+})
+
+local ConfigSection = SettingsTab:CreateSection("Configuration")
+
+ConfigSection:CreateInput({
+	Name = "Config Name",
+	Default = "Bloxfruits_Config",
+	Placeholder = "Enter config name",
+	Callback = function(v) _G.IvoryConfigName = v end,
+})
+
+ConfigSection:CreateButton({Name = "Save Config", Callback = function()
+	pcall(function()
+		local name = _G.IvoryConfigName or "Bloxfruits_Config"
+		local cfg = {}
+		for k, v in pairs(STATE) do cfg[k] = v end
+		writefile("IvoryHub/" .. name .. ".json", HttpService:JSONEncode(cfg))
+		Library.Notify({ Title = "Ivory", Content = "Config saved: " .. name, Type = "success", Duration = 2 })
+	end)
+end})
+
+ConfigSection:CreateButton({Name = "Load Config", Callback = function()
+	pcall(function()
+		local name = _G.IvoryConfigName or "Bloxfruits_Config"
+		local path = "IvoryHub/" .. name .. ".json"
+		if isfile(path) then
+			local cfg = HttpService:JSONDecode(readfile(path))
+			for k, v in pairs(cfg) do STATE[k] = v end
+			Library.Notify({ Title = "Ivory", Content = "Config loaded: " .. name, Type = "success", Duration = 2 })
+		else
+			Library.Notify({ Title = "Ivory", Content = "Config not found: " .. name, Type = "warning", Duration = 2 })
+		end
+	end)
+end})
+
+ConfigSection:CreateButton({Name = "Delete Config", Callback = function()
+	pcall(function()
+		local name = _G.IvoryConfigName or "Bloxfruits_Config"
+		local path = "IvoryHub/" .. name .. ".json"
+		if isfile(path) then
+			delfile(path)
+			Library.Notify({ Title = "Ivory", Content = "Config deleted: " .. name, Type = "info", Duration = 2 })
+		end
+	end)
+end})
+
 warn("[BF] SettingsTab done")
 
 task.spawn(function()
@@ -3486,9 +3650,9 @@ task.spawn(function()
 	end)
 end)
 
-Library:Notify({
+Library.Notify({
 	Title = "Ivory",
-	Description = "v2.0 loaded successfully",
-	Type = "Success",
-	Time = 5,
+	Content = "v2.0 loaded successfully",
+	Type = "success",
+	Duration = 5,
 })
