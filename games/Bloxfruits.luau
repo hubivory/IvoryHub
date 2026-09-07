@@ -1150,7 +1150,11 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 									closest.Humanoid:ChangeState(11)
 
 									local targets = BringMob(closest)
-									toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
+									hrp = getHRP()
+									local distToMob = hrp and (hrp.Position - mobHRP.Position).Magnitude or 999
+									if distToMob > 20 then
+										toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
+									end
 									task.wait(0.1)
 									checkAndFixStuck(mobHRP.Position)
 
@@ -1202,7 +1206,14 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 											v.Humanoid:ChangeState(11)
 
 											local targets = BringMob(v)
-											toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
+											hrp = getHRP()
+											local distToMob = hrp and (hrp.Position - mobHRP.Position).Magnitude or 999
+
+											-- Only move to mob if far away
+											if distToMob > 20 then
+												toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
+											end
+
 											task.wait(0.1)
 											checkAndFixStuck(mobHRP.Position)
 
