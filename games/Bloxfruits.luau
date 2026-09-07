@@ -316,6 +316,14 @@ local function toTarget(Pos)
 	local hum = getHum()
 	if not hum then isMoving = false return end
 
+	-- Remove any float BodyVelocity/BodyGyro that blocks movement
+	pcall(function()
+		local bv = hrp:FindFirstChild("IvoryFloatBV")
+		if bv then bv:Destroy() end
+		local bg = hrp:FindFirstChild("IvoryFloatBG")
+		if bg then bg:Destroy() end
+	end)
+
 	if hum.Health <= 0 then
 		if tweenActive then pcall(function() tweenActive:Cancel() end) end
 		repeat task.wait() until getHum() and getHum().Health > 0
@@ -1132,11 +1140,10 @@ DiscordGroup:CreateLabel({Text="Click above to join our Discord for dupes, updat
 local FarmGroup = FarmSub:CreateSection("Auto Farm")
 local ChestGroup = FarmSub:CreateSection("Chests")
 
-FarmGroup:CreateToggle({Name = "Auto Farm Level", CurrentValue = false,
+	FarmGroup:CreateToggle({Name = "Auto Farm Level", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoFarm = v
 		if v then
-			attachFloat()
 			task.spawn(function()
 				local questAccepted = false
 				local lastQuestAttempt = 0
