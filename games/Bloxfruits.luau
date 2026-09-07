@@ -337,7 +337,11 @@ local function toTarget(Pos)
 		return
 	end
 
-	local speed = 800
+	-- Freeze humanoid so it doesn't walk during tween
+	local hum = getHum()
+	if hum then hum.PlatformStand = true end
+
+	local speed = 1200
 	local done = false
 
 	toTargetConn = RunService.RenderStepped:Connect(function(dt)
@@ -421,6 +425,8 @@ local function toTarget(Pos)
 		elapsed = elapsed + 0.016
 	end
 	if toTargetConn and toTargetConn.Connected then toTargetConn:Disconnect(); toTargetConn = nil end
+	local hum2 = getHum()
+	if hum2 then hum2.PlatformStand = false end
 
 	isMoving = false
 end
@@ -1145,7 +1151,6 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 		STATE.AutoFarm = v
 		if v then
 			task.spawn(function()
-				local questAccepted = false
 				while STATE.AutoFarm do
 					pcall(function()
 						if STATE.CollectingFruit then task.wait(0.5) return end
@@ -1179,10 +1184,8 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 									local targets = BringMob(closest)
 									hrp = getHRP()
 									local distToMob = hrp and (hrp.Position - mobHRP.Position).Magnitude or 999
-									if distToMob > 20 then
-										local hum = getHum()
-										if hum then hum.PlatformStand = false end
-										toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
+								if distToMob > 20 then
+									toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
 									else
 										hrp = getHRP()
 										local hum = getHum()
@@ -1218,12 +1221,6 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 							-- Quest mode: ignore frozen quest UI entirely
 							-- Use CheckQuest() to determine what to farm, then go farm it
 							CheckQuest()
-
-							-- Accept quest once at start, then only when no mobs found
-							if not questAccepted then
-								pcall(function() CommF:InvokeServer("StartQuest", NameQuest, LevelQuest) end)
-								questAccepted = true
-							end
 
 							-- Find and farm the correct mob based on CheckQuest data
 							local mobFound = false
@@ -1286,9 +1283,9 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 								end
 							end
 
-							-- No mob found: quest might be done, re-accept and walk to spawn
+							-- No mob found: accept quest and walk to spawn
 							if not mobFound then
-								questAccepted = false
+								pcall(function() CommF:InvokeServer("StartQuest", NameQuest, LevelQuest) end)
 								if CFrameMon and CFrameMon.Position then
 									toTarget(CFrameMon * CFrame.new(0, 30, 5))
 								end
