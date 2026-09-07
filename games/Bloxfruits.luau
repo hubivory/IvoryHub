@@ -346,28 +346,42 @@ local function toTarget(Pos)
 		if not hrp then done = true; toTargetConn:Disconnect(); toTargetConn = nil; return end
 
 		local current = hrp.Position
-		local remaining = (targetPos - current).Magnitude
-		if remaining < 10 then
+		local dir = (targetPos - current)
+		local flatDir = Vector3.new(dir.X, 0, dir.Z)
+		if flatDir.Magnitude < 3 then
 			done = true
 			toTargetConn:Disconnect()
 			toTargetConn = nil
 			return
 		end
+		flatDir = flatDir.Unit
 
-		-- Move in XZ toward target, keep Y above ground via raycast
-		local dir = (targetPos - current)
-		local flatDir = Vector3.new(dir.X, 0, dir.Z)
-		if flatDir.Magnitude > 0 then flatDir = flatDir.Unit end
-		local step = math.min(speed * dt, remaining)
+		local step = math.min(speed * dt, flatDir.Magnitude)
 		local newPos = current + flatDir * step
 
-		-- Raycast down to find ground and stay above it
+		-- Wall avoidance: raycast forward, slide along walls
 		local rayParams = RaycastParams.new()
 		rayParams.FilterType = Enum.RaycastFilterType.Exclude
 		rayParams.FilterDescendantsInstances = {LocalPlayer.Character}
-		local rayResult = workspace:Raycast(newPos + Vector3.new(0, 50, 0), Vector3.new(0, -200, 0), rayParams)
-		if rayResult then
-			newPos = Vector3.new(newPos.X, rayResult.Position.Y + 5, newPos.Z)
+		local origin = current + Vector3.new(0, 3, 0)
+		local wallRay = workspace:Raycast(origin, flatDir * 5, rayParams)
+		if wallRay then
+			-- Hit a wall: slide along its normal
+			local normal = wallRay.Normal
+			local slide = flatDir - flatDir:Dot(normal) * normal
+			if slide.Magnitude > 0.01 then
+				slide = slide.Unit
+				local slideRay = workspace:Raycast(origin, slide * 5, rayParams)
+				if not slideRay then
+					newPos = current + slide * step
+				end
+			end
+		end
+
+		-- Ground follow: raycast down to stay above terrain
+		local groundRay = workspace:Raycast(newPos + Vector3.new(0, 50, 0), Vector3.new(0, -200, 0), rayParams)
+		if groundRay then
+			newPos = Vector3.new(newPos.X, groundRay.Position.Y + 5, newPos.Z)
 		end
 
 		hrp.CFrame = CFrame.new(newPos, Vector3.new(targetPos.X, newPos.Y, targetPos.Z))
