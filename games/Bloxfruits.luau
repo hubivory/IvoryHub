@@ -1138,6 +1138,8 @@ FarmGroup:CreateToggle({Name = "Auto Farm Level", CurrentValue = false,
 		if v then
 			attachFloat()
 			task.spawn(function()
+				local questAccepted = false
+				local lastQuestAttempt = 0
 				while STATE.AutoFarm do
 					pcall(function()
 						if STATE.CollectingFruit then task.wait(0.5) return end
@@ -1168,96 +1170,140 @@ FarmGroup:CreateToggle({Name = "Auto Farm Level", CurrentValue = false,
 									closest.HumanoidRootPart.Transparency = 1
 									closest.Humanoid:ChangeState(11)
 
-												local targets = BringMob(closest)
-												toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
-												task.wait(0.1)
-												checkAndFixStuck(mobHRP.Position)
+									local targets = BringMob(closest)
+									toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
+									task.wait(0.1)
+									checkAndFixStuck(mobHRP.Position)
 
-								hrp = getHRP()
-								if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
-									if tick() - LastRotate >= 0.25 then
-										AttackRotation = (AttackRotation + 180) % 360
-										LastRotate = tick()
+									hrp = getHRP()
+									if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
+										if tick() - LastRotate >= 0.25 then
+											AttackRotation = (AttackRotation + 180) % 360
+											LastRotate = tick()
+										end
+										if #targets >= 2 then
+											Attack({targets[1], targets[2]})
+										else
+											Attack(closest)
+										end
+										useSkills(mobHRP.Position)
 									end
-									if #targets >= 2 then
-										Attack({targets[1], targets[2]})
-									else
-										Attack(closest)
-									end
-									useSkills(mobHRP.Position)
-								end
-							until not STATE.AutoFarm or not closest.Parent or closest.Humanoid.Health <= 0
-						end
-					else
+								until not STATE.AutoFarm or not closest.Parent or closest.Humanoid.Health <= 0
+							else
+								task.wait(0.5)
+							end
+						else
+							-- Quest mode: check what we need
 							CheckQuest()
 							local Quest = LocalPlayer.PlayerGui.Main.Quest
 							local QuestTitle = Quest.Container.QuestTitle
-							if Quest.Visible then
-								if string.find(QuestTitle.Title.Text, NameCheckQuest) then
-									if workspace.Enemies:FindFirstChild(Monster) then
-										for _, v in pairs(workspace.Enemies:GetChildren()) do
-											if v.Name == Monster and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-												if string.find(QuestTitle.Title.Text, NameCheckQuest) then
-													repeat task.wait()
-														hrp = getHRP()
-														if not hrp then break end
-														EquipWeapon(STATE.SelectedWeapon)
-														local mobHRP = v.HumanoidRootPart
-														v.Humanoid.WalkSpeed = 0
-														v.HumanoidRootPart.CanCollide = false
-														v.Head.CanCollide = false
-														v.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-														v.HumanoidRootPart.Transparency = 1
-														v.Humanoid:ChangeState(11)
+
+							-- Update 30: Quest.Visible is unreliable. Detect active quest by title text.
+							local titleText = ""
+							pcall(function() titleText = QuestTitle.Title.Text end)
+							local hasActiveQuest = titleText ~= "" and titleText ~= "Label" and not titleText:find("QUEST")
+
+							-- Check if quest title matches what we expect
+							local questMatchesMonster = hasActiveQuest and string.find(titleText, NameCheckQuest)
+
+							if questMatchesMonster then
+								-- Quest is active and matches: go farm the monsters
+								if workspace.Enemies:FindFirstChild(Monster) then
+									for _, v in pairs(workspace.Enemies:GetChildren()) do
+										if not STATE.AutoFarm then break end
+										if v.Name == Monster and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+											repeat task.wait()
+												hrp = getHRP()
+												if not hrp then break end
+												EquipWeapon(STATE.SelectedWeapon)
+												local mobHRP = v.HumanoidRootPart
+												v.Humanoid.WalkSpeed = 0
+												v.HumanoidRootPart.CanCollide = false
+												v.Head.CanCollide = false
+												v.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+												v.HumanoidRootPart.Transparency = 1
+												v.Humanoid:ChangeState(11)
 
 												local targets = BringMob(v)
 												toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
 												task.wait(0.1)
 												checkAndFixStuck(mobHRP.Position)
 
-													hrp = getHRP()
-													if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
-														if tick() - LastRotate >= 0.25 then
-															AttackRotation = (AttackRotation + 180) % 360
-															LastRotate = tick()
-														end
-														if #targets >= 2 then
-															Attack({targets[1], targets[2]})
-														else
-															Attack(v)
-														end
-														useSkills(mobHRP.Position)
+												hrp = getHRP()
+												if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
+													if tick() - LastRotate >= 0.25 then
+														AttackRotation = (AttackRotation + 180) % 360
+														LastRotate = tick()
 													end
-													until not STATE.AutoFarm or not v.Parent or v.Humanoid.Health <= 0 or not Quest.Visible or not v:FindFirstChild("HumanoidRootPart")
-												else
-													CommF:InvokeServer("AbandonQuest")
+													if #targets >= 2 then
+														Attack({targets[1], targets[2]})
+													else
+														Attack(v)
+													end
+													useSkills(mobHRP.Position)
 												end
-											end
+											until not STATE.AutoFarm or not v.Parent or v.Humanoid.Health <= 0 or not v:FindFirstChild("HumanoidRootPart")
 										end
-									else
-								if CFrameMon and CFrameMon.Position then
-									toTarget(CFrameMon * CFrame.new(0, 30, 5))
-									task.wait(0.5)
-								end
 									end
 								else
-									CommF:InvokeServer("AbandonQuest")
+									-- No monsters spawned yet: walk to spawn location
+									if CFrameMon and CFrameMon.Position then
+										toTarget(CFrameMon * CFrame.new(0, 30, 5))
+										task.wait(0.5)
+									end
 								end
 							else
-								local questDist = (CFrameQ.Position - hrp.Position).Magnitude
-								if questDist >= 3000 then
-									if EntranceCF then
-										pcall(function() CommF:InvokeServer("requestEntrance", EntranceCF) end)
-										task.wait(1)
-									else
-										BTP(CFrameQ)
+								-- No matching quest active: try to accept it (throttled)
+								if tick() - lastQuestAttempt >= 2 then
+									lastQuestAttempt = tick()
+									pcall(function() CommF:InvokeServer("StartQuest", NameQuest, LevelQuest) end)
+									task.wait(0.3)
+								end
+
+								-- Also go to mob spawn area and farm any enemies there (works even without quest)
+								if Monster and workspace.Enemies:FindFirstChild(Monster) then
+									for _, v in pairs(workspace.Enemies:GetChildren()) do
+										if not STATE.AutoFarm then break end
+										if v.Name == Monster and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+											repeat task.wait()
+												hrp = getHRP()
+												if not hrp then break end
+												EquipWeapon(STATE.SelectedWeapon)
+												local mobHRP = v.HumanoidRootPart
+												v.Humanoid.WalkSpeed = 0
+												v.HumanoidRootPart.CanCollide = false
+												v.Head.CanCollide = false
+												v.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+												v.HumanoidRootPart.Transparency = 1
+												v.Humanoid:ChangeState(11)
+
+												local targets = BringMob(v)
+												toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
+												task.wait(0.1)
+												checkAndFixStuck(mobHRP.Position)
+
+												hrp = getHRP()
+												if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
+													if tick() - LastRotate >= 0.25 then
+														AttackRotation = (AttackRotation + 180) % 360
+														LastRotate = tick()
+													end
+													if #targets >= 2 then
+														Attack({targets[1], targets[2]})
+													else
+														Attack(v)
+													end
+													useSkills(mobHRP.Position)
+												end
+											until not STATE.AutoFarm or not v.Parent or v.Humanoid.Health <= 0 or not v:FindFirstChild("HumanoidRootPart")
+										end
 									end
 								else
-									toTarget(CFrameQ)
-								end
-								if (hrp.Position - CFrameQ.Position).Magnitude <= 20 then
-									CommF:InvokeServer("StartQuest", NameQuest, LevelQuest)
-									task.wait(0.5)
+									-- Walk to mob spawn location
+									if CFrameMon and CFrameMon.Position then
+										toTarget(CFrameMon * CFrame.new(0, 30, 5))
+										task.wait(0.5)
+									end
 								end
 							end
 						end -- end Quest mode
