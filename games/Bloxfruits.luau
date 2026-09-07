@@ -337,7 +337,7 @@ local function toTarget(Pos)
 		return
 	end
 
-	local speed = 550
+	local speed = 800
 	local done = false
 
 	toTargetConn = RunService.RenderStepped:Connect(function(dt)
@@ -1153,12 +1153,18 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 									hrp = getHRP()
 									local distToMob = hrp and (hrp.Position - mobHRP.Position).Magnitude or 999
 									if distToMob > 20 then
+										local hum = getHum()
+										if hum then hum.PlatformStand = false end
 										toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
 									else
 										hrp = getHRP()
-										if hrp then
+										local hum = getHum()
+										if hrp and hum then
 											local mobPos = mobHRP.Position
 											hrp.CFrame = CFrame.new(mobPos + Vector3.new(0, 30, 5), mobPos)
+											hrp.Velocity = Vector3.zero
+											hrp.RotVelocity = Vector3.zero
+											hum.PlatformStand = true
 										end
 									end
 									task.wait(0.1)
@@ -1186,12 +1192,6 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 							-- Use CheckQuest() to determine what to farm, then go farm it
 							CheckQuest()
 
-							-- Only try to accept quest if we haven't recently
-							if tick() - lastQuestAttempt >= 30 then
-								lastQuestAttempt = tick()
-								pcall(function() CommF:InvokeServer("StartQuest", NameQuest, LevelQuest) end)
-							end
-
 							-- Find and farm the correct mob based on CheckQuest data
 							local mobFound = false
 							if Monster then
@@ -1216,14 +1216,18 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 											local distToMob = hrp and (hrp.Position - mobHRP.Position).Magnitude or 999
 
 											if distToMob > 20 then
-												-- Far away: move to above the mob
+												local hum = getHum()
+												if hum then hum.PlatformStand = false end
 												toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
 											else
-												-- Close: stay in the air above the mob
 												hrp = getHRP()
-												if hrp then
+												local hum = getHum()
+												if hrp and hum then
 													local mobPos = mobHRP.Position
 													hrp.CFrame = CFrame.new(mobPos + Vector3.new(0, 30, 5), mobPos)
+													hrp.Velocity = Vector3.zero
+													hrp.RotVelocity = Vector3.zero
+													hum.PlatformStand = true
 												end
 											end
 
@@ -1249,9 +1253,13 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 								end
 							end
 
-							-- No mob found: walk to spawn location
-							if not mobFound and CFrameMon and CFrameMon.Position then
-								toTarget(CFrameMon * CFrame.new(0, 30, 5))
+							-- No mob found: quest complete or mobs haven't spawned
+							-- Accept quest only here (when no mobs left to farm)
+							if not mobFound then
+								pcall(function() CommF:InvokeServer("StartQuest", NameQuest, LevelQuest) end)
+								if CFrameMon and CFrameMon.Position then
+									toTarget(CFrameMon * CFrame.new(0, 30, 5))
+								end
 								task.wait(0.5)
 							end
 						end -- end Quest mode
