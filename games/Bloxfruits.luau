@@ -71,6 +71,7 @@ local STATE = {
 	AutoFarm = false,
 	AutoFarmMethod = "Quest",
 	SelectedWeapon = "Melee",
+	TweenSpeed = 600,
 	AutoChest = false,
 	AutoBounty = false,
 	BountyDistance = 20,
@@ -335,7 +336,6 @@ local function toTarget(Pos)
 		return
 	end
 
-	local speed = 600
 	local done = false
 
 	toTargetConn = RunService.RenderStepped:Connect(function(dt)
@@ -357,17 +357,18 @@ local function toTarget(Pos)
 		local flyHeight = math.max(current.Y, 60)
 		local dropDist = 25
 		local newPos
+		local spd = STATE.TweenSpeed or 600
 
 		if dist < dropDist then
 			-- Close: drop toward target
 			local dropDir = (targetPos + Vector3.new(0, 30, 0)) - current
-			local dropStep = math.min(speed * dt, dropDir.Magnitude)
+			local dropStep = math.min(spd * dt, dropDir.Magnitude)
 			newPos = current + dropDir.Unit * dropStep
 		else
 			-- Far: gradually climb to fly height, move in XZ
 			local targetPoint = Vector3.new(targetPos.X, flyHeight, targetPos.Z)
 			local moveDir = targetPoint - current
-			local step = math.min(speed * dt, moveDir.Magnitude)
+			local step = math.min(spd * dt, moveDir.Magnitude)
 			newPos = current + moveDir.Unit * step
 		end
 
@@ -1278,6 +1279,10 @@ FarmGroup:CreateDropdown({Name = "Farm Method", Options = { "Quest", "Nearest" }
 
 FarmGroup:CreateDropdown({Name = "Weapon Type", Options = { "Melee", "Sword", "Gun", "Blox Fruit" }, CurrentOption = "Melee",
 	Callback = function(v) STATE.SelectedWeapon = v end,
+})
+
+FarmGroup:CreateSlider({Name = "Tween Speed", Range = {1, 1000}, Increment = 10, CurrentValue = 600,
+	Callback = function(v) STATE.TweenSpeed = v end,
 })
 
 FarmGroup:CreateButton({Name="Refresh Quest", Callback=function()
