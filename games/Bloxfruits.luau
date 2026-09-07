@@ -305,19 +305,23 @@ local function teleportToIsland(island)
 end
 
 local tweenActive = nil
+local isMoving = false
 
 local function toTarget(Pos)
+	if isMoving then return end
+	isMoving = true
+
 	local hrp = getHRP()
-	if not hrp then return end
+	if not hrp then isMoving = false return end
 	local hum = getHum()
-	if not hum then return end
+	if not hum then isMoving = false return end
 
 	if hum.Health <= 0 then
 		if tweenActive then pcall(function() tweenActive:Cancel() end) end
 		repeat task.wait() until getHum() and getHum().Health > 0
 		task.wait(0.2)
 		hrp = getHRP()
-		if not hrp then return end
+		if not hrp then isMoving = false return end
 	end
 
 	pcall(function() hum.Sit = false end)
@@ -328,12 +332,14 @@ local function toTarget(Pos)
 	elseif typeof(Pos) == "CFrame" then
 		RealTarget = Pos
 	else
+		isMoving = false
 		return
 	end
 
 	local dist = (RealTarget.Position - hrp.Position).Magnitude
 	if dist < 10 then
 		hrp.CFrame = RealTarget
+		isMoving = false
 		return
 	end
 
@@ -363,6 +369,7 @@ local function toTarget(Pos)
 		-- Check if we actually moved
 		hrp = getHRP()
 		if hrp and (hrp.Position - startPos).Magnitude > 5 then
+			isMoving = false
 			return -- MoveTo worked
 		end
 		-- Stuck: fall through to tween with fly-over
@@ -389,14 +396,15 @@ local function toTarget(Pos)
 
 		tweenTo(upCF)
 		hrp = getHRP()
-		if not hrp then return end
+		if not hrp then isMoving = false return end
 
 		tweenTo(overCF)
 		hrp = getHRP()
-		if not hrp then return end
+		if not hrp then isMoving = false return end
 
 		tweenTo(downCF)
 	end
+	isMoving = false
 end
 
 local function GetIsLand(...)
@@ -1160,9 +1168,10 @@ FarmGroup:CreateToggle({Name = "Auto Farm Level", CurrentValue = false,
 									closest.HumanoidRootPart.Transparency = 1
 									closest.Humanoid:ChangeState(11)
 
-								local targets = BringMob(closest)
-								toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
-								checkAndFixStuck(mobHRP.Position)
+												local targets = BringMob(closest)
+												toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
+												task.wait(0.1)
+												checkAndFixStuck(mobHRP.Position)
 
 								hrp = getHRP()
 								if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
@@ -1201,9 +1210,10 @@ FarmGroup:CreateToggle({Name = "Auto Farm Level", CurrentValue = false,
 														v.HumanoidRootPart.Transparency = 1
 														v.Humanoid:ChangeState(11)
 
-													local targets = BringMob(v)
-													toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
-													checkAndFixStuck(mobHRP.Position)
+												local targets = BringMob(v)
+												toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
+												task.wait(0.1)
+												checkAndFixStuck(mobHRP.Position)
 
 													hrp = getHRP()
 													if hrp and (hrp.Position - mobHRP.Position).Magnitude <= 150 then
@@ -1225,9 +1235,10 @@ FarmGroup:CreateToggle({Name = "Auto Farm Level", CurrentValue = false,
 											end
 										end
 									else
-										if CFrameMon and CFrameMon.Position then
-											toTarget(CFrameMon * CFrame.new(0, 30, 5))
-										end
+								if CFrameMon and CFrameMon.Position then
+									toTarget(CFrameMon * CFrame.new(0, 30, 5))
+									task.wait(0.5)
+								end
 									end
 								else
 									CommF:InvokeServer("AbandonQuest")
