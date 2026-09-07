@@ -334,13 +334,25 @@ local function toTarget(Pos)
 		return
 	end
 
-	local speed = 250
-	local info = TweenInfo.new(dist / speed, Enum.EasingStyle.Linear)
-	pcall(function()
-		tweenActive = TweenService:Create(hrp, info, {CFrame = CFrame.new(targetPos)})
-		tweenActive:Play()
-		tweenActive.Completed:Wait()
-	end)
+	-- Boost WalkSpeed temporarily and use MoveTo (goes through Roblox movement system)
+	local origWS = hum.WalkSpeed
+	hum.WalkSpeed = 150
+	pcall(function() hum:MoveTo(targetPos) end)
+
+	-- Wait until arrived or timeout
+	local timeout = math.clamp(dist / 150, 0.3, 4)
+	local elapsed = 0
+	while elapsed < timeout do
+		task.wait(0.05)
+		elapsed = elapsed + 0.05
+		hrp = getHRP()
+		if not hrp then break end
+		if (hrp.Position - targetPos).Magnitude < 10 then break end
+	end
+
+	-- Restore walkspeed
+	hum = getHum()
+	if hum then hum.WalkSpeed = origWS end
 
 	isMoving = false
 end
