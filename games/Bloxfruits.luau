@@ -334,25 +334,39 @@ local function toTarget(Pos)
 		return
 	end
 
-	-- Boost WalkSpeed temporarily and use MoveTo (goes through Roblox movement system)
-	local origWS = hum.WalkSpeed
-	hum.WalkSpeed = 150
-	pcall(function() hum:MoveTo(targetPos) end)
+	-- Manual tween via RenderStepped: server sees small per-frame CFrame deltas
+	-- instead of a suspicious TweenService interpolation
+	local speed = 350
+	local conn
+	local done = false
+	local startPos = hrp.Position
 
-	-- Wait until arrived or timeout
-	local timeout = math.clamp(dist / 150, 0.3, 4)
-	local elapsed = 0
-	while elapsed < timeout do
-		task.wait(0.05)
-		elapsed = elapsed + 0.05
+	conn = RunService.RenderStepped:Connect(function(dt)
+		if done then return end
 		hrp = getHRP()
-		if not hrp then break end
-		if (hrp.Position - targetPos).Magnitude < 10 then break end
-	end
+		if not hrp then done = true; conn:Disconnect(); return end
 
-	-- Restore walkspeed
-	hum = getHum()
-	if hum then hum.WalkSpeed = origWS end
+		local current = hrp.Position
+		local remaining = (targetPos - current).Magnitude
+		if remaining < 10 then
+			done = true
+			conn:Disconnect()
+			return
+		end
+
+		local step = math.min(speed * dt, remaining)
+		local direction = (targetPos - current).Unit
+		hrp.CFrame = CFrame.new(current + direction * step, targetPos)
+	end)
+
+	-- Wait until done
+	local timeout = dist / speed + 1
+	local elapsed = 0
+	while not done and elapsed < timeout do
+		task.wait(0.016)
+		elapsed = elapsed + 0.016
+	end
+	if conn and conn.Connected then conn:Disconnect() end
 
 	isMoving = false
 end
