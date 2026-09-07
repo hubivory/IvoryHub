@@ -397,13 +397,18 @@ local function toTarget(Pos)
 			end
 		end
 
-		-- Ground follow: raycast down to stay above terrain
-		local groundRay = workspace:Raycast(newPos + Vector3.new(0, 50, 0), Vector3.new(0, -200, 0), rayParams)
+		-- Ground follow: always stay above terrain
+		local groundRay = workspace:Raycast(newPos + Vector3.new(0, 100, 0), Vector3.new(0, -300, 0), rayParams)
 		if groundRay then
-			-- Only clamp if target is near ground level
-			if targetPos.Y < groundRay.Position.Y + 20 then
-				newPos = Vector3.new(newPos.X, groundRay.Position.Y + 5, newPos.Z)
+			local groundY = groundRay.Position.Y + 5
+			if newPos.Y < groundY then
+				newPos = Vector3.new(newPos.X, groundY, newPos.Z)
 			end
+		end
+
+		-- Never go below water level
+		if newPos.Y < -3 then
+			newPos = Vector3.new(newPos.X, 10, newPos.Z)
 		end
 
 		hrp.CFrame = CFrame.new(newPos, Vector3.new(targetPos.X, newPos.Y, targetPos.Z))
