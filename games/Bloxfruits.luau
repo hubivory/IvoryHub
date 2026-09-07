@@ -1154,6 +1154,12 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 									local distToMob = hrp and (hrp.Position - mobHRP.Position).Magnitude or 999
 									if distToMob > 20 then
 										toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
+									else
+										hrp = getHRP()
+										if hrp then
+											local mobPos = mobHRP.Position
+											hrp.CFrame = CFrame.new(mobPos + Vector3.new(0, 30, 5), mobPos)
+										end
 									end
 									task.wait(0.1)
 									checkAndFixStuck(mobHRP.Position)
@@ -1209,9 +1215,16 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 											hrp = getHRP()
 											local distToMob = hrp and (hrp.Position - mobHRP.Position).Magnitude or 999
 
-											-- Only move to mob if far away
 											if distToMob > 20 then
+												-- Far away: move to above the mob
 												toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
+											else
+												-- Close: stay in the air above the mob
+												hrp = getHRP()
+												if hrp then
+													local mobPos = mobHRP.Position
+													hrp.CFrame = CFrame.new(mobPos + Vector3.new(0, 30, 5), mobPos)
+												end
 											end
 
 											task.wait(0.1)
