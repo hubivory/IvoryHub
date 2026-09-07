@@ -232,29 +232,14 @@ local function BTP(Point)
 			repeat task.wait() until hum.Health > 0
 			task.wait(0.2)
 		end
-		-- Try requestEntrance first (cross-sea travel)
+		-- Try requestEntrance first (cross-sea travel, undetectable)
 		if EntranceCF then
 			pcall(function() CommF:InvokeServer("requestEntrance", EntranceCF) end)
 			task.wait(1)
 			return
 		end
-		-- Tween with fly-over for long distances (no direct CFrame, no kill)
-		local origin = hrp.Position
-		local target = Point.Position
-		local highestY = math.max(origin.Y, target.Y) + 200
-		local speed = 250
-		local function tweenPart(cf)
-			local d = (cf.Position - hrp.Position).Magnitude
-			if d < 5 then return end
-			local info = TweenInfo.new(d / speed, Enum.EasingStyle.Linear)
-			local t = TweenService:Create(hrp, info, {CFrame = cf})
-			t:Play()
-			t.Completed:Wait()
-			hrp = getHRP()
-		end
-		tweenPart(CFrame.new(Vector3.new(origin.X, highestY, origin.Z)))
-		tweenPart(CFrame.new(Vector3.new(target.X, highestY, target.Z)))
-		tweenPart(Point)
+		-- No entrance available: just use toTarget (MoveTo-based)
+		toTarget(Point)
 	end)
 end
 
@@ -325,7 +310,6 @@ local function toTarget(Pos)
 	end)
 
 	if hum.Health <= 0 then
-		if tweenActive then pcall(function() tweenActive:Cancel() end) end
 		repeat task.wait() until getHum() and getHum().Health > 0
 		task.wait(0.2)
 		hrp = getHRP()
@@ -334,84 +318,63 @@ local function toTarget(Pos)
 
 	pcall(function() hum.Sit = false end)
 
-	local RealTarget
+	local targetPos
 	if typeof(Pos) == "Vector3" then
-		RealTarget = CFrame.new(Pos)
+		targetPos = Pos
 	elseif typeof(Pos) == "CFrame" then
-		RealTarget = Pos
+		targetPos = Pos.Position
 	else
 		isMoving = false
 		return
 	end
 
-	local dist = (RealTarget.Position - hrp.Position).Magnitude
+	local dist = (targetPos - hrp.Position).Magnitude
 	if dist < 10 then
-		hrp.CFrame = RealTarget
 		isMoving = false
 		return
 	end
 
-	local speed = 250
-	local origin = hrp.Position
-	local target = RealTarget.Position
+	-- Use Humanoid:MoveTo for ALL movement (undetectable by server anti-cheat)
+	-- No CFrame tweening, no flying, no teleporting
+	local maxAttempts = 3
+	for attempt = 1, maxAttempts do
+		hrp = getHRP()
+		hum = getHum()
+		if not hrp or not hum then isMoving = false return end
 
-	local function tweenTo(cf)
-		local d = (cf.Position - hrp.Position).Magnitude
-		if d < 5 then return end
-		local info = TweenInfo.new(d / speed, Enum.EasingStyle.Linear)
-		pcall(function()
-			tweenActive = TweenService:Create(hrp, info, {CFrame = cf})
-			tweenActive:Play()
-			tweenActive.Completed:Wait()
-		end)
-	end
-
-	-- Use Humanoid:MoveTo for ground-level movement (less detectable)
-	-- Fallback to tween if stuck (wall/terrain)
-	if dist <= 500 then
 		local startPos = hrp.Position
-		pcall(function()
-			hum:MoveTo(target)
-		end)
-		task.wait(math.clamp(dist / 16, 0.3, 3))
-		-- Check if we actually moved
+		pcall(function() hum:MoveTo(targetPos) end)
+
+		-- Wait for MoveTo to complete or timeout
+		local elapsed = 0
+		local timeout = math.clamp(dist / 16, 0.5, 4)
+		while elapsed < timeout do
+			task.wait(0.1)
+			elapsed = elapsed + 0.1
+			hrp = getHRP()
+			if not hrp then isMoving = false return end
+			-- Check if we arrived
+			if (hrp.Position - targetPos).Magnitude < 10 then
+				isMoving = false
+				return
+			end
+		end
+
+		-- Check if we moved at all
 		hrp = getHRP()
 		if hrp and (hrp.Position - startPos).Magnitude > 5 then
-			isMoving = false
-			return -- MoveTo worked
+			-- We moved, try again to get closer
+			continue
 		end
-		-- Stuck: fall through to tween with fly-over
+
+		-- Stuck: try slightly offset position
+		if attempt < maxAttempts then
+			local offset = Vector3.new(math.random(-5, 5), 0, math.random(-5, 5))
+			pcall(function() hum:MoveTo(targetPos + offset) end)
+			task.wait(0.5)
+		end
 	end
 
-	-- Raycast to check if path is clear (cast from above ground to avoid floor detection)
-	local rayParams = RaycastParams.new()
-	rayParams.FilterType = Enum.RaycastFilterType.Exclude
-	rayParams.FilterDescendantsInstances = {LocalPlayer.Character}
-	local originUp = Vector3.new(origin.X, origin.Y + 15, origin.Z)
-	local targetUp = Vector3.new(target.X, target.Y + 15, target.Z)
-	local dir = (targetUp - originUp)
-	local rayResult = workspace:Raycast(originUp, dir, rayParams)
-
-	if not rayResult then
-		-- Path is clear: ground-level tween directly
-		tweenTo(RealTarget)
-	else
-		-- Wall detected: fly up to clear it, tween over, drop down
-		local highestY = math.max(origin.Y, target.Y) + 200
-		local upCF = CFrame.new(Vector3.new(origin.X, highestY, origin.Z))
-		local overCF = CFrame.new(Vector3.new(target.X, highestY, target.Z))
-		local downCF = CFrame.new(target)
-
-		tweenTo(upCF)
-		hrp = getHRP()
-		if not hrp then isMoving = false return end
-
-		tweenTo(overCF)
-		hrp = getHRP()
-		if not hrp then isMoving = false return end
-
-		tweenTo(downCF)
-	end
 	isMoving = false
 end
 
@@ -691,20 +654,10 @@ local function Attack(v)
 end
 
 local function BringMob(target)
-	pcall(sethiddenproperty, LocalPlayer, "SimulationRadius", math.huge)
 	local acf = target.HumanoidRootPart.CFrame
 	local targets = {target}
 	for _, v in ipairs(workspace.Enemies:GetChildren()) do
 		if v.Name == target.Name and v ~= target and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 and (acf.Position - v.HumanoidRootPart.Position).Magnitude <= 350 then
-			local bv = v.HumanoidRootPart:FindFirstChild("BringVelocity")
-			if not bv then
-				bv = Instance.new("BodyVelocity")
-				bv.Name = "BringVelocity"
-				bv.MaxForce = Vector3.new(10000, 10000, 10000)
-				bv.Parent = v.HumanoidRootPart
-			end
-			bv.Velocity = Vector3.zero
-			v.HumanoidRootPart.CFrame = acf
 			table.insert(targets, v)
 			break
 		end
