@@ -3006,8 +3006,12 @@ StatsGroup:CreateToggle({Name = "Auto Allocate Stats", CurrentValue = false,
 		if v then
 			task.spawn(function()
 				while STATE.AutoStats do
-					pcall(function() CommF:InvokeServer("AddPoint", STATE.StatType, STATE.StatAmount) end)
-					task.wait(0.5)
+					local points = 0
+					pcall(function() points = LocalPlayer.Data.Points.Value end)
+					if points > 0 then
+						pcall(function() CommF:InvokeServer("AddPoint", STATE.StatType, STATE.StatAmount) end)
+					end
+					task.wait(1)
 				end
 			end)
 		end
