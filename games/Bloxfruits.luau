@@ -364,24 +364,46 @@ local function toTarget(Pos)
 		rayParams.FilterType = Enum.RaycastFilterType.Exclude
 		rayParams.FilterDescendantsInstances = {LocalPlayer.Character}
 		local origin = current + Vector3.new(0, 3, 0)
+
+		-- Cast forward to detect walls
 		local wallRay = workspace:Raycast(origin, flatDir * 5, rayParams)
 		if wallRay then
-			-- Hit a wall: slide along its normal
 			local normal = wallRay.Normal
+			-- Project movement onto wall surface
 			local slide = flatDir - flatDir:Dot(normal) * normal
 			if slide.Magnitude > 0.01 then
 				slide = slide.Unit
+				-- Check if slide path is clear
 				local slideRay = workspace:Raycast(origin, slide * 5, rayParams)
 				if not slideRay then
 					newPos = current + slide * step
+				else
+					-- Corner: try the other side of the wall normal
+					local slide2 = flatDir + normal * 0.5
+					if slide2.Magnitude > 0.01 then
+						slide2 = slide2.Unit
+						local slideRay2 = workspace:Raycast(origin, slide2 * 5, rayParams)
+						if not slideRay2 then
+							newPos = current + slide2 * step
+						else
+							-- Stuck: just go up over it
+							newPos = current + Vector3.new(0, step, 0)
+						end
+					end
 				end
+			else
+				-- Head-on wall: go up
+				newPos = current + Vector3.new(0, step, 0)
 			end
 		end
 
 		-- Ground follow: raycast down to stay above terrain
 		local groundRay = workspace:Raycast(newPos + Vector3.new(0, 50, 0), Vector3.new(0, -200, 0), rayParams)
 		if groundRay then
-			newPos = Vector3.new(newPos.X, groundRay.Position.Y + 5, newPos.Z)
+			-- Only clamp if target is near ground level
+			if targetPos.Y < groundRay.Position.Y + 20 then
+				newPos = Vector3.new(newPos.X, groundRay.Position.Y + 5, newPos.Z)
+			end
 		end
 
 		hrp.CFrame = CFrame.new(newPos, Vector3.new(targetPos.X, newPos.Y, targetPos.Z))
@@ -1118,7 +1140,7 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 		STATE.AutoFarm = v
 		if v then
 			task.spawn(function()
-				local lastQuestAttempt = 0
+				local questAccepted = false
 				while STATE.AutoFarm do
 					pcall(function()
 						if STATE.CollectingFruit then task.wait(0.5) return end
@@ -1192,6 +1214,12 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 							-- Use CheckQuest() to determine what to farm, then go farm it
 							CheckQuest()
 
+							-- Accept quest once at start, then only when no mobs found
+							if not questAccepted then
+								pcall(function() CommF:InvokeServer("StartQuest", NameQuest, LevelQuest) end)
+								questAccepted = true
+							end
+
 							-- Find and farm the correct mob based on CheckQuest data
 							local mobFound = false
 							if Monster then
@@ -1253,10 +1281,9 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 								end
 							end
 
-							-- No mob found: quest complete or mobs haven't spawned
-							-- Accept quest only here (when no mobs left to farm)
+							-- No mob found: quest might be done, re-accept and walk to spawn
 							if not mobFound then
-								pcall(function() CommF:InvokeServer("StartQuest", NameQuest, LevelQuest) end)
+								questAccepted = false
 								if CFrameMon and CFrameMon.Position then
 									toTarget(CFrameMon * CFrame.new(0, 30, 5))
 								end
