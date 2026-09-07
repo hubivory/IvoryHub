@@ -353,20 +353,37 @@ local function toTarget(Pos)
 			return
 		end
 
-		-- Fly high to clear all obstacles, drop when close
-		local flyHeight = 60
-		local dropDist = 30
+		-- Fly height: get above obstacles but not a huge teleport
+		local flyHeight = math.max(current.Y, 60)
+		local dropDist = 25
 		local newPos
 
 		if dist < dropDist then
-			-- Close to target: drop down to it
-			newPos = targetPos + Vector3.new(0, 30, 0)
+			-- Close: drop toward target
+			local dropDir = (targetPos + Vector3.new(0, 30, 0)) - current
+			local dropStep = math.min(speed * dt, dropDir.Magnitude)
+			newPos = current + dropDir.Unit * dropStep
 		else
-			-- Far: fly at safe height, move in XZ
-			local flatDir = Vector3.new(toTarget.X, 0, toTarget.Z)
-			if flatDir.Magnitude > 1 then flatDir = flatDir.Unit end
-			local step = math.min(speed * dt, dist)
-			newPos = Vector3.new(current.X + flatDir.X * step, flyHeight, current.Z + flatDir.Z * step)
+			-- Far: gradually climb to fly height, move in XZ
+			local targetPoint = Vector3.new(targetPos.X, flyHeight, targetPos.Z)
+			local moveDir = targetPoint - current
+			local step = math.min(speed * dt, moveDir.Magnitude)
+			newPos = current + moveDir.Unit * step
+		end
+
+		-- Floor: never below ground
+		local rayParams = RaycastParams.new()
+		rayParams.FilterType = Enum.RaycastFilterType.Exclude
+		rayParams.FilterDescendantsInstances = {LocalPlayer.Character}
+		local groundRay = workspace:Raycast(newPos + Vector3.new(0, 50, 0), Vector3.new(0, -200, 0), rayParams)
+		if groundRay then
+			local minY = groundRay.Position.Y + 5
+			if newPos.Y < minY then
+				newPos = Vector3.new(newPos.X, minY, newPos.Z)
+			end
+		end
+		if newPos.Y < 0 then
+			newPos = Vector3.new(newPos.X, 10, newPos.Z)
 		end
 
 		hrp.CFrame = CFrame.new(newPos, Vector3.new(targetPos.X, newPos.Y, targetPos.Z))
