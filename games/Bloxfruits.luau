@@ -1166,6 +1166,8 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 										useSkills(mobHRP.Position)
 									end
 								until not STATE.AutoFarm or not closest.Parent or closest.Humanoid.Health <= 0
+								if toTargetConn then pcall(function() toTargetConn:Disconnect() end); toTargetConn = nil end
+								isMoving = false
 							else
 								task.wait(0.5)
 							end
@@ -1228,6 +1230,9 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 											end
 										until not STATE.AutoFarm or not v.Parent or v.Humanoid.Health <= 0 or not v:FindFirstChild("HumanoidRootPart")
 										killCount = killCount + 1
+										-- Cancel any active tween connection
+										if toTargetConn then pcall(function() toTargetConn:Disconnect() end); toTargetConn = nil end
+										isMoving = false
 										if killCount >= 8 then
 											killCount = 0
 											pcall(function() CommF:InvokeServer("StartQuest", NameQuest, LevelQuest) end)
