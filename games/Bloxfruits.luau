@@ -337,7 +337,7 @@ local function toTarget(Pos)
 		return
 	end
 
-	local speed = 1200
+	local speed = 1600
 	local done = false
 
 	toTargetConn = RunService.RenderStepped:Connect(function(dt)
@@ -359,41 +359,42 @@ local function toTarget(Pos)
 		local step = math.min(speed * dt, flatDir.Magnitude)
 		local newPos = current + flatDir * step
 
-		-- Wall avoidance: raycast forward, slide along walls
+		-- Wall avoidance: raycast forward, slide or go over
 		local rayParams = RaycastParams.new()
 		rayParams.FilterType = Enum.RaycastFilterType.Exclude
 		rayParams.FilterDescendantsInstances = {LocalPlayer.Character}
 		local origin = current + Vector3.new(0, 3, 0)
 
 		-- Cast forward to detect walls
-		local wallRay = workspace:Raycast(origin, flatDir * 5, rayParams)
+		local wallRay = workspace:Raycast(origin, flatDir * 6, rayParams)
 		if wallRay then
+			-- Cast up to find wall height
+			local wallTop = workspace:Raycast(wallRay.Position, Vector3.new(0, 100, 0), rayParams)
+			local topY = wallTop and (wallTop.Position.Y + 8) or (current.Y + 30)
+
+			-- Try slide along wall first
 			local normal = wallRay.Normal
-			-- Project movement onto wall surface
 			local slide = flatDir - flatDir:Dot(normal) * normal
+			local slidUp = false
 			if slide.Magnitude > 0.01 then
 				slide = slide.Unit
-				-- Check if slide path is clear
-				local slideRay = workspace:Raycast(origin, slide * 5, rayParams)
+				local slideRay = workspace:Raycast(origin, slide * 6, rayParams)
 				if not slideRay then
 					newPos = current + slide * step
-				else
-					-- Corner: try the other side of the wall normal
-					local slide2 = flatDir + normal * 0.5
-					if slide2.Magnitude > 0.01 then
-						slide2 = slide2.Unit
-						local slideRay2 = workspace:Raycast(origin, slide2 * 5, rayParams)
-						if not slideRay2 then
-							newPos = current + slide2 * step
-						else
-							-- Stuck: just go up over it
-							newPos = current + Vector3.new(0, step, 0)
-						end
-					end
+					slidUp = true
 				end
-			else
-				-- Head-on wall: go up
-				newPos = current + Vector3.new(0, step, 0)
+			end
+
+			-- If slide didn't work, go over the wall
+			if not slidUp then
+				-- Move up above the wall, then forward
+				local upDist = topY - current.Y
+				if upDist > 1 then
+					newPos = current + Vector3.new(0, math.min(upDist + 5, step), 0)
+				else
+					-- Already above wall height, go forward
+					newPos = current + flatDir * step + Vector3.new(0, 5, 0)
+				end
 			end
 		end
 
