@@ -1146,6 +1146,7 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 		if v then
 			task.spawn(function()
 				local killCount = 0
+				local questStarted = false
 				while STATE.AutoFarm do
 					pcall(function()
 						if STATE.CollectingFruit then task.wait(0.5) return end
@@ -1217,7 +1218,8 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 							CheckQuest()
 
 							-- Accept quest on first run
-							if killCount == 0 then
+							if not questStarted then
+								questStarted = true
 								pcall(function() CommF:InvokeServer("StartQuest", NameQuest, LevelQuest) end)
 							end
 
