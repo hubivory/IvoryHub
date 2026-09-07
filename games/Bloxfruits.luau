@@ -306,10 +306,8 @@ local function toTarget(Pos)
 	if not hum then isMoving = false return end
 
 	pcall(function()
-		local bv = hrp:FindFirstChild("IvoryFloatBV")
+		local bv = hrp:FindFirstChild("IvoryHoverBV")
 		if bv then bv:Destroy() end
-		local bg = hrp:FindFirstChild("IvoryFloatBG")
-		if bg then bg:Destroy() end
 	end)
 
 	if hum.Health <= 0 then
@@ -445,32 +443,34 @@ end
 
 local EquipWeapon = equipWeapon
 
-local function attachFloat()
+local function attachHover()
 	local hrp = getHRP()
 	if not hrp then return end
-	if not hrp:FindFirstChild("IvoryFloatBV") then
-		local bv = Instance.new("BodyVelocity")
-		bv.Name = "IvoryFloatBV"
-		bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-		bv.Velocity = Vector3.zero
-		bv.Parent = hrp
-	end
-	if not hrp:FindFirstChild("IvoryFloatBG") then
-		local bg = Instance.new("BodyGyro")
-		bg.Name = "IvoryFloatBG"
-		bg.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
-		bg.CFrame = hrp.CFrame
-		bg.Parent = hrp
-	end
+	if hrp:FindFirstChild("IvoryHoverBV") then return end
+	local bv = Instance.new("BodyVelocity")
+	bv.Name = "IvoryHoverBV"
+	bv.MaxForce = Vector3.new(0, math.huge, 0)
+	bv.Velocity = Vector3.zero
+	bv.P = 10000
+	bv.Parent = hrp
 end
 
-local function detachFloat()
+local function detachHover()
 	local hrp = getHRP()
 	if not hrp then return end
-	local bv = hrp:FindFirstChild("IvoryFloatBV")
+	local bv = hrp:FindFirstChild("IvoryHoverBV")
 	if bv then bv:Destroy() end
-	local bg = hrp:FindFirstChild("IvoryFloatBG")
-	if bg then bg:Destroy() end
+end
+
+local function holdAbove(targetPart)
+	local hrp = getHRP()
+	if not hrp or not targetPart then return end
+	local mobPos = targetPart.Position
+	local hoverY = math.max(hrp.Position.Y, mobPos.Y + 30)
+	hrp.CFrame = CFrame.new(mobPos.X, hoverY, mobPos.Z + 5)
+	hrp.Velocity = Vector3.zero
+	hrp.RotVelocity = Vector3.zero
+	attachHover()
 end
 
 local function useSkills(targetPos)
@@ -1141,17 +1141,11 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 									hrp = getHRP()
 									local distToMob = hrp and (hrp.Position - mobHRP.Position).Magnitude or 999
 								if distToMob > 20 then
+									detachHover()
 									toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
-									else
-										hrp = getHRP()
-										local hum = getHum()
-										if hrp and hum then
-											local mobPos = mobHRP.Position
-											hrp.CFrame = CFrame.new(mobPos + Vector3.new(0, 30, 5), mobPos)
-											hrp.Velocity = Vector3.zero
-										hrp.RotVelocity = Vector3.zero
-										end
-									end
+								else
+									holdAbove(mobHRP)
+								end
 									task.wait(0.1)
 									checkAndFixStuck(mobHRP.Position)
 
@@ -1207,15 +1201,10 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 											local distToMob = hrp and (hrp.Position - mobHRP.Position).Magnitude or 999
 
 											if distToMob > 20 then
+												detachHover()
 												toTarget(mobHRP.CFrame * CFrame.new(0, 30, 5))
 											else
-												hrp = getHRP()
-												if hrp then
-													local mobPos = mobHRP.Position
-													hrp.CFrame = CFrame.new(mobPos + Vector3.new(0, 30, 5), mobPos)
-													hrp.Velocity = Vector3.zero
-													hrp.RotVelocity = Vector3.zero
-												end
+												holdAbove(mobHRP)
 											end
 
 											task.wait(0.1)
@@ -1259,10 +1248,10 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 					end)
 					task.wait()
 				end
-				detachFloat()
+				detachHover()
 			end)
 		else
-			detachFloat()
+			detachHover()
 		end
 	end,
 })
@@ -1280,7 +1269,7 @@ end})
 
 FarmGroup:CreateButton({Name="Stop Farming", Callback=function()
 	STATE.AutoFarm = false
-	detachFloat()
+	detachHover()
 end})
 
 ChestGroup:CreateToggle({Name = "Auto Farm Chests", CurrentValue = false,
@@ -1398,14 +1387,14 @@ local FruitGroup = FarmSub:CreateSection("Fruits")
 					end)
 					task.wait()
 				end
-				detachFloat()
+				detachHover()
 				if stuckNoclipOn and not STATE.Noclip then
 					setNoclip(false)
 					stuckNoclipOn = false
 				end
 			end)
 		else
-			detachFloat()
+			detachHover()
 			if stuckNoclipOn and not STATE.Noclip then
 				setNoclip(false)
 				stuckNoclipOn = false
@@ -1621,10 +1610,10 @@ BossFarmGroup:CreateToggle({Name = "Auto Farm Boss", CurrentValue = false,
 					end)
 					task.wait()
 				end
-				detachFloat()
+				detachHover()
 			end)
 		else
-			detachFloat()
+			detachHover()
 		end
 	end,
 })
@@ -1726,10 +1715,10 @@ MatFarmGroup:CreateToggle({Name = "Auto Farm Material", CurrentValue = false,
 					end)
 					task.wait()
 				end
-				detachFloat()
+				detachHover()
 			end)
 		else
-			detachFloat()
+			detachHover()
 		end
 	end,
 })
@@ -1795,10 +1784,10 @@ SpecialFarmGroup:CreateToggle({Name = "Auto Farm Bone", CurrentValue = false,
 					end)
 					task.wait()
 				end
-				detachFloat()
+				detachHover()
 			end)
 		else
-			detachFloat()
+			detachHover()
 		end
 	end,
 })
@@ -1859,10 +1848,10 @@ SpecialFarmGroup:CreateToggle({Name = "Auto Cake Prince", CurrentValue = false,
 					end)
 					task.wait()
 				end
-				detachFloat()
+				detachHover()
 			end)
 		else
-			detachFloat()
+			detachHover()
 		end
 	end,
 })
@@ -1909,10 +1898,10 @@ SpecialFarmGroup:CreateToggle({Name = "Auto Factory Raid", CurrentValue = false,
 					end)
 					task.wait()
 				end
-				detachFloat()
+				detachHover()
 			end)
 		else
-			detachFloat()
+			detachHover()
 		end
 	end,
 })
@@ -1947,10 +1936,10 @@ SpecialFarmGroup:CreateToggle({Name = "Auto Pirate Raid", CurrentValue = false,
 					end)
 					task.wait()
 				end
-				detachFloat()
+				detachHover()
 			end)
 		else
-			detachFloat()
+			detachHover()
 		end
 	end,
 })
@@ -2065,10 +2054,10 @@ MasteryGroup:CreateToggle({Name = "Auto Mastery Farm", CurrentValue = false,
 					end)
 					task.wait()
 				end
-				detachFloat()
+				detachHover()
 			end)
 		else
-			detachFloat()
+			detachHover()
 		end
 	end,
 })
@@ -2121,10 +2110,10 @@ MasteryGroup:CreateToggle({Name = "Kill Nearest Mob", CurrentValue = false,
 					end)
 					task.wait()
 				end
-				detachFloat()
+				detachHover()
 			end)
 		else
-			detachFloat()
+			detachHover()
 		end
 	end,
 })
@@ -2758,7 +2747,7 @@ BountyGroup:CreateToggle({Name = "Auto Bounty Farm", CurrentValue = false,
 	Callback = function(v)
 		STATE.AutoBounty = v
 		if v then
-			attachFloat()
+			attachHover()
 			task.spawn(function()
 				while STATE.AutoBounty do
 					pcall(function()
@@ -2811,17 +2800,17 @@ BountyGroup:CreateToggle({Name = "Auto Bounty Farm", CurrentValue = false,
 					end)
 					task.wait()
 				end
-				detachFloat()
+				detachHover()
 			end)
 		else
-			detachFloat()
+			detachHover()
 		end
 	end,
 })
 
 BountyGroup:CreateButton({Name="Stop Bounty", Callback=function()
 	STATE.AutoBounty = false
-	detachFloat()
+	detachHover()
 end})
 
 BountySet:CreateSlider({Name = "Follow Distance", Range = {5, 50}, Increment = 1, CurrentValue = 20,
@@ -3575,7 +3564,7 @@ MenuSection:CreateButton({Name = "Unload", Callback = function()
 	clearESP()
 	setNoclip(false)
 	setInfiniteJump(false)
-	detachFloat()
+	detachHover()
 	Library:Unload()
 end})
 
