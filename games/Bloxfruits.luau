@@ -301,7 +301,6 @@ local function toTarget(Pos)
 	local hum = getHum()
 	if not hum then isMoving = false return end
 
-	-- Remove any float BodyVelocity/BodyGyro that blocks movement
 	pcall(function()
 		local bv = hrp:FindFirstChild("IvoryFloatBV")
 		if bv then bv:Destroy() end
@@ -310,6 +309,7 @@ local function toTarget(Pos)
 	end)
 
 	if hum.Health <= 0 then
+		if tweenActive then pcall(function() tweenActive:Cancel() end) end
 		repeat task.wait() until getHum() and getHum().Health > 0
 		task.wait(0.2)
 		hrp = getHRP()
@@ -334,46 +334,13 @@ local function toTarget(Pos)
 		return
 	end
 
-	-- Use Humanoid:MoveTo for ALL movement (undetectable by server anti-cheat)
-	-- No CFrame tweening, no flying, no teleporting
-	local maxAttempts = 3
-	for attempt = 1, maxAttempts do
-		hrp = getHRP()
-		hum = getHum()
-		if not hrp or not hum then isMoving = false return end
-
-		local startPos = hrp.Position
-		pcall(function() hum:MoveTo(targetPos) end)
-
-		-- Wait for MoveTo to complete or timeout
-		local elapsed = 0
-		local timeout = math.clamp(dist / 16, 0.5, 4)
-		while elapsed < timeout do
-			task.wait(0.1)
-			elapsed = elapsed + 0.1
-			hrp = getHRP()
-			if not hrp then isMoving = false return end
-			-- Check if we arrived
-			if (hrp.Position - targetPos).Magnitude < 10 then
-				isMoving = false
-				return
-			end
-		end
-
-		-- Check if we moved at all
-		hrp = getHRP()
-		if hrp and (hrp.Position - startPos).Magnitude > 5 then
-			-- We moved, try again to get closer
-			continue
-		end
-
-		-- Stuck: try slightly offset position
-		if attempt < maxAttempts then
-			local offset = Vector3.new(math.random(-5, 5), 0, math.random(-5, 5))
-			pcall(function() hum:MoveTo(targetPos + offset) end)
-			task.wait(0.5)
-		end
-	end
+	local speed = 250
+	local info = TweenInfo.new(dist / speed, Enum.EasingStyle.Linear)
+	pcall(function()
+		tweenActive = TweenService:Create(hrp, info, {CFrame = CFrame.new(targetPos)})
+		tweenActive:Play()
+		tweenActive.Completed:Wait()
+	end)
 
 	isMoving = false
 end
