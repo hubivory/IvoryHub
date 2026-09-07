@@ -337,6 +337,7 @@ local function toTarget(Pos)
 	end
 
 	local done = false
+	local isDropping = false
 
 	toTargetConn = RunService.RenderStepped:Connect(function(dt)
 		if done then return end
@@ -353,23 +354,38 @@ local function toTarget(Pos)
 			return
 		end
 
-		-- Fly height: get above obstacles but not a huge teleport
-		local flyHeight = math.max(current.Y, 60)
-		local dropDist = 25
-		local newPos
-		local spd = STATE.TweenSpeed or 600
+		-- Once dropping, stay dropping
+		if not isDropping then
+			local horizDist = Vector3.new(toTarget.X, 0, toTarget.Z).Magnitude
+			if horizDist < 25 then
+				isDropping = true
+			end
+		end
 
-		if dist < dropDist then
-			-- Close: drop toward target
-			local dropDir = (targetPos + Vector3.new(0, 30, 0)) - current
+		local spd = STATE.TweenSpeed or 600
+		local newPos
+
+		if isDropping then
+			-- Drop phase: move straight toward target
+			local dropTarget = targetPos + Vector3.new(0, 30, 0)
+			local dropDir = dropTarget - current
 			local dropStep = math.min(spd * dt, dropDir.Magnitude)
-			newPos = current + dropDir.Unit * dropStep
+			if dropDir.Magnitude > 1 then
+				newPos = current + dropDir.Unit * dropStep
+			else
+				newPos = dropTarget
+			end
 		else
-			-- Far: gradually climb to fly height, move in XZ
-			local targetPoint = Vector3.new(targetPos.X, flyHeight, targetPos.Z)
+			-- Fly phase: climb to 60, move in XZ toward target
+			local flyY = 60
+			local targetPoint = Vector3.new(targetPos.X, flyY, targetPos.Z)
 			local moveDir = targetPoint - current
-			local step = math.min(spd * dt, moveDir.Magnitude)
-			newPos = current + moveDir.Unit * step
+			if moveDir.Magnitude > 1 then
+				local step = math.min(spd * dt, moveDir.Magnitude)
+				newPos = current + moveDir.Unit * step
+			else
+				newPos = targetPoint
+			end
 		end
 
 		-- Floor: never below ground
