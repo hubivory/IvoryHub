@@ -232,15 +232,29 @@ local function BTP(Point)
 			repeat task.wait() until hum.Health > 0
 			task.wait(0.2)
 		end
-		hrp.CFrame = Point
-		task.wait(0.1)
-		hum.Health = 0
-		task.wait(1.5)
-		hrp = getHRP()
-		if hrp then
-			hrp.CFrame = Point
-			task.wait(0.1)
+		-- Try requestEntrance first (cross-sea travel)
+		if EntranceCF then
+			pcall(function() CommF:InvokeServer("requestEntrance", EntranceCF) end)
+			task.wait(1)
+			return
 		end
+		-- Tween with fly-over for long distances (no direct CFrame, no kill)
+		local origin = hrp.Position
+		local target = Point.Position
+		local highestY = math.max(origin.Y, target.Y) + 200
+		local speed = 250
+		local function tweenPart(cf)
+			local d = (cf.Position - hrp.Position).Magnitude
+			if d < 5 then return end
+			local info = TweenInfo.new(d / speed, Enum.EasingStyle.Linear)
+			local t = TweenService:Create(hrp, info, {CFrame = cf})
+			t:Play()
+			t.Completed:Wait()
+			hrp = getHRP()
+		end
+		tweenPart(CFrame.new(Vector3.new(origin.X, highestY, origin.Z)))
+		tweenPart(CFrame.new(Vector3.new(target.X, highestY, target.Z)))
+		tweenPart(Point)
 	end)
 end
 
@@ -339,12 +353,19 @@ local function toTarget(Pos)
 	end
 
 	-- Use Humanoid:MoveTo for ground-level movement (less detectable)
+	-- Fallback to tween if stuck (wall/terrain)
 	if dist <= 500 then
+		local startPos = hrp.Position
 		pcall(function()
 			hum:MoveTo(target)
 		end)
 		task.wait(math.clamp(dist / 16, 0.3, 3))
-		return
+		-- Check if we actually moved
+		hrp = getHRP()
+		if hrp and (hrp.Position - startPos).Magnitude > 5 then
+			return -- MoveTo worked
+		end
+		-- Stuck: fall through to tween with fly-over
 	end
 
 	-- Raycast to check if path is clear (cast from above ground to avoid floor detection)
