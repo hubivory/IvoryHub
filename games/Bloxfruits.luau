@@ -341,7 +341,7 @@ local function toTarget(Pos)
 	-- Raycast to check if path is clear (cast from above ground to avoid floor detection)
 	local rayParams = RaycastParams.new()
 	rayParams.FilterType = Enum.RaycastFilterType.Exclude
-	rayParams.FilterDescendantsInstances = {lp.Character}
+	rayParams.FilterDescendantsInstances = {LocalPlayer.Character}
 	local originUp = Vector3.new(origin.X, origin.Y + 15, origin.Z)
 	local targetUp = Vector3.new(target.X, target.Y + 15, target.Z)
 	local dir = (targetUp - originUp)
