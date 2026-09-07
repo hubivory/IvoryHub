@@ -1145,6 +1145,7 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 		STATE.AutoFarm = v
 		if v then
 			task.spawn(function()
+				local killCount = 0
 				while STATE.AutoFarm do
 					pcall(function()
 						if STATE.CollectingFruit then task.wait(0.5) return end
@@ -1215,6 +1216,11 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 							-- Use CheckQuest() to determine what to farm, then go farm it
 							CheckQuest()
 
+							-- Accept quest on first run
+							if killCount == 0 then
+								pcall(function() CommF:InvokeServer("StartQuest", NameQuest, LevelQuest) end)
+							end
+
 							-- Find and farm the correct mob based on CheckQuest data
 							local mobFound = false
 							if Monster then
@@ -1267,14 +1273,18 @@ local ChestGroup = FarmSub:CreateSection("Chests")
 												useSkills(mobHRP.Position)
 											end
 										until not STATE.AutoFarm or not v.Parent or v.Humanoid.Health <= 0 or not v:FindFirstChild("HumanoidRootPart")
+										killCount = killCount + 1
+										if killCount >= 8 then
+											killCount = 0
+											pcall(function() CommF:InvokeServer("StartQuest", NameQuest, LevelQuest) end)
+										end
 										break
 									end
 								end
 							end
 
-							-- No mob found: accept quest and walk to spawn
+							-- No mob found: walk to spawn location
 							if not mobFound then
-								pcall(function() CommF:InvokeServer("StartQuest", NameQuest, LevelQuest) end)
 								if CFrameMon and CFrameMon.Position then
 									toTarget(CFrameMon * CFrame.new(0, 30, 5))
 								end
