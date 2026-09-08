@@ -22,6 +22,7 @@ local cfg = {
     AutoTrainBonus = false,
     AutoCollectEggs = false,
     AutoPlaceEggs = false,
+    AutoHatchEggs = false,
     EggArea = "Meadow",
     WalkSpeed = 16,
     JumpPower = 25,
@@ -215,6 +216,12 @@ EggSection:CreateToggle({
     Name = "Auto Place Eggs",
     CurrentValue = cfg.AutoPlaceEggs,
     Callback = function(value) cfg.AutoPlaceEggs = value end,
+})
+
+EggSection:CreateToggle({
+    Name = "Auto Hatch Eggs",
+    CurrentValue = cfg.AutoHatchEggs,
+    Callback = function(value) cfg.AutoHatchEggs = value end,
 })
 
 EggSection:CreateButton({
@@ -759,6 +766,36 @@ task.spawn(function()
                             task.wait(0.3)
                             Remotes.PlaceEggRequest:FireServer(eggId, region.Position)
                             task.wait(0.8)
+                        end
+                    end
+                end
+            end
+        end
+        task.wait(1)
+    end
+end)
+
+-- Auto Hatch Eggs: teleports to each placed egg with HatchReady and fires its HatchPrompt
+task.spawn(function()
+    while isRunning do
+        if cfg.AutoHatchEggs then
+            local char, hrp = getChar()
+            local Plot = LocalPlayer:FindFirstChild("Plot")
+            local plotModel = Plot and Plot.Value
+            local placedEggs = plotModel and plotModel:FindFirstChild("PlacedEggs")
+            if hrp and placedEggs then
+                for _, egg in ipairs(placedEggs:GetChildren()) do
+                    if not isRunning or not cfg.AutoHatchEggs then break end
+                    if egg:GetAttribute("HatchReady") == true and egg:GetAttribute("HatchOpening") ~= true then
+                        local hatchPrompt = egg:FindFirstChild("HatchPrompt", true)
+                        if hatchPrompt and hatchPrompt:IsA("ProximityPrompt") and hatchPrompt.Enabled then
+                            local root = egg:FindFirstChild("HumanoidRootPart") or egg:FindFirstChildWhichIsA("BasePart")
+                            if root then
+                                hrp.CFrame = root.CFrame + Vector3.new(0, 2, 0)
+                                task.wait(0.3)
+                                fireproximityprompt(hatchPrompt)
+                                task.wait(1)
+                            end
                         end
                     end
                 end
