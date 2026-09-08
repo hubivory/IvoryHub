@@ -1507,7 +1507,7 @@ DiscordLabel = dcSection:CreateLabel({ Text = "Join Discord For Free Keys!" })
 dcSection:CreateButton({ Name = "Copy Discord Link", Callback = function()
     pcall(function()
         if setclipboard then
-            setclipboard("https://discord.gg/CaKZKf7gH")
+            setclipboard("https://discord.gg/syZX9Zte7t")
         end
     end)
     Library.Notify({ Title = "Ivory", Content = "Discord link copied to clipboard!", Type = "Success", Duration = 3 })
