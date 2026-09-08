@@ -1503,11 +1503,11 @@ local DiscordLabel, CreditsLabel
 do
 local dcSection = Tabs.Combat:CreateSection("")
 dcSection:CreateLabel("DISCORD")
-DiscordLabel = dcSection:CreateLabel({ Text = "Join Discord For Free Keys" })
+DiscordLabel = dcSection:CreateLabel({ Text = "Join Discord For Free Keys!" })
 dcSection:CreateButton({ Name = "Copy Discord Link", Callback = function()
     pcall(function()
         if setclipboard then
-            setclipboard("https://discord.gg/ivory")
+            setclipboard("https://discord.gg/CaKZKf7gH")
         end
     end)
     Library.Notify({ Title = "Ivory", Content = "Discord link copied to clipboard!", Type = "Success", Duration = 3 })
@@ -2031,7 +2031,7 @@ end
 task.spawn(function()
     task.wait(2)
     local pinkColor = Color3.fromRGB(180, 105, 255)
-    local fullText = "Join Discord For Free Keys"
+    local fullText = "Join Discord For Free Keys!"
     local cursor = "_"
     local function styleDc()
         pcall(function()
