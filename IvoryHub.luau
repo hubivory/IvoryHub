@@ -1,64 +1,160 @@
---[[
-    Ivory Hub - Loader
-    This is the main entry point for all Ivory Hub scripts.
-    It routes to the correct game script based on the PlaceId.
-]]
+--// Ivory Hub - Loader
+--// https://github.com/hubivory/IvoryHub
+--// Automatically loads the script for your current game
 
-local PlaceId = game.PlaceId
+local GITHUB_RAW = "https://raw.githubusercontent.com/hubivory/IvoryHub/"
+local GITHUB_API = "https://api.github.com/repos/hubivory/IvoryHub/commits?per_page=1"
+
+local httpGet do
+	local fn = request or http_request or (syn and syn.request)
+	if fn then
+		httpGet = function(url)
+			local res = fn({ Url = url, Method = "GET" })
+			return res and res.Body
+		end
+	else
+		httpGet = function(url)
+			return game:HttpGet(url, true)
+		end
+	end
+end
 
 local GameScripts = {
-    [126870639873289] = "games/126870639873289.luau", -- Jump for Animals
+	[7243409883] = "games/ElementalMagicArena.luau",
+	[116497287371701] = "games/Karinderya.luau",
+	[99521272836282] = "games/FinalSwarm.luau",
+	[79787558257549] = "games/FinalSwarm.luau",
+	[95919006508862] = "games/MeltTheIce.luau",
+	[1962086868] = "games/Towerofhell.luau",
+	[138501044883253] = "games/BuildABurger.luau",
+	[105963809208632] = "games/BuildABurger.luau",
+	[100293509865504] = "games/CatchABillionDucks.luau",
+    [17625359962] = "games/IvoryRivals.luau",
+    [120617974337690] = "games/CatchABillionDucks.luau",
+	[137363360166684] = "games/RocksRNG.luau",
+	[9772878203] = "games/Floppa2.luau",
+	[13772394625] = "games/Bladeball_BAC.luau",
+	[16281300371] = "games/Bladeball_BAC.luau",
+	[142823291] = "games/MM2.luau",
+	[17516596118] = "games/Hypershot.luau",
+	[100040622766961] = "games/Hypershot.luau",
+	[92637789841354] = "games/CleanAllTheLeaves.luau",
+	[100068273119174] = "games/CleanAllTheLeaves.luau",
+	[114697347887839] = "games/Monkeyescape.luau",
+	[120851538706364] = "games/Murderduels.luau",
+	[2753915549] = "games/Bloxfruits.luau",
+	[79091703265657] = "games/Bloxfruits.luau",
+	[114234929420007] = "games/Bloxstrike.luau",
+	[83038462357724] = "games/DigAndClean.luau",
+	[117539213094671] = "games/RollAGnome.luau",
+	[90086669327265] = "games/cutgrass.luau",
+	[9285238704] = "games/raceclick.luau",
+	[107778070777162] = "games/StealAnEgg.luau",
+	[128736949265057] = "games/Gakuran.luau",
+	[72920620366355] = "games/Operationone.luau",
+	[77463332823746] = "games/Hoodrivals.luau",
+	[113272123504853] = "games/Hoodrivals.luau",
+	[79546208627805] = "games/99nights.luau",
+	[126509999114328] = "games/99nights.luau",
+	[79268393072444] = "games/SellLemons.luau",
+	[96033388567901] = "games/LootEvo.luau",
+	[83622406313819] = "games/LootUp.luau",
+    [117398147513099] = "games/IvoryRivals.luau",
+    [71874690745115] = "games/IvoryRivals.luau",
+    [133215910299950] = "games/IvoryRivals.luau",
+    [129604661913557] = "games/IvoryRivals.luau",
+    [18126510175] = "games/IvoryRivals.luau",
+    [7449423635] = "games/Bloxfruits.luau",
+    [4442272183] = "games/Bloxfruits.luau",
+	[73902483975735] = "games/Bloxfruits.luau",
+	[108628039999641] = "games/Findneedle.lua",
+	[77108422251420] = "games/Findneedle.lua",
+	[83445806734780] = "games/Findneedle.lua",
+	[12355337193] = "games/MVSD.luau",
+	[15385224902] = "games/MVSD.luau",
+	[13771457545] = "games/MVSD.luau",
+	[74102906764176] = "games/GreedyGrowers.luau",
+	[114118947106321] = "games/Runeheaven.luau",
+	[120189115846709] = "games/TTK.luau",
+	[14939963714] = "games/Jailbird.luau",
+	[14772802900] = "games/Jailbird.luau",
+	[3101667897] = "games/LegendsOfSpeed.luau",
+	[126691165749976] = "games/Redliner.luau",
+	[94987506187454] = "games/Redliner.luau",
+	[115875349872417] = "games/Redliner.luau",
+	-- Add more: [PlaceId] = "games/ScriptName.luau"
 }
 
-local ScriptPath = GameScripts[PlaceId]
+local UniverseScripts = {
+	[4777817887] = "games/Bladeball_BAC.luau",
+	[10548152848] = "games/Runeheaven.luau",
+	-- Add more: [UniverseId] = "games/ScriptName.luau"
+}
 
-if not ScriptPath then
-    error("[Ivory] Unsupported game. PlaceId: " .. tostring(PlaceId))
+local PlaceId = game.PlaceId
+local ScriptFile = GameScripts[PlaceId] or UniverseScripts[game.GameId]
+
+if not ScriptFile then
+	--// No game script found, load universal splash screen
+	local commitHash = "main"
+	pcall(function()
+		local body = httpGet(GITHUB_API)
+		if body then
+			local hash = body:match('"sha":"(%w+)"')
+			if hash then commitHash = hash end
+		end
+	end)
+	local url = GITHUB_RAW .. commitHash .. "/universal_script.luau"
+	local content = httpGet(url)
+	if content then
+		if content:byte(1) == 0xEF and content:byte(2) == 0xBB and content:byte(3) == 0xBF then
+			content = content:sub(4)
+		end
+		loadstring(content)()
+	end
+	return
 end
 
--- Fetch and execute the script
-local httpGet do
-    local fn = request or http_request or (syn and syn.request)
-    if fn then
-        httpGet = function(url)
-            local res = fn({ Url = url, Method = "GET" })
-            return res and res.Body
-        end
-    else
-        httpGet = function(url)
-            return game:HttpGet(url, true)
-        end
-    end
-end
+print("[Ivory Hub] Loading for game: " .. PlaceId)
 
 local success, err = pcall(function()
-    -- Try to fetch from GitHub first
-    local baseUrl = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/"
-    local scriptSrc = httpGet(baseUrl .. ScriptPath)
-    
-    if scriptSrc and #scriptSrc > 0 then
-        -- Strip UTF-8 BOM if present
-        if scriptSrc:byte(1) == 0xEF and scriptSrc:byte(2) == 0xBB and scriptSrc:byte(3) == 0xBF then
-            scriptSrc = scriptSrc:sub(4)
-        end
-        
-        loadstring(scriptSrc)()
-    else
-        -- Fallback: try to load from workspace
-        local files = listfiles and listfiles("IvoryHub") or {}
-        for _, file in ipairs(files) do
-            if file:match("%.luau?$") and file:find(tostring(PlaceId)) then
-                local content = readfile("IvoryHub/" .. file)
-                if content and #content > 0 then
-                    loadstring(content)()
-                    return
-                end
-            end
-        end
-        error("[Ivory] Failed to load game script. Check your connection.")
-    end
+	-- Get latest commit hash to bypass CDN cache
+	local commitHash = "main"
+	pcall(function()
+		local body = httpGet(GITHUB_API)
+		if body then
+			local hash = body:match('"sha":"(%w+)"')
+			if hash then
+				commitHash = hash
+			end
+		end
+	end)
+
+	-- Pre-fetch Ivory Hub Library source code for game scripts
+	pcall(function()
+		local genv = getgenv()
+		genv._IvoryLibSrc = httpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua")
+		print("[Ivory Hub] Ivory Hub Library cached")
+	end)
+
+	local url = GITHUB_RAW .. commitHash .. "/" .. ScriptFile
+	local content = httpGet(url)
+	if not content or #content == 0 then
+		error("HTTP fetch failed for " .. tostring(ScriptFile))
+	end
+	-- Strip UTF-8 BOM if present
+	if content:byte(1) == 0xEF and content:byte(2) == 0xBB and content:byte(3) == 0xBF then
+		content = content:sub(4)
+	end
+	local fn, loadErr = loadstring(content)
+	if not fn then
+		error("Compile error: " .. tostring(loadErr))
+	end
+	fn()
 end)
 
-if not success then
-    error("[Ivory] Error: " .. tostring(err))
+if success then
+	print("[Ivory Hub] Loaded successfully!")
+else
+	warn("[Ivory Hub] Failed to load:", err)
 end
