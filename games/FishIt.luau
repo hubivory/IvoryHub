@@ -6,7 +6,6 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local VirtualUser = game:GetService("VirtualUser")
 local Lighting = game:GetService("Lighting")
@@ -71,47 +70,18 @@ local net = ReplicatedStorage:FindFirstChild("Packages")
     and ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"]
     and ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
 
-local StartMinigame = net and net["RF/RequestFishingMinigameStarted"]
-local CatchFishCompleted = net and net["RE/CatchFishCompleted"]
-local ClaimNotification = net and net["RE/ClaimNotification"]
-local FishingStopped = net and net["RE/FishingStopped"]
 local SellAll = net and net["RF/SellAllItems"]
 local UpdateAutoFish = net and net["RF/UpdateAutoFishingState"]
 
-local function claimNotif()
-    if ClaimNotification and type(ClaimNotification.FireServer) == "function" then
-        ClaimNotification:FireServer("Fishes")
+local function setAutoFishing(state)
+    if UpdateAutoFish then
+        pcall(function() UpdateAutoFish:InvokeServer(state) end)
     end
 end
 
-local function doFishing()
-    if not cfg.AutoFish then return end
-    if not StartMinigame then return end
-
-    pcall(function()
-        local serverTime = tick()
-        pcall(function() serverTime = workspace:GetServerTimeNow() end)
-        StartMinigame:InvokeServer(-1.233, 0.995)
-    end)
-
-    local heartbeatConn
-    heartbeatConn = RunService.Heartbeat:Connect(function()
-        pcall(function()
-            if CatchFishCompleted then
-                CatchFishCompleted:FireServer()
-            end
-        end)
-    end)
-
-    local stoppedConn
-    if FishingStopped then
-        stoppedConn = FishingStopped.OnClientEvent:Connect(function()
-            if heartbeatConn then heartbeatConn:Disconnect() end
-            if stoppedConn then stoppedConn:Disconnect() end
-            claimNotif()
-            task.wait(1)
-            if cfg.AutoFish then doFishing() end
-        end)
+local function sellAll()
+    if SellAll then
+        pcall(function() SellAll:InvokeServer() end)
     end
 end
 
@@ -240,9 +210,7 @@ FarmSection:CreateToggle({
     CurrentValue = cfg.AutoFish,
     Callback = function(value)
         cfg.AutoFish = value
-        if value then
-            task.spawn(doFishing)
-        end
+        setAutoFishing(value)
     end,
 })
 
@@ -255,9 +223,8 @@ FarmSection:CreateToggle({
 FarmSection:CreateButton({
     Name = "Sell All Fish",
     Callback = function()
-        if SellAll then
-            pcall(function() SellAll:InvokeServer() end)
-        end
+        sellAll()
+        Library.Notify({ Title = "Ivory", Content = "Sold all fish!", Type = "Success", Duration = 2 })
     end,
 })
 
@@ -520,8 +487,8 @@ end)
 -- Auto Sell
 task.spawn(function()
     while isRunning do
-        if cfg.AutoSell and SellAll then
-            pcall(function() SellAll:InvokeServer() end)
+        if cfg.AutoSell then
+            sellAll()
         end
         task.wait(5)
     end
