@@ -83,7 +83,7 @@ local GameScripts = {
 	[94987506187454] = "games/Redliner.luau",
 	[115875349872417] = "games/Redliner.luau",
 	[126870639873289] = "games/JumpForAnimals.luau",
-	[70654235200182] = "games/JumpingBaddies.luau", -- Baddie Jumping
+	[1789137226826] = "games/JumpingBaddies.luau", -- Baddie Jumping
 	-- Add more: [PlaceId] = "games/ScriptName.luau"
 }
 
