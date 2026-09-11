@@ -1625,7 +1625,7 @@ end)
 local MenuSection = SettingsTab:CreateSection("Menu")
 MenuSection:CreateToggle({Name = "Custom Cursor", CurrentValue = true, Callback = function(v) Library.ShowCustomCursor = v end})
 MenuSection:CreateKeybind({Name = "Menu Toggle", CurrentKeybind = "RightShift"})
-MenuSection:CreateButton({Name = "Join Discord", Callback = function() pcall(function() setclipboard("https://discord.gg/ivory") end) end})
+MenuSection:CreateButton({Name = "Join Discord", Callback = function() pcall(function() setclipboard("https://discord.gg/bac") end) end})
 MenuSection:CreateButton({Name = "Unload", Callback = function() CONFIG.auto = false; stopWalking(); pcall(function() Library:Destroy() end) end})
 MenuSection:CreateButton({Name = "Unstuck", Callback = unstuck})
 

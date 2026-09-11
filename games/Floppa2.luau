@@ -218,7 +218,7 @@ MG:CreateDropdown("DPIDropdown", { Values = { "50%", "75%", "100%", "125%", "150
 MG:CreateSlider("UICornerSlider", { Text = "Corner Radius", Default = Library.CornerRadius, Min = 0, Max = 20, Rounding = 0, Callback = function(v) Window:SetCornerRadius(v) end })
 MG:CreateDivider()
 MG:CreateLabel("Menu bind"):CreateKeybind("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
-MG:CreateButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Duration = 3 }) end)
+MG:CreateButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/bac") end); Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Duration = 3 }) end)
 MG:CreateButton("Unload", function() clearESP(); Library:Unload() end)
 
 -- ═══ LOOPS ═══

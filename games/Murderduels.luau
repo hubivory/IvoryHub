@@ -942,7 +942,7 @@ local CreditsSection = Tabs.Settings:CreateSection("Credits")
 
 SettingsSection:CreateButton({Name = "Copy Discord Link", Callback = function()
 	if setclipboard then
-		setclipboard("https://discord.gg/ivory")
+		setclipboard("https://discord.gg/bac")
 		Library.Notify({ Title = "Ivory Hub", Content = "Discord link copied!", Duration = 3, Type = "Success" })
 	end
 end})

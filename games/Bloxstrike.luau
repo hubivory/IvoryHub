@@ -76,7 +76,7 @@ end
 local DiscordSection = Tabs.Combat:CreateSection("Discord")
 DiscordSection:CreateLabel("JOIN DISCORD FOR DUPE")
 DiscordSection:CreateButton({Name = "Copy Link", Callback = function()
-    if setclipboard then setclipboard("https://discord.gg/ivory") end
+    if setclipboard then setclipboard("https://discord.gg/bac") end
     Library.Notify({ Title = "Discord", Content = "Copied to clipboard!", Duration = 3 })
 end})
 
@@ -629,7 +629,7 @@ MenuSection:CreateButton({Name = "Unload", Callback = function()
 end})
 
 MenuSection:CreateButton({Name = "Join Discord", Callback = function()
-    if setclipboard then setclipboard("https://discord.gg/ivory") end
+    if setclipboard then setclipboard("https://discord.gg/bac") end
     Library.Notify({ Title = "Discord", Content = "Copied to clipboard!", Duration = 3 })
 end})
 

@@ -207,7 +207,7 @@ MenuGroup:CreateDropdown({
 MenuGroup:CreateDivider()
 MenuGroup:CreateLabel("Menu bind")
 MenuGroup:CreateKeybind({ Name = "Menu keybind", CurrentKeybind = "RightShift" })
-MenuGroup:CreateButton({ Name = "Join Discord", Callback = function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3 }) end })
+MenuGroup:CreateButton({ Name = "Join Discord", Callback = function() pcall(function() setclipboard("https://discord.gg/bac") end); Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3 }) end })
 MenuGroup:CreateButton({ Name = "Unload", Callback = function()
     Library:Unload()
 end })

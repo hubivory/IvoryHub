@@ -550,7 +550,7 @@ WorldGroup:CreateButton("Remove Fog", function()
 end)
 
 local DiscordGroup = SettingsTab:CreateSection("Discord")
-DiscordGroup:CreateButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library:Notify({ Name = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3 }) end)
+DiscordGroup:CreateButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/bac") end); Library:Notify({ Name = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3 }) end)
 
 local CreditGroup = SettingsTab:CreateSection("Credits")
 local CreditLabel = CreditGroup:CreateLabel({ Text = "", Size = 26, DoesWrap = true })

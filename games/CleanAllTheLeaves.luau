@@ -422,7 +422,7 @@ MenuSection:CreateToggle({ Name = "Custom Cursor", CurrentValue = false, Callbac
 MenuSection:CreateButton({ Name = "Test Notification", Callback = function() Library.Notify({ Title = "Ivory", Content = "Test Notification!", Type = "Success", Duration = 5 }) end })
 MenuSection:CreateDropdown({ Name = "Notification Side", Options = {"Left", "Right"}, CurrentOption = "Right", Callback = function(v) Library.NotifySide = v end })
 MenuSection:CreateSlider({ Name = "Corner Radius", Range = {0, 20}, Increment = 1, CurrentValue = 4, Callback = function(v) Library.CornerRadius = v end })
-MenuSection:CreateButton({ Name = "Join Discord", Callback = function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3 }) end })
+MenuSection:CreateButton({ Name = "Join Discord", Callback = function() pcall(function() setclipboard("https://discord.gg/bac") end); Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3 }) end })
 MenuSection:CreateButton({ Name = "Unload Script", Callback = function() Library.Notify({ Title = "Ivory", Content = "Unloading...", Type = "Info", Duration = 2 }); task.wait(0.5); for k in pairs(_G) do if string.find(k, "Ivory") then _G[k] = nil end end; pcall(function() Library.ToggleWindow() end) end })
 
 --// Helper: Get LeafSim module

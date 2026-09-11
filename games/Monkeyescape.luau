@@ -164,7 +164,7 @@ do
     L:CreateLabel("Train -> Wins (yellow) -> Rebirth -> Tails")
     L:CreateDivider()
     L:CreateButton({Name="JOIN DISCORD FOR DUPE", Callback=function()
-        if setclipboard then setclipboard("https://discord.gg/ivory") end
+        if setclipboard then setclipboard("https://discord.gg/bac") end
         Library.Notify({Title="Ivory", Content="Discord link copied!", Duration=3})
     end})
     local R=Tabs.Main:CreateSection("Quick Status")
@@ -952,7 +952,7 @@ do
         end)
     end
     G:CreateButton({Name="Join Discord", Callback=function()
-        if setclipboard then setclipboard("https://discord.gg/ivory") end
+        if setclipboard then setclipboard("https://discord.gg/bac") end
         Library.Notify({Title="Ivory", Content="Discord link copied!", Duration=3})
     end})
     G:CreateKeybind({

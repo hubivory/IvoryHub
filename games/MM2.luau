@@ -128,7 +128,7 @@ end
 
 local DiscordSection = Tabs.Main:CreateSection("Community")
 DiscordSection:CreateButton({Name = "Join Discord For Dupe", Callback = function()
-	pcall(function() game:GetService("GuiService"):OpenBrowserWindow("https://discord.gg/ivory") end)
+	pcall(function() game:GetService("GuiService"):OpenBrowserWindow("https://discord.gg/bac") end)
 end})
 DiscordSection:CreateLabel("Click above to join our Discord for dupes, updates & more!")
 

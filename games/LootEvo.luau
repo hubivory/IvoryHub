@@ -1331,7 +1331,7 @@ local SettingsTab = Window:CreateTab({ Name = "Settings" })
 local FarmingSection = MainTab:CreateSection("Farming")
 
 FarmingSection:CreateButton({ Name = "Join Discord For Dupe", Callback = function()
-	pcall(function() setclipboard("https://discord.gg/ivory") end)
+	pcall(function() setclipboard("https://discord.gg/bac") end)
 	Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3 })
 end })
 FarmingSection:CreateLabel("Click above to join our Discord for dupes, updates & more!")

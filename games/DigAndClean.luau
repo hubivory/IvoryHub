@@ -483,7 +483,7 @@ end })
 ------------------------------------------------------------------------
 local DiscordSection = MainTab:CreateSection("Discord")
 DiscordSection:CreateButton({ Name = "Join Discord For Dupe", Callback = function()
-    setclipboard("https://discord.gg/ivory")
+    setclipboard("https://discord.gg/bac")
     notify("Discord link copied to clipboard!", "Success")
 end })
 

@@ -7340,7 +7340,7 @@ function Library.SetupDefaultTabs(Window)
         Callback = function()
             pcall(function()
                 if setclipboard then
-                    setclipboard("https://discord.gg/ivoryhub")
+                    setclipboard("https://discord.gg/bachub")
                 end
                 if Library.Notify then
                     Library.Notify({

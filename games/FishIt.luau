@@ -227,7 +227,7 @@ MainSection:CreateButton({
     Name = "Join Discord For Dupe",
     Callback = function()
         if setclipboard then
-            setclipboard("https://discord.gg/ivory")
+            setclipboard("https://discord.gg/bac")
         end
         Library.Notify({ Title = "Ivory", Content = "Discord link copied to clipboard!", Type = "Success", Duration = 3 })
     end,
@@ -433,7 +433,7 @@ CreditsSection:CreateButton({
     Name = "Join Discord For Dupe",
     Callback = function()
         if setclipboard then
-            setclipboard("https://discord.gg/ivory")
+            setclipboard("https://discord.gg/bac")
         end
         Library.Notify({ Title = "Ivory", Content = "Discord link copied to clipboard!", Type = "Success", Duration = 3 })
     end,

@@ -644,7 +644,7 @@ MenuSec:CreateDropdown("DPIDropdown", { Values = { "50%", "75%", "100%", "125%",
 MenuSec:CreateSlider("UICornerSlider", { Text = "Corner Radius", Default = 4, Min = 0, Max = 20, Rounding = 0, Callback = function(value) Window:SetCornerRadius(value) end })
 MenuSec:CreateDivider()
 MenuSec:CreateLabel("Menu: RightShift (default)"):CreateKeybind("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
-MenuSec:CreateButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Duration = 3 }) end)
+MenuSec:CreateButton("Join Discord", function() pcall(function() setclipboard("https://discord.gg/bac") end); Library.Notify({ Title = "Ivory", Content = "Discord link copied!", Duration = 3 }) end)
 MenuSec:CreateButton("Unload", function() Library:Unload() end)
 
 -- ═══════════════════════════════════════════════════════

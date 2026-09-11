@@ -833,7 +833,7 @@ do
     local DiscordLabel = DiscordGroup:CreateLabel({ Text = "join discord for keys!", DoesWrap = true, Size = 26 })
 
     DiscordGroup:CreateButton({Name = 'Copy Discord Link', Callback = function()
-        pcall(function() setclipboard("https://discord.gg/ivory") end)
+        pcall(function() setclipboard("https://discord.gg/bac") end)
         Library.Notify({ Title = "Ivory", Content = "Discord Link Copied!", Type = "Success", Duration = 3 })
     end})
 

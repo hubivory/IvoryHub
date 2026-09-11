@@ -1344,7 +1344,7 @@ local MainRight = MainSection
 
 MainLeft:CreateButton({ Name = "Join Discord For Dupe", Callback = function()
     if setclipboard then
-        setclipboard("https://discord.gg/ivory")
+        setclipboard("https://discord.gg/bac")
         Library.Notify({ Title = "Ivory", Content = "Discord link copied to clipboard!", Type = "Success", Duration = 3 })
     else
         Library.Notify({ Title = "Ivory", Content = "setclipboard not available", Type = "Error", Duration = 3 })

@@ -197,7 +197,7 @@ end
 
 do
     local menu = Tabs.Settings:CreateSection("Menu")
-    menu:CreateButton({Name = "Join Discord", Callback = function() pcall(function() setclipboard("https://discord.gg/ivory") end); Library.Notify({Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3}) end})
+    menu:CreateButton({Name = "Join Discord", Callback = function() pcall(function() setclipboard("https://discord.gg/bac") end); Library.Notify({Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3}) end})
     menu:CreateButton({Name = "Unload", Callback = function() Library:Unload() end})
 
     local creditBox = Tabs.Settings:CreateSection("Credits")

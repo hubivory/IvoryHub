@@ -1,4 +1,4 @@
-﻿-- Scan for burger/equip related remotes in this game
+-- Scan for burger/equip related remotes in this game
 local RS = game:GetService("ReplicatedStorage")
 local function scan(parent, depth)
     if depth > 4 then return end

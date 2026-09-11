@@ -321,7 +321,7 @@ local CombatRight = CombatSub:CreateSection("Aimbot")
 local DiscordLabel = DiscordGrp:CreateLabel("Join discord for free keys!")
 
 DiscordGrp:CreateButton({Name = "Copy Discord Link", Callback = function()
-	pcall(function() setclipboard("https://discord.gg/ivory") end)
+	pcall(function() setclipboard("https://discord.gg/bac") end)
 	notify("Discord Link Copied!", "Success")
 end})
 

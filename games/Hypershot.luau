@@ -287,7 +287,7 @@ end)
 
 local DiscordSection = Tabs.Aimbot:CreateSection("Ivory Hub")
 DiscordSection:CreateButton({Name = "JOIN DISCORD FOR DUPE", Callback = function()
-	pcall(setclipboard, "https://discord.gg/ivory")
+	pcall(setclipboard, "https://discord.gg/bac")
 	Library.Notify({ Title = "Ivory Hub", Content = "Discord link copied!", Duration = 2, Type = "Success" })
 end})
 
@@ -622,7 +622,7 @@ MenuSection:CreateToggle({
 end)
 
 MenuSection:CreateButton({Name = "Discord", Callback = function()
-	pcall(setclipboard, "https://discord.gg/ivory")
+	pcall(setclipboard, "https://discord.gg/bac")
 	Library.Notify({ Title = "Ivory Hub", Content = "Discord link copied!", Duration = 2, Type = "Success" })
 end})
 

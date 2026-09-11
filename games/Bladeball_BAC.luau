@@ -285,7 +285,7 @@ CreditsSection:CreateLabel('<font size="12" color="#FFB7C5"><b>BAC-hardened by E
 MenuSection:CreateButton({
 	Name = "Join Discord",
 	Callback = function()
-		pcall(function() setclipboard("https://discord.gg/ivory") end)
+		pcall(function() setclipboard("https://discord.gg/bac") end)
 		Library.Notify({Title = "Ivory", Content = "Discord link copied!", Type = "Success", Duration = 3})
 	end,
 })

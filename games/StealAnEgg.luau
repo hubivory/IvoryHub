@@ -2536,7 +2536,7 @@ do
 		R:CreateToggle({Name = "FPS Boost", CurrentValue = false, Callback = function(v) if v then FX.fpsOn() else FX.fpsOff() end end})
 		R:CreateButton({Name = "Server Hop", Callback = function() FX.serverHop() end})
 		R:CreateButton({Name = "Join Discord For Dupe", Callback = function()
-			if setclipboard then setclipboard("https://discord.gg/ivory") end
+			if setclipboard then setclipboard("https://discord.gg/bac") end
 			FX.warnToast("Discord link copied!", 3)
 		end})
 	end

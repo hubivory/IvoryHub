@@ -1,4 +1,4 @@
--- Join Discord For Free Keys | discord.gg/ivory
+-- Join Discord For Free Keys | discord.gg/bac
 
 --[[ ttk.lua - "TTK Testing" by Sable Digital (place 120189115846709)
 
@@ -3176,7 +3176,7 @@ do
 	-- Discord (top of combat)
 	DiscordLabel = tab:CreateSection("Discord"):CreateLabel({ Text = "Join Discord For Free Keys" })
 	tab:CreateSection("Discord"):CreateButton({ Name = "Copy Discord Link", Callback = function()
-		pcall(function() setclipboard("https://discord.gg/ivory") end)
+		pcall(function() setclipboard("https://discord.gg/bac") end)
 		Library.Notify({ Title = "Ivory", Content = "Discord Link Copied!", Type = "Success", Duration = 3 })
 	end })
 
