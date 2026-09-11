@@ -204,7 +204,6 @@ local Window = Library.CreateWindow({
 
 local Tabs = {
     Main = Window:CreateTab({ Name = "Main" }),
-    Combat = Window:CreateTab({ Name = "Combat" }),
     Visuals = Window:CreateTab({ Name = "Visuals" }),
     World = Window:CreateTab({ Name = "World" }),
     Misc = Window:CreateTab({ Name = "Misc" }),
@@ -212,10 +211,9 @@ local Tabs = {
 }
 
 local MainSection = Tabs.Main:CreateSection("main")
-local FarmSection = Tabs.Combat:CreateSection("fishing")
+local FarmSection = Tabs.Main:CreateSection("fishing")
 local TeleportSection = Tabs.World:CreateSection("teleports")
 local PerfSection = Tabs.Visuals:CreateSection("performance")
-local ESPSection = Tabs.Visuals:CreateSection("visuals")
 local MiscSection = Tabs.Misc:CreateSection("miscellaneous")
 local CreditsSection = Tabs["UI Settings"]:CreateSection("credits")
 local MenuSection = Tabs["UI Settings"]:CreateSection("menu settings")
@@ -235,7 +233,7 @@ MainSection:CreateButton({
     end,
 })
 
--- ==================== COMBAT TAB (FISHING) ====================
+-- ==================== MAIN TAB (FISHING) ====================
 
 FarmSection:CreateToggle({
     Name = "Auto Fish",
@@ -485,7 +483,7 @@ ConfigSection:CreateButton({
     Name = "Save Config",
     Callback = function()
         if writefile then
-            writefile("IvoryHub/Fisch_Config.json", HttpService:JSONEncode(cfg))
+            writefile("IvoryHub/FishIt_Config.json", HttpService:JSONEncode(cfg))
         end
         Library.Notify({ Title = "Ivory", Content = "Config saved!", Type = "Success", Duration = 2 })
     end,
@@ -494,8 +492,8 @@ ConfigSection:CreateButton({
 ConfigSection:CreateButton({
     Name = "Load Config",
     Callback = function()
-        if readfile and isfile and isfile("IvoryHub/Fisch_Config.json") then
-            local loaded = HttpService:JSONDecode(readfile("IvoryHub/Fisch_Config.json"))
+        if readfile and isfile and isfile("IvoryHub/FishIt_Config.json") then
+            local loaded = HttpService:JSONDecode(readfile("IvoryHub/FishIt_Config.json"))
             for k, v in pairs(loaded) do
                 cfg[k] = v
             end
