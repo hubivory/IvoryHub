@@ -8,6 +8,7 @@ local PlaceId = game.PlaceId
 
 local GameScripts = {
     [126870639873289] = "games/126870639873289.luau", -- Jump for Animals
+    [70654235200182] = "games/JumpingBaddies.luau", -- Baddie Jumping
 }
 
 local ScriptPath = GameScripts[PlaceId]
