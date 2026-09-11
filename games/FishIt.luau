@@ -89,7 +89,8 @@ local function doFishing()
     if not (ChargeRod and StartMinigame and FishingCompleted) then return end
 
     pcall(function()
-        local serverTime = workspace:GetServerTimeNow and workspace:GetServerTimeNow() or tick()
+        local serverTime = tick()
+        pcall(function() serverTime = workspace:GetServerTimeNow() end)
         ChargeRod:InvokeServer(serverTime)
     end)
     task.wait(0.1)
