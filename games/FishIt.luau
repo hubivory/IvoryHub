@@ -71,12 +71,12 @@ local net = ReplicatedStorage:FindFirstChild("Packages")
     and ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"]
     and ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
 
-local ChargeRod = net and net["RF/ChargeFishingRod"]
 local StartMinigame = net and net["RF/RequestFishingMinigameStarted"]
-local FishingCompleted = net and net["RE/FishingCompleted"]
+local CatchFishCompleted = net and net["RE/CatchFishCompleted"]
 local ClaimNotification = net and net["RE/ClaimNotification"]
 local FishingStopped = net and net["RE/FishingStopped"]
 local SellAll = net and net["RF/SellAllItems"]
+local UpdateAutoFish = net and net["RF/UpdateAutoFishingState"]
 
 local function claimNotif()
     if ClaimNotification and type(ClaimNotification.FireServer) == "function" then
@@ -86,22 +86,20 @@ end
 
 local function doFishing()
     if not cfg.AutoFish then return end
-    if not (ChargeRod and StartMinigame and FishingCompleted) then return end
+    if not StartMinigame then return end
 
     pcall(function()
         local serverTime = tick()
         pcall(function() serverTime = workspace:GetServerTimeNow() end)
-        ChargeRod:InvokeServer(serverTime)
-    end)
-    task.wait(0.1)
-    pcall(function()
         StartMinigame:InvokeServer(-1.233, 0.995)
     end)
 
     local heartbeatConn
     heartbeatConn = RunService.Heartbeat:Connect(function()
         pcall(function()
-            FishingCompleted:FireServer()
+            if CatchFishCompleted then
+                CatchFishCompleted:FireServer()
+            end
         end)
     end)
 
@@ -430,7 +428,7 @@ MiscSection:CreateButton({
 
 -- ==================== UI SETTINGS TAB ====================
 
-CreditsSection:CreateLabel({ Text = "Ivory Hub v1.4 | Fisch" })
+CreditsSection:CreateLabel({ Text = "Ivory Hub v1.4 | Fish It!" })
 CreditsSection:CreateLabel({ Text = "UserId: " .. LocalPlayer.UserId })
 
 CreditsSection:CreateButton({
@@ -548,6 +546,6 @@ task.spawn(function()
 end)
 
 -- Initialize
-Library.Notify({ Title = "Ivory", Content = "Ivory Hub loaded! Fisch", Type = "Success", Duration = 5 })
+Library.Notify({ Title = "Ivory", Content = "Ivory Hub loaded! Fish It!", Type = "Success", Duration = 5 })
 
 return Library
