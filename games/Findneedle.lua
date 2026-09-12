@@ -28,7 +28,14 @@ local SellModel = Workspace:WaitForChild("SellModel")
 local Cow = SellModel.Cow.Cow
 local CowLook = Cow.CFrame.LookVector
 
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua"))()
+local LIB_FOLDER = "IvoryHub"
+local LIB_FILE = LIB_FOLDER .. "/Library.lua"
+local LIB_URL = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua"
+if not isfolder(LIB_FOLDER) then pcall(makefolder, LIB_FOLDER) end
+if not isfile(LIB_FILE) then
+    writefile(LIB_FILE, game:HttpGet(LIB_URL))
+end
+local Library = loadstring(game:HttpGet(getcustomasset(LIB_FILE), true))()
 
 local Window = Library.CreateWindow({
 	Name = "Ivory",

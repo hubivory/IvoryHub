@@ -27,21 +27,14 @@ local httpGet do
 	end
 end
 
-local LIB_SRC = getgenv()._IvoryLibSrc
-if not LIB_SRC or #LIB_SRC == 0 then
-	LIB_SRC = httpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua")
+local LIB_FOLDER = "IvoryHub"
+local LIB_FILE = LIB_FOLDER .. "/Library.lua"
+local LIB_URL = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua"
+if not isfolder(LIB_FOLDER) then pcall(makefolder, LIB_FOLDER) end
+if not isfile(LIB_FILE) then
+    writefile(LIB_FILE, httpGet(LIB_URL))
 end
-if not LIB_SRC or #LIB_SRC == 0 then
-	error("[Ivory] Failed to fetch library. Check HTTP support.")
-end
--- Strip UTF-8 BOM if present
-if LIB_SRC:byte(1) == 0xEF and LIB_SRC:byte(2) == 0xBB and LIB_SRC:byte(3) == 0xBF then
-	LIB_SRC = LIB_SRC:sub(4)
-end
-local IvoryHub = loadstring(LIB_SRC)()
-if not IvoryHub then
-	error("[Ivory] Failed to compile library")
-end
+local IvoryHub = loadstring(game:HttpGet(getcustomasset(LIB_FILE), true))()
 
 local LocalPlayer = Players.LocalPlayer
 

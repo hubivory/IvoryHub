@@ -33,14 +33,14 @@ local httpGet do
 	end
 end
 
-local LIB_SRC = httpGet("https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua")
-if not LIB_SRC or #LIB_SRC == 0 then
-	error("[Ivory] Failed to fetch library. Check HTTP support.")
+local LIB_FOLDER = "IvoryHub"
+local LIB_FILE = LIB_FOLDER .. "/Library.lua"
+local LIB_URL = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/IvoryHubLibrary.lua"
+if not isfolder(LIB_FOLDER) then pcall(makefolder, LIB_FOLDER) end
+if not isfile(LIB_FILE) then
+    writefile(LIB_FILE, httpGet(LIB_URL))
 end
-local Library = loadstring(LIB_SRC)()
-if not Library then
-	error("[Ivory] Failed to compile library")
-end
+local Library = loadstring(game:HttpGet(getcustomasset(LIB_FILE), true))()
 
 --// ═══════════════════════════════════════════════════════════
 --// WINDOW
