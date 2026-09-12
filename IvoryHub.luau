@@ -88,14 +88,8 @@ local GameScripts = {
 	-- Add more: [PlaceId] = "games/ScriptName.luau"
 }
 
-local UniverseScripts = {
-	[4777817887] = "games/Bladeball_BAC.luau",
-	[10548152848] = "games/Runeheaven.luau",
-	-- Add more: [UniverseId] = "games/ScriptName.luau"
-}
-
 local PlaceId = game.PlaceId
-local ScriptFile = GameScripts[PlaceId] or UniverseScripts[game.GameId]
+local ScriptFile = GameScripts[PlaceId]
 
 if not ScriptFile then
 	--// No game script found, load universal splash screen
