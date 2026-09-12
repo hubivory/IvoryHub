@@ -650,7 +650,7 @@ if not isfolder(LIB_FOLDER) then pcall(makefolder, LIB_FOLDER) end
 if not isfile(LIB_FILE) then
     writefile(LIB_FILE, httpGet(LIB_URL))
 end
-local Library = loadstring(game:HttpGet(getcustomasset(LIB_FILE), true))()
+local Library = loadstring(readfile(LIB_FILE))()
 
 if not Library then
 	warn("[FSH] Ivory Hub failed to load - features running with defaults")

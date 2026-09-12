@@ -2462,7 +2462,7 @@ do
 	if not isfile(LIB_FILE) then
 	    writefile(LIB_FILE, httpGet(LIB_URL))
 	end
-	local Library = loadstring(game:HttpGet(getcustomasset(LIB_FILE), true))()
+	local Library = loadstring(readfile(LIB_FILE))()
 
 	local Window = Library.CreateWindow({Name = "Ivory", Width = 460, Height = 360, Minimizable = true, NotifySide = "Right", ShowCustomCursor = true, CornerRadius = 4})
 

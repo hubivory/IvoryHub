@@ -27,7 +27,7 @@ if not isfolder(LIB_FOLDER) then pcall(makefolder, LIB_FOLDER) end
 if not isfile(LIB_FILE) then
     writefile(LIB_FILE, httpGet(LIB_URL))
 end
-local IvoryHub = loadstring(game:HttpGet(getcustomasset(LIB_FILE), true))()
+local IvoryHub = loadstring(readfile(LIB_FILE))()
 
 local Network = require(ReplicatedStorage.Shared.modules.Network)
 local CombatFormulas = require(ReplicatedStorage.Shared.modules.CombatFormulas)
