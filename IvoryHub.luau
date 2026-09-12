@@ -85,11 +85,11 @@ local GameScripts = {
 	[126870639873289] = "games/JumpForAnimals.luau",
 	[70654235200182] = "games/JumpingBaddies.luau", -- Baddie Jumping
 	[121864768012064] = "games/FishIt.luau", -- Fish It!
-	-- Add more: [PlaceId] = "games/ScriptName.luau"
+	-- Add more: [GameId] = "games/ScriptName.luau"
 }
 
-local PlaceId = game.PlaceId
-local ScriptFile = GameScripts[PlaceId]
+local GameId = game.GameId
+local ScriptFile = GameScripts[GameId]
 
 if not ScriptFile then
 	--// No game script found, load universal splash screen
@@ -112,7 +112,7 @@ if not ScriptFile then
 	return
 end
 
-print("[Ivory Hub] Loading for game: " .. PlaceId)
+print("[Ivory Hub] Loading for game: " .. GameId)
 
 local success, err = pcall(function()
 	-- Get latest commit hash to bypass CDN cache
