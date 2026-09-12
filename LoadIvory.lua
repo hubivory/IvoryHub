@@ -1,4 +1,4 @@
-local GITHUB_RAW = "https://raw.githubusercontent.com/hubivory/IvoryHub/"
+local GITHUB_RAW = "https://raw.githubusercontent.com/hubivory/IvoryHub-Public/"
 
 local GameScripts = {
     [2822776643] = "games/ElementalMagicArena.luau",
