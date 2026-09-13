@@ -387,6 +387,9 @@ local SpamGroup = CombatSub:CreateSection("Skill Spam")
 SpamGroup:CreateToggle({
 	Name = "Skill Spam",
 	CurrentValue = false,
+	Callback = function(v)
+		State.SkillSpam = v
+	end,
 })
 SpamGroup:CreateSlider({
 	Name = "Spam Interval",
