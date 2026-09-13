@@ -30,41 +30,6 @@ for _, obj in ipairs(CoreGui:GetChildren()) do
 end
 
 -- ============================================================================
--- GAME DETECTION
--- ============================================================================
-
-local PlaceId = game.PlaceId
-local GameName = tostring(PlaceId)
-pcall(function()
-	GameName = MarketplaceService:GetProductInfo(PlaceId).Name
-end)
-
-local GameScripts = {
-	[7243409883] = { name = "Elemental Magic Arena", file = "games/ElementalMagicArena.luau" },
-	[116497287371701] = { name = "Karinderya", file = "games/Karinderya.luau" },
-	[99521272836282] = { name = "Final Swarm", file = "games/FinalSwarm.luau" },
-	[79787558257549] = { name = "Final Swarm", file = "games/FinalSwarm.luau" },
-	[95919006508862] = { name = "Melt The Ice", file = "games/MeltTheIce.luau" },
-	[1962086868] = { name = "Tower of Hell", file = "games/Towerofhell.luau" },
-	[138501044883253] = { name = "Build A Burger", file = "games/BuildABurger.luau" },
-	[105963809208632] = { name = "Build A Burger", file = "games/BuildABurger.luau" },
-	[100293509865504] = { name = "Catch A Billion Ducks", file = "games/CatchABillionDucks.luau" },
-	[120617974337690] = { name = "Catch A Billion Ducks", file = "games/CatchABillionDucks.luau" },
-	[137363360166684] = { name = "Rocks RNG", file = "games/RocksRNG.luau" },
-	[9772878203] = { name = "Floppa 2", file = "games/Floppa2.luau" },
-	[13772394625] = { name = "Blade Ball", file = "games/Bladeball.luau" },
-	[142823291] = { name = "Murder Mystery 2", file = "games/MM2.luau" },
-	[92637789841354] = { name = "Clean All The Leaves", file = "games/CleanAllTheLeaves.luau" },
-	[100068273119174] = { name = "Clean All The Leaves", file = "games/CleanAllTheLeaves.luau" },
-    [13772394625] = { name = "Blade Ball", file = "games/Bladeball_BAC.luau" },
-	[2753915549] = { name = "Blox Fruits", file = "games/Bloxfruits.luau" },
-	[79091703265657] = { name = "Blox Fruits", file = "games/Bloxfruits.luau" },
-    [70654235200182] = { name = "+1 Baddie Jumping", file = "games/JumpingBaddies.luau" },
-}
-
-local DetectedGame = GameScripts[PlaceId]
-
--- ============================================================================
 -- DESIGN TOKENS
 -- ============================================================================
 
@@ -1157,11 +1122,6 @@ local function loadScript(url)
 	end)
 end
 
-if DetectedGame then
-	loadScript(DetectedGame.file)
-	return
-end
-
 -- ============================================================================
 -- BUILD OPTIONS
 -- ============================================================================
@@ -1173,34 +1133,14 @@ hoverSound.Parent = ScreenGui
 
 local cards = {}
 
-if DetectedGame then
-	local gameCard = createOption(
-		UDim2.new(0, 24, 0, 224), 208,
-		"Game Script",
-		DetectedGame.name,
-		function() loadScript(DetectedGame.file) end
-	)
-	gameCard.card.MouseEnter:Connect(function() hoverSound:Play() end)
-	table.insert(cards, gameCard)
-
-	local uniCard = createOption(
-		UDim2.new(0, 248, 0, 224), 208,
-		"Universal",
-		"Works in any game",
-		function() loadScript("Loader.luau") end
-	)
-	uniCard.card.MouseEnter:Connect(function() hoverSound:Play() end)
-	table.insert(cards, uniCard)
-else
-	local uniCard = createOption(
-		UDim2.new(0, 24, 0, 224), 432,
-		"Universal",
-		"Works in any game — ESP, aimbot, speed, and more",
-		function() loadScript("Loader.luau") end
-	)
-	uniCard.card.MouseEnter:Connect(function() hoverSound:Play() end)
-	table.insert(cards, uniCard)
-end
+local uniCard = createOption(
+	UDim2.new(0, 24, 0, 224), 432,
+	"Universal",
+	"Works in any game — ESP, aimbot, speed, and more",
+	function() loadScript("Loader.luau") end
+)
+uniCard.card.MouseEnter:Connect(function() hoverSound:Play() end)
+table.insert(cards, uniCard)
 
 -- ============================================================================
 -- BLOSSOM MARK MOTION — a slow, shared rotation across the header icon and
