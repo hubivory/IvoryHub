@@ -175,6 +175,36 @@ local function ApplyHitboxSize(size)
 	end)
 end
 
+local function ApplyNoCooldown()
+	pcall(function()
+		local mod = GetWarthofGodModule()
+		if not mod then return end
+		local cooldownNames = {
+			"Cooldown", "cooldown", "CD", "cd", "CooldownTime", "cooldownTime",
+			"LastUsed", "lastUsed", "LastFire", "lastFire", "LastShoot", "lastShoot",
+			"LastStart", "lastStart", "LastDash", "lastDash", "LastBurst", "lastBurst",
+			"AnimationLength", "animationLength", "AnimLength",
+		}
+		for _, desc in ipairs(mod:GetDescendants()) do
+			if desc:IsA("NumberValue") or desc:IsA("IntValue") or desc:IsA("NumberValue") then
+				for _, name in ipairs(cooldownNames) do
+					if desc.Name == name then
+						desc.Value = 0
+					end
+				end
+			end
+		end
+		-- Also check attributes on the module itself
+		for _, attrName in ipairs(cooldownNames) do
+			pcall(function()
+				if mod:GetAttribute(attrName) ~= nil then
+					mod:SetAttribute(attrName, 0)
+				end
+			end)
+		end
+	end)
+end
+
 local function IsLightSkill()
 	local cs = LocalPlayer:FindFirstChild("CurrentSkill")
 	return cs and cs.Value == "Light"
@@ -209,6 +239,7 @@ local State = {
 	SpamDelay = 0.25,
 	SpamTarget = "Nearest Enemy",
 	HitboxSize = 150,
+	NoCooldown = false,
 
 	AutoBang = false,
 	BangDelay = 0.8,
@@ -375,6 +406,14 @@ SpamGroup:CreateSlider({
 	CurrentValue = 150,
 	Callback = function(v)
 		ApplyHitboxSize(v)
+	end,
+})
+SpamGroup:CreateToggle({
+	Name = "No Cooldown",
+	CurrentValue = false,
+	Callback = function(v)
+		State.NoCooldown = v
+		if v then ApplyNoCooldown() end
 	end,
 })
 
@@ -743,6 +782,7 @@ end)
 
 local function DoAutoM1()
 	if not CombatRemote or not IsLightSkill() then return end
+	if State.NoCooldown then ApplyNoCooldown() end
 	pcall(function()
 		CombatRemote:FireServer({ skill = "WarthofGod", Function = "Start" })
 	end)
@@ -750,6 +790,7 @@ end
 
 local function DoSkillSpam()
 	if not CombatRemote or not CombatPayloadReady or not IsLightSkill() then return end
+	if State.NoCooldown then ApplyNoCooldown() end
 	pcall(function()
 		local myRoot = GetHRP()
 		if not myRoot then return end
@@ -967,6 +1008,16 @@ task.spawn(function()
 		task.wait(State.SpamDelay)
 		if State.SkillSpam then
 			DoSkillSpam()
+		end
+	end
+end)
+
+--// No cooldown loop: continuously zero cooldown values while enabled
+task.spawn(function()
+	while true do
+		task.wait(0.5)
+		if State.NoCooldown then
+			ApplyNoCooldown()
 		end
 	end
 end)
