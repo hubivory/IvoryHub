@@ -623,11 +623,12 @@ task.spawn(function()
 end)
 
 local function ClaimOnce(Key, Remote, Cooldown, ...)
+	local args = {...}
 	if not cfg.autoRewards then return end
 	local Now = os.clock()
 	if Now < (cfg.retryAt[Key] or 0) then return end
 	pcall(function()
-		Fire(Remote, ...)
+		Fire(Remote, unpack(args))
 	end)
 	cfg.retryAt[Key] = Now + Cooldown
 	task.wait(0.2)
