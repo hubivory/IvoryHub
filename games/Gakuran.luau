@@ -8,8 +8,8 @@ do
 end
 _G.IvoryGakuran = { conns = {}, dead = false, loops = {} }
 
-local GITHUB_RAW = "https://raw.githubusercontent.com/hubivory/IvoryHub/"
-local GITHUB_API = "https://api.github.com/repos/hubivory/IvoryHub/commits?per_page=1"
+local GITHUB_RAW = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/"
+local GITHUB_API = "https://api.github.com/repos/hubivory/IvoryHub/commits?sha=main&per_page=1"
 
 local commitHash = "main"
 pcall(function()
