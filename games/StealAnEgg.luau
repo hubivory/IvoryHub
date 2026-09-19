@@ -138,15 +138,23 @@ end
 local function getNetworking()
 	return ReplicatedStorage:FindFirstChild("Packages") and ReplicatedStorage.Packages:FindFirstChild("Networking")
 end
+local remoteCache = {}
 local function getRF(cat,name)
+	local key = "RF/"..cat.."/"..name
+	if remoteCache[key] ~= nil then return remoteCache[key] end
 	local net = getNetworking(); if not net then return nil end
-	local folder = net:FindFirstChild("RF") and net.RF:FindFirstChild(cat)
-	return folder and folder:FindFirstChild(name)
+	-- Flat structure: children named "RF/EggWorld/AskFieldEggCarry"
+	local inst = net:FindFirstChild(key)
+	if typeof(inst)=="Instance" then remoteCache[key]=inst; return inst end
+	remoteCache[key]=false; return nil
 end
 local function getRE(cat,name)
+	local key = "RE/"..cat.."/"..name
+	if remoteCache[key] ~= nil then return remoteCache[key] end
 	local net = getNetworking(); if not net then return nil end
-	local folder = net:FindFirstChild("RE") and net.RE:FindFirstChild(cat)
-	return folder and folder:FindFirstChild(name)
+	local inst = net:FindFirstChild(key)
+	if typeof(inst)=="Instance" then remoteCache[key]=inst; return inst end
+	remoteCache[key]=false; return nil
 end
 local function fireRemote(cat,name,...)
 	local rf = getRF(cat,name)
