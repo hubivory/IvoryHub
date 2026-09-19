@@ -88,6 +88,9 @@ local GameScripts = {
 	[122245938604556] = "games/TongueEscape.luau", -- +1 Tongue Escape
 	[88773823105878] = "games/UnfreezeAnimal.luau", -- Unfreeze an Animal
     [142823291] = "games/MM2-fix.luau",
+	[6516141723] = "games/Doors.luau", -- Doors (Lobby)
+	[5942932363] = "games/Doors.luau", -- Doors (Game)
+	[74205509034203] = "games/TheHunt.luau", -- The Hunt: Roblox 20
 	-- Add more: [GameId] = "games/ScriptName.luau"
 }
 

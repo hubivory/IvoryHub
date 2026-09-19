@@ -456,19 +456,12 @@ local function updateSupportPart(hrp, yVelDelta)
 		end)
 	end
 	local hipH = 2.51
-	local info = engine.hookedStates[1]
-	if type(info)=="table" then
-		local ehh = type(info.ExpectedHipHeight)=="number" and info.ExpectedHipHeight or 2.51
-		local erhh = type(info.ExpectedRootHalfHeight)=="number" and info.ExpectedRootHalfHeight or 1
-		hipH = ehh + erhh*0.5
-	end
 	local supportH = math.max(3.8, hipH)
 	local baseY = hrp.Position.Y - supportH - 0.6
 
 	if isFlyMode() then
 		engine.supportY = baseY
 	else
-		-- Smoothing based on Y velocity (KiraHub logic)
 		if engine.supportY == nil then
 			engine.supportY = baseY
 		elseif (yVelDelta or 0) > 8 then
@@ -488,166 +481,9 @@ local function removeSupportPart()
 	engine.supportActive = false; engine.supportY = nil
 end
 
--- Velocity capping + state table spoofing (v1149)
-local function spoofSample(sample, pos, cframe, vel, hum)
-	if type(sample)~="table" then return end
-	sample.Position = pos
-	sample.CFrame = cframe
-	sample.LinearVelocity = vel
-	sample.AngularVelocity = Vector3.zero
-	sample.IsSupported = true
-	sample.Timestamp = os.clock()
-	sample.WalkSpeed = hum and hum.WalkSpeed or 16
-	sample.JumpPower = hum and hum.JumpPower or 50
-	sample.JumpHeight = hum and hum.JumpHeight or 7.2
-	sample.UseJumpPower = hum and hum.UseJumpPower or true
-	sample.HumanoidState = Enum.HumanoidStateType.Running
-	sample.Gravity = workspace.Gravity
-end
-
-local function spoofStateTable(state, pos, cframe, vel, hum)
-	if type(state)~="table" then return end
-	-- Top-level state
-	state.MaxHorizontalSpeed = 10000000
-	state.MaxVerticalSpeed = 10000000
-	state.IsSupportedNow = true
-	state.LastSupportedAt = os.clock()
-	state.LastCorrectionAt = 0
-	state.HighestYSinceGround = pos.Y
-	state.MovementMode = "Grounded"
-	state.TelemetryRepeatCount = 0
-	state.ValidationLocked = false
-	state.MonitorRunning = false
-	state.MonitorPending = false
-	state.ThreatLevel = "Trusted"
-	state.WasMeaningfullyFalling = false
-	state.InitializingUntil = os.clock() + 3600
-	state.SupportStartedAt = os.clock()
-	state.ValidationStartedAt = os.clock()
-	-- GroundContactWitness
-	local gcw = state.GroundContactWitness
-	if type(gcw)=="table" then
-		local hipH = 2.51
-		gcw.GroundDistance = hipH
-		gcw.GroundPosition = Vector3.new(pos.X, pos.Y - hipH, pos.Z)
-		gcw.Character = hrp and hrp.Parent
-		if type(gcw.ContactSample)=="table" then spoofSample(gcw.ContactSample, pos, cframe, vel, hum) end
-	end
-	-- Evidence
-	local ev = state.Evidence
-	if type(ev)=="table" then ev.Speed=0; ev.Flight=0; ev.Teleport=0 end
-	-- Vertical decisions
-	local lvd = state.LastVerticalTrajectoryDecision
-	if type(lvd)=="table" then
-		lvd.AllowedRise = 10000000; lvd.AllowedAirborneDuration = 10000000; lvd.Evidence = 0
-	end
-	local lsd = state.LastVerticalSegmentDecision
-	if type(lsd)=="table" then lsd.AllowedDistance = 10000000; lsd.Decision = "Reachable" end
-	-- Spoof all sample tables
-	local sampleNames = {"LastGoodSample","LastObservedSample","LastValidatedSample",
-		"LastValidatedGroundedSample","LastConfirmedGroundSample","LastSample","LastGameplayTrustedSample"}
-	for _,name in ipairs(sampleNames) do
-		if type(state[name])=="table" then spoofSample(state[name], pos, cframe, vel, hum) end
-	end
-	if type(state.SampleHistory)=="table" then
-		for _,s in ipairs(state.SampleHistory) do spoofSample(s, pos, cframe, vel, hum) end
-	end
-	if type(state.SafeGroundCheckpoints)=="table" then
-		for _,s in ipairs(state.SafeGroundCheckpoints) do spoofSample(s, pos, cframe, vel, hum) end
-	end
-end
-
-local function applySpoofedVelocity(hrp, hum, originalVel)
-	local maxSpd = math.max(10, hum.WalkSpeed or 16)
-	local clamped = originalVel.Magnitude > maxSpd+1
-		and (originalVel.Magnitude > 0.0001 and originalVel.Unit * maxSpd or Vector3.zero)
-		or originalVel
-	pcall(function() hrp.AssemblyLinearVelocity = clamped end)
-	for i = 1, #engine.hookedStates do
-		local lookDir = engine.flyLook or camForward()
-		local cf = CFrame.new(hrp.Position, hrp.Position + lookDir)
-		spoofStateTable(engine.hookedStates[i], hrp.Position, cf, clamped, hum)
-	end
-end
-
--- Discover movement state tables from Stepped connections
-local function discoverStateTables()
-	engine.hookedStates = {}
-	if not getconnections or not debug.getupvalue then return end
-	local ok, conns = pcall(getconnections, RunService.Stepped)
-	if not ok or type(conns) ~= "table" then return end
-	for _,conn in ipairs(conns) do
-		local fn = conn.Function
-		if type(fn)=="function" then
-			-- Scan upvalues for state tables
-			local i = 1
-			while true do
-				local name, val = pcall(debug.getupvalue, fn, i)
-				if not name then break end
-				if type(val)=="table" and type(val.LastGoodSample)=="table" and type(val.SafeGroundCheckpoints)=="table" then
-					engine.hookedStates[#engine.hookedStates+1] = val
-					break -- one is enough per connection
-				end
-				i = i + 1
-			end
-		end
-	end
-end
-
--- Hook PostSimulation validators (v1150) - bypass anti-cheat movement detection
-local function hookValidators(enable)
-	if not hookfunction or not getconnections then return 0 end
-	if not enable then
-		for fn,info in pairs(engine.validators) do
-			pcall(function() hookfunction(fn, info.old) end)
-		end
-		engine.validators = {}
-		return 0
-	end
-	-- Don't re-hook if already hooked
-	if next(engine.validators) then return 0 end
-	local count = 0
-	local conns
-	local ok, result = pcall(getconnections, RunService.PostSimulation)
-	if not ok or type(result) ~= "table" then return 0 end
-	conns = result
-	for _,conn in ipairs(conns) do
-		local fn = conn.Function
-		if type(fn)=="function" and not engine.validators[fn] then
-			local wrapper = {old=fn}
-			local hookedFn
-			hookedFn = function(...)
-				local args = table.pack(...)
-				-- Everything in pcall so we never crash the game
-				local ok2, err = pcall(function()
-					local c,h,hum = getChar()
-					if h and hum then
-						-- Apply spoofed state to all discovered state tables
-						for i = 1, #engine.hookedStates do
-							local lookDir = engine.flyLook or Vector3.new(0,0,-1)
-							local cf = CFrame.new(h.Position, h.Position + lookDir)
-							spoofStateTable(engine.hookedStates[i], h.Position, cf, h.AssemblyLinearVelocity, hum)
-						end
-					end
-				end)
-				-- Always call original
-				local ok3, ret = pcall(function() return table.pack(wrapper.old(table.unpack(args,1,args.n))) end)
-				if ok3 and type(ret) == "table" then
-					return table.unpack(ret,1,ret.n)
-				end
-				return wrapper.old(table.unpack(args,1,args.n))
-			end
-			local ok4, res = pcall(hookfunction, fn, hookedFn)
-			if ok4 then wrapper.old=res; engine.validators[fn]={old=res,hooked=hookedFn}; count+=1 end
-		end
-	end
-	return count
-end
-
--- Detect and block movement validators - DISABLED
-local function isValidator(fn)
-	return false
-end
+-- CFrame-based movement: no hooks needed, anti-cheat can't block CFrame teleport
+-- (Spoofing state tables and hooking PostSimulation was causing instability.
+--  CFrame teleport bypasses velocity checks entirely.)
 -- ═══════════════════════════════════════════════
 -- ANTI-DETECTION (CanTouch, CollisionGroup)
 -- ═══════════════════════════════════════════════
@@ -808,9 +644,6 @@ end
 
 local mainSteppedConn
 local function startMovementEngine()
-	discoverStateTables()
-	hookValidators(true)
-	hookRagdollBypass()
 	setupCollisionGroups()
 
 	mainSteppedConn = addConn(RunService.Stepped:Connect(function(_, dt)
@@ -838,50 +671,51 @@ local function startMovementEngine()
 			end
 		end
 
-		-- Always ensure support part exists when movement is active
-		if cfg.Flight or cfg.BypassSpeed or cfg.AutoSteal or (engine.dest and typeof(engine.dest)=="Vector3") then
-			updateSupportPart(h, 0)
-		end
-
 		-- Dest direction
 		local dest = engine.dest
-		local flatDir = nil
 		local targetSpd = getTargetSpeed()
+		local dtClamped = math.min(dt, 0.05)
 
 		if cfg.Flight and not dest then
-			-- Manual flight: WASD
+			-- Manual flight via CFrame
 			local fv = getFlightVelocity()
 			if fv.Magnitude > 0.1 then
 				engine.flyLook = Vector3.new(fv.X,0,fv.Z)
 				if engine.flyLook.Magnitude > 0.001 then engine.flyLook = engine.flyLook.Unit end
-			end
-			-- Apply movement via Humanoid:Move
-			hum.WalkSpeed = math.clamp(targetSpd, 16, 1300)
-			if fv.Magnitude > 0.1 then
-				hum:Move(Vector3.new(fv.X,0,fv.Z).Unit, false)
-			else
-				hum:Move(Vector3.zero, false)
+				local step = fv * dtClamped
+				pcall(function()
+					h.CFrame = h.CFrame + step
+					h.AssemblyLinearVelocity = Vector3.zero
+					hum:ChangeState(Enum.HumanoidStateType.Running)
+				end)
 			end
 			return
 		end
 
 		if dest and typeof(dest)=="Vector3" then
-			flatDir = Vector3.new(dest.X - h.Position.X, 0, dest.Z - h.Position.Z)
+			local flatDir = Vector3.new(dest.X - h.Position.X, 0, dest.Z - h.Position.Z)
 			if flatDir.Magnitude > 1.2 then
 				engine.flyLook = flatDir.Unit
 			end
-			-- Apply via Humanoid:Move
-			hum.WalkSpeed = math.clamp(targetSpd, 16, 1300)
-			hum:Move(flatDir.Unit, false)
+			-- CFrame teleport toward destination
+			local step = flatDir.Unit * targetSpd * dtClamped
+			pcall(function()
+				h.CFrame = h.CFrame + step
+				h.AssemblyLinearVelocity = Vector3.zero
+				hum:ChangeState(Enum.HumanoidStateType.Running)
+			end)
 		else
-			-- No dest: just maintain bypass speed if needed
+			-- No dest: maintain bypass speed if needed
 			if cfg.BypassSpeed then
 				local md = hum.MoveDirection
 				if md.Magnitude > 0.05 then
-					hum.WalkSpeed = math.clamp(targetSpd, 16, 1300)
+					-- CFrame move in current direction
+					local step = md.Unit * targetSpd * dtClamped
+					pcall(function()
+						h.CFrame = h.CFrame + step
+						h.AssemblyLinearVelocity = Vector3.zero
+					end)
 				end
-			else
-				hum.WalkSpeed = origWalkSpeed
 			end
 		end
 	end))
