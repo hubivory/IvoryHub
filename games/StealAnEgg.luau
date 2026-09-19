@@ -1,4 +1,4 @@
-﻿--[[
+--[[
     Ivory Hub - Steal an Egg
     PlaceId: 107778070777162
     Version: 1.4
@@ -658,7 +658,9 @@ local function startMovementEngine()
 		end
 
 		-- Safety: if character is falling through the world, teleport back to safe zone
-		local pos = h.Position
+		local pos
+		local okPos, posVal = pcall(function() return h.Position end)
+		if okPos then pos = posVal else return end
 		local gY = groundY(pos)
 		if gY and pos.Y < gY - 12 then
 			local safe = getPlotPosition() or getSafeZone()
@@ -693,7 +695,7 @@ local function startMovementEngine()
 		end
 
 		if dest and typeof(dest)=="Vector3" then
-			local flatDir = Vector3.new(dest.X - h.Position.X, 0, dest.Z - h.Position.Z)
+			local flatDir = Vector3.new(dest.X - pos.X, 0, dest.Z - pos.Z)
 			if flatDir.Magnitude > 1.2 then
 				engine.flyLook = flatDir.Unit
 			end
