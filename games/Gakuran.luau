@@ -8,9 +8,9 @@ do
 end
 _G.IvoryGakuran = { conns = {}, dead = false, loops = {} }
 
-local GITHUB_RAW = "https://raw.githubusercontent.com/hubivory/IvoryHub/"
-local GITHUB_API = "https://api.github.com/repos/hubivory/IvoryHub/commits?per_page=1"
-
+-- Add the specific script filename to the end of GITHUB_RAW
+local GITHUB_RAW = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/GakuranLib.lua"
+local GITHUB_API = "https://api.github.com/repos/hubivory/IvoryHub/commits?sha=main&per_page=1"
 local commitHash = "main"
 pcall(function()
     local apiRes = request({ Url = GITHUB_API, Method = "GET" })
