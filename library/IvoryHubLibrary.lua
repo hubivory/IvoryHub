@@ -29,6 +29,22 @@ local Players = game:GetService("Players")
 local TextService = game:GetService("TextService")
 
 -- ===============================================================
+-- CROSS-RUN STOPPER
+-- Tear down a previous copy of this script before building a new
+-- one. Re-executing after a failed run used to stack a second set
+-- of while-loops, petal fields and input listeners on top of the
+-- first, which is what makes the client feel laggier the longer a
+-- session goes. Unload stops the old copy's loops; this runs first
+-- so the old UI is gone before the new one is built.
+-- ===============================================================
+pcall(function()
+    local previous = getgenv and getgenv().IvoryHub
+    if type(previous) == "table" and previous.Unload then
+        previous:Unload()
+    end
+end)
+
+-- ===============================================================
 -- DESIGN TOKENS - SAKURA EDITION
 -- Deep plum-black surfaces with a cherry-blossom pink accent, warm
 -- blossom-white highlights, and a spring-matcha green for success
@@ -84,13 +100,13 @@ local TextSizes = {
 
 local Radius = {
     Pill  = UDim.new(1, 0),  -- fully round (pills, dots, thumbs)
-    XL    = UDim.new(0, 16), -- outer window / big cards
-    LG    = UDim.new(0, 12), -- section cards, header bars
-    MD    = UDim.new(0, 10), -- rows (toggle/slider/dropdown/keybind)
-    SM    = UDim.new(0, 8),  -- small chips, option rows
-    XS    = UDim.new(0, 7),
-    Tiny  = UDim.new(0, 4),
-    Micro = UDim.new(0, 3),
+    XL    = UDim.new(0, 12), -- outer window / big cards
+    LG    = UDim.new(0, 9),  -- section cards, header bars
+    MD    = UDim.new(0, 7),  -- rows (toggle/slider/dropdown/keybind)
+    SM    = UDim.new(0, 6),  -- small chips, option rows
+    XS    = UDim.new(0, 5),
+    Tiny  = UDim.new(0, 3),
+    Micro = UDim.new(0, 2),
 }
 
 -- The two background/stroke opacities reused everywhere a surface
@@ -111,8 +127,46 @@ local EASE_SPRING   = TweenInfo.new(0.4,  Enum.EasingStyle.Back,  Enum.EasingDir
 local EASE_QUICK    = TweenInfo.new(0.14, Enum.EasingStyle.Quad,  Enum.EasingDirection.Out)
 local EASE_SLOW     = TweenInfo.new(0.6,  Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
 
+-- TweenService:Cancel does not exist in this environment (only
+-- Tween:Cancel on the tween object), so tw() tracks every tween it
+-- starts per-instance and animations cancel through this registry.
+local activeTweens = {}
+
+local function cancelTweens(instance)
+    local list = activeTweens[instance]
+    if not list then
+        return
+    end
+    for i = #list, 1, -1 do
+        local t = list[i]
+        list[i] = nil
+        pcall(function() t:Cancel() end)
+    end
+    activeTweens[instance] = nil
+end
+
 local function tw(instance, info, props)
     local tween = TweenService:Create(instance, info, props)
+    local list = activeTweens[instance]
+    if not list then
+        list = {}
+        activeTweens[instance] = list
+    end
+    table.insert(list, tween)
+    tween.Completed:Connect(function()
+        local l = activeTweens[instance]
+        if not l then
+            return
+        end
+        for i = #l, 1, -1 do
+            if l[i] == tween then
+                table.remove(l, i)
+            end
+        end
+        if #l == 0 then
+            activeTweens[instance] = nil
+        end
+    end)
     tween:Play()
     return tween
 end
@@ -125,6 +179,12 @@ end
 -- ===============================================================
 local Library = {}
 local Elements = {}
+
+-- Content layout: 2 = two side-by-side columns (CS2-cheat style),
+-- 1 = one full-width column. Tab:_route() reads this for every new
+-- element; Library:SetContentColumns reflows open windows live.
+Library.ContentColumns = 2
+Library._windows = {}
 
 
 -- ============================================================
@@ -176,7 +236,10 @@ Elements.CreateInput = function(parent, config)
     nameLabel.TextXAlignment = Enum.TextXAlignment.Left
     nameLabel.TextYAlignment = Enum.TextYAlignment.Center
     nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
-    nameLabel.Size = UDim2.new(0.4, -8, 1, 0)
+    -- Scale-based share that always stops before the right-side box
+    -- (box left edge = 0.45W - 8), so label and box can never collide
+    -- at any row width - the old 0.4/-8 overlapped below ~320px.
+    nameLabel.Size = UDim2.new(0.45, -32, 1, 0)
     nameLabel.Position = UDim2.new(0, 16, 0, 0)
     nameLabel.Text = config.Name or config.Text or ""
     nameLabel.ZIndex = 4
@@ -217,7 +280,7 @@ Elements.CreateInput = function(parent, config)
     textBox.TextColor3 = Theme.TextPrimary
     textBox.PlaceholderText = config.PlaceholderText or ""
     textBox.PlaceholderColor3 = Theme.TextTertiary
-    textBox.Text = config.CurrentValue or ""
+    textBox.Text = config.CurrentValue or config.Default or ""
     textBox.ClearTextOnFocus = false
     textBox.TextXAlignment = Enum.TextXAlignment.Left
     textBox.TextYAlignment = Enum.TextYAlignment.Center
@@ -437,33 +500,46 @@ Elements.CreateSection = function(parent, title)
     layout.Padding = UDim.new(0, 6)
     layout.Parent = row
 
+    -- CS2-cheat reference layout: title centered over a thin accent
+    -- underline that spans the card, instead of an uppercase left label.
     local label = Instance.new("TextLabel")
     label.Name = "SectionLabel"
     label.BackgroundTransparency = 1
     label.Font = Font.Bold
-    label.TextSize = TextSizes.SM
-    label.TextColor3 = Theme.TextTertiary
-    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextSize = TextSizes.MD
+    label.TextColor3 = Theme.TextPrimary
+    label.TextXAlignment = Enum.TextXAlignment.Center
     label.Size = UDim2.new(1, 0, 0, 16)
-    label.LayoutOrder = 1
-    label.Text = string.upper(tostring(title or "Section"))
+    -- Negative orders: content rows default to LayoutOrder 0 and used to
+    -- sort ABOVE their own section header (verified: button Y 297 vs
+    -- header Y 351). Header first, then the line, then the content.
+    label.LayoutOrder = -2
+    label.Text = tostring(title or "Section")
     label.ZIndex = 3
     label.Parent = row
 
     local line = Instance.new("Frame")
     line.Name = "Line"
-    line.BackgroundColor3 = Theme.TextTertiary
-    line.BackgroundTransparency = 0.88
+    line.BackgroundColor3 = Theme.Blossom
+    line.BackgroundTransparency = 0.55
     line.BorderSizePixel = 0
     line.Size = UDim2.new(1, 0, 0, 1)
-    line.LayoutOrder = 2
+    line.LayoutOrder = -1
     line.ZIndex = 3
     line.Parent = row
+
+    if Library._RegisterAccentBound then
+        Library._RegisterAccentBound(function(color)
+            if line.Parent then
+                line.BackgroundColor3 = color
+            end
+        end)
+    end
 
     return {
         Instance = row,
         Set = function(self, newTitle)
-            label.Text = string.upper(tostring(newTitle or ""))
+            label.Text = tostring(newTitle or "")
         end,
     }
 end
@@ -616,12 +692,12 @@ Elements.CreateButton = function(parent, config)
 
 	rowFrame.MouseEnter:Connect(function()
 		tw(rowFrame, EASE_OUT_SOFT, { BackgroundColor3 = Theme.Plum600, BackgroundTransparency = 0.05 })
-		tw(rowStroke, EASE_OUT_SOFT, { Transparency = 0.3, Color = Theme.AccentColor })
+		tw(rowStroke, EASE_OUT_SOFT, { Transparency = 0.3, Color = Theme.Blossom })
 		tw(rowScale, EASE_OUT_SOFT, { Scale = 1.03 })
 		tw(gloss, EASE_OUT_SOFT, { Transparency = 0.85 })
 		tw(chevronHolder, EASE_OUT_SOFT, { Position = UDim2.new(1, -14, 0.5, 0) })
-		tw(chevBarTop, EASE_OUT_SOFT, { BackgroundTransparency = 0, BackgroundColor3 = Theme.AccentColor })
-		tw(chevBarBottom, EASE_OUT_SOFT, { BackgroundTransparency = 0, BackgroundColor3 = Theme.AccentColor })
+		tw(chevBarTop, EASE_OUT_SOFT, { BackgroundTransparency = 0, BackgroundColor3 = Theme.Blossom })
+		tw(chevBarBottom, EASE_OUT_SOFT, { BackgroundTransparency = 0, BackgroundColor3 = Theme.Blossom })
 	end)
 
 	rowFrame.MouseLeave:Connect(function()
@@ -757,7 +833,9 @@ Elements.CreateToggle = function(parent, config)
 		end
 	end
 
-	local initialValue = config.CurrentValue == true
+	-- Accept both spellings: CurrentValue is the canonical key, Default is
+	-- what SetupDefaultTabs in UIFEATURES.txt and most callers pass.
+	local initialValue = config.CurrentValue == true or (config.CurrentValue == nil and config.Default == true)
 
 	-- build the returned table as a local first
 	local toggleObject = {
@@ -865,7 +943,12 @@ Elements.CreateSlider = function(parent, config)
 
     local suffix = config.Suffix or ""
 
+    -- CurrentValue is canonical; Default accepted as alias (SetupDefaultTabs
+    -- in UIFEATURES.txt passes Default, which used to be silently ignored -> slider stuck at min)
     local initialValue = config.CurrentValue
+    if initialValue == nil then
+        initialValue = config.Default
+    end
     if initialValue == nil then
         initialValue = minVal
     end
@@ -1028,6 +1111,8 @@ Elements.CreateSlider = function(parent, config)
     controlObject.Instance = rowFrame
     controlObject.Value = initialValue
 
+    local dragging = false
+
     local function applyValue(newValue, silent)
         newValue = math.clamp(newValue, minVal, maxVal)
 
@@ -1044,8 +1129,15 @@ Elements.CreateSlider = function(parent, config)
         end
         fillScale = math.clamp(fillScale, 0, 1)
 
-        fillBar.Size = UDim2.new(fillScale, 0, 1, 0)
-        thumb.Position = UDim2.new(fillScale, 0, 0.5, 0)
+        if dragging then
+            fillBar.Size = UDim2.new(fillScale, 0, 1, 0)
+            thumb.Position = UDim2.new(fillScale, 0, 0.5, 0)
+        else
+            cancelTweens(fillBar)
+            cancelTweens(thumb)
+            tw(fillBar, EASE_QUICK, { Size = UDim2.new(fillScale, 0, 1, 0) })
+            tw(thumb, EASE_QUICK, { Position = UDim2.new(fillScale, 0, 0.5, 0) })
+        end
         valueLabel.Text = formatValue(newValue) .. suffix
 
         if not silent and config.Callback then
@@ -1073,8 +1165,6 @@ Elements.CreateSlider = function(parent, config)
     -- input (mouse + touch), drag + click-to-jump
     ------------------------------------------------------------------
 
-    local dragging = false
-
     local function setActiveVisual(active)
         tw(thumbScale, EASE_QUICK, {Scale = active and 1.15 or 1})
         tw(rowStroke, EASE_QUICK, {Transparency = active and 0.35 or 0.82})
@@ -1096,6 +1186,8 @@ Elements.CreateSlider = function(parent, config)
     trackButton.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
+            cancelTweens(fillBar)
+            cancelTweens(thumb)
             setActiveVisual(true)
             updateFromX(input.Position.X)
         end
@@ -1235,6 +1327,10 @@ do
         holder.ZIndex = zIndex
         holder.Parent = parent
 
+        local scale = Instance.new("UIScale")
+        scale.Scale = 1
+        scale.Parent = holder
+
         local short = Instance.new("Frame")
         short.Name = "Short"
         short.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -1272,7 +1368,7 @@ do
     Elements.CreateDropdown = function(parent, config)
         config = config or {}
         local options = config.Options or {}
-        local initial = config.CurrentOption
+        local initial = config.CurrentOption or config.Default
         if initial == nil or not tableContains(options, initial) then
             initial = options[1]
         end
@@ -1320,7 +1416,12 @@ do
         nameLabel.Name = "Label"
         nameLabel.BackgroundTransparency = 1
         nameLabel.BorderSizePixel = 0
-        nameLabel.Size = UDim2.new(0.5, 0, 1, 0)
+        -- Proportional label + proportional pill (both scale with the
+        -- row): the gap between them is a constant ~30px at every width,
+        -- so shrinking the window keeps the label text instead of
+        -- crushing it to a few characters, and neither can overlap or
+        -- spill out of the card.
+        nameLabel.Size = UDim2.new(0.55, -8, 1, 0)
         nameLabel.Position = UDim2.new(0, 0, 0, 0)
         nameLabel.Font = Font.Medium
         nameLabel.TextSize = TextSizes.LG
@@ -1338,12 +1439,16 @@ do
         pillButton.Text = ""
         pillButton.AnchorPoint = Vector2.new(1, 0.5)
         pillButton.Position = UDim2.new(1, 0, 0.5, 0)
-        pillButton.Size = UDim2.new(0, 176, 0, 32)
+        pillButton.Size = UDim2.new(0.45, -22, 0, 32)
         pillButton.BackgroundColor3 = Theme.Plum600
         pillButton.BackgroundTransparency = 0.1
         pillButton.BorderSizePixel = 0
         pillButton.ZIndex = 4
         pillButton.Parent = headerFrame
+        local pillClamp = Instance.new("UISizeConstraint")
+        pillClamp.MinSize = Vector2.new(64, 32)
+        pillClamp.MaxSize = Vector2.new(176, 32)
+        pillClamp.Parent = pillButton
 
         local pillCorner = Instance.new("UICorner")
         pillCorner.CornerRadius = Radius.Pill
@@ -1424,7 +1529,19 @@ do
         local function updateIndicators()
             for _, entry in ipairs(optionButtons) do
                 local selected = entry.Option == dropdownObj.Value
-                entry.Dot.Visible = selected
+                if selected then
+                    if not entry.Dot.Visible then
+                        entry.Dot.Visible = true
+                        local dotScale = entry.Dot:FindFirstChildOfClass("UIScale")
+                        if dotScale then
+                            cancelTweens(dotScale)
+                            dotScale.Scale = 0.3
+                            tw(dotScale, EASE_SPRING, { Scale = 1 })
+                        end
+                    end
+                else
+                    entry.Dot.Visible = false
+                end
                 entry.Label.TextColor3 = selected and Theme.TextPrimary or Theme.TextSecondary
             end
         end
@@ -1539,6 +1656,10 @@ do
                 local dotCorner = Instance.new("UICorner")
                 dotCorner.CornerRadius = Radius.Pill
                 dotCorner.Parent = dot
+
+                local dotScale = Instance.new("UIScale")
+                dotScale.Scale = 1
+                dotScale.Parent = dot
 
                 local optLabel = Instance.new("TextLabel")
                 optLabel.BackgroundTransparency = 1
@@ -1700,7 +1821,10 @@ do
         nameLabel.Name = "Label"
         nameLabel.BackgroundTransparency = 1
         nameLabel.BorderSizePixel = 0
-        nameLabel.Size = UDim2.new(0.45, 0, 1, 0)
+        -- Same proportional split as the single dropdown: label keeps
+        -- its share of the text at every window size, pill shrinks with
+        -- the row (constant ~32px gap, never overlapping).
+        nameLabel.Size = UDim2.new(0.5, -8, 1, 0)
         nameLabel.Position = UDim2.new(0, 0, 0, 0)
         nameLabel.Font = Font.Medium
         nameLabel.TextSize = TextSizes.LG
@@ -1718,12 +1842,16 @@ do
         pillButton.Text = ""
         pillButton.AnchorPoint = Vector2.new(1, 0.5)
         pillButton.Position = UDim2.new(1, 0, 0.5, 0)
-        pillButton.Size = UDim2.new(0, 190, 0, 32)
+        pillButton.Size = UDim2.new(0.5, -24, 0, 32)
         pillButton.BackgroundColor3 = Theme.Plum600
         pillButton.BackgroundTransparency = 0.1
         pillButton.BorderSizePixel = 0
         pillButton.ZIndex = 4
         pillButton.Parent = headerFrame
+        local pillClamp = Instance.new("UISizeConstraint")
+        pillClamp.MinSize = Vector2.new(64, 32)
+        pillClamp.MaxSize = Vector2.new(190, 32)
+        pillClamp.Parent = pillButton
 
         local pillCorner = Instance.new("UICorner")
         pillCorner.CornerRadius = Radius.Pill
@@ -1822,7 +1950,19 @@ do
         local function updateIndicators()
             for _, entry in ipairs(optionButtons) do
                 local selected = isSelected(entry.Option)
-                entry.Check.Visible = selected
+                if selected then
+                    if not entry.Check.Visible then
+                        entry.Check.Visible = true
+                        local checkScale = entry.Check:FindFirstChildOfClass("UIScale")
+                        if checkScale then
+                            cancelTweens(checkScale)
+                            checkScale.Scale = 0.4
+                            tw(checkScale, EASE_SPRING, { Scale = 1 })
+                        end
+                    end
+                else
+                    entry.Check.Visible = false
+                end
                 tw(entry.CheckboxStroke, EASE_QUICK, {Transparency = selected and 0.15 or 0.7})
                 entry.Label.TextColor3 = selected and Theme.TextPrimary or Theme.TextSecondary
             end
@@ -2101,7 +2241,7 @@ Elements.CreateColorPicker = function(parent, config)
 	config = config or {}
 
 	local pickerName = config.Name or config.Text or "Color Picker"
-	local initialColor = config.Color or Color3.fromRGB(255, 255, 255)
+	local initialColor = config.Color or config.Default or Color3.fromRGB(255, 255, 255)
 	local flag = config.Flag
 	local callback = config.Callback or function() end
 
@@ -2639,7 +2779,7 @@ Elements.CreateKeybind = function(parent, config)
 		return "[ " .. tostring(keyName) .. " ]"
 	end
 
-	local currentKey = config.CurrentKeybind or "None"
+	local currentKey = config.CurrentKeybind or config.Default or "None"
 	local listening = false
 
 	-- Row background
@@ -2842,11 +2982,16 @@ Elements.CreateKeybind = function(parent, config)
 		if listening then
 			return
 		end
-		if not gameProcessedEvent then
-			if matchesCurrentKey(input) then
-				if config.Callback then
-					pcall(config.Callback, true)
-				end
+		-- NOT gated on gameProcessedEvent: this game claims its keys
+		-- (observed RightShift arriving as gameProcessed=true), which made
+		-- every bound key a silent no-op. Textbox focus is the real
+		-- "player is typing" signal the guard existed for.
+		if UserInputService:GetFocusedTextBox() then
+			return
+		end
+		if matchesCurrentKey(input) then
+			if config.Callback then
+				pcall(config.Callback, true)
 			end
 		end
 	end)
@@ -3464,7 +3609,7 @@ Library.EnableAutosave = function(fileName, intervalSeconds)
 	intervalSeconds = intervalSeconds or 30
 
 	task.spawn(function()
-		while true do
+		while not Library.Unloaded do
 			task.wait(intervalSeconds)
 			pcall(function()
 				Library.SaveConfiguration(fileName, true)
@@ -3473,6 +3618,143 @@ Library.EnableAutosave = function(fileName, intervalSeconds)
 	end)
 end
 
+Library.ListConfigurations = function(folder)
+	folder = folder or "IvoryHubConfigs"
+	local names = {}
+	pcall(function()
+		for _, path in ipairs(listfiles(folder)) do
+			local base = path:match("([^/\\]+)$") or path
+			local name = base:match("^(.+)%.json$")
+			if name and name ~= "" then
+				table.insert(names, name)
+			end
+		end
+	end)
+	table.sort(names)
+	return names
+end
+
+Library.CreateConfigControls = function(section, folder)
+	folder = folder or "IvoryHubConfigs"
+	if not section then
+		return nil
+	end
+
+	local currentName = ""
+	local dropdown
+
+	local function sanitize(name)
+		name = tostring(name or "")
+		name = name:gsub("[%c]", "")
+		name = name:gsub("[/\\:*?\"<>|]", "")
+		name = name:match("^%s*(.-)%s*$") or ""
+		if #name > 40 then
+			name = name:sub(1, 40)
+		end
+		return name
+	end
+
+	local function pathFor(name)
+		return folder .. "/" .. name
+	end
+
+	local function refreshList()
+		local names = Library.ListConfigurations(folder)
+		local hasCurrent = false
+		for _, n in ipairs(names) do
+			if n == currentName then
+				hasCurrent = true
+				break
+			end
+		end
+		if currentName ~= "" and not hasCurrent then
+			table.insert(names, currentName)
+			table.sort(names)
+		end
+		if #names == 0 then
+			names = { "Default" }
+		end
+		dropdown:Refresh(names)
+		dropdown:Set(currentName ~= "" and currentName or names[1], true)
+		currentName = dropdown.Value
+	end
+
+	dropdown = section:CreateDropdown({
+		Name = "Config",
+		Options = { "Default" },
+		CurrentOption = "Default",
+		Callback = function(value)
+			currentName = value
+		end,
+	})
+
+	refreshList()
+
+	section:CreateInput({
+		Name = "New Config Name",
+		PlaceholderText = "Type name + Enter",
+		RemoveTextAfterFocusLost = true,
+		Callback = function(text)
+			local name = sanitize(text)
+			if name == "" then
+				return
+			end
+			currentName = name
+			refreshList()
+			if Library.Notify then
+				Library.Notify({
+					Title = "Configuration",
+					Content = "New config: " .. name,
+					Type = "Info",
+					Duration = 2,
+				})
+			end
+		end,
+	})
+
+	section:CreateButton({
+		Name = "Save Config",
+		Callback = function()
+			local name = currentName ~= "" and currentName or "Default"
+			Library.SaveConfiguration(pathFor(name))
+			refreshList()
+		end,
+	})
+
+	section:CreateButton({
+		Name = "Load Config",
+		Callback = function()
+			local name = currentName ~= "" and currentName or "Default"
+			if not isfile(pathFor(name) .. ".json") then
+				if Library.Notify then
+					Library.Notify({
+						Title = "Configuration",
+						Content = "No saved config named " .. name,
+						Type = "Warning",
+						Duration = 2,
+					})
+				end
+				return
+			end
+			Library.LoadConfiguration(pathFor(name), true)
+			if Library.Notify then
+				Library.Notify({
+					Title = "Configuration",
+					Content = "Loaded " .. name,
+					Type = "Success",
+					Duration = 2,
+				})
+			end
+		end,
+	})
+
+	return {
+		Refresh = refreshList,
+		GetCurrent = function()
+			return currentName
+		end,
+	}
+end
 
 -- ============================================================
 -- Search
@@ -3716,15 +3998,18 @@ Library.CreateSearchBar = function(parentTitleBarFrame)
         tw(SearchBoxStroke, EASE_QUICK, { Color = Color3.fromRGB(255, 255, 255), Transparency = Alpha.Faint })
     end)
 
-    UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then
-            return
-        end
+    UserInputService.InputBegan:Connect(function(input)
+        -- No gameProcessed guard: this game claims keys (Escape and
+        -- Ctrl+F arrive as gameProcessed=true), so the old guard meant
+        -- the search hotkeys never fired here.
         if input.KeyCode == Enum.KeyCode.Escape then
             if searchOpen then
                 closeSearch()
             end
         elseif input.KeyCode == Enum.KeyCode.F then
+            if UserInputService:GetFocusedTextBox() then
+                return
+            end
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) or UserInputService:IsKeyDown(Enum.KeyCode.RightControl) then
                 openSearch()
             end
@@ -3760,7 +4045,7 @@ local function ensureFPSTracking()
     task.spawn(function()
         local lastTime = tick()
         local frameCount = 0
-        while true do
+        while not Library.Unloaded do
             RunService.Heartbeat:Wait()
             frameCount = frameCount + 1
             local now = tick()
@@ -3828,15 +4113,19 @@ local function ensureMenuKeybindListener()
     end
     menuKeybindListenerStarted = true
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then
+        -- Deliberately NOT checking gameProcessed: this game's own input
+        -- sink claims RightShift (observed: InputBegan fires with
+        -- gameProcessed=true), which used to make the menu keybind a
+        -- permanent no-op here. Textbox focus is the real hazard the
+        -- guard existed for - if the player is typing (chat, search,
+        -- an input row), leave the key to them.
+        if UserInputService:GetFocusedTextBox() then
             return
         end
         if input.KeyCode == Library._MenuKeybind then
-            for _, window in ipairs(Library._MenuKeybindWindows) do
-                if window.Wrapper and window.Wrapper.Parent then
-                    window.Wrapper.Visible = not window.Wrapper.Visible
-                end
-            end
+            -- Single toggle path: flips Library.Toggled + ScreenGui.Enabled
+            -- together, so the mobile button and the keybind never disagree.
+            Library:Toggle()
         end
     end)
 end
@@ -4187,475 +4476,6 @@ Library.CreateActiveFeaturesPanel = function(config)
     return activeFeaturesPanel
 end
 
--- ===================== Info panel helper =====================
--- Adds a full "session info" section into an existing tab - game/place
--- identity, server population, session uptime, live FPS/ping, a copy-join-
--- script button, and a server hop button - built entirely from elements the
--- library already has, no new UI primitives needed. Meant to be the main/
--- default tab in a consuming script, so the wordmark alone carries branding
--- and this is where the actual detail lives.
-Library.CreateInfoSection = function(tab)
-    if not tab then
-        return
-    end
-
-    local playersService = Players
-    local sessionStart = tick()
-
-    local function formatUptime(seconds)
-        seconds = math.max(0, math.floor(seconds))
-        local minutes = math.floor(seconds / 60)
-        local secs = seconds % 60
-        if minutes > 0 then
-            return minutes .. "m " .. secs .. "s"
-        end
-        return secs .. "s"
-    end
-
-    tab:CreateParagraph({
-        Title = "Session Info",
-        Content = "Everything about this game session - handy for support requests, inviting a friend, or hopping to a fresh server.",
-    })
-
-    local placeNameLabel = tab:CreateLabel("Place Name: Loading...")
-    local creatorLabel = tab:CreateLabel("Creator: Loading...")
-    tab:CreateLabel("Place ID: " .. tostring(game.PlaceId))
-
-    local jobId = game.JobId
-    tab:CreateLabel("Server ID: " .. ((jobId and jobId ~= "") and jobId or "(Studio)"))
-
-    local player = playersService.LocalPlayer
-    if player then
-        tab:CreateLabel("Player: " .. player.Name .. " (" .. tostring(player.UserId) .. ")")
-    end
-
-    local playerCountLabel = tab:CreateLabel("Players: -")
-    local uptimeLabel = tab:CreateLabel("Session Uptime: 0s")
-    local fpsLabel = tab:CreateLabel("FPS: " .. tostring(Library.GetFPS()))
-    local pingLabel = tab:CreateLabel("Ping: -")
-
-    task.spawn(function()
-        local ok, info = pcall(function()
-            return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
-        end)
-        if ok and info then
-            if info.Name then
-                placeNameLabel:Set("Place Name: " .. info.Name)
-            end
-            if info.Creator and info.Creator.Name then
-                creatorLabel:Set("Creator: " .. info.Creator.Name)
-            end
-        else
-            placeNameLabel:Set("Place Name: unavailable")
-            creatorLabel:Set("Creator: unavailable")
-        end
-    end)
-
-    -- One combined loop for every field that changes over time, rather than
-    -- a separate task.spawn per label.
-    task.spawn(function()
-        while playerCountLabel.Instance.Parent do
-            playerCountLabel:Set("Players: " .. tostring(#playersService:GetPlayers()) .. " / " .. tostring(playersService.MaxPlayers))
-            uptimeLabel:Set("Session Uptime: " .. formatUptime(tick() - sessionStart))
-            fpsLabel:Set("FPS: " .. tostring(Library.GetFPS()))
-            local ping = Library.GetPing()
-            pingLabel:Set("Ping: " .. (ping and (tostring(ping) .. "ms") or "-"))
-            task.wait(1)
-        end
-    end)
-
-    tab:CreateDivider()
-
-    tab:CreateButton({
-        Name = "Copy Join Script",
-        Callback = function()
-            local joinScript = string.format(
-                'game:GetService("TeleportService"):TeleportToPlaceInstance(%d, "%s")',
-                game.PlaceId,
-                game.JobId
-            )
-            local ok = pcall(function()
-                setclipboard(joinScript)
-            end)
-            if Library.Notify then
-                Library.Notify({
-                    Title = ok and "Copied" or "Copy Failed",
-                    Content = ok and "Join script copied to clipboard." or "Your executor does not support setclipboard.",
-                    Type = ok and "Success" or "Error",
-                })
-            end
-        end,
-    })
-
-    tab:CreateButton({
-        Name = "Copy Place ID",
-        Callback = function()
-            local ok = pcall(function()
-                setclipboard(tostring(game.PlaceId))
-            end)
-            if Library.Notify then
-                Library.Notify({
-                    Title = ok and "Copied" or "Copy Failed",
-                    Content = ok and "Place ID copied to clipboard." or "Your executor does not support setclipboard.",
-                    Type = ok and "Success" or "Error",
-                })
-            end
-        end,
-    })
-
-    tab:CreateButton({
-        Name = "Server Hop",
-        Callback = function()
-            if Library.Notify then
-                Library.Notify({
-                    Title = "Server Hop",
-                    Content = "Finding a different server...",
-                    Type = "Info",
-                })
-            end
-
-            -- A blind Teleport(PlaceId) can land back on the same server -
-            -- query the live public server list and explicitly pick a
-            -- different JobId, same approach Infinite Yield uses.
-            local ok, err = pcall(function()
-                local url = string.format(
-                    "https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Desc&limit=100&excludeFullGames=true",
-                    game.PlaceId
-                )
-                local response = game:HttpGet(url)
-                local data = game:GetService("HttpService"):JSONDecode(response)
-
-                local candidates = {}
-                for _, server in ipairs(data.data or {}) do
-                    if server.id ~= game.JobId then
-                        table.insert(candidates, server.id)
-                    end
-                end
-
-                local teleportService = game:GetService("TeleportService")
-                if #candidates > 0 then
-                    teleportService:TeleportToPlaceInstance(game.PlaceId, candidates[math.random(1, #candidates)], player)
-                else
-                    -- No other public server listed right now - fall back to
-                    -- a plain re-teleport rather than doing nothing.
-                    teleportService:Teleport(game.PlaceId, player)
-                end
-            end)
-
-            if not ok then
-                warn("[Ivory Hub] Server Hop failed: " .. tostring(err))
-                if Library.Notify then
-                    Library.Notify({
-                        Title = "Server Hop Failed",
-                        Content = "Your executor blocked the teleport or server list request.",
-                        Type = "Error",
-                    })
-                end
-            end
-        end,
-    })
-
-    return tab
-end
-
--- ===================== Universal section helper =====================
--- Adds a standard set of cross-game utilities into an existing tab - the
--- stuff that works the same in any Roblox game (speed, jump, noclip,
--- fullbright, ESP, anti-AFK), as opposed to CreateInfoSection's per-game
--- session details or a script's own per-game remote-driven features.
--- Every future ported script gets this for free by calling it once,
--- rather than each script reimplementing the same handful of utilities.
---
--- Guarded to run its setup exactly once per session (same pattern as
--- CreateActiveFeaturesPanel above), because unlike a component's row -
--- which cleans itself up via rowFrame.Destroying - the connections and
--- loops this wires up (CharacterAdded, an infinite Noclip check loop,
--- JumpRequest, ESP's PlayerAdded and one CharacterAdded per current
--- player, Anti-AFK's Idled) aren't tied to any UI instance's lifetime
--- at all. A second call (a script re-executed during testing, or
--- calling this twice by mistake) would stack a fully redundant copy of
--- every one of them rather than replacing the first, each doing the
--- same work again on every frame/event from then on - the kind of
--- compounding background cost that reads as "it gets laggier the
--- longer the session runs," especially once Anti-AFK is the reason
--- the session runs that long in the first place.
-Library.CreateUniversalSection = function(tab)
-    if not tab then
-        return
-    end
-
-    if Library._UniversalSectionCreated then
-        return tab
-    end
-
-    local player = Players.LocalPlayer
-    local Lighting = game:GetService("Lighting")
-
-    local function getHumanoid()
-        local character = player.Character
-        return character and character:FindFirstChildOfClass("Humanoid")
-    end
-
-    tab:CreateSection("Player")
-
-    local DEFAULT_WALKSPEED = 16
-    local DEFAULT_JUMPPOWER = 50
-    local walkSpeed = DEFAULT_WALKSPEED
-    local jumpPower = DEFAULT_JUMPPOWER
-
-    -- Roblox resets Humanoid properties to their defaults on every respawn,
-    -- so the slider's own CurrentValue would silently stop applying after
-    -- the first death - reapply on every CharacterAdded to persist it.
-    player.CharacterAdded:Connect(function(character)
-        local humanoid = character:WaitForChild("Humanoid", 5)
-        if humanoid then
-            humanoid.WalkSpeed = walkSpeed
-            humanoid.JumpPower = jumpPower
-        end
-    end)
-
-    tab:CreateSlider({
-        Name = "Walk Speed",
-        Range = { 16, 300 },
-        Increment = 1,
-        CurrentValue = DEFAULT_WALKSPEED,
-        Callback = function(value)
-            walkSpeed = value
-            local humanoid = getHumanoid()
-            if humanoid then
-                humanoid.WalkSpeed = value
-            end
-        end,
-    })
-
-    tab:CreateSlider({
-        Name = "Jump Power",
-        Range = { 50, 300 },
-        Increment = 1,
-        CurrentValue = DEFAULT_JUMPPOWER,
-        Callback = function(value)
-            jumpPower = value
-            local humanoid = getHumanoid()
-            if humanoid then
-                humanoid.JumpPower = value
-            end
-        end,
-    })
-
-    local noclipEnabled = false
-    task.spawn(function()
-        while true do
-            if noclipEnabled then
-                local character = player.Character
-                if character then
-                    for _, part in ipairs(character:GetDescendants()) do
-                        if part:IsA("BasePart") and part.CanCollide then
-                            part.CanCollide = false
-                        end
-                    end
-                end
-            end
-            RunService.Stepped:Wait()
-        end
-    end)
-
-    tab:CreateToggle({
-        Name = "Noclip",
-        CurrentValue = false,
-        TrackActive = true,
-        Callback = function(value)
-            noclipEnabled = value
-            if not value then
-                local character = player.Character
-                if character then
-                    for _, part in ipairs(character:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = true
-                        end
-                    end
-                end
-            end
-        end,
-    })
-
-    local infiniteJumpEnabled = false
-    UserInputService.JumpRequest:Connect(function()
-        if infiniteJumpEnabled then
-            local humanoid = getHumanoid()
-            if humanoid then
-                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-            end
-        end
-    end)
-
-    tab:CreateToggle({
-        Name = "Infinite Jump",
-        CurrentValue = false,
-        TrackActive = true,
-        Callback = function(value)
-            infiniteJumpEnabled = value
-        end,
-    })
-
-    tab:CreateDivider()
-    tab:CreateSection("Visual")
-
-    local originalLighting = nil
-    tab:CreateToggle({
-        Name = "Fullbright",
-        CurrentValue = false,
-        TrackActive = true,
-        Callback = function(value)
-            if value then
-                originalLighting = {
-                    Brightness = Lighting.Brightness,
-                    ClockTime = Lighting.ClockTime,
-                    FogEnd = Lighting.FogEnd,
-                    GlobalShadows = Lighting.GlobalShadows,
-                    OutdoorAmbient = Lighting.OutdoorAmbient,
-                    Ambient = Lighting.Ambient,
-                }
-                Lighting.Brightness = 2
-                Lighting.ClockTime = 14
-                Lighting.FogEnd = 100000
-                Lighting.GlobalShadows = false
-                Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
-                Lighting.Ambient = Color3.fromRGB(128, 128, 128)
-            elseif originalLighting then
-                Lighting.Brightness = originalLighting.Brightness
-                Lighting.ClockTime = originalLighting.ClockTime
-                Lighting.FogEnd = originalLighting.FogEnd
-                Lighting.GlobalShadows = originalLighting.GlobalShadows
-                Lighting.OutdoorAmbient = originalLighting.OutdoorAmbient
-                Lighting.Ambient = originalLighting.Ambient
-            end
-        end,
-    })
-
-    local espEnabled = false
-    local espObjects = {}
-
-    local function clearEsp()
-        for _, obj in ipairs(espObjects) do
-            pcall(function() obj:Destroy() end)
-        end
-        espObjects = {}
-    end
-
-    local function addEspFor(otherPlayer)
-        local character = otherPlayer.Character
-        if not character then
-            return
-        end
-        local head = character:FindFirstChild("Head")
-        if not head then
-            return
-        end
-
-        local highlight = Instance.new("Highlight")
-        highlight.FillColor = Theme.Blossom
-        highlight.FillTransparency = 0.6
-        highlight.OutlineColor = Theme.Petal
-        highlight.OutlineTransparency = 0
-        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        highlight.Parent = character
-        table.insert(espObjects, highlight)
-
-        local billboard = Instance.new("BillboardGui")
-        billboard.Size = UDim2.fromOffset(140, 36)
-        billboard.StudsOffset = Vector3.new(0, 2, 0)
-        billboard.AlwaysOnTop = true
-        billboard.Parent = head
-
-        local nameLabel = Instance.new("TextLabel")
-        nameLabel.BackgroundTransparency = 1
-        nameLabel.Size = UDim2.fromScale(1, 1)
-        nameLabel.Font = Font.Bold
-        nameLabel.TextSize = TextSizes.LG
-        nameLabel.TextColor3 = Theme.Petal
-        nameLabel.TextStrokeTransparency = 0.4
-        nameLabel.Text = otherPlayer.Name
-        nameLabel.Parent = billboard
-
-        table.insert(espObjects, billboard)
-    end
-
-    local function refreshEsp()
-        clearEsp()
-        if not espEnabled then
-            return
-        end
-        for _, otherPlayer in ipairs(Players:GetPlayers()) do
-            if otherPlayer ~= player then
-                addEspFor(otherPlayer)
-            end
-        end
-    end
-
-    Players.PlayerAdded:Connect(function(otherPlayer)
-        if espEnabled then
-            otherPlayer.CharacterAdded:Connect(function()
-                task.wait(0.5)
-                if espEnabled then
-                    addEspFor(otherPlayer)
-                end
-            end)
-        end
-    end)
-
-    for _, otherPlayer in ipairs(Players:GetPlayers()) do
-        if otherPlayer ~= player then
-            otherPlayer.CharacterAdded:Connect(function()
-                task.wait(0.5)
-                if espEnabled then
-                    refreshEsp()
-                end
-            end)
-        end
-    end
-
-    tab:CreateToggle({
-        Name = "Player ESP",
-        CurrentValue = false,
-        TrackActive = true,
-        Callback = function(value)
-            espEnabled = value
-            refreshEsp()
-        end,
-    })
-
-    tab:CreateDivider()
-    tab:CreateSection("Utility")
-
-    local antiAfkEnabled = false
-    player.Idled:Connect(function()
-        if not antiAfkEnabled then
-            return
-        end
-        local ok = pcall(function()
-            local virtualUser = game:GetService("VirtualUser")
-            virtualUser:CaptureController()
-            virtualUser:ClickButton2(Vector2.new())
-        end)
-        if not ok then
-            warn("[Ivory Hub] Anti-AFK could not fire an input event on this executor.")
-        end
-    end)
-
-    tab:CreateToggle({
-        Name = "Anti-AFK",
-        CurrentValue = false,
-        TrackActive = true,
-        Callback = function(value)
-            antiAfkEnabled = value
-        end,
-    })
-
-    Library._UniversalSectionCreated = true
-    return tab
-end
-
-
 -- ============================================================
 -- Window + Tab shell
 -- ============================================================
@@ -4672,8 +4492,8 @@ local SIDEBAR_WIDTH = 150
 local TITLEBAR_HEIGHT = 44
 local MIN_WINDOW_WIDTH = 480
 local MIN_WINDOW_HEIGHT = 320
-local DEFAULT_WINDOW_WIDTH = 640
-local DEFAULT_WINDOW_HEIGHT = 420
+local DEFAULT_WINDOW_WIDTH = 755
+local DEFAULT_WINDOW_HEIGHT = 550
 local MINIMIZED_PILL_WIDTH = 210
 
 -- Mobile screens can be narrower than MIN_WINDOW_WIDTH itself (Roblox
@@ -4808,12 +4628,16 @@ Library._BuildIvoryWordmark = buildIvoryWordmark
 -- field is destroyed.
 -- Base-to-tip color pairs, not flat colors, so each falling petal shows
 -- the same two-tone gradient the wordmark and the marketing site use
--- rather than a single flat fill.
-local PETAL_GRADIENTS = {
-    { Theme.Blossom, Theme.BlossomLight },
-    { Theme.Blossom, Theme.Petal },
-    { Theme.Mauve, Theme.BlossomLight },
-}
+-- rather than a single flat fill. Read live from Theme on every call so
+-- petals spawned after a theme change use the new palette (a static
+-- table here would keep repainting old Sakura colors forever).
+local function PETAL_GRADIENTS()
+    return {
+        { Theme.Blossom, Theme.BlossomLight },
+        { Theme.Blossom, Theme.Petal },
+        { Theme.Mauve, Theme.BlossomLight },
+    }
+end
 
 local _petalFieldMeta = setmetatable({}, { __mode = "k" })
 
@@ -4845,7 +4669,8 @@ local function createPetalField(parent, zIndex, count, sizeMin, sizeMax, speedMi
         corner.CornerRadius = Radius.Pill
         corner.Parent = petal
 
-        local tones = PETAL_GRADIENTS[math.random(1, #PETAL_GRADIENTS)]
+        local toneList = PETAL_GRADIENTS()
+        local tones = toneList[math.random(1, #toneList)]
         local gradient = Instance.new("UIGradient")
         gradient.Rotation = 90
         gradient.Color = ColorSequence.new({
@@ -5007,6 +4832,10 @@ local function applyCardSize(self, width, height)
     self._cardWidth = width
     self._cardHeight = height
 
+    if self._sizeLabel then
+        self._sizeLabel.Text = string.format("%d x %d", math.floor(width), math.floor(height))
+    end
+
     self.Wrapper.Size = UDim2.new(0, width + SHADOW_BUFFER * 2, 0, height + SHADOW_BUFFER * 2)
     self.MainFrame.Size = UDim2.new(0, width, 0, height)
 
@@ -5034,6 +4863,24 @@ end
 -- which may be authored by a different agent and may not exist yet when this
 -- file is tested in isolation.
 
+-- CS2-cheat reference layout: a tab's top-level creations alternate
+-- between two side-by-side column frames instead of stacking in one
+-- list, so content fills the card like the reference UIs. Children
+-- created through a wrapped section still parent into that section's
+-- own row (they never come through here), so a section stays whole in
+-- whichever column it landed in. Falls back to the flat content frame
+-- if the tab was built without columns (defensive: hand-built Tabs).
+function Tab:_route()
+    if not self.Columns then
+        return self.Content
+    end
+    if (Library.ContentColumns or 2) < 2 then
+        return self.Columns[1]
+    end
+    self._routeIdx = (self._routeIdx or 0) + 1
+    return self.Columns[(self._routeIdx - 1) % 2 + 1]
+end
+
 function Tab:CreateButton(nameOrConfig, callback)
     if Elements.CreateButton then
         local cfg
@@ -5042,7 +4889,7 @@ function Tab:CreateButton(nameOrConfig, callback)
         else
             cfg = nameOrConfig or {}
         end
-        return Elements.CreateButton(self.Content, cfg)
+        return Elements.CreateButton(self:_route(), cfg)
     end
 end
 
@@ -5059,7 +4906,7 @@ function Tab:CreateToggle(nameOrConfig, config)
         if cfg.CurrentValue == nil and cfg.Default ~= nil then
             cfg.CurrentValue = cfg.Default
         end
-        local obj = Elements.CreateToggle(self.Content, cfg)
+        local obj = Elements.CreateToggle(self:_route(), cfg)
         if flagName and obj then
             Library.Toggles[flagName] = obj
             if Library._RegisterFlag then
@@ -5082,7 +4929,7 @@ function Tab:CreateSlider(nameOrConfig, config)
         if cfg.CurrentValue == nil and cfg.Default ~= nil then
             cfg.CurrentValue = cfg.Default
         end
-        return Elements.CreateSlider(self.Content, cfg)
+        return Elements.CreateSlider(self:_route(), cfg)
     end
 end
 
@@ -5101,7 +4948,7 @@ function Tab:CreateDropdown(nameOrConfig, config)
         if cfg.CurrentOption == nil and cfg.Value ~= nil then
             cfg.CurrentOption = cfg.Value
         end
-        return Elements.CreateDropdown(self.Content, cfg)
+        return Elements.CreateDropdown(self:_route(), cfg)
     end
 end
 
@@ -5114,7 +4961,7 @@ function Tab:CreateMultiDropdown(nameOrConfig, config)
         else
             cfg = nameOrConfig or {}
         end
-        return Elements.CreateMultiDropdown(self.Content, cfg)
+        return Elements.CreateMultiDropdown(self:_route(), cfg)
     end
 end
 
@@ -5127,7 +4974,7 @@ function Tab:CreateColorPicker(nameOrConfig, config)
         else
             cfg = nameOrConfig or {}
         end
-        return Elements.CreateColorPicker(self.Content, cfg)
+        return Elements.CreateColorPicker(self:_route(), cfg)
     end
 end
 
@@ -5140,37 +4987,37 @@ function Tab:CreateKeybind(nameOrConfig, config)
         else
             cfg = nameOrConfig or {}
         end
-        return Elements.CreateKeybind(self.Content, cfg)
+        return Elements.CreateKeybind(self:_route(), cfg)
     end
 end
 
 function Tab:CreateInput(config)
     if Elements.CreateInput then
-        return Elements.CreateInput(self.Content, config)
+        return Elements.CreateInput(self:_route(), config)
     end
 end
 
 function Tab:CreateLabel(config)
     if Elements.CreateLabel then
-        return Elements.CreateLabel(self.Content, config)
+        return Elements.CreateLabel(self:_route(), config)
     end
 end
 
 function Tab:CreateParagraph(config)
     if Elements.CreateParagraph then
-        return Elements.CreateParagraph(self.Content, config)
+        return Elements.CreateParagraph(self:_route(), config)
     end
 end
 
 function Tab:CreateDivider(config)
     if Elements.CreateDivider then
-        return Elements.CreateDivider(self.Content, config)
+        return Elements.CreateDivider(self:_route(), config)
     end
 end
 
 function Tab:CreateSection(title)
     if Elements.CreateSection then
-        local section = Elements.CreateSection(self.Content, title)
+        local section = Elements.CreateSection(self:_route(), title)
         return Tab._wrapSection(section)
     end
 end
@@ -5182,7 +5029,7 @@ function Tab:CreateDependencyBox()
     frame.AutomaticSize = Enum.AutomaticSize.Y
     frame.Size = UDim2.new(1, 0, 0, 0)
     frame.ZIndex = 3
-    frame.Parent = self.Content
+    frame.Parent = self:_route()
     local layout = Instance.new("UIListLayout")
     layout.FillDirection = Enum.FillDirection.Vertical
     layout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -5387,6 +5234,32 @@ end
 
 -- ===================== Window methods =====================
 
+-- Small glyph shown to the left of each sidebar tab label, keyed off the
+-- tab name (lowercased). Anything unmapped gets a neutral dot, so game
+-- scripts that create oddly-named tabs still render something sane.
+local TAB_ICONS = {
+    ["main"] = "◆",
+    ["home"] = "◆",
+    ["legit"] = "✛",
+    ["aimbot"] = "✛",
+    ["visuals"] = "◉",
+    ["visual"] = "◉",
+    ["esp"] = "◉",
+    ["misc"] = "✦",
+    ["miscellaneous"] = "✦",
+    ["other"] = "✦",
+    ["grenade"] = "✱",
+    ["grenade helper"] = "✱",
+    ["configs"] = "▦",
+    ["config"] = "▦",
+    ["configuration"] = "▦",
+    ["player"] = "●",
+    ["movement"] = "➤",
+    ["showcase"] = "❖",
+    ["settings"] = "⚙",
+    ["about"] = "ℹ",
+}
+
 function Window:CreateTab(name)
     local tabName = tostring((type(name) == "table" and name.Name) or name or "Tab")
     local tabIndex = #self._tabs + 1
@@ -5439,11 +5312,24 @@ function Window:CreateTab(name)
     accentCorner.CornerRadius = Radius.Pill
     accentCorner.Parent = accent
 
+    local icon = Instance.new("TextLabel")
+    icon.Name = "Icon"
+    icon.BackgroundTransparency = 1
+    icon.Position = UDim2.new(0, 12, 0, 0)
+    icon.Size = UDim2.new(0, 18, 1, 0)
+    icon.Font = Font.Medium
+    icon.TextSize = TextSizes.XL
+    icon.TextColor3 = Theme.TextTertiary
+    icon.TextXAlignment = Enum.TextXAlignment.Center
+    icon.Text = TAB_ICONS[string.lower(tabName)] or "●"
+    icon.ZIndex = 4
+    icon.Parent = tabButton
+
     local label = Instance.new("TextLabel")
     label.Name = "Label"
     label.BackgroundTransparency = 1
-    label.Position = UDim2.new(0, 16, 0, 0)
-    label.Size = UDim2.new(1, -24, 1, 0)
+    label.Position = UDim2.new(0, 38, 0, 0)
+    label.Size = UDim2.new(1, -46, 1, 0)
     label.Font = Font.Medium
     label.TextSize = TextSizes.LG
     label.TextColor3 = Theme.TextSecondary
@@ -5468,12 +5354,6 @@ function Window:CreateTab(name)
     content.Visible = false
     content.Parent = self.ContentArea
 
-    local listLayout = Instance.new("UIListLayout")
-    listLayout.FillDirection = Enum.FillDirection.Vertical
-    listLayout.Padding = UDim.new(0, 10)
-    listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    listLayout.Parent = content
-
     local padding = Instance.new("UIPadding")
     padding.PaddingLeft = UDim.new(0, 4)
     padding.PaddingRight = UDim.new(0, 4)
@@ -5481,9 +5361,48 @@ function Window:CreateTab(name)
     padding.PaddingBottom = UDim.new(0, 16)
     padding.Parent = content
 
-    listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        content.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 16)
-    end)
+    local switchScale = Instance.new("UIScale")
+    switchScale.Name = "SwitchScale"
+    switchScale.Scale = 1
+    switchScale.Parent = content
+
+    -- Two side-by-side columns (CS2-cheat reference layout). Each column
+    -- carries its own vertical layout; Tab:_route() hands top-level
+    -- creations to them alternately so a tab fills both columns. The
+    -- scroll canvas tracks whichever column ends up taller.
+    local function makeColumn(name, xPos)
+        local column = Instance.new("Frame")
+        column.Name = name
+        column.BackgroundTransparency = 1
+        column.Position = xPos
+        column.Size = UDim2.new(0.5, -8, 0, 0)
+        column.AutomaticSize = Enum.AutomaticSize.Y
+        column.ZIndex = 3
+        column.Parent = content
+        local list = Instance.new("UIListLayout")
+        list.FillDirection = Enum.FillDirection.Vertical
+        list.Padding = UDim.new(0, 10)
+        list.SortOrder = Enum.SortOrder.LayoutOrder
+        list.Parent = column
+        return column, list
+    end
+
+    local colL, colLLayout = makeColumn("ColumnL", UDim2.new(0, 0, 0, 0))
+    local colR, colRLayout = makeColumn("ColumnR", UDim2.new(0.5, 8, 0, 0))
+
+    -- Open directly in single-column mode if that's the active setting
+    -- (SetContentColumns only reflows windows that already exist).
+    if (Library.ContentColumns or 2) < 2 then
+        colL.Size = UDim2.new(1, 0, 0, 0)
+        colR.Visible = false
+    end
+
+    local function updateCanvas()
+        local h = math.max(colLLayout.AbsoluteContentSize.Y, colRLayout.AbsoluteContentSize.Y)
+        content.CanvasSize = UDim2.new(0, 0, 0, h + 16)
+    end
+    colLLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas)
+    colRLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas)
 
     local tabObject = setmetatable({
         Name = tabName,
@@ -5491,9 +5410,12 @@ function Window:CreateTab(name)
         Button = tabButton,
         Stroke = tabStroke,
         Accent = accent,
+        Icon = icon,
         Label = label,
         Content = content,
-        ListLayout = listLayout,
+        Columns = { colL, colR },
+        _routeIdx = 0,
+        ListLayout = colLLayout,
     }, Tab)
 
     table.insert(self._tabs, tabObject)
@@ -5537,10 +5459,23 @@ function Window:SelectTab(tab)
         tw(previous.Stroke, EASE_QUICK, {Transparency = 1})
         tw(previous.Accent, EASE_QUICK, {BackgroundTransparency = 1})
         tw(previous.Label, EASE_QUICK, {TextColor3 = Theme.TextSecondary})
+        if previous.Icon then
+            tw(previous.Icon, EASE_QUICK, {TextColor3 = Theme.TextTertiary})
+        end
     end
 
     tab.Content.Visible = true
     self._activeTab = tab
+
+    cancelTweens(tab.Content)
+    tab.Content.Position = UDim2.new(0, 0, 0, 8)
+    tw(tab.Content, EASE_QUICK, { Position = UDim2.new(0, 0, 0, 0) })
+    local switchScale = tab.Content:FindFirstChild("SwitchScale")
+    if switchScale then
+        cancelTweens(switchScale)
+        switchScale.Scale = 0.975
+        tw(switchScale, EASE_QUICK, { Scale = 1 })
+    end
 
     -- A soft tint + thin outline reads as a selected chip; the old 0.15
     -- transparency was a near-solid block that clashed with the rest of
@@ -5549,6 +5484,76 @@ function Window:SelectTab(tab)
     tw(tab.Stroke, EASE_QUICK, {Transparency = 0.72})
     tw(tab.Accent, EASE_QUICK, {BackgroundTransparency = 0})
     tw(tab.Label, EASE_QUICK, {TextColor3 = Theme.TextPrimary})
+    if tab.Icon then
+        tw(tab.Icon, EASE_QUICK, {TextColor3 = Theme.Blossom})
+    end
+end
+
+-- Switch between one full-width content column and two side-by-side
+-- columns. Every open window is reflowed live: each tab's items are
+-- merged back into creation order (interleaving the two columns, which
+-- is exactly the order they were created in), then re-split for the
+-- new mode. LayoutOrder ties are broken by child index so the visual
+-- order survives the round-trip.
+function Library:SetContentColumns(count)
+    local cols = (count == 1) and 1 or 2
+    Library.ContentColumns = cols
+
+    for _, win in ipairs(Library._windows) do
+        for _, tab in ipairs(win._tabs or {}) do
+            local colL = tab.Columns and tab.Columns[1]
+            local colR = tab.Columns and tab.Columns[2]
+            if colL and colL.Parent and colR and colR.Parent then
+                local function collect(col)
+                    local decorated = {}
+                    for i, child in ipairs(col:GetChildren()) do
+                        if child:IsA("GuiObject") then
+                            table.insert(decorated, { obj = child, idx = i })
+                        end
+                    end
+                    table.sort(decorated, function(a, b)
+                        local ao = a.obj.LayoutOrder or 0
+                        local bo = b.obj.LayoutOrder or 0
+                        if ao ~= bo then
+                            return ao < bo
+                        end
+                        return a.idx < b.idx
+                    end)
+                    local items = {}
+                    for _, d in ipairs(decorated) do
+                        table.insert(items, d.obj)
+                    end
+                    return items
+                end
+
+                local L, R = collect(colL), collect(colR)
+                local merged = {}
+                for i = 1, math.max(#L, #R) do
+                    if L[i] then
+                        table.insert(merged, L[i])
+                    end
+                    if R[i] then
+                        table.insert(merged, R[i])
+                    end
+                end
+
+                if cols == 1 then
+                    colL.Size = UDim2.new(1, 0, 0, 0)
+                    colR.Visible = false
+                    for _, item in ipairs(merged) do
+                        item.Parent = colL
+                    end
+                else
+                    colL.Size = UDim2.new(0.5, -8, 0, 0)
+                    colR.Visible = true
+                    for i, item in ipairs(merged) do
+                        item.Parent = (i % 2 == 1) and colL or colR
+                    end
+                end
+                tab._routeIdx = #merged
+            end
+        end
+    end
 end
 
 -- Minimizing collapses the whole window down into a small draggable pill
@@ -5583,6 +5588,9 @@ function Window:ToggleMinimize()
         end
         if self._titleLabel then
             self._titleLabel.Visible = false
+        end
+        if self._sizeLabel then
+            self._sizeLabel.Visible = false
         end
         if self._minimizeButton then
             self._minimizeButton.Visible = false
@@ -5620,6 +5628,9 @@ function Window:ToggleMinimize()
         end
         if self._titleLabel then
             self._titleLabel.Visible = true
+        end
+        if self._sizeLabel then
+            self._sizeLabel.Visible = true
         end
         if self._minimizeButton then
             self._minimizeButton.Visible = true
@@ -5749,7 +5760,6 @@ Library.CreateWindow = function(config)
     self.ScreenGui = screenGui
     Library.ScreenGui = screenGui
     print("[Ivory] ScreenGui parented to:", screenGui.Parent and screenGui.Parent:GetFullName() or "nil")
-    Library.MainFrame = wrapper
     Library.KeybindFrame = Instance.new("Frame")
     Library.KeybindFrame.Name = "KeybindFrame"
     Library.KeybindFrame.Visible = false
@@ -5762,6 +5772,7 @@ Library.CreateWindow = function(config)
     self._connections = {}
     self._activeTab = nil
     self._minimized = false
+    table.insert(Library._windows, self)
     -- config.Width/Height let a script ask for a specific size; either
     -- way, clamp against the actual screen so the window never opens
     -- larger than the device it's rendering on (the main mobile-
@@ -5811,13 +5822,7 @@ Library.CreateWindow = function(config)
     wrapper.GroupTransparency = 1
     wrapper.Parent = screenGui
     self.Wrapper = wrapper
-
-    -- Now that wrapper exists, keep the aura glow (set up above) synced to
-    -- it every time the window is dragged - see the drag handler further
-    -- down for how wrapper.Position actually changes.
-    table.insert(self._connections, wrapper:GetPropertyChangedSignal("Position"):Connect(function()
-        aura.Position = wrapper.Position
-    end))
+    Library.MainFrame = wrapper
 
     local uiScale = Instance.new("UIScale")
     uiScale.Scale = 0.9
@@ -5839,7 +5844,7 @@ Library.CreateWindow = function(config)
         layer.Parent = wrapper
 
         local layerCorner = Instance.new("UICorner")
-        layerCorner.CornerRadius = UDim.new(0, 16 + pad / 2)
+        layerCorner.CornerRadius = UDim.new(0, 12 + pad / 2)
         layerCorner.Parent = layer
 
         table.insert(shadowLayers, layer)
@@ -5860,8 +5865,8 @@ Library.CreateWindow = function(config)
     petalClip.Parent = wrapper
     self._petalClip = petalClip
 
-    local petalBack = createPetalField(petalClip, -1, 30, 1.5, 4, 16, 34)
-    local petalFront = createPetalField(petalClip, 60, 9, 2.5, 5, 26, 46)
+    local petalBack = createPetalField(petalClip, -1, 90, 1.5, 4, 16, 34)
+    local petalFront = createPetalField(petalClip, 60, 27, 2.5, 5, 26, 46)
     self._petalFields = { petalBack, petalFront }
 
     -- Petal control API: toggle visibility and adjust count
@@ -5873,7 +5878,7 @@ Library.CreateWindow = function(config)
 
     function self:SetPetalCount(count)
         local totalFields = #self._petalFields
-        local backCount = math.floor(count * 30 / 39)
+        local backCount = math.floor(count * 90 / 117)
         local frontCount = count - backCount
         local targets = { backCount, frontCount }
         for i, field in ipairs(self._petalFields) do
@@ -5900,7 +5905,7 @@ Library.CreateWindow = function(config)
     end
 
     self._petalsEnabled = true
-    self._petalCount = 30
+    self._petalCount = 117
 
     -- ---------------- Corner accents ----------------
     -- Small L-shaped accents living in the ambient glow margin around the
@@ -5987,7 +5992,7 @@ Library.CreateWindow = function(config)
     titleLabel.Name = "Title"
     titleLabel.BackgroundTransparency = 1
     titleLabel.Position = UDim2.new(0, 18 + titleMarkWidth + 12, 0, 0)
-    titleLabel.Size = UDim2.new(1, -(18 + titleMarkWidth + 12) - 100, 1, 0)
+    titleLabel.Size = UDim2.new(1, -(18 + titleMarkWidth + 12) - 180, 1, 0)
     titleLabel.Font = Font.Bold
     titleLabel.TextSize = TextSizes.XL
     titleLabel.TextColor3 = Theme.TextPrimary
@@ -5996,6 +6001,24 @@ Library.CreateWindow = function(config)
     titleLabel.Text = windowName
     titleLabel.ZIndex = 3
     titleLabel.Parent = titleBar
+
+    -- Live card-size readout: the exact current window size in px, kept
+    -- up to date by applyCardSize while the resize handle is dragged.
+    local sizeLabel = Instance.new("TextLabel")
+    sizeLabel.Name = "SizeReadout"
+    sizeLabel.BackgroundTransparency = 1
+    sizeLabel.AnchorPoint = Vector2.new(1, 0.5)
+    sizeLabel.Position = UDim2.new(1, -84, 0.5, 0)
+    sizeLabel.Size = UDim2.fromOffset(76, 20)
+    sizeLabel.Font = Font.Medium
+    sizeLabel.TextSize = TextSizes.SM
+    sizeLabel.TextColor3 = Theme.TextSecondary
+    sizeLabel.TextXAlignment = Enum.TextXAlignment.Right
+    sizeLabel.Text = string.format("%d x %d",
+        math.floor(self._cardWidth or DEFAULT_WINDOW_WIDTH),
+        math.floor(self._cardHeight or DEFAULT_WINDOW_HEIGHT))
+    sizeLabel.ZIndex = 3
+    sizeLabel.Parent = titleBar
 
     local closeButton = makeTitleBarButton(titleBar, -14)
     makeCrossBar(closeButton, 45)
@@ -6101,6 +6124,7 @@ Library.CreateWindow = function(config)
     -- it touches has to live on self, not just as a closure-local here).
     self._titleMarkHolder = titleMarkHolder
     self._titleLabel = titleLabel
+    self._sizeLabel = sizeLabel
     self._minimizeButton = minimizeButton
     self._closeButton = closeButton
     self._titleBarRestSize = titleBar.Size
@@ -6159,7 +6183,7 @@ Library.CreateWindow = function(config)
     cubeStatsLabel.Parent = cubeMarkHolder
 
     task.spawn(function()
-        while true do
+        while self.ScreenGui and self.ScreenGui.Parent do
             if Library.GetFPS then
                 local parts = { tostring(Library.GetFPS()) .. " FPS" }
                 local ping = Library.GetPing and Library.GetPing()
@@ -6368,13 +6392,10 @@ Library.CreateWindow = function(config)
     -- ---------------- Entrance animation ----------------
     Library:AnimateOpen(wrapper, uiScale, mainCorner)
 
-    -- ---------------- RightShift toggle ----------------
-    table.insert(self._connections, UserInputService.InputBegan:Connect(function(input, processed)
-        if processed then return end
-        if input.KeyCode == Enum.KeyCode.RightShift then
-            Library:Toggle()
-        end
-    end))
+    -- Menu toggle is bound in ONE place only: Library._MenuKeybind
+    -- (default RightShift, configurable from Settings). This window used
+    -- to bind RightShift a second time here as well, so every press ran
+    -- BOTH handlers and the UI toggled twice.
 
     -- ---------------- Floating mobile buttons (outside the UI) ----------------
     local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
@@ -6519,12 +6540,28 @@ function Library:OnUnload(callback)
 end
 
 function Library:Unload()
+    -- Flag first: the fps/autosave/noclip while-loops all gate on this,
+    -- so they stop on this exact call instead of running forever.
+    Library.Unloaded = true
     for _, cb in ipairs(Library._unloadCallbacks) do
         pcall(cb)
     end
     if Library.ScreenGui then
         Library.ScreenGui:Destroy()
         Library.ScreenGui = nil
+    end
+    -- Also remove this run's HUD overlays (notifications, watermark,
+    -- active-features panel, mobile buttons) so a re-execution starts
+    -- from a clean screen instead of stacking a second set.
+    local player = Players.LocalPlayer
+    local playerGui = player and player:FindFirstChildOfClass("PlayerGui")
+    if playerGui then
+        for _, guiName in ipairs({ "LootNotifyHolder", "LootUIWatermark", "LootUIActiveFeatures", "IvoryMobileButtons" }) do
+            local gui = playerGui:FindFirstChild(guiName)
+            if gui then
+                gui:Destroy()
+            end
+        end
     end
 end
 
@@ -6534,8 +6571,43 @@ Library.Toggled = true
 
 function Library:Toggle()
     Library.Toggled = not Library.Toggled
-    if Library.ScreenGui then
-        Library.ScreenGui.Enabled = Library.Toggled
+    local gui = Library.ScreenGui
+    if not gui then
+        return
+    end
+
+    -- Resolve the shell pieces the animation functions expect so a
+    -- RightShift press plays the same animated entrance/exit the window
+    -- gets on creation - this is what makes Animation Style/Speed
+    -- observable: previously Toggle just flipped ScreenGui.Enabled, so
+    -- the menu popped in/out instantly and the animation settings only
+    -- ran once at startup.
+    local wrapper = gui:FindFirstChild("WindowWrapper")
+    local uiScale = wrapper and wrapper:FindFirstChildOfClass("UIScale")
+    local mainFrame = wrapper and wrapper:FindFirstChild("MainFrame")
+    local mainCorner = mainFrame and mainFrame:FindFirstChildOfClass("UICorner")
+
+    if not (wrapper and uiScale) then
+        gui.Enabled = Library.Toggled
+        return
+    end
+
+    if Library.Toggled then
+        gui.Enabled = true
+        pcall(function()
+            Library:AnimateOpen(wrapper, uiScale, mainCorner)
+        end)
+    else
+        pcall(function()
+            Library:AnimateClose(wrapper, uiScale, mainCorner, function()
+                -- Still closed by the time the tween finished? Hide it.
+                -- (If the menu keybind was pressed again mid-animation,
+                -- AnimateOpen already took the properties back over.)
+                if not Library.Toggled then
+                    gui.Enabled = false
+                end
+            end)
+        end)
     end
 end
 
@@ -6554,7 +6626,7 @@ end
 -- ============================================================
 -- IVORY HUB - FULL FEATURE SET
 -- Theme presets, animation, gradient accent, particles, blur,
--- status bar, player list, server info, settings, config, etc.
+-- status bar, settings, config, etc.
 -- ============================================================
 
 -- ============================================================
@@ -6573,6 +6645,9 @@ Library.ThemePresets = {
         TextPrimary = Color3.fromRGB(240, 240, 245),
         TextSecondary = Color3.fromRGB(160, 160, 170),
         TextTertiary = Color3.fromRGB(100, 100, 110),
+        Success = Color3.fromRGB(140, 200, 150),
+        Error = Color3.fromRGB(220, 90, 95),
+        Warning = Color3.fromRGB(230, 180, 110),
     },
     Sakura = {
         Plum900 = Color3.fromRGB(16, 9, 13),
@@ -6586,6 +6661,9 @@ Library.ThemePresets = {
         TextPrimary = Color3.fromRGB(252, 240, 244),
         TextSecondary = Color3.fromRGB(198, 168, 178),
         TextTertiary = Color3.fromRGB(140, 112, 122),
+        Success = Color3.fromRGB(150, 214, 168),
+        Error = Color3.fromRGB(226, 84, 96),
+        Warning = Color3.fromRGB(240, 188, 122),
     },
     Ocean = {
         Plum900 = Color3.fromRGB(8, 14, 24),
@@ -6599,6 +6677,9 @@ Library.ThemePresets = {
         TextPrimary = Color3.fromRGB(230, 240, 252),
         TextSecondary = Color3.fromRGB(150, 175, 210),
         TextTertiary = Color3.fromRGB(90, 115, 155),
+        Success = Color3.fromRGB(110, 210, 170),
+        Error = Color3.fromRGB(240, 90, 110),
+        Warning = Color3.fromRGB(250, 190, 100),
     },
     Forest = {
         Plum900 = Color3.fromRGB(10, 16, 10),
@@ -6612,6 +6693,9 @@ Library.ThemePresets = {
         TextPrimary = Color3.fromRGB(230, 245, 230),
         TextSecondary = Color3.fromRGB(150, 185, 155),
         TextTertiary = Color3.fromRGB(90, 125, 95),
+        Success = Color3.fromRGB(110, 220, 120),
+        Error = Color3.fromRGB(220, 90, 80),
+        Warning = Color3.fromRGB(240, 200, 110),
     },
     Sunset = {
         Plum900 = Color3.fromRGB(20, 10, 8),
@@ -6625,6 +6709,9 @@ Library.ThemePresets = {
         TextPrimary = Color3.fromRGB(252, 242, 235),
         TextSecondary = Color3.fromRGB(200, 160, 140),
         TextTertiary = Color3.fromRGB(140, 100, 85),
+        Success = Color3.fromRGB(170, 215, 130),
+        Error = Color3.fromRGB(240, 80, 70),
+        Warning = Color3.fromRGB(255, 170, 80),
     },
     Purple = {
         Plum900 = Color3.fromRGB(12, 8, 20),
@@ -6638,6 +6725,9 @@ Library.ThemePresets = {
         TextPrimary = Color3.fromRGB(242, 235, 252),
         TextSecondary = Color3.fromRGB(175, 155, 210),
         TextTertiary = Color3.fromRGB(115, 95, 155),
+        Success = Color3.fromRGB(140, 220, 170),
+        Error = Color3.fromRGB(235, 90, 140),
+        Warning = Color3.fromRGB(245, 195, 120),
     },
     Midnight = {
         Plum900 = Color3.fromRGB(6, 6, 12),
@@ -6651,6 +6741,9 @@ Library.ThemePresets = {
         TextPrimary = Color3.fromRGB(220, 220, 245),
         TextSecondary = Color3.fromRGB(140, 140, 175),
         TextTertiary = Color3.fromRGB(85, 85, 120),
+        Success = Color3.fromRGB(130, 200, 180),
+        Error = Color3.fromRGB(230, 85, 105),
+        Warning = Color3.fromRGB(235, 185, 120),
     },
     Rose = {
         Plum900 = Color3.fromRGB(18, 8, 12),
@@ -6664,6 +6757,9 @@ Library.ThemePresets = {
         TextPrimary = Color3.fromRGB(250, 238, 242),
         TextSecondary = Color3.fromRGB(195, 155, 170),
         TextTertiary = Color3.fromRGB(135, 95, 110),
+        Success = Color3.fromRGB(160, 215, 165),
+        Error = Color3.fromRGB(230, 75, 95),
+        Warning = Color3.fromRGB(245, 190, 125),
     },
     Gold = {
         Plum900 = Color3.fromRGB(18, 14, 6),
@@ -6677,50 +6773,144 @@ Library.ThemePresets = {
         TextPrimary = Color3.fromRGB(252, 248, 235),
         TextSecondary = Color3.fromRGB(200, 180, 140),
         TextTertiary = Color3.fromRGB(140, 120, 80),
+        Success = Color3.fromRGB(180, 215, 140),
+        Error = Color3.fromRGB(230, 100, 80),
+        Warning = Color3.fromRGB(250, 200, 90),
     },
 }
 
 function Library:ApplyThemePreset(presetName)
     local preset = Library.ThemePresets[presetName]
     if not preset then return end
-    -- Build reverse map: old Color3 -> token name from current Theme
+
+    -- Color3 CANNOT be used as a table key in Luau: lookup hashes by
+    -- reference while Color3 == compares by value, so t[Color3.fromRGB(1,2,3)]
+    -- built from two equal instances misses. That bug made every repaint
+    -- no-op (only hover states, which read Theme live, appeared to change).
+    -- Encode the color as a hex string key instead.
+    local function colorKey(c)
+        return string.format(
+            "%02x%02x%02x",
+            math.floor(c.R * 255 + 0.5),
+            math.floor(c.G * 255 + 0.5),
+            math.floor(c.B * 255 + 0.5)
+        )
+    end
+
+    -- Reverse map: any Color3 this library has ever painted -> its token.
+    -- Seeded from the live Theme first (so the current palette wins any
+    -- collision), then every preset, so an element painted by an earlier
+    -- theme still resolves to the right token when a later theme applies.
     local reverseMap = {}
-    for tokenName, oldColor in pairs(Theme) do
-        if typeof(oldColor) == "Color3" then
-            reverseMap[oldColor] = tokenName
+    for tokenName, color in pairs(Theme) do
+        if typeof(color) == "Color3" then
+            reverseMap[colorKey(color)] = tokenName
         end
     end
+    for _, otherPreset in pairs(Library.ThemePresets) do
+        for tokenName, color in pairs(otherPreset) do
+            if typeof(color) == "Color3" and reverseMap[colorKey(color)] == nil then
+                reverseMap[colorKey(color)] = tokenName
+            end
+        end
+    end
+
     -- Update Theme table with new preset values
     for k, v in pairs(preset) do
         Theme[k] = v
     end
     Library._AccentColor = preset.Blossom
-    local screenGui = Library.ScreenGui
-    if not screenGui then return end
-    for _, desc in ipairs(screenGui:GetDescendants()) do
-        pcall(function()
-            if desc:IsA("Frame") or desc:IsA("ScrollingFrame") or desc:IsA("CanvasGroup") then
-                local tokenName = reverseMap[desc.BackgroundColor3]
-                if tokenName and preset[tokenName] then
-                    desc.BackgroundColor3 = preset[tokenName]
-                end
-            end
-            if desc:IsA("TextLabel") or desc:IsA("TextButton") or desc:IsA("TextBox") then
-                local tokenName = reverseMap[desc.TextColor3]
-                if tokenName and preset[tokenName] then
-                    desc.TextColor3 = preset[tokenName]
-                end
-            end
-            if desc:IsA("UIStroke") then
-                local tokenName = reverseMap[desc.Color]
-                if tokenName and preset[tokenName] then
-                    desc.Color = preset[tokenName]
-                end
-            end
-        end)
+    Library._CurrentThemePreset = presetName
+
+    local function repaintToken(color)
+        local tokenName = reverseMap[colorKey(color)]
+        if tokenName and preset[tokenName] then
+            return preset[tokenName]
+        end
+        return nil
     end
+
+    -- Repaint every live screen: window, HUD overlays and notification
+    -- stack alike - backgrounds, text, strokes, scrollbars and gradient
+    -- keypoints all go through the reverse map, so the WHOLE UI changes,
+    -- not just the parts that happen to be re-created later.
+    local guis = {}
+    if Library.ScreenGui then
+        table.insert(guis, Library.ScreenGui)
+    end
+    local player = Players.LocalPlayer
+    local playerGui = player and player:FindFirstChildOfClass("PlayerGui")
+    if playerGui then
+        for _, guiName in ipairs({ "LootNotifyHolder", "LootUIWatermark", "LootUIActiveFeatures", "IvoryMobileButtons" }) do
+            local gui = playerGui:FindFirstChild(guiName)
+            if gui then
+                table.insert(guis, gui)
+            end
+        end
+    end
+
+    for _, gui in ipairs(guis) do
+        for _, desc in ipairs(gui:GetDescendants()) do
+            pcall(function()
+                if desc:IsA("Frame") or desc:IsA("ScrollingFrame") or desc:IsA("CanvasGroup") or desc:IsA("TextButton") then
+                    local newColor = repaintToken(desc.BackgroundColor3)
+                    if newColor then
+                        desc.BackgroundColor3 = newColor
+                    end
+                end
+                if desc:IsA("TextLabel") or desc:IsA("TextButton") or desc:IsA("TextBox") then
+                    local newColor = repaintToken(desc.TextColor3)
+                    if newColor then
+                        desc.TextColor3 = newColor
+                    end
+                end
+                if desc:IsA("UIStroke") then
+                    local newColor = repaintToken(desc.Color)
+                    if newColor then
+                        desc.Color = newColor
+                    end
+                end
+                if desc:IsA("ScrollingFrame") then
+                    local newColor = repaintToken(desc.ScrollBarImageColor3)
+                    if newColor then
+                        desc.ScrollBarImageColor3 = newColor
+                    end
+                end
+                if desc:IsA("UIGradient") then
+                    local seq = desc.Color
+                    local keypoints = {}
+                    local changed = false
+                    for i, kp in ipairs(seq.Keypoints) do
+                        local newColor = repaintToken(kp.Value)
+                        if newColor then
+                            changed = true
+                            keypoints[i] = ColorSequenceKeypoint.new(kp.Time, newColor)
+                        else
+                            keypoints[i] = kp
+                        end
+                    end
+                    if changed then
+                        desc.Color = ColorSequence.new(keypoints)
+                    end
+                end
+            end)
+        end
+    end
+
+    -- Semantic notification colors follow the preset too
+    NotifyTypeColors.Success = Theme.Success or NotifyTypeColors.Success
+    NotifyTypeColors.Error = Theme.Error or NotifyTypeColors.Error
+    NotifyTypeColors.Warning = Theme.Warning or NotifyTypeColors.Warning
+    NotifyTypeColors.Info = Theme.Blossom
+
     if Library.SetAccentColor then
         Library.SetAccentColor(preset.Blossom)
+    end
+
+    if Library.Notify then
+        pcall(function()
+            Library.Notify({ Title = "Theme", Content = "Applied " .. presetName, Type = "Info", Duration = 2 })
+        end)
     end
 end
 
@@ -6729,63 +6919,119 @@ end
 -- ============================================================
 Library.AnimationSpeed = 1
 
-Library.AnimationStyle = "Drop"
+Library.AnimationStyle = "Ripple Soft"
 
 Library.AnimationStyles = {
     Drop = { open = "DropBounce", close = "DropBounce" },
-    Spin = { open = "Spin", close = "Spin" },
     Ripple = { open = "Ripple", close = "Ripple" },
-    Swing = { open = "Swing", close = "Swing" },
+    ["Ripple Soft"] = { open = "RippleSoft", close = "RippleSoft" },
 }
 
 function Library:AnimateOpen(wrapper, uiScale, mainCorner)
-    local speed = Library.AnimationSpeed
+    -- Slider semantics: 0.1 = slowest, 5 = fastest. The raw value used to
+    -- be multiplied into tween durations, which inverted the feel (0.1
+    -- became the fastest), so invert it here: duration = base / value.
+    local rawSpeed = Library.AnimationSpeed
+    local speed = (type(rawSpeed) == "number" and rawSpeed > 0) and (1 / rawSpeed) or 1
     local style = Library.AnimationStyle
 
-    if style == "Spin" then
-        wrapper.GroupTransparency = 1
-        uiScale.Scale = 0.3
-        wrapper.Rotation = 180
-        tw(wrapper, TweenInfo.new(0.45 * speed, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {GroupTransparency = 0, Rotation = 0})
-        tw(uiScale, TweenInfo.new(0.45 * speed, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1})
-    elseif style == "Ripple" then
+    -- Any new animation invalidates an in-flight Drop chain and takes the
+    -- animated properties over cleanly (otherwise two tweens would fight
+    -- over Position/Scale when the menu is re-opened mid-flight).
+    Library._dropAnimGen = (Library._dropAnimGen or 0) + 1
+    local myGen = Library._dropAnimGen
+    cancelTweens(wrapper)
+    cancelTweens(uiScale)
+
+    -- A previous Drop-style close leaves wrapper off-screen (y = 1.2);
+    -- every style must start from the on-screen anchor or the window
+    -- fades back in somewhere nobody can see it.
+    if style ~= "Drop" then
+        wrapper.Position = UDim2.new(0.5, 0, 0.5, 0)
+    end
+    wrapper.Rotation = 0
+
+    if style == "Ripple" then
         wrapper.GroupTransparency = 1
         uiScale.Scale = 0
         tw(wrapper, TweenInfo.new(0.5 * speed, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {GroupTransparency = 0})
         tw(uiScale, TweenInfo.new(0.5 * speed, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {Scale = 1})
-    elseif style == "Swing" then
+    elseif style == "Ripple Soft" then
         wrapper.GroupTransparency = 1
-        uiScale.Scale = 0.7
-        wrapper.Rotation = -15
-        tw(wrapper, TweenInfo.new(0.5 * speed, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {GroupTransparency = 0, Rotation = 0})
-        tw(uiScale, TweenInfo.new(0.5 * speed, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1})
+        uiScale.Scale = 0
+        tw(wrapper, TweenInfo.new(0.5 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {GroupTransparency = 0})
+        tw(uiScale, TweenInfo.new(0.5 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 1})
     else
-        -- Drop-Bounce (default)
+        -- Drop-Bounce (default): a full-screen drop sequence -
+        --   1. falls in from above the top edge (gravity: slow, then fast),
+        --   2. slams down to the bottom of the screen,
+        --   3. rebounds to a high apex above the middle,
+        --   4. falls back down under gravity and lands softly dead center.
+        -- Scale stays constant through the fall and rebound (no random
+        -- size pop mid-air); it only grows during the final descent so the
+        -- growth reads as part of the landing, not a glitch.
+        -- Position.Y.Scale: 0 = top edge, 0.5 = center, 1 = bottom edge
+        -- (wrapper is anchored 0.5,0.5). Phases chain on Completed inside a
+        -- spawned thread so CreateWindow and Library:Toggle never block on
+        -- the animation, and each phase checks the generation token before
+        -- continuing so a re-open/close mid-flight aborts the stale chain
+        -- instead of yanking the window back.
         wrapper.GroupTransparency = 1
-        uiScale.Scale = 0.5
-        wrapper.Position = UDim2.new(0.5, 0, -0.5, 0)
-        tw(wrapper, TweenInfo.new(0.3 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {GroupTransparency = 0})
-        tw(wrapper, TweenInfo.new(0.5 * speed, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, 0, 0.5, 0)})
-        tw(uiScale, TweenInfo.new(0.4 * speed, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1})
+        uiScale.Scale = 0.6
+        wrapper.Position = UDim2.new(0.5, 0, -0.55, 0)
+
+        task.spawn(function()
+            if Library._dropAnimGen ~= myGen then return end
+
+            -- 1. Fall from the top of the screen to the bottom (Quad In =
+            --    constant acceleration, like gravity).
+            tw(wrapper, TweenInfo.new(0.25 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {GroupTransparency = 0})
+            local fall = tw(wrapper, TweenInfo.new(0.42 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(0.5, 0, 0.85, 0)})
+            fall.Completed:Wait()
+            if Library._dropAnimGen ~= myGen then return end
+
+            -- 2. Rebound: fast off the floor, decelerating to a high apex
+            --    (velocity approaches 0 at the top, like a real bounce).
+            local rise = tw(wrapper, TweenInfo.new(0.5 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, 0, 0.3, 0)})
+            rise.Completed:Wait()
+            if Library._dropAnimGen ~= myGen then return end
+
+            -- 3. Fall back from the apex under gravity (slow start at the
+            --    apex, accelerating), growing to full size as it drops...
+            tw(uiScale, TweenInfo.new(0.28 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0.92})
+            local drop = tw(wrapper, TweenInfo.new(0.28 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(0.5, 0, 0.44, 0)})
+            drop.Completed:Wait()
+            if Library._dropAnimGen ~= myGen then return end
+
+            --    ...then a short soft landing that decelerates to rest
+            --    (velocity matched at the seam so there is no visible kink).
+            tw(uiScale, TweenInfo.new(0.12 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 1})
+            local land = tw(wrapper, TweenInfo.new(0.12 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, 0, 0.5, 0)})
+            land.Completed:Wait()
+        end)
     end
 end
 
 function Library:AnimateClose(wrapper, uiScale, mainCorner, callback)
-    local speed = Library.AnimationSpeed
+    -- Same inversion as AnimateOpen: low slider value = slow, high = fast.
+    local rawSpeed = Library.AnimationSpeed
+    local speed = (type(rawSpeed) == "number" and rawSpeed > 0) and (1 / rawSpeed) or 1
     local style = Library.AnimationStyle
 
-    if style == "Spin" then
-        tw(wrapper, TweenInfo.new(0.3 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {GroupTransparency = 1, Rotation = 180})
-        tw(uiScale, TweenInfo.new(0.3 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0.3})
-        task.delay(0.35 * speed, function() if callback then callback() end end)
-    elseif style == "Ripple" then
+    -- Abort any in-flight Drop open chain before this close starts
+    -- tweening the same properties.
+    Library._dropAnimGen = (Library._dropAnimGen or 0) + 1
+    cancelTweens(wrapper)
+    cancelTweens(uiScale)
+
+    if style == "Ripple" then
         tw(wrapper, TweenInfo.new(0.3 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {GroupTransparency = 1})
         tw(uiScale, TweenInfo.new(0.3 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0})
         task.delay(0.35 * speed, function() if callback then callback() end end)
-    elseif style == "Swing" then
-        tw(wrapper, TweenInfo.new(0.35 * speed, Enum.EasingStyle.Back, Enum.EasingDirection.In), {GroupTransparency = 1, Rotation = 15})
-        tw(uiScale, TweenInfo.new(0.35 * speed, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Scale = 0.7})
-        task.delay(0.4 * speed, function() if callback then callback() end end)
+    elseif style == "Ripple Soft" then
+        tw(wrapper, TweenInfo.new(0.3 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {GroupTransparency = 1})
+        tw(uiScale, TweenInfo.new(0.3 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0})
+        task.delay(0.35 * speed, function() if callback then callback() end end)
     else
         -- Drop-Bounce (default)
         tw(wrapper, TweenInfo.new(0.25 * speed, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {GroupTransparency = 1})
@@ -6959,89 +7205,40 @@ function Library:SetTextAppearance(config)
     end
 end
 
--- ============================================================
--- EXAMPLE USAGE / AUTO-TAB SETUP
--- ============================================================
--- When Library.CreateWindow is called, it returns the Window object.
--- The consuming script calls Window:CreateTab("...") to get tabs.
--- Below is a helper that auto-creates the Main, Visuals, and Settings
--- tabs with all the built-in features wired up.
--- ============================================================
+Library.Theme = Theme
+Library.Font = Font
+Library.TextSizes = TextSizes
+Library.Radius = Radius
 
-function Library.SetupDefaultTabs(Window)
-    -- ===================== MAIN TAB =====================
-    local MainTab = Window:CreateTab("Main")
-    local MainSection = MainTab:CreateSection("Player List")
+getgenv().IvoryHub = Library
 
-    local function refreshPlayerList()
-        for _, child in ipairs(MainSection.Instance:GetChildren()) do
-            if child:IsA("Frame") then
-                child:Destroy()
-            end
-        end
-        for _, player in ipairs(Players:GetPlayers()) do
-            local row = MainSection:CreateButton({
-                Name = player.DisplayName .. " (@" .. player.Name .. ")",
-                Callback = function()
-                    if Library.Notify then
-                        Library.Notify({
-                            Title = "Player Info",
-                            Content = "Name: " .. player.Name .. "\nDisplayName: " .. player.DisplayName .. "\nUserId: " .. player.UserId,
-                            Duration = 4,
-                        })
-                    end
-                end,
-            })
-
-            local tpBtn = MainSection:CreateButton({
-                Name = "TP to " .. player.DisplayName,
-                Callback = function()
-                    local lp = Players.LocalPlayer
-                    local char = lp and lp.Character
-                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                    local targetChar = player.Character
-                    local targetHRP = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
-                    if hrp and targetHRP then
-                        hrp.CFrame = targetHRP.CFrame + Vector3.new(3, 0, 0)
-                        if Library.Notify then
-                            Library.Notify({
-                                Title = "Teleported",
-                                Content = "Teleported to " .. player.DisplayName,
-                                Duration = 2,
-                            })
-                        end
-                    end
-                end,
-            })
-        end
+-- ===============================================================
+-- AUTO-LAUNCHED SETTINGS WINDOW
+-- Loading the library also builds the window below, so every script
+-- that loads UI.txt gets the Settings tab: themes, animation,
+-- notifications and named configs. Library.ShowSettings() skips
+-- itself if that window already exists; CreateWindow stays open for
+-- building your own windows.
+-- ===============================================================
+function Library.ShowSettings()
+    if Library._settingsWindow and Library._settingsWindow.ScreenGui and Library._settingsWindow.ScreenGui.Parent then
+        return Library._settingsWindow
     end
 
-    refreshPlayerList()
-
-    MainSection:CreateButton({
-        Name = "Refresh Player List",
-        Callback = refreshPlayerList,
+    local Window = Library.CreateWindow({
+        Name = "Ivory Hub",
+        Width = 755,
+        Height = 550,
     })
 
-    -- ===================== VISUALS TAB =====================
-    local VisualsTab = Window:CreateTab("Visuals")
-    local VisualsSection = VisualsTab:CreateSection("Server Info")
-
-    local placeId = game.PlaceId or 0
-    local jobId = game.JobId or "N/A"
-    local serverPlayers = #Players:GetPlayers()
-    local maxPlayers = Players.MaxPlayers or 0
-
-    VisualsSection:CreateParagraph({
-        Title = "Server Details",
-        Content = "Place ID: " .. tostring(placeId) .. "\nJob ID: " .. string.sub(jobId, 1, 20) .. "...\nPlayers: " .. serverPlayers .. "/" .. maxPlayers .. "\nGame: " .. (game:GetService("MarketplaceService"):GetProductInfo(placeId).Name or "Unknown"),
-    })
-
-    -- ===================== SETTINGS TAB =====================
     local SettingsTab = Window:CreateTab("Settings")
 
-    -- Theme Presets Section
-    local ThemeSection = SettingsTab:CreateSection("Theme Presets")
+    local demoNoticeDuration = 3
+
+    -- ---------------- Settings tab ----------------
+
+    -- ---------------- Themes: one dropdown repaints everything ----------------
+    local ThemeSection = SettingsTab:CreateSection("Themes")
 
     local themeNames = {}
     for name in pairs(Library.ThemePresets) do
@@ -7052,24 +7249,23 @@ function Library.SetupDefaultTabs(Window)
     ThemeSection:CreateDropdown({
         Name = "Theme Preset",
         Options = themeNames,
+        CurrentOption = "Sakura",
         Callback = function(value)
             Library:ApplyThemePreset(value)
-            if Library.Notify then
-                Library.Notify({
-                    Title = "Theme Changed",
-                    Content = "Applied " .. value .. " theme",
-                    Duration = 2,
-                })
-            end
         end,
     })
 
-    -- Animation Section
+    ThemeSection:CreateParagraph({
+        Title = "Themes change everything",
+        Content = "Picking a preset repaints every open screen: window, panels, buttons, text, strokes, scrollbars, gradients, notification colors and the falling petals.",
+    })
+
     local AnimSection = SettingsTab:CreateSection("Animation")
 
     AnimSection:CreateDropdown({
         Name = "Animation Style",
-        Options = {"Drop", "Spin", "Ripple", "Swing"},
+        Options = { "Drop", "Ripple", "Ripple Soft" },
+        CurrentOption = "Ripple Soft",
         Callback = function(value)
             Library.AnimationStyle = value
         end,
@@ -7077,292 +7273,86 @@ function Library.SetupDefaultTabs(Window)
 
     AnimSection:CreateSlider({
         Name = "Animation Speed",
-        Min = 0.1,
-        Max = 5,
-        Default = 1,
+        Range = { 0.1, 5 },
+        Increment = 0.1,
+        CurrentValue = 1,
         Callback = function(value)
             Library.AnimationSpeed = value
         end,
     })
 
-    -- Appearance Section
-    local AppearanceSection = SettingsTab:CreateSection("Appearance")
+    local NoticeSection = SettingsTab:CreateSection("Notifications")
 
-    AppearanceSection:CreateToggle({
-        Name = "Gradient Accent",
-        Default = true,
+    NoticeSection:CreateToggle({
+        Name = "Show Watermark",
+        CurrentValue = false,
         Callback = function(value)
-            if Library._GradientAccents then
-                for _, grad in ipairs(Library._GradientAccents) do
-                    pcall(function() grad.Transparency = value and NumberSequence.new(0) or NumberSequence.new(1) end)
-                end
-            end
+            Library.SetWatermarkEnabled(value)
         end,
     })
 
-    AppearanceSection:CreateToggle({
-        Name = "Floating Particles",
-        Default = true,
+    NoticeSection:CreateSlider({
+        Name = "Notification Duration",
+        Range = { 1, 10 },
+        Increment = 1,
+        Suffix = "s",
+        CurrentValue = 3,
         Callback = function(value)
-            if value then
-                Library:SpawnFloatingParticles(Library.ScreenGui, Theme.Blossom, 10)
-            else
-                for _, p in ipairs(Library._FloatingParticles) do
-                    pcall(function() p:Destroy() end)
-                end
-                Library._FloatingParticles = {}
-            end
+            demoNoticeDuration = value
         end,
     })
 
-    AppearanceSection:CreateToggle({
-        Name = "Flat Mode (No Aura)",
-        Default = false,
-        Callback = function(value)
-            local gui = Library.ScreenGui
-            if not gui then return end
-            for _, desc in ipairs(gui:GetDescendants()) do
-                pcall(function()
-                    if desc.Name == "Aura" or desc.Name == "GlowBlob" then
-                        desc.Visible = not value
-                    end
-                end)
-            end
-        end,
-    })
-
-    AppearanceSection:CreateSlider({
-        Name = "Background Blur Intensity",
-        Min = 0,
-        Max = 1,
-        Default = 0,
-        Callback = function(value)
-            local gui = Library.ScreenGui
-            if not gui then return end
-            local blur = gui:FindFirstChild("BackgroundBlur")
-            if blur then
-                blur.BackgroundTransparency = 1 - value
-                local blurEffect = blur:FindFirstChildOfClass("UIBlurEffect")
-                if blurEffect then
-                    blurEffect.Size = math.floor(value * 30)
-                end
-            end
-        end,
-    })
-
-    AppearanceSection:CreateToggle({
-        Name = "Corner Radius (Rounded)",
-        Default = true,
-        Callback = function(value)
-            local gui = Library.ScreenGui
-            if not gui then return end
-            for _, desc in ipairs(gui:GetDescendants()) do
-                pcall(function()
-                    if desc:IsA("UICorner") then
-                        if value then
-                            desc.CornerRadius = Radius.XL
-                        else
-                            desc.CornerRadius = UDim.new(0, 0)
-                        end
-                    end
-                end)
-            end
-        end,
-    })
-
-    -- Text Section
-    local TextSection = SettingsTab:CreateSection("Text")
-
-    local fontOptions = {"GothamBold", "Gotham", "GothamBlack", "GothamMedium", "Code", "Highway", "SciFi", "Cartoon", "Arial"}
-    TextSection:CreateDropdown({
-        Name = "Font Style",
-        Options = fontOptions,
-        Callback = function(value)
-            Library:SetTextAppearance({ Font = Enum.Font[value] })
-        end,
-    })
-
-    TextSection:CreateSlider({
-        Name = "Font Size",
-        Min = 8,
-        Max = 24,
-        Default = 13,
-        Callback = function(value)
-            Library:SetTextAppearance({ TextSize = value })
-        end,
-    })
-
-    local textColor = {1, 1, 1}
-    TextSection:CreateColorPicker({
-        Name = "Text Color",
-        Default = Color3.new(1, 1, 1),
-        Callback = function(color)
-            textColor = {color.R, color.G, color.B}
-            Library:SetTextAppearance({ TextColor = color })
-        end,
-    })
-
-    -- Typewriter Section
-    local TypewriterSection = SettingsTab:CreateSection("Typewriter")
-
-    local typewriterEnabled = false
-    local typewriterSpeed = 0.03
-
-    TypewriterSection:CreateToggle({
-        Name = "Typewriter Effect",
-        Default = false,
-        Callback = function(value)
-            typewriterEnabled = value
-        end,
-    })
-
-    TypewriterSection:CreateSlider({
-        Name = "Typewriter Speed",
-        Min = 0.01,
-        Max = 0.2,
-        Default = 0.03,
-        Callback = function(value)
-            typewriterSpeed = value
-        end,
-    })
-
-    Library._TypewriterEnabled = false
-    Library._TypewriterSpeed = 0.03
-
-    TypewriterSection:CreateButton({
-        Name = "Apply Typewriter to Notifications",
-        Callback = function()
-            Library._TypewriterEnabled = typewriterEnabled
-            Library._TypewriterSpeed = typewriterSpeed
-            if Library.Notify then
-                Library.Notify({
-                    Title = "Typewriter",
-                    Content = "Typewriter effect " .. (typewriterEnabled and "enabled" or "disabled") .. " at " .. tostring(typewriterSpeed) .. "s/char",
-                    Duration = 3,
-                })
-            end
-        end,
-    })
-
-    -- Config Section
-    local ConfigSection = SettingsTab:CreateSection("Configuration")
-
-    ConfigSection:CreateButton({
-        Name = "Save Configuration",
-        Callback = function()
-            if Library.SaveConfiguration then
-                Library.SaveConfiguration("IvoryHub_config")
-            end
-        end,
-    })
-
-    ConfigSection:CreateButton({
-        Name = "Load Configuration",
-        Callback = function()
-            if Library.LoadConfiguration then
-                Library.LoadConfiguration("IvoryHub_config")
-            end
-        end,
-    })
-
-    ConfigSection:CreateButton({
-        Name = "Export Config (Copy)",
-        Callback = function()
-            pcall(function()
-                local config = {}
-                if Library.Flags then
-                    for flagName, controlObject in pairs(Library.Flags) do
-                        pcall(function()
-                            config[flagName] = controlObject.Value
-                        end)
-                    end
-                end
-                local encoded = HttpService:JSONEncode(config)
-                if setclipboard then
-                    setclipboard(encoded)
-                end
-                if Library.Notify then
-                    Library.Notify({
-                        Title = "Config Exported",
-                        Content = "Configuration copied to clipboard (" .. #encoded .. " chars)",
-                        Duration = 3,
-                    })
-                end
-            end)
-        end,
-    })
-
-    ConfigSection:CreateButton({
-        Name = "Import Config (Paste)",
-        Callback = function()
-            pcall(function()
-                local raw = getclipboard and getclipboard() or ""
-                if raw and raw ~= "" then
-                    local config = HttpService:JSONDecode(raw)
-                    if Library.Flags then
-                        for flagName, value in pairs(config) do
-                            local controlObject = Library.Flags[flagName]
-                            if controlObject and controlObject.Set then
-                                controlObject:Set(value)
-                            end
-                        end
-                    end
-                    if Library.Notify then
-                        Library.Notify({
-                            Title = "Config Imported",
-                            Content = "Configuration loaded from clipboard",
-                            Duration = 3,
-                        })
-                    end
-                end
-            end)
-        end,
-    })
-
-    -- Test & Info Section
-    local TestSection = SettingsTab:CreateSection("Test & Info")
-
-    TestSection:CreateButton({
+    NoticeSection:CreateButton({
         Name = "Test Notification",
         Callback = function()
-            if Library.Notify then
-                Library.Notify({
-                    Title = "Ivory Hub",
-                    Content = "This is a test notification from the Settings tab!",
-                    Duration = 4,
-                })
-            end
+            Library.Notify({
+                Title = "Test",
+                Content = "This is a test notification.",
+                Type = "Info",
+                Duration = demoNoticeDuration,
+            })
         end,
     })
 
-    TestSection:CreateButton({
-        Name = "Copy Discord Link",
-        Callback = function()
-            pcall(function()
-                if setclipboard then
-                    setclipboard("https://discord.gg/bachub")
-                end
-                if Library.Notify then
-                    Library.Notify({
-                        Title = "Discord",
-                        Content = "Discord invite link copied to clipboard!",
-                        Duration = 3,
-                    })
-                end
-            end)
-        end,
-    })
+    local ConfigSection = SettingsTab:CreateSection("Configuration")
 
-    TestSection:CreateButton({
-        Name = "Close GUI (Destroy)",
+    Library.CreateConfigControls(ConfigSection)
+
+    ConfigSection:CreateButton({
+        Name = "Unload Hub",
         Callback = function()
             Library:Unload()
         end,
     })
 
-    return MainTab, VisualsTab, SettingsTab
+    -- Fifth top-level section (left column, under Notifications).
+    local LayoutSection = SettingsTab:CreateSection("Layout")
+
+    LayoutSection:CreateDropdown({
+        Name = "Columns",
+        Options = { "Two", "One" },
+        CurrentOption = "Two",
+        Callback = function(value)
+            Library:SetContentColumns(value == "One" and 1 or 2)
+        end,
+    })
+
+    LayoutSection:CreateParagraph({
+        Title = "Column layout",
+        Content = "Two spreads sections across the card like a CS2 cheat menu; One stacks every section full-width.",
+    })
+
+    Library.Notify({
+        Title = "Ivory Hub",
+        Content = "Press RightShift to toggle the menu.",
+        Type = "Info",
+        Duration = 5,
+    })
+
+    Library._settingsWindow = Window
+    return Window
 end
 
-getgenv().IvoryHub = Library
+Library.ShowSettings()
 
 return Library
