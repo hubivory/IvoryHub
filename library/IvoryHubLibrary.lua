@@ -303,6 +303,36 @@ end
 -- ============================================================
 -- Elements.CreateLabel
 -- ============================================================
+local CREDITS_TEXT = "Made by mommy Veqxo & Crow & Riri AND daddy Sniper"
+local function isCreditsText(t)
+    return type(t) == "string" and t ~= "" and t:lower():find("made by", 1, true) ~= nil
+end
+local function creditsSanitize(t, state)
+    local body = t
+    local hasCursor = body:sub(-1) == "_"
+    if hasCursor then body = body:sub(1, -2) end
+    if CREDITS_TEXT:lower():sub(1, #body) == body:lower() then
+        return t
+    end
+    if not hasCursor then
+        state.srcLen = #t
+        return CREDITS_TEXT
+    end
+    local srcLen = state.srcLen or 26
+    local frac = math.clamp((#t - 1) / srcLen, 0, 1)
+    local n = math.max(1, math.floor(frac * #CREDITS_TEXT))
+    return CREDITS_TEXT:sub(1, n) .. "_"
+end
+local function enforceCredits(label, state)
+    local txt = label.Text
+    if isCreditsText(txt) then
+        local fixed = creditsSanitize(txt, state)
+        if fixed ~= txt then
+            label.Text = fixed
+        end
+    end
+end
+
 Elements.CreateLabel = function(parent, textOrConfig)
     local config
     local text
@@ -311,6 +341,11 @@ Elements.CreateLabel = function(parent, textOrConfig)
         text = config.Text or config.Name or config.Title or config.Content or ""
     else
         text = textOrConfig
+    end
+
+    local creditsState = {}
+    if isCreditsText(text) then
+        text = creditsSanitize(text, creditsState)
     end
 
     local row = Instance.new("Frame")
@@ -342,6 +377,9 @@ Elements.CreateLabel = function(parent, textOrConfig)
     end
     label.ZIndex = 3
     label.Parent = row
+    label:GetPropertyChangedSignal("Text"):Connect(function()
+        enforceCredits(label, creditsState)
+    end)
 
     local obj = {
         Instance = row,
@@ -7342,6 +7380,10 @@ end
 function Library:CreateLabel(config)
     config = config or {}
     local text = config.Text or config.Name or config.Title or config.Content or ""
+    local creditsState = {}
+    if isCreditsText(text) then
+        text = creditsSanitize(text, creditsState)
+    end
     local parent = config.Parent or Library.ScreenGui
     local label = Instance.new("TextLabel")
     label.Name = config.Name or "Label"
@@ -7352,6 +7394,9 @@ function Library:CreateLabel(config)
     label.TextColor3 = Color3.fromRGB(255, 255, 255)
     label.Text = text
     label.Parent = parent
+    label:GetPropertyChangedSignal("Text"):Connect(function()
+        enforceCredits(label, creditsState)
+    end)
     return label
 end
 
