@@ -96,7 +96,14 @@ local function makeContainer(getBox, parentTab)
     local c = {}
     local lazyBox = nil
     local function box()
-        if not lazyBox then lazyBox = getBox() end
+        if not lazyBox then
+            local ok, res = pcall(getBox)
+            if ok and res then lazyBox = res
+            else
+                if not ok then warn('[Ivory] box() error: '..tostring(res)) end
+                lazyBox = parentTab or res
+            end
+        end
         return lazyBox
     end
 
@@ -104,8 +111,10 @@ local function makeContainer(getBox, parentTab)
         local name = type(a) == "table" and (a.Name or a.Title or "Section") or tostring(a or "Section")
         local pt = parentTab
         if not pt then return makeContainer(function() return box() end, nil) end
-        local nb = pt:AddLeftGroupbox({ Name = name })
-        return makeContainer(function() return nb end, pt)
+        pcall(function()
+            if type(pt.Section) == "function" then pt:Section(name) end
+        end)
+        return makeContainer(function() return pt end, pt)
     end
 
     function c:CreateButton(a, b)
@@ -113,7 +122,9 @@ local function makeContainer(getBox, parentTab)
         if type(a) == "string" and type(b) == "function" then cfg.Name = a cfg.Callback = b end
         local bx = box()
         if not bx then return nil end
-        return wrapElem(bx:Button({ Name = cfg.Name, Callback = cfg.Callback, Icon = cfg.Icon }), "Button")
+        local ok, res = pcall(function() return bx:Button({ Name = cfg.Name, Callback = cfg.Callback, Icon = cfg.Icon }) end)
+        if not ok then warn('[Ivory] CreateButton: '..tostring(res)) return nil end
+        return wrapElem(res, "Button")
     end
 
     function c:CreateToggle(a, b)
