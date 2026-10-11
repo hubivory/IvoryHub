@@ -1,18 +1,18 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-11T20:44:26.571Z",
+  "updatedAt": "2026-10-11T20:45:58.136Z",
   "games": [
     {
       "placeId": 74424504058547,
       "gameId": 10765571340,
       "name": "[2X] Push and Steal A Car",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 1,
+      "checks": 2,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-11T20:44:29Z",
+      "lastCheck": "2026-10-11T20:46:01Z",
       "reporter": "XiaBuilds"
     },
     {
