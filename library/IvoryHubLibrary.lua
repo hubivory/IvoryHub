@@ -2796,7 +2796,7 @@ do
     local GPT_DISCORD_WEBHOOK = ""
     -- Shared Cloudflare Worker (deploy backend/worker.js, then set the URL)
     -- Example: https://ivoryhub.<subdomain>.workers.dev/gpt/games
-    local GPT_SHARED_API = ""
+    local GPT_SHARED_API = "https://ivoryhub.ivoryhub.workers.dev/gpt/games"
 
     local function _gptCleanup()
         for _, c in ipairs(_gptConnections) do
