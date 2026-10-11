@@ -2942,9 +2942,13 @@ do
             if _gptDropdown then
                 pcall(function()
                     if #labels == 0 then
-                        _gptDropdown:Refresh({ "No items found - try Scan" }, true, true)
+                        local empty = { "No items found - try Scan" }
+                        _gptDropdown:Refresh(empty, false, true)
+                        _gptDropdown:Set(empty[1], true)
                     else
-                        _gptDropdown:Refresh(labels, true, true)
+                        _gptDropdown:Refresh(labels, false, true)
+                        _gptDropdown:Set(labels[1], true)
+                        _gptUpdateDetail(map[labels[1]])
                     end
                 end)
             end
@@ -3008,6 +3012,7 @@ do
                 _gptDropdown = secMain:CreateDropdown({
                     Name = "Select Item",
                     Values = { "Click Scan to load items" },
+                    CurrentOption = "Click Scan to load items",
                     Callback = function(value)
                         local item = labelMap[tostring(value)]
                         if item then
