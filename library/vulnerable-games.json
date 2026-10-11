@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-11T20:08:19.418Z",
+  "updatedAt": "2026-10-11T20:17:39.700Z",
   "games": [
     {
       "placeId": 71940604330107,
@@ -13,6 +13,19 @@
       "voters": {},
       "confirmed": false,
       "lastCheck": "2026-10-11T20:07:49Z",
+      "reporter": "njoni123"
+    },
+    {
+      "placeId": 286090429,
+      "gameId": 111958650,
+      "name": "Arsenal",
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-11T20:17:35Z",
       "reporter": "njoni123"
     },
     {
