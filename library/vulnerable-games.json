@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-11T21:35:38.621Z",
+  "updatedAt": "2026-10-11T23:19:02.098Z",
   "games": [
     {
       "placeId": 97874266291114,
@@ -81,6 +81,19 @@
       "confirmed": false,
       "lastCheck": "2026-10-11T20:03:57Z",
       "reporter": "njoni123"
+    },
+    {
+      "placeId": 129253568870286,
+      "gameId": 10060242820,
+      "name": "Bonk & Block [5v5]",
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-11T23:19:01Z",
+      "reporter": "AxG4Zz"
     },
     {
       "placeId": 4924922222,
