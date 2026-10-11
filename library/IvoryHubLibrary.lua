@@ -335,13 +335,34 @@ local function makeContainer(getBox, parentTab)
         local cfg = norm(a, b)
         local bx = box()
         if not bx then return nil end
-        return wrapElem(bx:Dropdown({
-            Name = cfg.Name,
-            Values = cfg.Values or {},
-            Default = cfg.Default,
-            Callback = cfg.Callback,
-            Flag = cfg.Flag,
-        }), "Dropdown")
+        local values = cfg.Values or cfg.Options or {}
+        local default = cfg.Default or cfg.CurrentOption
+        if default ~= nil then
+            local found = false
+            for _, v in ipairs(values) do
+                if v == default then found = true break end
+            end
+            if not found and type(default) == "string" and default ~= "" then
+                if #values == 0 or values[1] ~= default then
+                    table.insert(values, 1, default)
+                end
+            end
+        end
+        local ok, res = pcall(function()
+            return bx:Dropdown({
+                Name = cfg.Name,
+                Values = values,
+                Default = default,
+                Callback = cfg.Callback,
+                Flag = cfg.Flag,
+                EmptyText = cfg.EmptyText,
+                NoneText = cfg.NoneText,
+                Searchable = cfg.Searchable,
+                MaxRows = cfg.MaxRows,
+            })
+        end)
+        if not ok then warn("[Ivory] CreateDropdown: " .. tostring(res)) return nil end
+        return wrapElem(res, "Dropdown")
     end
 
     function c:CreateMultiDropdown(a, b)
@@ -374,9 +395,14 @@ local function makeContainer(getBox, parentTab)
         local cfg = norm(a, b)
         local bx = box()
         if not bx then return nil end
-        local key = cfg.Default
+        local key = cfg.Default or cfg.CurrentKeybind
         if type(key) == "string" and key ~= "" and key ~= "None" then
-            key = Enum.KeyCode[key] or nil
+            local okK, kc = pcall(function() return Enum.KeyCode[key] end)
+            if okK then key = kc
+            else
+                local okU, ut = pcall(function() return Enum.UserInputType[key] end)
+                key = okU and ut or nil
+            end
         elseif typeof(key) ~= "EnumItem" then
             key = nil
         end
@@ -2753,10 +2779,12 @@ do
     local _gptConnections = {}
     local _gptLoggerActive = false
     local _gptItems = {}
-    local _gptDropdown = nil
     local _gptDetail = nil
     local _gptSelected = nil
     local _gptScanning = false
+    local _gptListFrame = nil
+    local _gptListCanvas = nil
+    local _gptOnScanDone = nil
 
     local function _gptCleanup()
         for _, c in ipairs(_gptConnections) do
@@ -2938,28 +2966,14 @@ do
                 return (a.name or "") < (b.name or "")
             end)
 
-            local labels, map = _gptBuildLabelMap()
-            if _gptDropdown then
-                pcall(function()
-                    if #labels == 0 then
-                        local empty = { "No items found - try Scan" }
-                        _gptDropdown:Refresh(empty, false, true)
-                        _gptDropdown:Set(empty[1], true)
-                    else
-                        _gptDropdown:Refresh(labels, false, true)
-                        _gptDropdown:Set(labels[1], true)
-                        _gptUpdateDetail(map[labels[1]])
-                    end
-                end)
-            end
-
             _gptScanning = false
             Library.Notify({
                 Title = "Ivory",
                 Content = string.format("Found %d gamepasses, %d products", #passes, #products),
                 Type = #_gptItems > 0 and "Success" or "Warning",
             })
-            if onDone then onDone(labels, map) end
+            if onDone then onDone(_gptItems) end
+            if _gptOnScanDone then pcall(_gptOnScanDone) end
         end)
     end
 
@@ -3002,36 +3016,130 @@ do
             return engTab
         end, engTab)
 
-        local labelMap = {}
+        local itemButtons = {}
 
         local secMain = nil
         pcall(function() secMain = S:CreateSection("Passes & Products") end)
 
-        if secMain then
-            pcall(function()
-                _gptDropdown = secMain:CreateDropdown({
-                    Name = "Select Item",
-                    Values = { "Click Scan to load items" },
-                    CurrentOption = "Click Scan to load items",
-                    Callback = function(value)
-                        local item = labelMap[tostring(value)]
-                        if item then
-                            _gptUpdateDetail(item)
-                        end
-                    end,
-                })
-            end)
+        local function _gptClearButtons()
+            for _, b in ipairs(itemButtons) do
+                pcall(function() b:Destroy() end)
+            end
+            itemButtons = {}
+        end
 
+        local function _gptSelectItem(item)
+            _gptUpdateDetail(item)
+            for _, b in ipairs(itemButtons) do
+                pcall(function()
+                    b.BackgroundColor3 = (b._item == item) and Color3.fromRGB(51, 33, 42) or Color3.fromRGB(38, 38, 41)
+                end)
+            end
+        end
+
+        local function _gptRebuildList()
+            _gptClearButtons()
+            if not _gptListFrame then return end
+            local host = _gptListFrame
+            for i, item in ipairs(_gptItems) do
+                local ok, btn = pcall(function()
+                    local b = Instance.new("TextButton")
+                    b.Name = "Item" .. i
+                    b.Size = UDim2.new(1, 0, 0, 28)
+                    b.BackgroundColor3 = Color3.fromRGB(38, 38, 41)
+                    b.BorderSizePixel = 0
+                    b.Text = ""
+                    b.AutoButtonColor = false
+                    b.LayoutOrder = i
+                    b.Parent = host
+                    local corner = Instance.new("UICorner")
+                    corner.CornerRadius = UDim.new(0, 6)
+                    corner.Parent = b
+                    local lbl = Instance.new("TextLabel")
+                    lbl.BackgroundTransparency = 1
+                    lbl.Position = UDim2.new(0, 8, 0, 0)
+                    lbl.Size = UDim2.new(1, -16, 1, 0)
+                    lbl.Font = Enum.Font.GothamMedium
+                    lbl.TextSize = 12
+                    lbl.TextColor3 = Color3.fromRGB(200, 170, 180)
+                    lbl.TextXAlignment = Enum.TextXAlignment.Left
+                    lbl.TextTruncate = Enum.TextTruncate.AtEnd
+                    local price = item.price and ("R$" .. tostring(item.price)) or "Free"
+                    lbl.Text = string.format("%s  [%s]  %s", tostring(item.name or "?"), tostring(item.kind or "?"), price)
+                    lbl.Parent = b
+                    b._item = item
+                    b.MouseButton1Click:Connect(function()
+                        _gptSelectItem(item)
+                    end)
+                    return b
+                end)
+                if ok and btn then table.insert(itemButtons, btn) end
+            end
+            pcall(function()
+                _gptListCanvas.CanvasSize = UDim2.new(0, 0, 0, math.max(#itemButtons, 1) * 32)
+            end)
+        end
+
+        if secMain then
             pcall(function()
                 _gptDetail = secMain:CreateLabel({ Text = "Auto-scanning this game..." })
             end)
+
+            -- Item list container (replaces engine dropdown which fails to update)
+            pcall(function()
+                local hostFrame = nil
+                if _gptDetail and _gptDetail._frame and _gptDetail._frame.Parent then
+                    hostFrame = _gptDetail._frame.Parent
+                end
+                if not hostFrame then return end
+
+                local wrap = Instance.new("Frame")
+                wrap.Name = "GPTList"
+                wrap.BackgroundTransparency = 1
+                wrap.BorderSizePixel = 0
+                wrap.Size = UDim2.new(1, 0, 0, 160)
+                wrap.LayoutOrder = 2
+                wrap.Parent = hostFrame
+
+                local scroll = Instance.new("ScrollingFrame")
+                scroll.Name = "List"
+                scroll.BackgroundTransparency = 1
+                scroll.BorderSizePixel = 0
+                scroll.Size = UDim2.new(1, 0, 1, 0)
+                scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+                scroll.ScrollBarThickness = 4
+                scroll.ScrollBarImageColor3 = Color3.fromRGB(105, 65, 82)
+                scroll.Parent = wrap
+
+                local layout = Instance.new("UIListLayout")
+                layout.SortOrder = Enum.SortOrder.LayoutOrder
+                layout.Padding = UDim.new(0, 4)
+                layout.Parent = scroll
+
+                local pad = Instance.new("UIPadding")
+                pad.PaddingLeft = UDim.new(0, 2)
+                pad.PaddingRight = UDim.new(0, 2)
+                pad.PaddingTop = UDim.new(0, 2)
+                pad.Parent = scroll
+
+                _gptListFrame = scroll
+                _gptListCanvas = scroll
+            end)
+
+            _gptOnScanDone = function()
+                _gptRebuildList()
+                if _gptItems[1] then _gptSelectItem(_gptItems[1]) end
+                if _gptDetail then
+                    pcall(function() _gptDetail:SetText("Select an item from the list.") end)
+                end
+            end
 
             pcall(function()
                 secMain:CreateButton({
                     Name = "Fake Purchase Selected",
                     Callback = function()
                         if not _gptSelected then
-                            Library.Notify({ Title = "Ivory", Content = "Select an item from the dropdown first", Type = "Error" })
+                            Library.Notify({ Title = "Ivory", Content = "Select an item from the list first", Type = "Error" })
                             return
                         end
                         local kind = _gptSelected.kind or _gptDetectKind(_gptSelected.id)
@@ -3050,12 +3158,12 @@ do
                     Name = "Scan / Refresh",
                     Callback = function()
                         if _gptDetail then pcall(function() _gptDetail:SetText("Scanning...") end) end
-                        _gptScan(function(labels, map)
-                            labelMap = map
+                        _gptScan(function()
                             if _gptDetail then
-                                pcall(function() _gptDetail:SetText("Select an item above to see details.") end)
+                                pcall(function() _gptDetail:SetText("Select an item from the list.") end)
                             end
-                            _gptUpdateDetail(nil)
+                            _gptRebuildList()
+                            if _gptItems[1] then _gptSelectItem(_gptItems[1]) end
                         end)
                     end,
                 })
@@ -3148,10 +3256,9 @@ do
         end)
 
         task.delay(1, function()
-            _gptScan(function(labels, map)
-                labelMap = map
+            _gptScan(function()
                 if _gptDetail then
-                    pcall(function() _gptDetail:SetText("Select an item above to see details.") end)
+                    pcall(function() _gptDetail:SetText("Select an item from the list.") end)
                 end
             end)
         end)
