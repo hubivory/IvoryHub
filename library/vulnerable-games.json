@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-11T20:49:50.761Z",
+  "updatedAt": "2026-10-11T20:49:57.814Z",
   "games": [
     {
       "placeId": 74424504058547,
@@ -22,8 +22,10 @@
       "verdict": "MANUAL REPORT",
       "checks": 8,
       "likes": 0,
-      "dislikes": 0,
-      "voters": {},
+      "dislikes": 1,
+      "voters": {
+        "10434340522": "dislike"
+      },
       "confirmed": false,
       "lastCheck": "2026-10-11T20:49:53Z",
       "reporter": "njoni123"
