@@ -2794,6 +2794,9 @@ do
     local _gptShareDropdown = nil
     local _gptRefreshShareUi = nil
     local GPT_DISCORD_WEBHOOK = ""
+    -- Shared Cloudflare Worker (deploy backend/worker.js, then set the URL)
+    -- Example: https://ivoryhub.<subdomain>.workers.dev/gpt/games
+    local GPT_SHARED_API = ""
 
     local function _gptCleanup()
         for _, c in ipairs(_gptConnections) do
@@ -2882,15 +2885,36 @@ do
     end
 
     local function _gptHttpPut(url, body)
-        local ok, res = pcall(function()
-            return request({ Url = url, Method = "PUT", Headers = { ["Content-Type"] = "application/json" }, Body = body })
+        local headers = { ["Content-Type"] = "application/json" }
+        if typeof(game.HttpRequest) == "function" then
+            local ok, res = pcall(function()
+                return game:HttpRequest({
+                    Url = url,
+                    Method = "PUT",
+                    Headers = headers,
+                    Body = body,
+                })
+            end)
+            if ok then return true, res end
+        end
+        if typeof(request) == "function" then
+            local ok, res = pcall(function()
+                return request({ Url = url, Method = "PUT", Headers = headers, Body = body })
+            end)
+            if ok then return true, res end
+        end
+        if typeof(syn) == "table" and typeof(syn.request) == "function" then
+            local ok, res = pcall(function()
+                return syn.request({ Url = url, Method = "PUT", Headers = headers, Body = body })
+            end)
+            if ok then return true, res end
+        end
+        -- Fallback: some executors only allow POST
+        local ok2, res2 = pcall(function()
+            return game:HttpPostAsync(url, body, Enum.HttpContentType.ApplicationJson)
         end)
-        if ok then return true, res end
-        ok, res = pcall(function()
-            return syn.request({ Url = url, Method = "PUT", Headers = { ["Content-Type"] = "application/json" }, Body = body })
-        end)
-        if ok then return true, res end
-        return false, tostring(res)
+        if ok2 then return true, res2 end
+        return false, tostring(res2)
     end
 
     local function _gptGetPlaceName()
@@ -2951,15 +2975,35 @@ do
         g.voters = clean
     end
 
+    local function _gptParseGamesJson(body)
+        if type(body) ~= "string" or body == "" then return nil end
+        local ok, data = pcall(function() return HttpService:JSONDecode(body) end)
+        if not ok or type(data) ~= "table" then return nil end
+        local games = data.games or (type(data[1]) == "table" and data or nil)
+        if type(games) ~= "table" then return nil end
+        for _, g in ipairs(games) do
+            _gptEnsureVoteFields(g)
+        end
+        return games
+    end
+
     local function _gptLoadSharedList()
-        local games = {}
-        local body = _gptHttpGet(SHARED_LIST_URL)
-        if body then
-            local ok, data = pcall(function() return HttpService:JSONDecode(body) end)
-            if ok and type(data) == "table" and type(data.games) == "table" then
-                games = data.games
+        -- 1) Shared worker API (multi-user)
+        if GPT_SHARED_API ~= "" then
+            local body = _gptHttpGet(GPT_SHARED_API)
+            local games = _gptParseGamesJson(body)
+            if games and #games > 0 then
+                _gptSharedGames = games
+                _gptLoadVotes()
+                _gptSaveLocalList(games)
+                return games
             end
         end
+        -- 2) GitHub raw seed list
+        local games = {}
+        local body = _gptHttpGet(SHARED_LIST_URL)
+        games = _gptParseGamesJson(body) or {}
+        -- 3) Local cache
         if #games == 0 and isfile and isfile(LOCAL_LIST_FILE) then
             pcall(function()
                 local ok, data = pcall(function()
@@ -2967,11 +3011,11 @@ do
                 end)
                 if ok and type(data) == "table" and type(data.games) == "table" then
                     games = data.games
+                    for _, g in ipairs(games) do
+                        _gptEnsureVoteFields(g)
+                    end
                 end
             end)
-        end
-        for _, g in ipairs(games) do
-            _gptEnsureVoteFields(g)
         end
         _gptSharedGames = games
         _gptLoadVotes()
@@ -2988,6 +3032,34 @@ do
                 games = games,
             }))
         end)
+    end
+
+    local function _gptPushSharedList(games)
+        if GPT_SHARED_API == "" then return false, "no shared API configured" end
+        local payload = HttpService:JSONEncode({
+            version = 1,
+            updatedAt = DateTime.now():ToIsoDate(),
+            games = games or _gptSharedGames,
+        })
+        local ok, res = _gptHttpPut(GPT_SHARED_API, payload)
+        if not ok then
+            warn("[Ivory] GPT shared push failed: " .. tostring(res))
+            return false, tostring(res)
+        end
+        -- if worker returned updated list, refresh local copy
+        local body = nil
+        if type(res) == "table" then
+            body = res.Body
+        elseif type(res) == "string" then
+            body = res
+        end
+        if type(body) == "string" and body ~= "" then
+            local games2 = _gptParseGamesJson(body)
+            if games2 then
+                _gptSharedGames = games2
+            end
+        end
+        return true, body
     end
 
     local function _gptFindSharedIndex(games, placeId, gameId)
@@ -3029,6 +3101,9 @@ do
         end
         _gptSharedGames = games
         _gptSaveLocalList(games)
+        task.spawn(function()
+            pcall(_gptPushSharedList, games)
+        end)
 
         local payload = HttpService:JSONEncode({
             version = 1,
@@ -3096,6 +3171,7 @@ do
             _gptVoteMap[pid] = nil
             _gptSaveVotes()
             _gptSaveLocalList(_gptSharedGames)
+            task.spawn(function() pcall(_gptPushSharedList, _gptSharedGames) end)
             return true, "Removed " .. kind
         end
         if prev then
@@ -3114,6 +3190,7 @@ do
         _gptVoteMap[pid] = kind
         _gptSaveVotes()
         _gptSaveLocalList(_gptSharedGames)
+        task.spawn(function() pcall(_gptPushSharedList, _gptSharedGames) end)
         if prev then
             return true, "Changed to " .. kind
         end

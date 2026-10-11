@@ -1,0 +1,9 @@
+name = "ivoryhub"
+main = "backend/worker.js"
+compatibility_date = "2024-01-01"
+
+# Create with: npx wrangler kv:namespace create GAMES
+# Then paste the id below and run: npx wrangler deploy
+# [[kv_namespaces]]
+# binding = "GAMES"
+# id = "YOUR_KV_NAMESPACE_ID"
