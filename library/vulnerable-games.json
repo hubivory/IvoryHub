@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-11T20:52:41.929Z",
+  "updatedAt": "2026-10-11T21:01:03.486Z",
   "games": [
     {
       "placeId": 74424504058547,
@@ -68,6 +68,19 @@
       "confirmed": false,
       "lastCheck": "2026-10-11T20:03:57Z",
       "reporter": "njoni123"
+    },
+    {
+      "placeId": 4924922222,
+      "gameId": 1686885941,
+      "name": "Brookhaven 🏡 RP",
+      "verdict": "MANUAL REPORT",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-11T21:01:02Z",
+      "reporter": "Zion67683"
     },
     {
       "placeId": 120851538706364,
