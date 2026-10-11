@@ -2888,30 +2888,43 @@ do
         local headers = { ["Content-Type"] = "application/json" }
         local attempts = {}
 
-        local function tryReq(method)
+        local function statusOf(res)
+            if type(res) ~= "table" then return nil end
+            return tonumber(res.StatusCode or res.status or res.StatusCode)
+        end
+
+        local function bodyOf(res)
+            if type(res) == "string" then return res end
+            if type(res) == "table" then return res.Body or res.body end
+            return nil
+        end
+
+        local function consideredOk(res)
+            local code = statusOf(res)
+            if code ~= nil and code >= 400 then return false end
+            local b = bodyOf(res)
+            if code == nil and b == nil then return false end
+            if type(b) == "string" and b:find("^%s*{") == nil and b:find("^%s*%[") == nil and b ~= "" then
+                -- non-JSON body with no status is suspicious; treat empty/HTML as fail
+                if b:find("<html", 1, true) or b:find("Just a moment", 1, true) then return false end
+            end
+            return true
+        end
+
+        local function tryMethod(method)
             if typeof(request) == "function" then
                 local ok, res = pcall(function()
                     return request({ Url = url, Method = method, Headers = headers, Body = body })
                 end)
-                if ok and type(res) == "table" then
-                    local code = res.StatusCode or res.StatusCode or res.status
-                    local respBody = res.Body or res.body
-                    if (code == nil or (tonumber(code) and tonumber(code) < 400)) and (respBody == nil or type(respBody) == "string") then
-                        return true, res
-                    end
-                    table.insert(attempts, method .. " request status=" .. tostring(code))
-                elseif ok then
-                    return true, res
-                else
-                    table.insert(attempts, method .. " request err=" .. tostring(res))
-                end
+                if ok and consideredOk(res) then return true, res end
+                table.insert(attempts, method .. " request " .. tostring(ok and (statusOf(res) or bodyOf(res)) or res))
             end
             if typeof(syn) == "table" and typeof(syn.request) == "function" then
                 local ok, res = pcall(function()
                     return syn.request({ Url = url, Method = method, Headers = headers, Body = body })
                 end)
-                if ok then return true, res end
-                table.insert(attempts, method .. " syn err=" .. tostring(res))
+                if ok and consideredOk(res) then return true, res end
+                table.insert(attempts, method .. " syn " .. tostring(ok and (statusOf(res) or "no") or res))
             end
             if typeof(game.HttpRequest) == "function" then
                 local ok, res = pcall(function()
@@ -2922,22 +2935,20 @@ do
                         Body = body,
                     })
                 end)
-                if ok then return true, res end
-                table.insert(attempts, method .. " HttpRequest err=" .. tostring(res))
+                if ok and consideredOk(res) then return true, res end
+                table.insert(attempts, method .. " HttpRequest " .. tostring(ok and (statusOf(res) or "no") or res))
             end
-            if method == "POST" or method == "PUT" then
-                local ok, res = pcall(function()
-                    return game:HttpPostAsync(url, body, Enum.HttpContentType.ApplicationJson)
-                end)
-                if ok then return true, res end
-                table.insert(attempts, method .. " HttpPostAsync err=" .. tostring(res))
-            end
+            local ok, res = pcall(function()
+                return game:HttpPostAsync(url, body, Enum.HttpContentType.ApplicationJson)
+            end)
+            if ok and (type(res) == "string" or type(res) == "table") then return true, res end
+            table.insert(attempts, method .. " HttpPostAsync " .. tostring(ok and "empty" or res))
             return false
         end
 
-        local ok, res = tryReq("PUT")
+        local ok, res = tryMethod("PUT")
         if ok then return true, res end
-        ok, res = tryReq("POST")
+        ok, res = tryMethod("POST")
         if ok then return true, res end
         return false, table.concat(attempts, " | ")
     end
@@ -3076,30 +3087,55 @@ do
         if not ok then
             warn("[Ivory] GPT shared push failed: " .. tostring(res))
             if not silent then
-                Library.Notify({ Title = "Ivory", Content = "Cloud save failed: " .. tostring(res), Type = "Error", Duration = 6 })
+                Library.Notify({ Title = "Ivory", Content = "Cloud save failed: " .. tostring(res), Type = "Error", Duration = 8 })
             end
             return false, tostring(res)
         end
-        local body = nil
+
+        local respBody = nil
         if type(res) == "table" then
-            body = res.Body or res.body
+            respBody = res.Body or res.body
         elseif type(res) == "string" then
-            body = res
+            respBody = res
         end
-        if type(body) == "string" and body ~= "" then
-            local games2 = _gptParseGamesJson(body)
-            if games2 then
-                _gptSharedGames = games2
+
+        local remote = nil
+        local githubOk = false
+        if type(respBody) == "string" and respBody ~= "" then
+            local okj, parsed = pcall(function() return HttpService:JSONDecode(respBody) end)
+            if okj and type(parsed) == "table" then
+                remote = _gptParseGamesJson(respBody)
+                if type(parsed.github) == "table" then
+                    githubOk = parsed.github.ok == true
+                end
             end
         end
+
+        -- Fallback verify GET if PUT body was not parseable
+        if not remote then
+            local verifyBody = _gptHttpGet(GPT_SHARED_API)
+            remote = _gptParseGamesJson(verifyBody)
+        end
+
+        if not remote then
+            if not silent then
+                Library.Notify({ Title = "Ivory", Content = "Cloud save not confirmed (no JSON)", Type = "Error", Duration = 8 })
+            end
+            return false, "verify failed"
+        end
+        _gptSharedGames = remote
+
         if not silent then
             Library.Notify({
                 Title = "Ivory",
-                Content = string.format("Saved %d game(s) to cloud + GitHub", #(_gptSharedGames or list)),
-                Type = "Success",
+                Content = string.format("Cloud OK (%d games)%s",
+                    #remote,
+                    githubOk and " | GitHub OK" or " | GitHub: see worker logs"),
+                Type = githubOk and "Success" or "Warning",
+                Duration = 6,
             })
         end
-        return true, body
+        return true, remote
     end
 
     local function _gptFindSharedIndex(games, placeId, gameId)

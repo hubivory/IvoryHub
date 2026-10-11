@@ -1,10 +1,10 @@
 // Cloudflare Worker - Key Validation + GPT shared games list
 // Deploy: npx wrangler deploy
-// KV: npx wrangler kv:namespace create GAMES  (then set id in wrangler.toml)
+// KV: npx wrangler kv namespace create GAMES  (then set id in wrangler.toml)
+// Secret: npx wrangler secret put GITHUB_TOKEN  (contents:write on hubivory/IvoryHub)
 
 const LOOTLABS_KEY = "YOUR_LOOTLABS_KEY_HERE";
 const WORKINK_KEY = "YOUR_WORKINK_KEY_HERE";
-// Optional shared secret for /gpt/games writes. Empty = open writes.
 const GPT_WRITE_TOKEN = "";
 
 const corsHeaders = {
@@ -44,26 +44,14 @@ function normalizeGame(g) {
   };
 }
 
-async function loadList(env) {
-  if (!env.GAMES) return { version: 1, updatedAt: new Date().toISOString(), games: [] };
-  const raw = await env.GAMES.get("list");
-  if (!raw) return { version: 1, updatedAt: new Date().toISOString(), games: [] };
-  try {
-    const data = JSON.parse(raw);
-    if (!data || !Array.isArray(data.games)) return { version: 1, updatedAt: new Date().toISOString(), games: [] };
-    return data;
-  } catch {
-    return { version: 1, updatedAt: new Date().toISOString(), games: [] };
+function recomputeVotes(g) {
+  let likes = 0;
+  let dislikes = 0;
+  for (const v of Object.values(g.voters || {})) {
+    if (v === "like") likes++;
+    else if (v === "dislike") dislikes++;
   }
-}
-
-async function saveList(env, data) {
-  data.version = 1;
-  data.updatedAt = new Date().toISOString();
-  if (env.GAMES) {
-    await env.GAMES.put("list", JSON.stringify(data));
-  }
-  return data;
+  return { ...g, likes, dislikes };
 }
 
 function mergeGames(existing, incoming) {
@@ -90,17 +78,117 @@ function mergeGames(existing, incoming) {
     };
     byPlace.set(id, recomputeVotes(merged));
   }
-  return Array.from(byPlace.values()).sort((a, b) => (b.likes - a.likes) || (a.name || "").localeCompare(b.name || ""));
+  return Array.from(byPlace.values()).sort(
+    (a, b) => b.likes - a.likes || (a.name || "").localeCompare(b.name || "")
+  );
 }
 
-function recomputeVotes(g) {
-  let likes = 0;
-  let dislikes = 0;
-  for (const v of Object.values(g.voters || {})) {
-    if (v === "like") likes++;
-    else if (v === "dislike") dislikes++;
+async function loadList(env) {
+  if (env.GAMES) {
+    const raw = await env.GAMES.get("list", { type: "json" });
+    if (raw && Array.isArray(raw.games) && raw.games.length > 0) {
+      return raw;
+    }
   }
-  return { ...g, likes, dislikes };
+  // Fallback via GitHub API (not raw CDN — CDN is stale)
+  try {
+    const metaRes = await fetch(
+      "https://api.github.com/repos/hubivory/IvoryHub/contents/library/vulnerable-games.json",
+      {
+        headers: {
+          Accept: "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
+          "User-Agent": "ivoryhub-worker",
+          ...(env.GITHUB_TOKEN ? { Authorization: `Bearer ${env.GITHUB_TOKEN}` } : {}),
+        },
+      }
+    );
+    if (metaRes.ok) {
+      const meta = await metaRes.json();
+      const text = decodeURIComponent(
+        atob((meta.content || "").replace(/\n/g, ""))
+          .split("")
+          .map((c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0"))
+          .join("")
+      );
+      const data = JSON.parse(text);
+      if (data && Array.isArray(data.games) && data.games.length > 0) {
+        if (env.GAMES) {
+          try {
+            await env.GAMES.put("list", JSON.stringify(data));
+          } catch {}
+        }
+        return data;
+      }
+    }
+  } catch {}
+  return { version: 1, updatedAt: new Date().toISOString(), games: [] };
+}
+
+async function syncListToGitHub(env, data) {
+  const token = env.GITHUB_TOKEN;
+  if (!token) return { ok: false, skipped: true, error: "no GITHUB_TOKEN" };
+  const owner = "hubivory";
+  const repo = "IvoryHub";
+  const path = "library/vulnerable-games.json";
+  const api = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "User-Agent": "ivoryhub-worker",
+  };
+
+  let sha;
+  const getRes = await fetch(api, { headers });
+  if (getRes.ok) {
+    const meta = await getRes.json();
+    sha = meta.sha;
+  } else if (getRes.status !== 404) {
+    return { ok: false, error: "get " + getRes.status };
+  }
+
+  const body = JSON.stringify(
+    { version: 1, updatedAt: data.updatedAt, games: data.games || [] },
+    null,
+    2
+  );
+  const bytes = new TextEncoder().encode(body);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  const content = btoa(binary);
+
+  const putRes = await fetch(api, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify({
+      message: `chore: sync Working Games list (${(data.games || []).length} games)`,
+      content,
+      ...(sha ? { sha } : {}),
+    }),
+  });
+  if (!putRes.ok) {
+    const text = await putRes.text();
+    return { ok: false, error: "put " + putRes.status + " " + text.slice(0, 160) };
+  }
+  const putJson = await putRes.json().catch(() => ({}));
+  return { ok: true, sha: putJson.content && putJson.content.sha };
+}
+
+async function saveList(env, data) {
+  data.version = 1;
+  data.updatedAt = new Date().toISOString();
+  if (env.GAMES) {
+    await env.GAMES.put("list", JSON.stringify(data));
+  }
+  let github = { ok: false, skipped: true, error: "disabled" };
+  try {
+    github = await syncListToGitHub(env, data);
+  } catch (e) {
+    github = { ok: false, error: String(e && e.message || e) };
+  }
+  data.github = github;
+  return data;
 }
 
 export default {
@@ -112,18 +200,16 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // GET /gpt/games
     if (path === "/gpt/games" && request.method === "GET") {
       const data = await loadList(env);
       return json(data);
     }
 
-    // PUT /gpt/games  body: { games: [...] }  (merge by placeId)
     if (path === "/gpt/games" && (request.method === "PUT" || request.method === "POST")) {
       if (GPT_WRITE_TOKEN) {
         const auth = request.headers.get("Authorization") || "";
         const token = request.headers.get("X-Ivory-Token") || "";
-        const okAuth = auth === ("Bearer " + GPT_WRITE_TOKEN) || token === GPT_WRITE_TOKEN;
+        const okAuth = auth === "Bearer " + GPT_WRITE_TOKEN || token === GPT_WRITE_TOKEN;
         if (!okAuth) return json({ error: "unauthorized" }, 401);
       }
       try {
@@ -138,22 +224,16 @@ export default {
       }
     }
 
-    // POST /validate { key: "xxx", provider: "workink"|"lootlabs" }
     if (path === "/validate" && request.method === "POST") {
       try {
         const body = await request.json();
         const { key, provider } = body;
-
-        if (!key || !provider) {
-          return json({ valid: false, error: "Missing key or provider" }, 400);
-        }
-
+        if (!key || !provider) return json({ valid: false, error: "Missing key or provider" }, 400);
         if (provider === "workink") {
           const res = await fetch(`https://work.ink/_api/v2/token/isValid/${key}?deleteToken=1`);
           const data = await res.json();
           return json({ valid: data.valid, provider: "workink" });
         }
-
         if (provider === "lootlabs") {
           const res = await fetch(`https://creators.lootlabs.gg/api/public/validate?key=${key}`, {
             headers: { Authorization: `Bearer ${LOOTLABS_KEY}` },
@@ -161,7 +241,6 @@ export default {
           const data = await res.json();
           return json({ valid: data.valid || data.success, provider: "lootlabs" });
         }
-
         return json({ valid: false, error: "Unknown provider" }, 400);
       } catch (e) {
         return json({ valid: false, error: "Server error" }, 500);
