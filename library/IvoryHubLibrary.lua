@@ -2789,6 +2789,11 @@ do
     local _gptDropdown = nil
     local _gptLabelMap = {}
     local _gptLabelList = {}
+    local _gptSharedGames = {}
+    local _gptShareLabel = nil
+    local _gptShareDropdown = nil
+    local _gptRefreshShareUi = nil
+    local GPT_DISCORD_WEBHOOK = ""
 
     local function _gptCleanup()
         for _, c in ipairs(_gptConnections) do
@@ -2853,6 +2858,156 @@ do
             if ok and type(body) == "string" then return body end
         end
         return nil
+    end
+
+    local function _gptHttpPost(url, body, headers)
+        headers = headers or { ["Content-Type"] = "application/json" }
+        local ok, res = pcall(function()
+            return game:HttpPostAsync(url, body, Enum.HttpContentType.ApplicationJson)
+        end)
+        if ok then return true, res end
+        if typeof(request) == "function" then
+            ok, res = pcall(function()
+                return request({ Url = url, Method = "POST", Headers = headers, Body = body })
+            end)
+            if ok then return true, res end
+        end
+        if typeof(syn) == "table" and typeof(syn.request) == "function" then
+            ok, res = pcall(function()
+                return syn.request({ Url = url, Method = "POST", Headers = headers, Body = body })
+            end)
+            if ok then return true, res end
+        end
+        return false, tostring(res)
+    end
+
+    local function _gptHttpPut(url, body)
+        local ok, res = pcall(function()
+            return request({ Url = url, Method = "PUT", Headers = { ["Content-Type"] = "application/json" }, Body = body })
+        end)
+        if ok then return true, res end
+        ok, res = pcall(function()
+            return syn.request({ Url = url, Method = "PUT", Headers = { ["Content-Type"] = "application/json" }, Body = body })
+        end)
+        if ok then return true, res end
+        return false, tostring(res)
+    end
+
+    local function _gptGetPlaceName()
+        local ok, info = pcall(function()
+            return MarketplaceService:GetProductInfo(game.PlaceId)
+        end)
+        if ok and type(info) == "table" then return info.Name or "Unknown Place" end
+        return "Unknown Place"
+    end
+
+    local SHARED_LIST_URL = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/vulnerable-games.json"
+    local LOCAL_LIST_FILE = "IvoryHub/vulnerable-games.json"
+
+    local function _gptLoadSharedList()
+        local games = {}
+        local body = _gptHttpGet(SHARED_LIST_URL)
+        if body then
+            local ok, data = pcall(function() return HttpService:JSONDecode(body) end)
+            if ok and type(data) == "table" and type(data.games) == "table" then
+                games = data.games
+            end
+        end
+        if #games == 0 and isfile and isfile(LOCAL_LIST_FILE) then
+            pcall(function()
+                local ok, data = pcall(function()
+                    return HttpService:JSONDecode(readfile(LOCAL_LIST_FILE))
+                end)
+                if ok and type(data) == "table" and type(data.games) == "table" then
+                    games = data.games
+                end
+            end)
+        end
+        _gptSharedGames = games
+        return games
+    end
+
+    local function _gptSaveLocalList(games)
+        pcall(function()
+            if not isfolder then return end
+            if not isfolder("IvoryHub") then makefolder("IvoryHub") end
+            writefile(LOCAL_LIST_FILE, HttpService:JSONEncode({
+                version = 1,
+                updatedAt = DateTime.now():ToIsoDate(),
+                games = games,
+            }))
+        end)
+    end
+
+    local function _gptFindSharedIndex(games, placeId, gameId)
+        for i, g in ipairs(games) do
+            if tonumber(g.placeId) == tonumber(placeId) or (gameId and tonumber(g.gameId) == tonumber(gameId)) then
+                return i
+            end
+        end
+        return nil
+    end
+
+    local function _gptReportWorkingGame(verdict)
+        local placeId, gameId = game.PlaceId, game.GameId
+        local name = _gptGetPlaceName()
+        local entry = {
+            placeId = placeId,
+            gameId = gameId,
+            name = name,
+            verdict = verdict,
+            checks = 1,
+            lastCheck = DateTime.now():ToIsoDate(),
+            reporter = tostring(Players.LocalPlayer and Players.LocalPlayer.Name or "?"),
+        }
+        local games = _gptSharedGames
+        if #games == 0 then games = _gptLoadSharedList() end
+        local idx = _gptFindSharedIndex(games, placeId, gameId)
+        if idx then
+            games[idx].checks = (tonumber(games[idx].checks) or 0) + 1
+            games[idx].lastCheck = entry.lastCheck
+            games[idx].verdict = verdict
+            if verdict:find("LIKELY") then games[idx].confirmed = true end
+        else
+            entry.confirmed = verdict:find("LIKELY") and true or false
+            table.insert(games, entry)
+        end
+        _gptSharedGames = games
+        _gptSaveLocalList(games)
+
+        local payload = HttpService:JSONEncode({
+            version = 1,
+            updatedAt = entry.lastCheck,
+            games = games,
+        })
+
+        -- Best-effort shared write paths
+        if GPT_DISCORD_WEBHOOK ~= "" then
+            task.spawn(function()
+                _gptHttpPost(GPT_DISCORD_WEBHOOK, HttpService:JSONEncode({
+                    content = string.format("**Ivory GPT** ΓÇö %s\nPlaceId `%s` | GameId `%s`\nVerdict: **%s**\nBy: %s",
+                        name, tostring(placeId), tostring(gameId), verdict, entry.reporter),
+                }))
+            end)
+        end
+        task.spawn(function()
+            local okCreate, res = pcall(function()
+                return game:HttpPostAsync("https://jsonblob.com/api/jsonBlob", payload, Enum.HttpContentType.ApplicationJson)
+            end)
+            if not okCreate then
+                pcall(function()
+                    local r = request and request({
+                        Url = "https://jsonblob.com/api/jsonBlob",
+                        Method = "POST",
+                        Headers = { ["Content-Type"] = "application/json" },
+                        Body = payload,
+                    })
+                end)
+            end
+        end)
+
+        if _gptRefreshShareUi then pcall(_gptRefreshShareUi) end
+        return entry
     end
 
     local function _gptFetchProducts()
@@ -2994,12 +3149,24 @@ do
                 Type = (verdict:find("VULNERABLE") or verdict:find("likely")) and "Success" or (verdict:find("NOT") and "Warning" or "Info"),
                 Duration = 6,
             })
+            if verdict:find("LIKELY") or verdict:find("POSSIBLY") then
+                task.spawn(function()
+                    local ok, entry = pcall(_gptReportWorkingGame, verdict)
+                    if ok and entry then
+                        Library.Notify({
+                            Title = "Ivory",
+                            Content = "Reported to Working Games: " .. tostring(entry.name),
+                            Type = "Success",
+                        })
+                    end
+                end)
+            end
             if onResult then onResult(verdict, detail, listening) end
         end
 
         local function runWithItems()
             if #_gptItems == 0 then
-                finish("NOT VULNERABLE — no products or passes on this place", "No developer products or gamepasses found.\nNothing to fake-purchase.")
+                finish("NOT VULNERABLE ΓÇö no products or passes on this place", "No developer products or gamepasses found.\nNothing to fake-purchase.")
                 return
             end
 
@@ -3049,13 +3216,13 @@ do
                 }
                 if #diffs > 0 then
                     table.insert(lines, "State changes: " .. table.concat(diffs, "; "))
-                    finish(string.format("LIKELY VULNERABLE — game reacted to fake %s", kind:lower()), table.concat(lines, "\n"))
+                    finish(string.format("LIKELY VULNERABLE ΓÇö game reacted to fake %s", kind:lower()), table.concat(lines, "\n"))
                 elseif #listening > 0 then
                     table.insert(lines, "No state change in 2.5s.")
-                    finish("POSSIBLY VULNERABLE — game listens for purchase finished", table.concat(lines, "\n"))
+                    finish("POSSIBLY VULNERABLE ΓÇö game listens for purchase finished", table.concat(lines, "\n"))
                 elseif remoteHits > 0 then
                     table.insert(lines, "No leaderstat change, but remotes fired.")
-                    finish("POSSIBLY VULNERABLE — remotes fired after signal", table.concat(lines, "\n"))
+                    finish("POSSIBLY VULNERABLE ΓÇö remotes fired after signal", table.concat(lines, "\n"))
                 else
                     table.insert(lines, "No reaction detected.")
                     finish("NOT VULNERABLE (no client reaction detected)", table.concat(lines, "\n") .. "\nServer may still validate, or game grants only on real purchase.")
@@ -3198,6 +3365,19 @@ do
 
         if secMain then
             pcall(function()
+                local okBtn, btn = pcall(function()
+                    return secMain:CreateButton({
+                        Name = "Check Vulnerability",
+                        Callback = function()
+                            if _gptDetail then pcall(function() _gptDetail:SetText("Checking if this game is vulnerable...") end) end
+                            _gptCheckVulnerability()
+                        end,
+                    })
+                end)
+                if not okBtn or not btn then warn("[Ivory] Check Vulnerability button failed: " .. tostring(btn)) end
+            end)
+
+            pcall(function()
                 _gptDropdown = secMain:CreateDropdown({
                     Name = "Select Item",
                     Values = { "Click Scan to load items" },
@@ -3254,15 +3434,165 @@ do
                     end,
                 })
             end)
+        end
 
+        local secShare = nil
+        pcall(function() secShare = S:CreateSection("Working Games") end)
+        if secShare then
+            local function _gptShareLabels()
+                local labels, map = {}, {}
+                local cur = game.PlaceId
+                for _, g in ipairs(_gptSharedGames) do
+                    local mark = (tonumber(g.placeId) == tonumber(cur)) and "Γÿà " or ""
+                    local verdictShort = tostring(g.verdict or "?"):sub(1, 12)
+                    local label = string.format("%s%s (%s) ΓÇö %s",
+                        mark, tostring(g.name or "Unknown"),
+                        tostring(g.placeId or "?"),
+                        verdictShort)
+                    table.insert(labels, label)
+                    map[label] = g
+                end
+                if #labels == 0 then
+                    labels = { "No reports yet ΓÇö run Check Vulnerability" }
+                    map[labels[1]] = nil
+                end
+                return labels, map
+            end
+
+            _gptRefreshShareUi = function()
+                if not _gptShareDropdown then return end
+                local labels, map = _gptShareLabels()
+                shareMap = map
+                pcall(function()
+                    _gptShareDropdown:Refresh(labels, true, true)
+                    _gptShareDropdown:Set(labels[1], true)
+                end)
+                if _gptShareLabel then
+                    local curOnList = false
+                    for _, g in ipairs(_gptSharedGames) do
+                        if tonumber(g.placeId) == tonumber(game.PlaceId) then
+                            curOnList = true
+                            pcall(function()
+                                _gptShareLabel:SetText(string.format(
+                                    "This place is on the list.\n%s | checks: %s\nLast: %s",
+                                    tostring(g.name or "?"),
+                                    tostring(g.checks or 1),
+                                    tostring(g.lastCheck or "?")
+                                ))
+                            end)
+                            break
+                        end
+                    end
+                    if not curOnList then
+                        pcall(function()
+                            _gptShareLabel:SetText(string.format(
+                                "%d game(s) reported working.\nThis place is not listed yet.",
+                                #_gptSharedGames
+                            ))
+                        end)
+                    end
+                end
+            end
+
+            local shareMap = {}
             pcall(function()
-                secMain:CreateButton({
-                    Name = "Check Vulnerability",
-                    Callback = function()
-                        if _gptDetail then pcall(function() _gptDetail:SetText("Checking if this game is vulnerable...") end) end
-                        _gptCheckVulnerability()
+                _gptShareDropdown = secShare:CreateDropdown({
+                    Name = "Community List",
+                    Values = { "Loading..." },
+                    Default = "Loading...",
+                    Callback = function(value)
+                        local g = shareMap[tostring(value)]
+                        if not g then return end
+                        if _gptShareLabel then
+                            pcall(function()
+                                _gptShareLabel:SetText(table.concat({
+                                    "Name: " .. tostring(g.name or "?"),
+                                    "PlaceId: " .. tostring(g.placeId or "?"),
+                                    "GameId: " .. tostring(g.gameId or "-"),
+                                    "Verdict: " .. tostring(g.verdict or "?"),
+                                    "Checks: " .. tostring(g.checks or 1),
+                                    "Last: " .. tostring(g.lastCheck or "?"),
+                                    "By: " .. tostring(g.reporter or "?"),
+                                }, "\n"))
+                            end)
+                        end
                     end,
                 })
+            end)
+            pcall(function()
+                _gptShareLabel = secShare:CreateLabel({ Text = "Loading shared list..." })
+            end)
+            pcall(function()
+                secShare:CreateButton({
+                    Name = "Refresh List",
+                    Callback = function()
+                        _gptLoadSharedList()
+                        local labels
+                        labels, shareMap = _gptShareLabels()
+                        if _gptShareDropdown then
+                            pcall(function()
+                                _gptShareDropdown:Refresh(labels, true, true)
+                                _gptShareDropdown:Set(labels[1], true)
+                            end)
+                        end
+                        if _gptShareLabel then
+                            pcall(function()
+                                _gptShareLabel:SetText(string.format(
+                                    "%d game(s) in community list.%s",
+                                    #_gptSharedGames,
+                                    (function()
+                                        for _, g in ipairs(_gptSharedGames) do
+                                            if tonumber(g.placeId) == tonumber(game.PlaceId) then
+                                                return "\nThis place: WORKS"
+                                            end
+                                        end
+                                        return ""
+                                    end)()
+                                ))
+                            end)
+                        end
+                        Library.Notify({ Title = "Ivory", Content = "Refreshed " .. #_gptSharedGames .. " shared game(s)", Type = "Info" })
+                    end,
+                })
+            end)
+            pcall(function()
+                secShare:CreateButton({
+                    Name = "Report This Game",
+                    Callback = function()
+                        task.spawn(function()
+                            local entry = _gptReportWorkingGame("MANUAL REPORT")
+                            Library.Notify({
+                                Title = "Ivory",
+                                Content = "Reported: " .. tostring(entry.name),
+                                Type = "Success",
+                            })
+                            if _gptRefreshShareUi then pcall(_gptRefreshShareUi) end
+                        end)
+                    end,
+                })
+            end)
+            -- keep dropdown map in sync via Refresh List / report
+            local _origRefresh = _gptRefreshShareUi
+            _gptRefreshShareUi = function()
+                if _origRefresh then _origRefresh() end
+                local labels, map = _gptShareLabels()
+                shareMap = map
+            end
+            task.spawn(function()
+                _gptLoadSharedList()
+                local labels
+                labels, shareMap = _gptShareLabels()
+                if _gptShareDropdown then
+                    pcall(function()
+                        _gptShareDropdown:Refresh(labels, true, true)
+                        _gptShareDropdown:Set(labels[1], true)
+                    end)
+                end
+                if _gptShareLabel then
+                    pcall(function()
+                        _gptShareLabel:SetText(string.format("%d game(s) reported working.", #_gptSharedGames))
+                    end)
+                end
             end)
         end
 
