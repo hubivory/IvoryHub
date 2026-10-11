@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-11T20:49:57.814Z",
+  "updatedAt": "2026-10-11T20:51:01.384Z",
   "games": [
     {
       "placeId": 74424504058547,
@@ -29,6 +29,19 @@
       "confirmed": false,
       "lastCheck": "2026-10-11T20:49:53Z",
       "reporter": "njoni123"
+    },
+    {
+      "placeId": 129915238326903,
+      "gameId": 9379820347,
+      "name": "🧸Toy Factory Tycoon",
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-11T20:51:04Z",
+      "reporter": "XiaBuilds"
     },
     {
       "placeId": 286090429,
