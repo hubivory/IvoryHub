@@ -2749,255 +2749,368 @@ end
 do
     local Players = game:GetService("Players")
     local MarketplaceService = game:GetService("MarketplaceService")
+    local HttpService = game:GetService("HttpService")
     local _gptConnections = {}
-local _gptLoggerActive = false
+    local _gptLoggerActive = false
+    local _gptItems = {}
+    local _gptDropdown = nil
+    local _gptDetail = nil
+    local _gptSelected = nil
+    local _gptScanning = false
 
-local function _gptCleanup()
-    for _, c in ipairs(_gptConnections) do
-        pcall(function() c:Disconnect() end)
-    end
-    table.clear(_gptConnections)
-    _gptLoggerActive = false
-end
-
-local function _gptGetInfo(kind, id)
-    local infoTypes = {
-        Gamepass = Enum.InfoType.GamePass,
-        Product = Enum.InfoType.Product,
-        Asset = Enum.InfoType.Asset,
-    }
-    local it = infoTypes[kind]
-    if not it or not tonumber(id) then return nil end
-    local ok, res = pcall(function()
-        return MarketplaceService:GetProductInfo(tonumber(id), it)
-    end)
-    if ok and type(res) == "table" then return res end
-    return nil
-end
-
-local function _gptDetectKind(id)
-    for _, kind in ipairs({"Gamepass", "Product", "Asset"}) do
-        if _gptGetInfo(kind, id) then return kind end
-    end
-    return "Product"
-end
-
-local function _gptFire(kind, id)
-    local lp = Players.LocalPlayer
-    if kind == "Gamepass" then
-        pcall(function() MarketplaceService:SignalPromptGamePassPurchaseFinished(lp, id, true) end)
-    elseif kind == "Product" then
-        pcall(function() MarketplaceService:SignalPromptProductPurchaseFinished(lp.UserId, id, true) end)
-    elseif kind == "Asset" then
-        pcall(function() MarketplaceService:SignalPromptPurchaseFinished(lp, id, true) end)
-    elseif kind == "Bundle" then
-        pcall(function() MarketplaceService:SignalPromptBundlePurchaseFinished(lp, id, true) end)
-    end
-end
-
-local function _gptFetchGamepasses()
-    local ok, pages = pcall(function()
-        return MarketplaceService:GetDeveloperProductsAsync()
-    end)
-    if not ok or not pages then return nil end
-    local out = {}
-    for _ = 1, 30 do
-        local okPage, page = pcall(function() return pages:GetCurrentPage() end)
-        if not okPage then break end
-        for _, item in ipairs(page) do
-            table.insert(out, {
-                id = item.ProductId or item.DeveloperProductId,
-                name = item.Name,
-                price = item.PriceInRobux,
-            })
+    local function _gptCleanup()
+        for _, c in ipairs(_gptConnections) do
+            pcall(function() c:Disconnect() end)
         end
-        if pages.IsFinished or not pcall(function() pages:AdvanceToNextPageAsync() end) then
-            break
-        end
+        table.clear(_gptConnections)
+        _gptLoggerActive = false
     end
-    return out
-end
 
-function Library.InjectGamepassTools(a, b)
-    local win = sc(a, b)
-    if type(win) ~= "table" or not win._engWin then
-        win = Library._windows[#Library._windows]
-    end
-    if type(win) ~= "table" or not win._engWin then return nil end
-    if win._IvoryGPTInjected then
-        pcall(function()
-            for _, t in ipairs((win._engWin and win._engWin.Tabs) or {}) do
-                if t.Name == "Gamepass Tools" and t._button then
-                    t._button.LayoutOrder = 999998
-                end
-            end
+    local function _gptGetInfo(kind, id)
+        local infoTypes = {
+            Gamepass = Enum.InfoType.GamePass,
+            Product = Enum.InfoType.Product,
+            Asset = Enum.InfoType.Asset,
+        }
+        local it = infoTypes[kind]
+        if not it or not tonumber(id) then return nil end
+        local ok, res = pcall(function()
+            return MarketplaceService:GetProductInfo(tonumber(id), it)
         end)
-        return win
-    end
-    win._IvoryGPTInjected = true
-
-    local engWin = win._engWin
-    local engTab = nil
-    for _, t in ipairs(engWin.Tabs or {}) do
-        if t.Name == "Gamepass Tools" then engTab = t break end
-    end
-    if not engTab then
-        local ok, res = pcall(function() return win:CreateTab({ Name = "Gamepass Tools" }) end)
-        if ok and type(res) == "table" then engTab = res._engTab end
-    end
-    if not engTab then
-        win._IvoryGPTInjected = nil
+        if ok and type(res) == "table" then return res end
         return nil
     end
-    if engTab._button then pcall(function() engTab._button.LayoutOrder = 999998 end) end
 
-    local S = makeContainer(function()
-        local ok, blk = pcall(function() return makeBlock(engTab, nil) end)
-        if ok and blk then return blk end
-        return engTab
-    end, engTab)
+    local function _gptDetectKind(id)
+        for _, kind in ipairs({"Gamepass", "Product", "Asset"}) do
+            if _gptGetInfo(kind, id) then return kind end
+        end
+        return "Product"
+    end
 
-    local currentId = ""
+    local function _gptFire(kind, id)
+        local lp = Players.LocalPlayer
+        if kind == "Gamepass" then
+            pcall(function() MarketplaceService:SignalPromptGamePassPurchaseFinished(lp, id, true) end)
+        elseif kind == "Product" then
+            pcall(function() MarketplaceService:SignalPromptProductPurchaseFinished(lp.UserId, id, true) end)
+        elseif kind == "Asset" then
+            pcall(function() MarketplaceService:SignalPromptPurchaseFinished(lp, id, true) end)
+        elseif kind == "Bundle" then
+            pcall(function() MarketplaceService:SignalPromptBundlePurchaseFinished(lp, id, true) end)
+        end
+    end
 
-    pcall(function()
-        local sec = S:CreateSection("Faker")
-        sec:CreateInput({
-            Name = "Gamepass / Product ID",
-            Placeholder = "Enter ID...",
-            Callback = function(v) currentId = tostring(v or "") end,
-        })
-        sec:CreateButton({
-            Name = "Fake Purchase",
-            Callback = function()
-                local id = tonumber((currentId:gsub("%s", "")))
-                if not id then
-                    Library.Notify({ Title = "Ivory", Content = "Enter a valid numeric ID", Type = "Error" })
-                    return
-                end
-                local kind = _gptDetectKind(id)
-                _gptFire(kind, id)
-                Library.Notify({ Title = "Ivory", Content = "Fired " .. kind:lower() .. " " .. id, Type = "Success" })
-            end,
-        })
-        sec:CreateButton({
-            Name = "Fake Gamepass",
-            Callback = function()
-                local id = tonumber((currentId:gsub("%s", "")))
-                if not id then
-                    Library.Notify({ Title = "Ivory", Content = "Enter a valid numeric ID", Type = "Error" })
-                    return
-                end
-                _gptFire("Gamepass", id)
-                Library.Notify({ Title = "Ivory", Content = "Fired gamepass " .. id, Type = "Success" })
-            end,
-        })
-        sec:CreateButton({
-            Name = "Fake Product",
-            Callback = function()
-                local id = tonumber((currentId:gsub("%s", "")))
-                if not id then
-                    Library.Notify({ Title = "Ivory", Content = "Enter a valid numeric ID", Type = "Error" })
-                    return
-                end
-                _gptFire("Product", id)
-                Library.Notify({ Title = "Ivory", Content = "Fired product " .. id, Type = "Success" })
-            end,
-        })
-    end)
-
-    pcall(function()
-        local sec = S:CreateSection("Passes")
-        local listLabel = sec:CreateLabel({ Text = "Click Scan to find passes and products." })
-        sec:CreateButton({
-            Name = "Scan Passes & Products",
-            Callback = function()
-                if listLabel and listLabel.SetText then listLabel:SetText("Scanning...") end
-                task.spawn(function()
-                    local products = _gptFetchGamepasses() or {}
-                    local lines = {}
-                    for _, item in ipairs(products) do
-                        table.insert(lines, string.format("[%s] %s (R$%s) — %s",
-                            tostring(item.id), tostring(item.name or "?"),
-                            tostring(item.price or "?"), "Product"))
-                    end
-                    if #lines == 0 then
-                        if listLabel and listLabel.SetText then listLabel:SetText("No products found.") end
-                    else
-                        if listLabel and listLabel.SetText then
-                            listLabel:SetText(table.concat(lines, "\n"))
-                        end
-                    end
-                    Library.Notify({ Title = "Ivory", Content = "Found " .. #products .. " products", Type = "Info" })
-                end)
-            end,
-        })
-    end)
-
-    pcall(function()
-        local sec = S:CreateSection("Logger")
-        sec:CreateToggle({
-            Name = "Log Purchase Prompts",
-            CurrentValue = false,
-            Callback = function(val)
-                if val then
-                    _gptLoggerActive = true
-                    local promptMap = {
-                        ProductPurchaseRequested = "Product",
-                        GamePassPurchaseRequested = "Gamepass",
-                        PurchaseRequested = "Asset",
-                        BundlePurchaseRequested = "Bundle",
-                    }
-                    for signalName, kind in pairs(promptMap) do
-                        local sig = MarketplaceService[signalName]
-                        if typeof(sig) == "RBXScriptSignal" then
-                            local ok, conn = pcall(function()
-                                return sig:Connect(function(_, ...)
-                                    if not _gptLoggerActive then return end
-                                    local id = nil
-                                    for i = select("#", ...), 1, -1 do
-                                        local v = select(i, ...)
-                                        if type(v) == "number" then id = v break end
-                                    end
-                                    if id then
-                                        Library.Notify({
-                                            Title = "Ivory",
-                                            Content = kind .. " prompt: " .. tostring(id),
-                                            Type = "Info",
-                                        })
-                                    end
-                                end)
-                            end)
-                            if ok and conn then table.insert(_gptConnections, conn) end
-                        end
-                    end
-                    Library.Notify({ Title = "Ivory", Content = "Purchase logger enabled", Type = "Success" })
-                else
-                    _gptCleanup()
-                    Library.Notify({ Title = "Ivory", Content = "Purchase logger disabled", Type = "Info" })
-                end
-            end,
-        })
-    end)
-
-    pcall(function()
-        local sec = S:CreateSection("Supported Games")
-        local supLabel = sec:CreateLabel({ Text = "Some games respond to fake purchases. Results vary." })
-        sec:CreateButton({
-            Name = "Check Current Game",
-            Callback = function()
-                local gid = tostring(game.GameId)
-                Library.Notify({
-                    Title = "Ivory",
-                    Content = "GameId: " .. gid .. " | PlaceId: " .. tostring(game.PlaceId),
-                    Type = "Info",
-                    Duration = 5,
+    local function _gptFetchProducts()
+        local ok, pages = pcall(function()
+            return MarketplaceService:GetDeveloperProductsAsync()
+        end)
+        if not ok or not pages then return {} end
+        local out = {}
+        for _ = 1, 30 do
+            local okPage, page = pcall(function() return pages:GetCurrentPage() end)
+            if not okPage then break end
+            for _, item in ipairs(page) do
+                table.insert(out, {
+                    id = item.ProductId or item.DeveloperProductId,
+                    name = item.Name or "Unnamed Product",
+                    price = item.PriceInRobux,
+                    kind = "Product",
                 })
-            end,
-        })
-    end)
+            end
+            if pages.IsFinished or not pcall(function() pages:AdvanceToNextPageAsync() end) then
+                break
+            end
+        end
+        return out
+    end
 
-    return win
-end
+    local function _gptFetchGamepassesHttp()
+        local universeId = game.GameId
+        if not universeId or universeId == 0 then return {} end
+        local url = string.format("https://games.roblox.com/v1/games/%d/game-passes?limit=100", universeId)
+        local ok, body = pcall(function()
+            return game:HttpGet(url)
+        end)
+        if not ok or not body then return {} end
+        local okJson, data = pcall(function()
+            return HttpService:JSONDecode(body)
+        end)
+        if not okJson or type(data) ~= "table" or type(data.data) ~= "table" then return {} end
+        local out = {}
+        for _, item in ipairs(data.data) do
+            if item.id then
+                table.insert(out, {
+                    id = item.id,
+                    name = item.name or "Unnamed Pass",
+                    price = item.price,
+                    kind = "Gamepass",
+                })
+            end
+        end
+        return out
+    end
+
+    local function _gptFormatLabel(item)
+        local price = item.price and ("R$" .. tostring(item.price)) or "Free"
+        local kind = item.kind or "?"
+        return string.format("%s  [%s]  %s", tostring(item.name), kind, price)
+    end
+
+    local function _gptBuildLabelMap()
+        local map = {}
+        local labels = {}
+        for _, item in ipairs(_gptItems) do
+            local label = _gptFormatLabel(item)
+            map[label] = item
+            table.insert(labels, label)
+        end
+        return labels, map
+    end
+
+    local function _gptUpdateDetail(item)
+        _gptSelected = item
+        if not _gptDetail then return end
+        if not item then
+            pcall(function() _gptDetail:SetText("Select an item above to see details.") end)
+            return
+        end
+        local lines = {
+            "Name: " .. tostring(item.name),
+            "Type: " .. tostring(item.kind or "?"),
+            "ID: " .. tostring(item.id),
+            "Price: " .. (item.price and ("R$" .. tostring(item.price)) or "Free"),
+        }
+        pcall(function() _gptDetail:SetText(table.concat(lines, "\n")) end)
+    end
+
+    local function _gptScan(onDone)
+        if _gptScanning then return end
+        _gptScanning = true
+        task.spawn(function()
+            local products = {}
+            local passes = {}
+            local p1 = task.spawn(function() products = _gptFetchProducts() end)
+            local p2 = task.spawn(function() passes = _gptFetchGamepassesHttp() end)
+            task.wait(0.1)
+            while (task.status(p1) ~= "Dead" or task.status(p2) ~= "Dead") do task.wait(0.1) end
+
+            _gptItems = {}
+            for _, item in ipairs(passes) do table.insert(_gptItems, item) end
+            for _, item in ipairs(products) do table.insert(_gptItems, item) end
+
+            table.sort(_gptItems, function(a, b)
+                local ka, kb = a.kind or "", b.kind or ""
+                if ka ~= kb then return ka < kb end
+                return (a.name or "") < (b.name or "")
+            end)
+
+            local labels, map = _gptBuildLabelMap()
+            if _gptDropdown then
+                pcall(function()
+                    if #labels == 0 then
+                        _gptDropdown:Refresh({ "No passes or products found" }, true, true)
+                    else
+                        _gptDropdown:Refresh(labels, true, true)
+                    end
+                end)
+            end
+
+            _gptScanning = false
+            Library.Notify({
+                Title = "Ivory",
+                Content = string.format("Found %d gamepasses, %d products", #passes, #products),
+                Type = #_gptItems > 0 and "Success" or "Warning",
+            })
+            if onDone then onDone(labels, map) end
+        end)
+    end
+
+    function Library.InjectGamepassTools(a, b)
+        local win = sc(a, b)
+        if type(win) ~= "table" or not win._engWin then
+            win = Library._windows[#Library._windows]
+        end
+        if type(win) ~= "table" or not win._engWin then return nil end
+        if win._IvoryGPTInjected then
+            pcall(function()
+                for _, t in ipairs((win._engWin and win._engWin.Tabs) or {}) do
+                    if t.Name == "Gamepass Tools" and t._button then
+                        t._button.LayoutOrder = 999998
+                    end
+                end
+            end)
+            return win
+        end
+        win._IvoryGPTInjected = true
+
+        local engWin = win._engWin
+        local engTab = nil
+        for _, t in ipairs(engWin.Tabs or {}) do
+            if t.Name == "Gamepass Tools" then engTab = t break end
+        end
+        if not engTab then
+            local ok, res = pcall(function() return win:CreateTab({ Name = "Gamepass Tools" }) end)
+            if ok and type(res) == "table" then engTab = res._engTab end
+        end
+        if not engTab then
+            win._IvoryGPTInjected = nil
+            return nil
+        end
+        if engTab._button then pcall(function() engTab._button.LayoutOrder = 999998 end) end
+
+        local S = makeContainer(function()
+            local ok, blk = pcall(function() return makeBlock(engTab, nil) end)
+            if ok and blk then return blk end
+            return engTab
+        end, engTab)
+
+        local labelMap = {}
+
+        pcall(function()
+            local sec = S:CreateSection("Passes & Products")
+
+            _gptDropdown = sec:CreateDropdown({
+                Name = "Select Item",
+                Values = { "Scanning..." },
+                Callback = function(value)
+                    local item = labelMap[tostring(value)]
+                    if item then
+                        _gptUpdateDetail(item)
+                    end
+                end,
+            })
+
+            _gptDetail = sec:CreateLabel({ Text = "Scanning this game for passes and products..." })
+
+            sec:CreateButton({
+                Name = "Fake Purchase Selected",
+                Callback = function()
+                    if not _gptSelected then
+                        Library.Notify({ Title = "Ivory", Content = "Select an item from the dropdown first", Type = "Error" })
+                        return
+                    end
+                    local kind = _gptSelected.kind or _gptDetectKind(_gptSelected.id)
+                    _gptFire(kind, _gptSelected.id)
+                    Library.Notify({
+                        Title = "Ivory",
+                        Content = string.format("Fired %s: %s", kind:lower(), tostring(_gptSelected.name)),
+                        Type = "Success",
+                    })
+                end,
+            })
+
+            sec:CreateButton({
+                Name = "Refresh List",
+                Callback = function()
+                    if _gptDetail then pcall(function() _gptDetail:SetText("Scanning...") end) end
+                    _gptScan(function(labels, map)
+                        labelMap = map
+                        if _gptDetail then
+                            pcall(function() _gptDetail:SetText("Select an item above to see details.") end)
+                        end
+                        _gptUpdateDetail(nil)
+                    end)
+                end,
+            })
+        end)
+
+        pcall(function()
+            local sec = S:CreateSection("Manual")
+            local manualId = ""
+            sec:CreateInput({
+                Name = "Custom ID",
+                Placeholder = "Enter any gamepass / product ID...",
+                Callback = function(v) manualId = tostring(v or "") end,
+            })
+            sec:CreateButton({
+                Name = "Fire Custom ID",
+                Callback = function()
+                    local id = tonumber((manualId:gsub("%s", "")))
+                    if not id then
+                        Library.Notify({ Title = "Ivory", Content = "Enter a valid numeric ID", Type = "Error" })
+                        return
+                    end
+                    local kind = _gptDetectKind(id)
+                    _gptFire(kind, id)
+                    Library.Notify({ Title = "Ivory", Content = "Fired " .. kind:lower() .. " " .. id, Type = "Success" })
+                end,
+            })
+        end)
+
+        pcall(function()
+            local sec = S:CreateSection("Logger")
+            sec:CreateToggle({
+                Name = "Log Purchase Prompts",
+                CurrentValue = false,
+                Callback = function(val)
+                    if val then
+                        _gptLoggerActive = true
+                        local promptMap = {
+                            ProductPurchaseRequested = "Product",
+                            GamePassPurchaseRequested = "Gamepass",
+                            PurchaseRequested = "Asset",
+                            BundlePurchaseRequested = "Bundle",
+                        }
+                        for signalName, kind in pairs(promptMap) do
+                            local sig = MarketplaceService[signalName]
+                            if typeof(sig) == "RBXScriptSignal" then
+                                local ok, conn = pcall(function()
+                                    return sig:Connect(function(_, ...)
+                                        if not _gptLoggerActive then return end
+                                        local id = nil
+                                        for i = select("#", ...), 1, -1 do
+                                            local v = select(i, ...)
+                                            if type(v) == "number" then id = v break end
+                                        end
+                                        if id then
+                                            Library.Notify({
+                                                Title = "Ivory",
+                                                Content = kind .. " prompt: " .. tostring(id),
+                                                Type = "Info",
+                                            })
+                                        end
+                                    end)
+                                end)
+                                if ok and conn then table.insert(_gptConnections, conn) end
+                            end
+                        end
+                        Library.Notify({ Title = "Ivory", Content = "Purchase logger enabled", Type = "Success" })
+                    else
+                        _gptCleanup()
+                        Library.Notify({ Title = "Ivory", Content = "Purchase logger disabled", Type = "Info" })
+                    end
+                end,
+            })
+        end)
+
+        pcall(function()
+            local sec = S:CreateSection("Game Info")
+            sec:CreateLabel({
+                Text = string.format("GameId: %s\nPlaceId: %s", tostring(game.GameId), tostring(game.PlaceId)),
+            })
+            sec:CreateButton({
+                Name = "Copy GameId",
+                Callback = function()
+                    pcall(function()
+                        (setclipboard or toclipboard or set_clipboard)(tostring(game.GameId))
+                    end)
+                    Library.Notify({ Title = "Ivory", Content = "GameId copied", Type = "Success" })
+                end,
+            })
+        end)
+
+        task.delay(1, function()
+            _gptScan(function(labels, map)
+                labelMap = map
+                if _gptDetail then
+                    pcall(function() _gptDetail:SetText("Select an item above to see details.") end)
+                end
+            end)
+        end)
+
+        return win
+    end
 end -- /Gamepass Tools do-block
 
 -- Jump to the library-owned "UI Settings" tab. Used by the bottom-left
