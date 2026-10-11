@@ -2922,6 +2922,157 @@ do
         return labels, map
     end
 
+    local function _gptSignalHasConnections(signalName)
+        local sig = MarketplaceService[signalName]
+        if typeof(sig) ~= "RBXScriptSignal" then return false end
+        local ok, cons = pcall(function() return getconnections(sig) end)
+        if ok and type(cons) == "table" then return #cons > 0 end
+        local ok2, n = pcall(function() return #sig:GetConnectedFunctions() end)
+        if ok2 and type(n) == "number" then return n > 0 end
+        return false
+    end
+
+    local function _gptSnapshotState()
+        local snap = { stats = {}, items = 0, attrs = {} }
+        local lp = Players.LocalPlayer
+        pcall(function()
+            local ls = lp:FindFirstChild("leaderstats")
+            if ls then
+                for _, v in ipairs(ls:GetChildren()) do
+                    if v:IsA("ValueBase") then snap.stats[v.Name] = v.Value end
+                end
+            end
+        end)
+        pcall(function()
+            local backpack = lp:FindFirstChild("Backpack")
+            if backpack then snap.items = #backpack:GetChildren() end
+        end)
+        pcall(function()
+            local ch = lp.Character
+            if ch then
+                for _, v in ipairs(ch:GetChildren()) do
+                    if v:IsA("ValueBase") then snap.attrs[v.Name] = v.Value end
+                end
+            end
+        end)
+        return snap
+    end
+
+    local function _gptStateDiff(a, b)
+        local diffs = {}
+        for k, v in pairs(a.stats) do
+            if b.stats[k] ~= v then table.insert(diffs, string.format("%s %s->%s", k, tostring(v), tostring(b.stats[k]))) end
+        end
+        for k, v in pairs(a.attrs) do
+            if b.attrs[k] ~= v then table.insert(diffs, string.format("char.%s changed", k)) end
+        end
+        if a.items ~= b.items then table.insert(diffs, string.format("backpack %d->%d", a.items, b.items)) end
+        return diffs
+    end
+
+    local function _gptCheckVulnerability(onResult)
+        if _gptScanning then return end
+        local lp = Players.LocalPlayer
+        local finishedSignals = {
+            "PromptProductPurchaseFinished",
+            "PromptGamePassPurchaseFinished",
+            "PromptPurchaseFinished",
+            "PromptBundlePurchaseFinished",
+        }
+        local listening = {}
+        for _, name in ipairs(finishedSignals) do
+            if _gptSignalHasConnections(name) then table.insert(listening, name) end
+        end
+
+        local function finish(verdict, detail)
+            if _gptDetail then
+                pcall(function() _gptDetail:SetText(detail) end)
+            end
+            Library.Notify({
+                Title = "Ivory",
+                Content = verdict,
+                Type = (verdict:find("VULNERABLE") or verdict:find("likely")) and "Success" or (verdict:find("NOT") and "Warning" or "Info"),
+                Duration = 6,
+            })
+            if onResult then onResult(verdict, detail, listening) end
+        end
+
+        local function runWithItems()
+            if #_gptItems == 0 then
+                finish("NOT VULNERABLE — no products or passes on this place", "No developer products or gamepasses found.\nNothing to fake-purchase.")
+                return
+            end
+
+            local cheapest = nil
+            for _, item in ipairs(_gptItems) do
+                if item.kind == "Product" then
+                    if not cheapest or (tonumber(item.price) or 1e9) < (tonumber(cheapest.price) or 1e9) then
+                        cheapest = item
+                    end
+                end
+            end
+            if not cheapest then cheapest = _gptItems[1] end
+
+            local remoteHits = 0
+            local remoteConns = {}
+            pcall(function()
+                for _, desc in ipairs(game:GetDescendants()) do
+                    if desc:IsA("RemoteEvent") then
+                        local ok, c = pcall(function()
+                            return desc.OnClientEvent:Connect(function() remoteHits = remoteHits + 1 end)
+                        end)
+                        if ok and c then table.insert(remoteConns, c) end
+                    end
+                end
+            end)
+
+            local before = _gptSnapshotState()
+            local kind = cheapest.kind or _gptDetectKind(cheapest.id)
+            _gptFire(kind, cheapest.id)
+            if #_gptItems > 1 and kind == "Product" then
+                for _, item in ipairs(_gptItems) do
+                    if item.kind == "Gamepass" then
+                        _gptFire("Gamepass", item.id)
+                        break
+                    end
+                end
+            end
+
+            task.delay(2.5, function()
+                for _, c in ipairs(remoteConns) do pcall(function() c:Disconnect() end) end
+                local after = _gptSnapshotState()
+                local diffs = _gptStateDiff(before, after)
+                local lines = {
+                    "Test fired: " .. tostring(kind) .. " " .. tostring(cheapest.id),
+                    "Listening on Finished signals: " .. (#listening > 0 and table.concat(listening, ", ") or "none detected"),
+                    "Remote events after fire: " .. tostring(remoteHits),
+                }
+                if #diffs > 0 then
+                    table.insert(lines, "State changes: " .. table.concat(diffs, "; "))
+                    finish(string.format("LIKELY VULNERABLE — game reacted to fake %s", kind:lower()), table.concat(lines, "\n"))
+                elseif #listening > 0 then
+                    table.insert(lines, "No state change in 2.5s.")
+                    finish("POSSIBLY VULNERABLE — game listens for purchase finished", table.concat(lines, "\n"))
+                elseif remoteHits > 0 then
+                    table.insert(lines, "No leaderstat change, but remotes fired.")
+                    finish("POSSIBLY VULNERABLE — remotes fired after signal", table.concat(lines, "\n"))
+                else
+                    table.insert(lines, "No reaction detected.")
+                    finish("NOT VULNERABLE (no client reaction detected)", table.concat(lines, "\n") .. "\nServer may still validate, or game grants only on real purchase.")
+                end
+            end)
+        end
+
+        if #_gptItems == 0 then
+            if _gptDetail then pcall(function() _gptDetail:SetText("Scanning before vulnerability check...") end) end
+            _gptScan(function()
+                runWithItems()
+            end)
+        else
+            runWithItems()
+        end
+    end
+
     local function _gptUpdateDetail(item)
         _gptSelected = item
         if not _gptDetail then return end
@@ -3100,6 +3251,16 @@ do
                                 end)
                             end
                         end)
+                    end,
+                })
+            end)
+
+            pcall(function()
+                secMain:CreateButton({
+                    Name = "Check Vulnerability",
+                    Callback = function()
+                        if _gptDetail then pcall(function() _gptDetail:SetText("Checking if this game is vulnerable...") end) end
+                        _gptCheckVulnerability()
                     end,
                 })
             end)
