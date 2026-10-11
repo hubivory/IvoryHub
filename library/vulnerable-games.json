@@ -1,5 +1,24 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-11T18:33:27.004Z",
-  "games": []
+  "updatedAt": "2026-10-11T18:35:59.414Z",
+  "games": [
+    {
+      "placeId": 5865320145,
+      "gameId": 5865317541,
+      "name": "DebugSaveTest",
+      "verdict": "LIKELY VULNERABLE",
+      "checks": 2,
+      "likes": 3,
+      "dislikes": 1,
+      "voters": {
+        "1": "like",
+        "2": "like",
+        "3": "like",
+        "9": "dislike"
+      },
+      "confirmed": false,
+      "lastCheck": "2026-10-11T18:35:59.414Z",
+      "reporter": "debug"
+    }
+  ]
 }
