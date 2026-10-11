@@ -2886,35 +2886,60 @@ do
 
     local function _gptHttpPut(url, body)
         local headers = { ["Content-Type"] = "application/json" }
-        if typeof(game.HttpRequest) == "function" then
-            local ok, res = pcall(function()
-                return game:HttpRequest({
-                    Url = url,
-                    Method = "PUT",
-                    Headers = headers,
-                    Body = body,
-                })
-            end)
-            if ok then return true, res end
+        local attempts = {}
+
+        local function tryReq(method)
+            if typeof(request) == "function" then
+                local ok, res = pcall(function()
+                    return request({ Url = url, Method = method, Headers = headers, Body = body })
+                end)
+                if ok and type(res) == "table" then
+                    local code = res.StatusCode or res.StatusCode or res.status
+                    local respBody = res.Body or res.body
+                    if (code == nil or (tonumber(code) and tonumber(code) < 400)) and (respBody == nil or type(respBody) == "string") then
+                        return true, res
+                    end
+                    table.insert(attempts, method .. " request status=" .. tostring(code))
+                elseif ok then
+                    return true, res
+                else
+                    table.insert(attempts, method .. " request err=" .. tostring(res))
+                end
+            end
+            if typeof(syn) == "table" and typeof(syn.request) == "function" then
+                local ok, res = pcall(function()
+                    return syn.request({ Url = url, Method = method, Headers = headers, Body = body })
+                end)
+                if ok then return true, res end
+                table.insert(attempts, method .. " syn err=" .. tostring(res))
+            end
+            if typeof(game.HttpRequest) == "function" then
+                local ok, res = pcall(function()
+                    return game:HttpRequest({
+                        Url = url,
+                        Method = method,
+                        Headers = headers,
+                        Body = body,
+                    })
+                end)
+                if ok then return true, res end
+                table.insert(attempts, method .. " HttpRequest err=" .. tostring(res))
+            end
+            if method == "POST" or method == "PUT" then
+                local ok, res = pcall(function()
+                    return game:HttpPostAsync(url, body, Enum.HttpContentType.ApplicationJson)
+                end)
+                if ok then return true, res end
+                table.insert(attempts, method .. " HttpPostAsync err=" .. tostring(res))
+            end
+            return false
         end
-        if typeof(request) == "function" then
-            local ok, res = pcall(function()
-                return request({ Url = url, Method = "PUT", Headers = headers, Body = body })
-            end)
-            if ok then return true, res end
-        end
-        if typeof(syn) == "table" and typeof(syn.request) == "function" then
-            local ok, res = pcall(function()
-                return syn.request({ Url = url, Method = "PUT", Headers = headers, Body = body })
-            end)
-            if ok then return true, res end
-        end
-        -- Fallback: some executors only allow POST
-        local ok2, res2 = pcall(function()
-            return game:HttpPostAsync(url, body, Enum.HttpContentType.ApplicationJson)
-        end)
-        if ok2 then return true, res2 end
-        return false, tostring(res2)
+
+        local ok, res = tryReq("PUT")
+        if ok then return true, res end
+        ok, res = tryReq("POST")
+        if ok then return true, res end
+        return false, table.concat(attempts, " | ")
     end
 
     local function _gptGetPlaceName()
@@ -3034,22 +3059,30 @@ do
         end)
     end
 
-    local function _gptPushSharedList(games)
-        if GPT_SHARED_API == "" then return false, "no shared API configured" end
+    local function _gptPushSharedList(games, silent)
+        if GPT_SHARED_API == "" then
+            if not silent then
+                Library.Notify({ Title = "Ivory", Content = "Shared API not configured", Type = "Error" })
+            end
+            return false, "no shared API configured"
+        end
+        local list = games or _gptSharedGames
         local payload = HttpService:JSONEncode({
             version = 1,
             updatedAt = DateTime.now():ToIsoDate(),
-            games = games or _gptSharedGames,
+            games = list,
         })
         local ok, res = _gptHttpPut(GPT_SHARED_API, payload)
         if not ok then
             warn("[Ivory] GPT shared push failed: " .. tostring(res))
+            if not silent then
+                Library.Notify({ Title = "Ivory", Content = "Cloud save failed: " .. tostring(res), Type = "Error", Duration = 6 })
+            end
             return false, tostring(res)
         end
-        -- if worker returned updated list, refresh local copy
         local body = nil
         if type(res) == "table" then
-            body = res.Body
+            body = res.Body or res.body
         elseif type(res) == "string" then
             body = res
         end
@@ -3058,6 +3091,13 @@ do
             if games2 then
                 _gptSharedGames = games2
             end
+        end
+        if not silent then
+            Library.Notify({
+                Title = "Ivory",
+                Content = string.format("Saved %d game(s) to cloud + GitHub", #(_gptSharedGames or list)),
+                Type = "Success",
+            })
         end
         return true, body
     end
@@ -3798,12 +3838,29 @@ do
                         task.spawn(function()
                             local entry = _gptReportWorkingGame("MANUAL REPORT")
                             selectedShare = entry
+                            local pushOk = false
+                            if GPT_SHARED_API ~= "" then
+                                pushOk = _gptPushSharedList(_gptSharedGames, true)
+                            end
                             Library.Notify({
                                 Title = "Ivory",
-                                Content = "Reported: " .. tostring(entry.name),
-                                Type = "Success",
+                                Content = string.format("Reported: %s%s",
+                                    tostring(entry.name),
+                                    pushOk and " (saved to cloud)" or (GPT_SHARED_API ~= "" and " (cloud save FAILED)" or " (local only)")),
+                                Type = pushOk and "Success" or (GPT_SHARED_API ~= "" and "Warning" or "Info"),
+                                Duration = 5,
                             })
                             if _gptRefreshShareUi then pcall(_gptRefreshShareUi) end
+                        end)
+                    end,
+                })
+            end)
+            pcall(function()
+                secShare:CreateButton({
+                    Name = "Push To Cloud",
+                    Callback = function()
+                        task.spawn(function()
+                            _gptPushSharedList(_gptSharedGames, false)
                         end)
                     end,
                 })
