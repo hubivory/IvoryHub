@@ -2782,10 +2782,9 @@ do
     local _gptDetail = nil
     local _gptSelected = nil
     local _gptScanning = false
-    local _gptListFrame = nil
-    local _gptListCanvas = nil
-    local _gptListWrap = nil
-    local _gptOnScanDone = nil
+    local _gptDropdown = nil
+    local _gptLabelMap = {}
+    local _gptLabelList = {}
 
     local function _gptCleanup()
         for _, c in ipairs(_gptConnections) do
@@ -2972,13 +2971,13 @@ do
             end)
 
             _gptScanning = false
+            _gptLabelList, _gptLabelMap = _gptBuildLabelMap()
             Library.Notify({
                 Title = "Ivory",
                 Content = string.format("Found %d gamepasses, %d products", #passes, #products),
                 Type = #_gptItems > 0 and "Success" or "Warning",
             })
-            if onDone then onDone(_gptItems) end
-            if _gptOnScanDone then pcall(_gptOnScanDone) end
+            if onDone then onDone(_gptLabelList, _gptLabelMap) end
         end)
     end
 
@@ -3021,163 +3020,59 @@ do
             return engTab
         end, engTab)
 
-        local itemButtons = {}
+        local function _gptApplyDropdown(labels, map)
+            _gptLabelList = labels or {}
+            _gptLabelMap = map or {}
+            if not _gptDropdown then return end
+            local ok, err = pcall(function()
+                if #_gptLabelList == 0 then
+                    local empty = { "No items found" }
+                    _gptDropdown:Refresh(empty, true, true)
+                    _gptDropdown:Set(empty[1], true)
+                else
+                    _gptDropdown:Refresh(_gptLabelList, true, true)
+                    _gptDropdown:Set(_gptLabelList[1], true)
+                    _gptUpdateDetail(_gptLabelMap[_gptLabelList[1]])
+                end
+            end)
+            if not ok then warn("[Ivory] GPT dropdown update: " .. tostring(err)) end
+        end
 
         local secMain = nil
         pcall(function() secMain = S:CreateSection("Passes & Products") end)
 
-        local function _gptClearButtons()
-            for _, b in ipairs(itemButtons) do
-                pcall(function() b:Destroy() end)
-            end
-            itemButtons = {}
-        end
-
-        local function _gptSelectItem(item)
-            _gptUpdateDetail(item)
-            for _, b in ipairs(itemButtons) do
-                pcall(function()
-                    b.BackgroundColor3 = (b._item == item) and Color3.fromRGB(51, 33, 42) or Color3.fromRGB(38, 38, 41)
-                end)
-            end
-        end
-
-        local function _gptRebuildList()
-            _gptClearButtons()
-            if not _gptListFrame then return end
-            local host = _gptListFrame
-            for i, item in ipairs(_gptItems) do
-                local ok, btn = pcall(function()
-                    local b = Instance.new("TextButton")
-                    b.Name = "Item" .. i
-                    b.Size = UDim2.new(1, 0, 0, 30)
-                    b.BackgroundColor3 = Color3.fromRGB(38, 38, 41)
-                    b.BorderSizePixel = 0
-                    b.Text = ""
-                    b.AutoButtonColor = false
-                    b.LayoutOrder = i
-                    b.Parent = host
-                    local corner = Instance.new("UICorner")
-                    corner.CornerRadius = UDim.new(0, 6)
-                    corner.Parent = b
-                    local lbl = Instance.new("TextLabel")
-                    lbl.BackgroundTransparency = 1
-                    lbl.Position = UDim2.new(0, 8, 0, 0)
-                    lbl.Size = UDim2.new(1, -16, 1, 0)
-                    lbl.Font = Enum.Font.GothamMedium
-                    lbl.TextSize = 12
-                    lbl.TextColor3 = Color3.fromRGB(200, 170, 180)
-                    lbl.TextXAlignment = Enum.TextXAlignment.Left
-                    lbl.TextTruncate = Enum.TextTruncate.AtEnd
-                    local price = item.price and ("R$" .. tostring(item.price)) or "Free"
-                    lbl.Text = string.format("%d. %s  [%s]  %s", i, tostring(item.name or "?"), tostring(item.kind or "?"), price)
-                    lbl.Parent = b
-                    b._item = item
-                    b.MouseButton1Click:Connect(function()
-                        _gptSelectItem(item)
-                    end)
-                    return b
-                end)
-                if ok and btn then table.insert(itemButtons, btn) end
-            end
-            local n = #itemButtons
-            pcall(function()
-                if _gptListWrap then
-                    local h = math.clamp(n * 34 + 8, 80, 360)
-                    _gptListWrap.Size = UDim2.new(1, 0, 0, h)
-                end
-                if _gptListCanvas then
-                    _gptListCanvas.AutomaticCanvasSize = Enum.AutomaticSize.Y
-                    _gptListCanvas.CanvasSize = UDim2.new(0, 0, 0, 0)
-                    task.defer(function()
-                        pcall(function()
-                            local layout = _gptListCanvas:FindFirstChildOfClass("UIListLayout")
-                            if layout then
-                                _gptListCanvas.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 8)
-                            else
-                                _gptListCanvas.CanvasSize = UDim2.new(0, 0, 0, n * 34 + 8)
-                            end
-                        end)
-                    end)
-                end
-            end)
-            return n
-        end
-
         if secMain then
+            pcall(function()
+                _gptDropdown = secMain:CreateDropdown({
+                    Name = "Select Item",
+                    Values = { "Click Scan to load items" },
+                    Default = "Click Scan to load items",
+                    Callback = function(value)
+                        local item = _gptLabelMap[tostring(value)]
+                        if item then
+                            _gptUpdateDetail(item)
+                        end
+                    end,
+                })
+            end)
+
             pcall(function()
                 _gptDetail = secMain:CreateLabel({ Text = "Auto-scanning this game..." })
             end)
-
-            -- Item list container (replaces engine dropdown which fails to update)
-            pcall(function()
-                local hostFrame = nil
-                if _gptDetail and _gptDetail._frame and _gptDetail._frame.Parent then
-                    hostFrame = _gptDetail._frame.Parent
-                end
-                if not hostFrame then return end
-
-                local wrap = Instance.new("Frame")
-                wrap.Name = "GPTList"
-                wrap.BackgroundTransparency = 1
-                wrap.BorderSizePixel = 0
-                wrap.Size = UDim2.new(1, 0, 0, 280)
-                wrap.LayoutOrder = 2
-                wrap.ClipsDescendants = true
-                wrap.Parent = hostFrame
-
-                local scroll = Instance.new("ScrollingFrame")
-                scroll.Name = "List"
-                scroll.BackgroundTransparency = 1
-                scroll.BorderSizePixel = 0
-                scroll.Size = UDim2.new(1, 0, 1, 0)
-                scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-                scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-                scroll.ScrollBarThickness = 5
-                scroll.ScrollBarImageColor3 = Color3.fromRGB(105, 65, 82)
-                scroll.ScrollingDirection = Enum.ScrollingDirection.Y
-                scroll.Parent = wrap
-
-                local layout = Instance.new("UIListLayout")
-                layout.SortOrder = Enum.SortOrder.LayoutOrder
-                layout.Padding = UDim.new(0, 4)
-                layout.Parent = scroll
-
-                local pad = Instance.new("UIPadding")
-                pad.PaddingLeft = UDim.new(0, 2)
-                pad.PaddingRight = UDim.new(0, 2)
-                pad.PaddingTop = UDim.new(0, 2)
-                pad.PaddingBottom = UDim.new(0, 2)
-                pad.Parent = scroll
-
-                _gptListWrap = wrap
-                _gptListFrame = scroll
-                _gptListCanvas = scroll
-            end)
-
-            _gptOnScanDone = function()
-                local n = _gptRebuildList() or #_gptItems
-                if _gptItems[1] then _gptSelectItem(_gptItems[1]) end
-                if _gptDetail then
-                    pcall(function()
-                        _gptDetail:SetText(string.format("%d items found — click to select (scroll for more).", n))
-                    end)
-                end
-            end
 
             pcall(function()
                 secMain:CreateButton({
                     Name = "Fake Purchase Selected",
                     Callback = function()
                         if not _gptSelected then
-                            Library.Notify({ Title = "Ivory", Content = "Select an item from the list first", Type = "Error" })
+                            Library.Notify({ Title = "Ivory", Content = "Select an item from the dropdown first", Type = "Error" })
                             return
                         end
                         local kind = _gptSelected.kind or _gptDetectKind(_gptSelected.id)
                         _gptFire(kind, _gptSelected.id)
                         Library.Notify({
                             Title = "Ivory",
-                            Content = string.format("Fired %s: %s", kind:lower(), tostring(_gptSelected.name)),
+                            Content = string.format("Fired %s: %s (ID %s)", kind:lower(), tostring(_gptSelected.name), tostring(_gptSelected.id)),
                             Type = "Success",
                         })
                     end,
@@ -3189,11 +3084,15 @@ do
                     Name = "Scan / Refresh",
                     Callback = function()
                         if _gptDetail then pcall(function() _gptDetail:SetText("Scanning...") end) end
-                        _gptScan(function()
-                            local n = #_gptItems
+                        _gptScan(function(labels, map)
+                            _gptApplyDropdown(labels, map)
                             if _gptDetail then
                                 pcall(function()
-                                    _gptDetail:SetText(string.format("%d items found — click to select (scroll for more).", n))
+                                    if #labels == 0 then
+                                        _gptDetail:SetText("No gamepasses or products found.")
+                                    else
+                                        _gptDetail:SetText(string.format("%d items loaded. Pick one, then Fake Purchase.", #labels))
+                                    end
                                 end)
                             end
                         end)
@@ -3288,9 +3187,16 @@ do
         end)
 
         task.delay(1, function()
-            _gptScan(function()
+            _gptScan(function(labels, map)
+                _gptApplyDropdown(labels, map)
                 if _gptDetail then
-                    pcall(function() _gptDetail:SetText("Select an item from the list.") end)
+                    pcall(function()
+                        if #labels == 0 then
+                            _gptDetail:SetText("No gamepasses or products found.")
+                        else
+                            _gptDetail:SetText(string.format("%d items loaded. Pick one, then Fake Purchase.", #labels))
+                        end
+                    end)
                 end
             end)
         end)
