@@ -2801,6 +2801,28 @@ do
         end
     end
 
+    local function _gptHttpGet(url)
+        local ok, body = pcall(function() return game:HttpGet(url) end)
+        if ok and type(body) == "string" then return body end
+        ok, body = pcall(function() return HttpService:GetAsync(url) end)
+        if ok and type(body) == "string" then return body end
+        if typeof(request) == "function" then
+            ok, body = pcall(function()
+                local r = request({ Url = url, Method = "GET" })
+                return r and r.Body
+            end)
+            if ok and type(body) == "string" then return body end
+        end
+        if typeof(syn) == "table" and typeof(syn.request) == "function" then
+            ok, body = pcall(function()
+                local r = syn.request({ Url = url, Method = "GET" })
+                return r and r.Body
+            end)
+            if ok and type(body) == "string" then return body end
+        end
+        return nil
+    end
+
     local function _gptFetchProducts()
         local ok, pages = pcall(function()
             return MarketplaceService:GetDeveloperProductsAsync()
@@ -2829,21 +2851,21 @@ do
         local universeId = game.GameId
         if not universeId or universeId == 0 then return {} end
         local url = string.format("https://games.roblox.com/v1/games/%d/game-passes?limit=100", universeId)
-        local ok, body = pcall(function()
-            return game:HttpGet(url)
-        end)
-        if not ok or not body then return {} end
+        local body = _gptHttpGet(url)
+        if not body then return {} end
         local okJson, data = pcall(function()
             return HttpService:JSONDecode(body)
         end)
-        if not okJson or type(data) ~= "table" or type(data.data) ~= "table" then return {} end
+        if not okJson or type(data) ~= "table" then return {} end
+        local list = data.data or data or {}
+        if type(list) ~= "table" then return {} end
         local out = {}
-        for _, item in ipairs(data.data) do
-            if item.id then
+        for _, item in ipairs(list) do
+            if item.id or item.GamePassId then
                 table.insert(out, {
-                    id = item.id,
-                    name = item.name or "Unnamed Pass",
-                    price = item.price,
+                    id = item.id or item.GamePassId,
+                    name = item.name or item.DisplayName or "Unnamed Pass",
+                    price = item.price or item.PriceInRobux,
                     kind = "Gamepass",
                 })
             end
@@ -2888,12 +2910,23 @@ do
         if _gptScanning then return end
         _gptScanning = true
         task.spawn(function()
-            local products = {}
-            local passes = {}
-            local p1 = task.spawn(function() products = _gptFetchProducts() end)
-            local p2 = task.spawn(function() passes = _gptFetchGamepassesHttp() end)
-            task.wait(0.1)
-            while (task.status(p1) ~= "Dead" or task.status(p2) ~= "Dead") do task.wait(0.1) end
+            local products, passes = {}, {}
+            local done = 0
+            task.spawn(function()
+                local ok, res = pcall(_gptFetchProducts)
+                products = ok and res or {}
+                done = done + 1
+            end)
+            task.spawn(function()
+                local ok, res = pcall(_gptFetchGamepassesHttp)
+                passes = ok and res or {}
+                done = done + 1
+            end)
+            local waited = 0
+            while done < 2 and waited < 10 do
+                task.wait(0.2)
+                waited = waited + 0.2
+            end
 
             _gptItems = {}
             for _, item in ipairs(passes) do table.insert(_gptItems, item) end
@@ -2909,7 +2942,7 @@ do
             if _gptDropdown then
                 pcall(function()
                     if #labels == 0 then
-                        _gptDropdown:Refresh({ "No passes or products found" }, true, true)
+                        _gptDropdown:Refresh({ "No items found - try Scan" }, true, true)
                     else
                         _gptDropdown:Refresh(labels, true, true)
                     end
@@ -2967,53 +3000,62 @@ do
 
         local labelMap = {}
 
-        pcall(function()
-            local sec = S:CreateSection("Passes & Products")
+        local secMain = nil
+        pcall(function() secMain = S:CreateSection("Passes & Products") end)
 
-            _gptDropdown = sec:CreateDropdown({
-                Name = "Select Item",
-                Values = { "Scanning..." },
-                Callback = function(value)
-                    local item = labelMap[tostring(value)]
-                    if item then
-                        _gptUpdateDetail(item)
-                    end
-                end,
-            })
-
-            _gptDetail = sec:CreateLabel({ Text = "Scanning this game for passes and products..." })
-
-            sec:CreateButton({
-                Name = "Fake Purchase Selected",
-                Callback = function()
-                    if not _gptSelected then
-                        Library.Notify({ Title = "Ivory", Content = "Select an item from the dropdown first", Type = "Error" })
-                        return
-                    end
-                    local kind = _gptSelected.kind or _gptDetectKind(_gptSelected.id)
-                    _gptFire(kind, _gptSelected.id)
-                    Library.Notify({
-                        Title = "Ivory",
-                        Content = string.format("Fired %s: %s", kind:lower(), tostring(_gptSelected.name)),
-                        Type = "Success",
-                    })
-                end,
-            })
-
-            sec:CreateButton({
-                Name = "Refresh List",
-                Callback = function()
-                    if _gptDetail then pcall(function() _gptDetail:SetText("Scanning...") end) end
-                    _gptScan(function(labels, map)
-                        labelMap = map
-                        if _gptDetail then
-                            pcall(function() _gptDetail:SetText("Select an item above to see details.") end)
+        if secMain then
+            pcall(function()
+                _gptDropdown = secMain:CreateDropdown({
+                    Name = "Select Item",
+                    Values = { "Click Scan to load items" },
+                    Callback = function(value)
+                        local item = labelMap[tostring(value)]
+                        if item then
+                            _gptUpdateDetail(item)
                         end
-                        _gptUpdateDetail(nil)
-                    end)
-                end,
-            })
-        end)
+                    end,
+                })
+            end)
+
+            pcall(function()
+                _gptDetail = secMain:CreateLabel({ Text = "Auto-scanning this game..." })
+            end)
+
+            pcall(function()
+                secMain:CreateButton({
+                    Name = "Fake Purchase Selected",
+                    Callback = function()
+                        if not _gptSelected then
+                            Library.Notify({ Title = "Ivory", Content = "Select an item from the dropdown first", Type = "Error" })
+                            return
+                        end
+                        local kind = _gptSelected.kind or _gptDetectKind(_gptSelected.id)
+                        _gptFire(kind, _gptSelected.id)
+                        Library.Notify({
+                            Title = "Ivory",
+                            Content = string.format("Fired %s: %s", kind:lower(), tostring(_gptSelected.name)),
+                            Type = "Success",
+                        })
+                    end,
+                })
+            end)
+
+            pcall(function()
+                secMain:CreateButton({
+                    Name = "Scan / Refresh",
+                    Callback = function()
+                        if _gptDetail then pcall(function() _gptDetail:SetText("Scanning...") end) end
+                        _gptScan(function(labels, map)
+                            labelMap = map
+                            if _gptDetail then
+                                pcall(function() _gptDetail:SetText("Select an item above to see details.") end)
+                            end
+                            _gptUpdateDetail(nil)
+                        end)
+                    end,
+                })
+            end)
+        end
 
         pcall(function()
             local sec = S:CreateSection("Manual")
