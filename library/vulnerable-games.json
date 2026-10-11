@@ -1,5 +1,21 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-11T18:38:52.136Z",
-  "games": []
+  "updatedAt": "2026-10-11T18:50:39.807Z",
+  "games": [
+    {
+      "placeId": 5865320145,
+      "gameId": 1,
+      "name": "VerifyTest",
+      "verdict": "LIKELY",
+      "checks": 1,
+      "likes": 1,
+      "dislikes": 0,
+      "voters": {
+        "1": "like"
+      },
+      "confirmed": false,
+      "lastCheck": "2026-10-11T18:50:39.807Z",
+      "reporter": "?"
+    }
+  ]
 }
