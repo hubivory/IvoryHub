@@ -1,19 +1,5 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-11T18:56:27.288Z",
-  "games": [
-    {
-      "placeId": 111,
-      "gameId": 222,
-      "name": "KVProbe",
-      "verdict": "LIKELY",
-      "checks": 1,
-      "likes": 0,
-      "dislikes": 0,
-      "voters": {},
-      "confirmed": false,
-      "lastCheck": "2026-10-11T18:52:00.564Z",
-      "reporter": "?"
-    }
-  ]
+  "updatedAt": "2026-10-11T18:57:03.650Z",
+  "games": []
 }
