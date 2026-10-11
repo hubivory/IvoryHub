@@ -2784,6 +2784,7 @@ do
     local _gptScanning = false
     local _gptListFrame = nil
     local _gptListCanvas = nil
+    local _gptListWrap = nil
     local _gptOnScanDone = nil
 
     local function _gptCleanup()
@@ -2963,6 +2964,10 @@ do
             table.sort(_gptItems, function(a, b)
                 local ka, kb = a.kind or "", b.kind or ""
                 if ka ~= kb then return ka < kb end
+                local pa, pb = tonumber(a.price) or 0, tonumber(b.price) or 0
+                if pa ~= pb then return pa < pb end
+                local na, nb = tonumber(a.id) or 0, tonumber(b.id) or 0
+                if na ~= nb then return na < nb end
                 return (a.name or "") < (b.name or "")
             end)
 
@@ -3045,7 +3050,7 @@ do
                 local ok, btn = pcall(function()
                     local b = Instance.new("TextButton")
                     b.Name = "Item" .. i
-                    b.Size = UDim2.new(1, 0, 0, 28)
+                    b.Size = UDim2.new(1, 0, 0, 30)
                     b.BackgroundColor3 = Color3.fromRGB(38, 38, 41)
                     b.BorderSizePixel = 0
                     b.Text = ""
@@ -3065,7 +3070,7 @@ do
                     lbl.TextXAlignment = Enum.TextXAlignment.Left
                     lbl.TextTruncate = Enum.TextTruncate.AtEnd
                     local price = item.price and ("R$" .. tostring(item.price)) or "Free"
-                    lbl.Text = string.format("%s  [%s]  %s", tostring(item.name or "?"), tostring(item.kind or "?"), price)
+                    lbl.Text = string.format("%d. %s  [%s]  %s", i, tostring(item.name or "?"), tostring(item.kind or "?"), price)
                     lbl.Parent = b
                     b._item = item
                     b.MouseButton1Click:Connect(function()
@@ -3075,9 +3080,28 @@ do
                 end)
                 if ok and btn then table.insert(itemButtons, btn) end
             end
+            local n = #itemButtons
             pcall(function()
-                _gptListCanvas.CanvasSize = UDim2.new(0, 0, 0, math.max(#itemButtons, 1) * 32)
+                if _gptListWrap then
+                    local h = math.clamp(n * 34 + 8, 80, 360)
+                    _gptListWrap.Size = UDim2.new(1, 0, 0, h)
+                end
+                if _gptListCanvas then
+                    _gptListCanvas.AutomaticCanvasSize = Enum.AutomaticSize.Y
+                    _gptListCanvas.CanvasSize = UDim2.new(0, 0, 0, 0)
+                    task.defer(function()
+                        pcall(function()
+                            local layout = _gptListCanvas:FindFirstChildOfClass("UIListLayout")
+                            if layout then
+                                _gptListCanvas.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 8)
+                            else
+                                _gptListCanvas.CanvasSize = UDim2.new(0, 0, 0, n * 34 + 8)
+                            end
+                        end)
+                    end)
+                end
             end)
+            return n
         end
 
         if secMain then
@@ -3097,8 +3121,9 @@ do
                 wrap.Name = "GPTList"
                 wrap.BackgroundTransparency = 1
                 wrap.BorderSizePixel = 0
-                wrap.Size = UDim2.new(1, 0, 0, 160)
+                wrap.Size = UDim2.new(1, 0, 0, 280)
                 wrap.LayoutOrder = 2
+                wrap.ClipsDescendants = true
                 wrap.Parent = hostFrame
 
                 local scroll = Instance.new("ScrollingFrame")
@@ -3107,8 +3132,10 @@ do
                 scroll.BorderSizePixel = 0
                 scroll.Size = UDim2.new(1, 0, 1, 0)
                 scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-                scroll.ScrollBarThickness = 4
+                scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+                scroll.ScrollBarThickness = 5
                 scroll.ScrollBarImageColor3 = Color3.fromRGB(105, 65, 82)
+                scroll.ScrollingDirection = Enum.ScrollingDirection.Y
                 scroll.Parent = wrap
 
                 local layout = Instance.new("UIListLayout")
@@ -3120,17 +3147,21 @@ do
                 pad.PaddingLeft = UDim.new(0, 2)
                 pad.PaddingRight = UDim.new(0, 2)
                 pad.PaddingTop = UDim.new(0, 2)
+                pad.PaddingBottom = UDim.new(0, 2)
                 pad.Parent = scroll
 
+                _gptListWrap = wrap
                 _gptListFrame = scroll
                 _gptListCanvas = scroll
             end)
 
             _gptOnScanDone = function()
-                _gptRebuildList()
+                local n = _gptRebuildList() or #_gptItems
                 if _gptItems[1] then _gptSelectItem(_gptItems[1]) end
                 if _gptDetail then
-                    pcall(function() _gptDetail:SetText("Select an item from the list.") end)
+                    pcall(function()
+                        _gptDetail:SetText(string.format("%d items found — click to select (scroll for more).", n))
+                    end)
                 end
             end
 
@@ -3159,11 +3190,12 @@ do
                     Callback = function()
                         if _gptDetail then pcall(function() _gptDetail:SetText("Scanning...") end) end
                         _gptScan(function()
+                            local n = #_gptItems
                             if _gptDetail then
-                                pcall(function() _gptDetail:SetText("Select an item from the list.") end)
+                                pcall(function()
+                                    _gptDetail:SetText(string.format("%d items found — click to select (scroll for more).", n))
+                                end)
                             end
-                            _gptRebuildList()
-                            if _gptItems[1] then _gptSelectItem(_gptItems[1]) end
                         end)
                     end,
                 })
