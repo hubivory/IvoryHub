@@ -1,18 +1,18 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-11T20:06:53.029Z",
+  "updatedAt": "2026-10-11T20:06:55.761Z",
   "games": [
     {
       "placeId": 71940604330107,
       "gameId": 10769744770,
       "name": "🧸 Toy Factory",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 1,
+      "checks": 2,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-11T20:06:50Z",
+      "lastCheck": "2026-10-11T20:06:54Z",
       "reporter": "njoni123"
     },
     {
