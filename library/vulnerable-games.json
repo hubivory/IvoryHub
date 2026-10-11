@@ -1,21 +1,5 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-11T18:32:25.774Z",
-  "games": [
-    {
-      "placeId": 999001,
-      "gameId": 1,
-      "name": "GitHubSyncTest",
-      "verdict": "LIKELY",
-      "checks": 1,
-      "likes": 1,
-      "dislikes": 0,
-      "voters": {
-        "1": "like"
-      },
-      "confirmed": false,
-      "lastCheck": "2026-10-11T18:32:25.774Z",
-      "reporter": "?"
-    }
-  ]
+  "updatedAt": "2026-10-11T18:33:27.004Z",
+  "games": []
 }
