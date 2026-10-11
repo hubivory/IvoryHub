@@ -2903,6 +2903,53 @@ do
 
     local SHARED_LIST_URL = "https://raw.githubusercontent.com/hubivory/IvoryHub/main/library/vulnerable-games.json"
     local LOCAL_LIST_FILE = "IvoryHub/vulnerable-games.json"
+    local LOCAL_VOTES_FILE = "IvoryHub/gpt-votes.json"
+    local _gptVoteMap = {} -- placeId -> "like" | "dislike"
+
+    local function _gptUserId()
+        return tostring(Players.LocalPlayer and Players.LocalPlayer.UserId or 0)
+    end
+
+    local function _gptLoadVotes()
+        _gptVoteMap = {}
+        pcall(function()
+            if isfile and isfile(LOCAL_VOTES_FILE) then
+                local ok, data = pcall(function()
+                    return HttpService:JSONDecode(readfile(LOCAL_VOTES_FILE))
+                end)
+                if ok and type(data) == "table" then
+                    for k, v in pairs(data) do
+                        if v == "like" or v == "dislike" then
+                            _gptVoteMap[tostring(k)] = v
+                        end
+                    end
+                end
+            end
+        end)
+        return _gptVoteMap
+    end
+
+    local function _gptSaveVotes()
+        pcall(function()
+            if not isfolder then return end
+            if not isfolder("IvoryHub") then makefolder("IvoryHub") end
+            writefile(LOCAL_VOTES_FILE, HttpService:JSONEncode(_gptVoteMap))
+        end)
+    end
+
+    local function _gptEnsureVoteFields(g)
+        if type(g) ~= "table" then return end
+        if type(g.likes) ~= "number" then g.likes = tonumber(g.likes) or 0 end
+        if type(g.dislikes) ~= "number" then g.dislikes = tonumber(g.dislikes) or 0 end
+        if type(g.voters) ~= "table" then g.voters = {} end
+        -- strip Roblox-invalid keys later when encoding; keep userId strings as values
+        local clean = {}
+        for k, v in pairs(g.voters) do
+            local key = tostring(k)
+            if v == "like" or v == "dislike" then clean[key] = v end
+        end
+        g.voters = clean
+    end
 
     local function _gptLoadSharedList()
         local games = {}
@@ -2923,7 +2970,11 @@ do
                 end
             end)
         end
+        for _, g in ipairs(games) do
+            _gptEnsureVoteFields(g)
+        end
         _gptSharedGames = games
+        _gptLoadVotes()
         return games
     end
 
@@ -2957,6 +3008,9 @@ do
             name = name,
             verdict = verdict,
             checks = 1,
+            likes = 0,
+            dislikes = 0,
+            voters = {},
             lastCheck = DateTime.now():ToIsoDate(),
             reporter = tostring(Players.LocalPlayer and Players.LocalPlayer.Name or "?"),
         }
@@ -2967,6 +3021,7 @@ do
             games[idx].checks = (tonumber(games[idx].checks) or 0) + 1
             games[idx].lastCheck = entry.lastCheck
             games[idx].verdict = verdict
+            _gptEnsureVoteFields(games[idx])
             if verdict:find("LIKELY") then games[idx].confirmed = true end
         else
             entry.confirmed = verdict:find("LIKELY") and true or false
@@ -3008,6 +3063,61 @@ do
 
         if _gptRefreshShareUi then pcall(_gptRefreshShareUi) end
         return entry
+    end
+
+    local function _gptShareLabelFor(g, curPlaceId)
+        local mark = (tonumber(g.placeId) == tonumber(curPlaceId)) and "*" or ""
+        local votes = string.format("+%d/-%d", tonumber(g.likes) or 0, tonumber(g.dislikes) or 0)
+        local myVote = _gptVoteMap[tostring(g.placeId)]
+        local voteTag = ""
+        if myVote == "like" then voteTag = " [L]"
+        elseif myVote == "dislike" then voteTag = " [D]"
+        end
+        return string.format("%s%s (%s) %s %s",
+            mark, tostring(g.name or "Unknown"),
+            tostring(g.placeId or "?"),
+            votes, voteTag)
+    end
+
+    local function _gptVoteOnShare(g, kind)
+        if type(g) ~= "table" or not g.placeId then return false, "No game selected" end
+        _gptEnsureVoteFields(g)
+        local pid = tostring(g.placeId)
+        local uid = _gptUserId()
+        local prev = _gptVoteMap[pid]
+        if prev == kind then
+            -- remove vote
+            g.voters[uid] = nil
+            if kind == "like" then
+                g.likes = math.max(0, (tonumber(g.likes) or 0) - 1)
+            else
+                g.dislikes = math.max(0, (tonumber(g.dislikes) or 0) - 1)
+            end
+            _gptVoteMap[pid] = nil
+            _gptSaveVotes()
+            _gptSaveLocalList(_gptSharedGames)
+            return true, "Removed " .. kind
+        end
+        if prev then
+            if prev == "like" then
+                g.likes = math.max(0, (tonumber(g.likes) or 0) - 1)
+            else
+                g.dislikes = math.max(0, (tonumber(g.dislikes) or 0) - 1)
+            end
+        end
+        g.voters[uid] = kind
+        if kind == "like" then
+            g.likes = (tonumber(g.likes) or 0) + 1
+        else
+            g.dislikes = (tonumber(g.dislikes) or 0) + 1
+        end
+        _gptVoteMap[pid] = kind
+        _gptSaveVotes()
+        _gptSaveLocalList(_gptSharedGames)
+        if prev then
+            return true, "Changed to " .. kind
+        end
+        return true, "Voted " .. kind
     end
 
     local function _gptFetchProducts()
@@ -3439,24 +3549,43 @@ do
         local secShare = nil
         pcall(function() secShare = S:CreateSection("Working Games") end)
         if secShare then
+            local shareMap = {}
+            local selectedShare = nil
+
+            local function _gptShareDetailText(g)
+                return table.concat({
+                    "Name: " .. tostring(g.name or "?"),
+                    "PlaceId: " .. tostring(g.placeId or "?"),
+                    "GameId: " .. tostring(g.gameId or "-"),
+                    "Verdict: " .. tostring(g.verdict or "?"),
+                    "Checks: " .. tostring(g.checks or 1),
+                    string.format("Votes: +%d / -%d", tonumber(g.likes) or 0, tonumber(g.dislikes) or 0),
+                    "My vote: " .. tostring(_gptVoteMap[tostring(g.placeId)] or "none"),
+                    "Last: " .. tostring(g.lastCheck or "?"),
+                    "By: " .. tostring(g.reporter or "?"),
+                }, "\n")
+            end
+
             local function _gptShareLabels()
                 local labels, map = {}, {}
                 local cur = game.PlaceId
                 for _, g in ipairs(_gptSharedGames) do
-                    local mark = (tonumber(g.placeId) == tonumber(cur)) and "Γÿà " or ""
-                    local verdictShort = tostring(g.verdict or "?"):sub(1, 12)
-                    local label = string.format("%s%s (%s) ΓÇö %s",
-                        mark, tostring(g.name or "Unknown"),
-                        tostring(g.placeId or "?"),
-                        verdictShort)
+                    local label = _gptShareLabelFor(g, cur)
                     table.insert(labels, label)
                     map[label] = g
                 end
                 if #labels == 0 then
-                    labels = { "No reports yet ΓÇö run Check Vulnerability" }
+                    labels = { "No reports yet - run Check Vulnerability" }
                     map[labels[1]] = nil
                 end
                 return labels, map
+            end
+
+            local function _gptShowShare(g)
+                selectedShare = g
+                if _gptShareLabel and g then
+                    pcall(function() _gptShareLabel:SetText(_gptShareDetailText(g)) end)
+                end
             end
 
             _gptRefreshShareUi = function()
@@ -3465,21 +3594,30 @@ do
                 shareMap = map
                 pcall(function()
                     _gptShareDropdown:Refresh(labels, true, true)
+                    if selectedShare then
+                        for _, g in ipairs(_gptSharedGames) do
+                            if tostring(g.placeId) == tostring(selectedShare.placeId) then
+                                selectedShare = g
+                                local lbl
+                                for l, mg in pairs(shareMap) do
+                                    if mg == g then lbl = l break end
+                                end
+                                if lbl then _gptShareDropdown:Set(lbl, true) end
+                                _gptShowShare(g)
+                                return
+                            end
+                        end
+                    end
                     _gptShareDropdown:Set(labels[1], true)
+                    _gptShowShare(shareMap[labels[1]])
                 end)
-                if _gptShareLabel then
+                if _gptShareLabel and not selectedShare then
                     local curOnList = false
                     for _, g in ipairs(_gptSharedGames) do
                         if tonumber(g.placeId) == tonumber(game.PlaceId) then
                             curOnList = true
-                            pcall(function()
-                                _gptShareLabel:SetText(string.format(
-                                    "This place is on the list.\n%s | checks: %s\nLast: %s",
-                                    tostring(g.name or "?"),
-                                    tostring(g.checks or 1),
-                                    tostring(g.lastCheck or "?")
-                                ))
-                            end)
+                            selectedShare = g
+                            pcall(function() _gptShareLabel:SetText(_gptShareDetailText(g)) end)
                             break
                         end
                     end
@@ -3494,7 +3632,6 @@ do
                 end
             end
 
-            local shareMap = {}
             pcall(function()
                 _gptShareDropdown = secShare:CreateDropdown({
                     Name = "Community List",
@@ -3502,20 +3639,7 @@ do
                     Default = "Loading...",
                     Callback = function(value)
                         local g = shareMap[tostring(value)]
-                        if not g then return end
-                        if _gptShareLabel then
-                            pcall(function()
-                                _gptShareLabel:SetText(table.concat({
-                                    "Name: " .. tostring(g.name or "?"),
-                                    "PlaceId: " .. tostring(g.placeId or "?"),
-                                    "GameId: " .. tostring(g.gameId or "-"),
-                                    "Verdict: " .. tostring(g.verdict or "?"),
-                                    "Checks: " .. tostring(g.checks or 1),
-                                    "Last: " .. tostring(g.lastCheck or "?"),
-                                    "By: " .. tostring(g.reporter or "?"),
-                                }, "\n"))
-                            end)
-                        end
+                        if g then _gptShowShare(g) end
                     end,
                 })
             end)
@@ -3524,9 +3648,53 @@ do
             end)
             pcall(function()
                 secShare:CreateButton({
+                    Name = "Like Selected",
+                    Callback = function()
+                        local g = selectedShare
+                        if not g then
+                            Library.Notify({ Title = "Ivory", Content = "Select a game from the list first", Type = "Error" })
+                            return
+                        end
+                        local ok, msg = _gptVoteOnShare(g, "like")
+                        if ok then
+                            if _gptRefreshShareUi then pcall(_gptRefreshShareUi) end
+                            Library.Notify({ Title = "Ivory", Content = msg .. " - " .. tostring(g.name), Type = "Success" })
+                        else
+                            Library.Notify({ Title = "Ivory", Content = tostring(msg), Type = "Error" })
+                        end
+                    end,
+                })
+            end)
+            pcall(function()
+                secShare:CreateButton({
+                    Name = "Dislike Selected",
+                    Callback = function()
+                        local g = selectedShare
+                        if not g then
+                            Library.Notify({ Title = "Ivory", Content = "Select a game from the list first", Type = "Error" })
+                            return
+                        end
+                        local ok, msg = _gptVoteOnShare(g, "dislike")
+                        if ok then
+                            if _gptRefreshShareUi then pcall(_gptRefreshShareUi) end
+                            Library.Notify({ Title = "Ivory", Content = msg .. " - " .. tostring(g.name), Type = "Success" })
+                        else
+                            Library.Notify({ Title = "Ivory", Content = tostring(msg), Type = "Error" })
+                        end
+                    end,
+                })
+            end)
+            pcall(function()
+                secShare:CreateButton({
                     Name = "Refresh List",
                     Callback = function()
+                        local keep = selectedShare and tostring(selectedShare.placeId) or nil
                         _gptLoadSharedList()
+                        if keep then
+                            for _, g in ipairs(_gptSharedGames) do
+                                if tostring(g.placeId) == keep then selectedShare = g break end
+                            end
+                        end
                         local labels
                         labels, shareMap = _gptShareLabels()
                         if _gptShareDropdown then
@@ -3535,20 +3703,11 @@ do
                                 _gptShareDropdown:Set(labels[1], true)
                             end)
                         end
-                        if _gptShareLabel then
+                        if selectedShare then
+                            _gptShowShare(selectedShare)
+                        elseif _gptShareLabel then
                             pcall(function()
-                                _gptShareLabel:SetText(string.format(
-                                    "%d game(s) in community list.%s",
-                                    #_gptSharedGames,
-                                    (function()
-                                        for _, g in ipairs(_gptSharedGames) do
-                                            if tonumber(g.placeId) == tonumber(game.PlaceId) then
-                                                return "\nThis place: WORKS"
-                                            end
-                                        end
-                                        return ""
-                                    end)()
-                                ))
+                                _gptShareLabel:SetText(string.format("%d game(s) reported working.", #_gptSharedGames))
                             end)
                         end
                         Library.Notify({ Title = "Ivory", Content = "Refreshed " .. #_gptSharedGames .. " shared game(s)", Type = "Info" })
@@ -3561,6 +3720,7 @@ do
                     Callback = function()
                         task.spawn(function()
                             local entry = _gptReportWorkingGame("MANUAL REPORT")
+                            selectedShare = entry
                             Library.Notify({
                                 Title = "Ivory",
                                 Content = "Reported: " .. tostring(entry.name),
@@ -3571,13 +3731,6 @@ do
                     end,
                 })
             end)
-            -- keep dropdown map in sync via Refresh List / report
-            local _origRefresh = _gptRefreshShareUi
-            _gptRefreshShareUi = function()
-                if _origRefresh then _origRefresh() end
-                local labels, map = _gptShareLabels()
-                shareMap = map
-            end
             task.spawn(function()
                 _gptLoadSharedList()
                 local labels
@@ -3588,7 +3741,16 @@ do
                         _gptShareDropdown:Set(labels[1], true)
                     end)
                 end
-                if _gptShareLabel then
+                local curGame = nil
+                for _, g in ipairs(_gptSharedGames) do
+                    if tonumber(g.placeId) == tonumber(game.PlaceId) then
+                        curGame = g
+                        break
+                    end
+                end
+                if curGame then
+                    _gptShowShare(curGame)
+                elseif _gptShareLabel then
                     pcall(function()
                         _gptShareLabel:SetText(string.format("%d game(s) reported working.", #_gptSharedGames))
                     end)
