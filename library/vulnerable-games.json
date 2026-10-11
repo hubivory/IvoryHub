@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-11T20:07:50.738Z",
+  "updatedAt": "2026-10-11T20:08:19.418Z",
   "games": [
     {
       "placeId": 71940604330107,
@@ -19,14 +19,27 @@
       "placeId": 7449423635,
       "gameId": 994732206,
       "name": "Blox Fruits | Third Sea",
-      "verdict": "MANUAL REPORT",
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
       "checks": 6,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-11T20:05:12Z",
+      "lastCheck": "2026-10-11T20:03:57Z",
       "reporter": "njoni123"
+    },
+    {
+      "placeId": 120851538706364,
+      "gameId": 9561553764,
+      "name": "Duelos de Asesinato",
+      "verdict": "MANUAL REPORT",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-11T20:08:18Z",
+      "reporter": "Nosequeponetxd1"
     }
   ]
 }
