@@ -205,6 +205,34 @@ export default {
       return json(data);
     }
 
+    // GET fallback for executors that break on PUT/POST bodies
+    if (path === "/gpt/report" && request.method === "GET") {
+      try {
+        const placeId = Number(url.searchParams.get("placeId") || 0);
+        if (!placeId) return json({ error: "placeId required" }, 400);
+        const incoming = [
+          {
+            placeId,
+            gameId: Number(url.searchParams.get("gameId") || 0) || 0,
+            name: url.searchParams.get("name") || "Unknown",
+            verdict: url.searchParams.get("verdict") || "?",
+            checks: Number(url.searchParams.get("checks") || 1) || 1,
+            likes: Number(url.searchParams.get("likes") || 0) || 0,
+            dislikes: Number(url.searchParams.get("dislikes") || 0) || 0,
+            confirmed: url.searchParams.get("confirmed") === "1" || url.searchParams.get("confirmed") === "true",
+            lastCheck: url.searchParams.get("lastCheck") || new Date().toISOString(),
+            reporter: url.searchParams.get("reporter") || "?",
+          },
+        ];
+        const current = await loadList(env);
+        const games = mergeGames(current.games, incoming);
+        const saved = await saveList(env, { version: 1, games });
+        return json(saved);
+      } catch (e) {
+        return json({ error: "report failed", detail: String(e && e.message || e) }, 400);
+      }
+    }
+
     if (path === "/gpt/games" && (request.method === "PUT" || request.method === "POST")) {
       if (GPT_WRITE_TOKEN) {
         const auth = request.headers.get("Authorization") || "";

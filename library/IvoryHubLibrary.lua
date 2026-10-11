@@ -2842,29 +2842,56 @@ do
     end
 
     local function _gptHttpGet(url)
-        local ok, body = pcall(function() return game:HttpGet(url) end)
-        if ok and type(body) == "string" then return body end
-        ok, body = pcall(function() return HttpService:GetAsync(url) end)
-        if ok and type(body) == "string" then return body end
+        local headers = {
+            ["Accept"] = "application/json",
+            ["User-Agent"] = "IvoryHub/1.4",
+        }
+        local function fromRes(r)
+            if type(r) == "string" then return r end
+            if type(r) == "table" then
+                local b = r.Body or r.body
+                if type(b) == "string" then return b end
+            end
+            return nil
+        end
+        local ok, body = pcall(function() return game:HttpGet(url, true) end)
+        if ok and type(body) == "string" and body ~= "" then return body end
+        ok, body = pcall(function() return HttpService:GetAsync(url, true) end)
+        if ok and type(body) == "string" and body ~= "" then return body end
         if typeof(request) == "function" then
             ok, body = pcall(function()
-                local r = request({ Url = url, Method = "GET" })
-                return r and r.Body
+                local r = request({ Url = url, Method = "GET", Headers = headers })
+                return fromRes(r)
             end)
-            if ok and type(body) == "string" then return body end
+            if ok and type(body) == "string" and body ~= "" then return body end
+        end
+        if typeof(http_request) == "function" then
+            ok, body = pcall(function()
+                local r = http_request({ Url = url, Method = "GET", Headers = headers })
+                return fromRes(r)
+            end)
+            if ok and type(body) == "string" and body ~= "" then return body end
         end
         if typeof(syn) == "table" and typeof(syn.request) == "function" then
             ok, body = pcall(function()
-                local r = syn.request({ Url = url, Method = "GET" })
-                return r and r.Body
+                local r = syn.request({ Url = url, Method = "GET", Headers = headers })
+                return fromRes(r)
             end)
-            if ok and type(body) == "string" then return body end
+            if ok and type(body) == "string" and body ~= "" then return body end
         end
         return nil
     end
 
     local function _gptHttpPost(url, body, headers)
-        headers = headers or { ["Content-Type"] = "application/json" }
+        headers = headers or { ["Content-Type"] = "application/json", ["Accept"] = "application/json" }
+        local function fromRes(r)
+            if type(r) == "string" then return r end
+            if type(r) == "table" then
+                local b = r.Body or r.body
+                if type(b) == "string" then return b end
+            end
+            return nil
+        end
         local ok, res = pcall(function()
             return game:HttpPostAsync(url, body, Enum.HttpContentType.ApplicationJson)
         end)
@@ -2872,6 +2899,12 @@ do
         if typeof(request) == "function" then
             ok, res = pcall(function()
                 return request({ Url = url, Method = "POST", Headers = headers, Body = body })
+            end)
+            if ok then return true, res end
+        end
+        if typeof(http_request) == "function" then
+            ok, res = pcall(function()
+                return http_request({ Url = url, Method = "POST", Headers = headers, Body = body })
             end)
             if ok then return true, res end
         end
@@ -2885,7 +2918,7 @@ do
     end
 
     local function _gptHttpPut(url, body)
-        local headers = { ["Content-Type"] = "application/json" }
+        local headers = { ["Content-Type"] = "application/json", ["Accept"] = "application/json" }
         local attempts = {}
 
         local function statusOf(res)
@@ -2905,7 +2938,6 @@ do
             local b = bodyOf(res)
             if code == nil and b == nil then return false end
             if type(b) == "string" and b:find("^%s*{") == nil and b:find("^%s*%[") == nil and b ~= "" then
-                -- non-JSON body with no status is suspicious; treat empty/HTML as fail
                 if b:find("<html", 1, true) or b:find("Just a moment", 1, true) then return false end
             end
             return true
@@ -2918,6 +2950,13 @@ do
                 end)
                 if ok and consideredOk(res) then return true, res end
                 table.insert(attempts, method .. " request " .. tostring(ok and (statusOf(res) or bodyOf(res)) or res))
+            end
+            if typeof(http_request) == "function" then
+                local ok, res = pcall(function()
+                    return http_request({ Url = url, Method = method, Headers = headers, Body = body })
+                end)
+                if ok and consideredOk(res) then return true, res end
+                table.insert(attempts, method .. " http_request " .. tostring(ok and (statusOf(res) or "no") or res))
             end
             if typeof(syn) == "table" and typeof(syn.request) == "function" then
                 local ok, res = pcall(function()
@@ -2938,11 +2977,13 @@ do
                 if ok and consideredOk(res) then return true, res end
                 table.insert(attempts, method .. " HttpRequest " .. tostring(ok and (statusOf(res) or "no") or res))
             end
-            local ok, res = pcall(function()
-                return game:HttpPostAsync(url, body, Enum.HttpContentType.ApplicationJson)
-            end)
-            if ok and (type(res) == "string" or type(res) == "table") then return true, res end
-            table.insert(attempts, method .. " HttpPostAsync " .. tostring(ok and "empty" or res))
+            if method == "POST" then
+                local ok, res = pcall(function()
+                    return game:HttpPostAsync(url, body, Enum.HttpContentType.ApplicationJson)
+                end)
+                if ok and (type(res) == "string" or type(res) == "table") then return true, res end
+                table.insert(attempts, method .. " HttpPostAsync " .. tostring(ok and "empty" or res))
+            end
             return false
         end
 
@@ -2951,6 +2992,35 @@ do
         ok, res = tryMethod("POST")
         if ok then return true, res end
         return false, table.concat(attempts, " | ")
+    end
+
+    local function _gptEncodeQuery(t)
+        local parts = {}
+        for k, v in pairs(t) do
+            local s = tostring(v or "")
+            s = s:gsub("([^%w])", function(c)
+                return string.format("%%%02X", string.byte(c))
+            end)
+            table.insert(parts, tostring(k) .. "=" .. s)
+        end
+        if #parts == 0 then return "" end
+        table.sort(parts)
+        return table.concat(parts, "&")
+    end
+
+    local function _gptGmtReportUrl(entry)
+        local base = GPT_SHARED_API:gsub("/gpt/games%s*$", "/gpt/report")
+        local qs = _gptEncodeQuery({
+            placeId = entry.placeId,
+            gameId = entry.gameId,
+            name = entry.name,
+            verdict = entry.verdict,
+            checks = entry.checks or 1,
+            confirmed = entry.confirmed and "1" or "0",
+            lastCheck = entry.lastCheck,
+            reporter = entry.reporter,
+        })
+        return base .. "?" .. qs
     end
 
     local function _gptGetPlaceName()
@@ -3070,6 +3140,43 @@ do
         end)
     end
 
+    local function _gptSnippet(s)
+        if type(s) ~= "string" then return tostring(s) end
+        s = s:gsub("%s+", " ")
+        if #s > 80 then return s:sub(1, 80) .. "..." end
+        return s
+    end
+
+    local function _gptTryParseList(respBody)
+        if type(respBody) ~= "string" or respBody == "" then return nil, false end
+        local okj, parsed = pcall(function() return HttpService:JSONDecode(respBody) end)
+        if not okj or type(parsed) ~= "table" then return nil, false end
+        local games = _gptParseGamesJson(respBody)
+        local githubOk = type(parsed.github) == "table" and parsed.github.ok == true
+        return games, githubOk, parsed
+    end
+
+    local function _gptPushViaGetReport(list)
+        local entries = list or {}
+        if #entries == 0 then return false, "empty list for GET report" end
+        -- Cap to avoid URL-length / rate issues on huge lists
+        local max = math.min(#entries, 12)
+        local lastRemote, lastGithub = nil, false
+        for i = 1, max do
+            local g = entries[i]
+            local url = _gptGmtReportUrl(g)
+            local body = _gptHttpGet(url)
+            local games, githubOk, parsed = _gptTryParseList(body)
+            if games then
+                lastRemote = games
+                if githubOk then lastGithub = true end
+            else
+                return false, "GET report failed: " .. _gptSnippet(body or "no body")
+            end
+        end
+        return true, lastRemote, lastGithub
+    end
+
     local function _gptPushSharedList(games, silent)
         if GPT_SHARED_API == "" then
             if not silent then
@@ -3083,46 +3190,60 @@ do
             updatedAt = DateTime.now():ToIsoDate(),
             games = list,
         })
-        local ok, res = _gptHttpPut(GPT_SHARED_API, payload)
-        if not ok then
-            warn("[Ivory] GPT shared push failed: " .. tostring(res))
-            if not silent then
-                Library.Notify({ Title = "Ivory", Content = "Cloud save failed: " .. tostring(res), Type = "Error", Duration = 8 })
+
+        local remote, githubOk = nil, false
+        local putOk, res = _gptHttpPut(GPT_SHARED_API, payload)
+        if putOk then
+            local respBody = nil
+            if type(res) == "table" then
+                respBody = res.Body or res.body
+            elseif type(res) == "string" then
+                respBody = res
             end
-            return false, tostring(res)
-        end
-
-        local respBody = nil
-        if type(res) == "table" then
-            respBody = res.Body or res.body
-        elseif type(res) == "string" then
-            respBody = res
-        end
-
-        local remote = nil
-        local githubOk = false
-        if type(respBody) == "string" and respBody ~= "" then
-            local okj, parsed = pcall(function() return HttpService:JSONDecode(respBody) end)
-            if okj and type(parsed) == "table" then
-                remote = _gptParseGamesJson(respBody)
-                if type(parsed.github) == "table" then
-                    githubOk = parsed.github.ok == true
+            local gamesP, ghOk = _gptTryParseList(respBody)
+            if gamesP then
+                remote = gamesP
+                githubOk = ghOk
+            else
+                -- Body not parseable — try GET report fallback
+                local okGet, remoteGet, ghGet = pcall(_gptPushViaGetReport, list)
+                if okGet and remoteGet then
+                    remote = remoteGet
+                    githubOk = ghGet == true
                 end
             end
+        else
+            -- PUT/POST failed entirely — try GET report
+            local okGet, remoteGet, ghGet = pcall(_gptPushViaGetReport, list)
+            if okGet and remoteGet then
+                remote = remoteGet
+                githubOk = ghGet == true
+            else
+                warn("[Ivory] GPT shared push failed: " .. tostring(res))
+                if not silent then
+                    Library.Notify({ Title = "Ivory", Content = "Cloud save failed: " .. tostring(res), Type = "Error", Duration = 8 })
+                end
+                return false, tostring(res)
+            end
         end
 
-        -- Fallback verify GET if PUT body was not parseable
         if not remote then
+            -- Last resort: verify GET of list endpoint
             local verifyBody = _gptHttpGet(GPT_SHARED_API)
             remote = _gptParseGamesJson(verifyBody)
+            if not remote then
+                if not silent then
+                    Library.Notify({
+                        Title = "Ivory",
+                        Content = "Cloud save not confirmed: " .. _gptSnippet(verifyBody or "no body"),
+                        Type = "Error",
+                        Duration = 8,
+                    })
+                end
+                return false, "verify failed"
+            end
         end
 
-        if not remote then
-            if not silent then
-                Library.Notify({ Title = "Ivory", Content = "Cloud save not confirmed (no JSON)", Type = "Error", Duration = 8 })
-            end
-            return false, "verify failed"
-        end
         _gptSharedGames = remote
 
         if not silent then
