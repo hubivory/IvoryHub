@@ -4625,6 +4625,22 @@ function Library.BuildPlayerDetails(a, b)
     avatarGhost.ZIndex = 4
     avatarGhost.Parent = avatar
     pcall(function() aq(avatarGhost, 'user') end)
+    -- Text fallback if the lucide glyph is unavailable: never leave a blank circle.
+    local avatarLetter = Instance.new("TextLabel")
+    avatarLetter.AnchorPoint = Vector2.new(0.5, 0.5)
+    avatarLetter.Position = UDim2.fromScale(0.5, 0.5)
+    avatarLetter.Size = UDim2.fromOffset(34, 34)
+    avatarLetter.BackgroundTransparency = 1
+    avatarLetter.Font = Enum.Font.GothamBlack
+    avatarLetter.TextSize = 22
+    avatarLetter.TextColor3 = dim
+    avatarLetter.TextTransparency = 0.3
+    avatarLetter.ZIndex = 4
+    avatarLetter.Text = string.upper(string.sub((player and player.DisplayName) or "P", 1, 1))
+    avatarLetter.Parent = avatar
+    if avatarGhost.Image ~= "" then
+        avatarLetter.Visible = false
+    end
 
     local avatarDot = Instance.new("Frame")
     avatarDot.AnchorPoint = Vector2.new(1, 1)
@@ -4652,8 +4668,51 @@ function Library.BuildPlayerDetails(a, b)
         end
         if not avatarImg.Parent then return end
         pcall(function()
-            ah(avatarImg, { ImageTransparency = 0 }, 0.3)
-            ah(avatarGhost, { ImageTransparency = 1 }, 0.25)
+            if avatarImg.IsLoaded then
+                ah(avatarImg, { ImageTransparency = 0 }, 0.3)
+                ah(avatarGhost, { ImageTransparency = 1 }, 0.25)
+                avatarLetter.Visible = false
+                return
+            end
+            -- rbxthumb never arrived (blocked/slow). Try the web thumbnail API
+            -- and keep the ghost glyph visible until a real image shows up.
+            if player then
+                local ok, body = pcall(function()
+                    return game:HttpGet(
+                        "https://thumbnails.roblox.com/v1/users/avatar-headshot"
+                        .. "?userIds=" .. tostring(player.UserId)
+                        .. "&size=150x150&format=Png&isCircular=false"
+                    )
+                end)
+                if ok and type(body) == "string" then
+                    local okj, data = pcall(function()
+                        return HttpService:JSONDecode(body)
+                    end)
+                    local url = nil
+                    if okj and type(data) == "table"
+                        and type(data.data) == "table"
+                        and type(data.data[1]) == "table" then
+                        url = data.data[1].imageUrl
+                    end
+                    if type(url) == "string" and url ~= "" then
+                        avatarImg.Image = url
+                        n = 0
+                        while avatarImg.Parent and n < 40 and not avatarImg.IsLoaded do
+                            n=n+(1)
+                            task.wait(0.05)
+                        end
+                    end
+                end
+            end
+            if avatarImg.IsLoaded then
+                ah(avatarImg, { ImageTransparency = 0 }, 0.3)
+                ah(avatarGhost, { ImageTransparency = 1 }, 0.25)
+                avatarLetter.Visible = false
+            else
+                -- Still nothing: keep a visible glyph instead of a blank circle.
+                ah(avatarGhost, { ImageTransparency = 0.15 }, 0.2)
+                avatarLetter.Visible = avatarGhost.Image == ""
+            end
         end)
     end)
 
