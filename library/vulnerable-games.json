@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T22:56:06.529Z",
+  "updatedAt": "2026-10-12T22:58:30.343Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -46,12 +46,12 @@
       "gameId": 10759430423,
       "name": "[BOSS] +1 Chop Trees for Treasure",
       "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
-      "checks": 1,
+      "checks": 2,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": true,
-      "lastCheck": "2026-10-12T22:54:35Z",
+      "lastCheck": "2026-10-12T22:58:33Z",
       "reporter": "Fluagplaw"
     },
     {
@@ -149,13 +149,13 @@
       "placeId": 97824450589417,
       "gameId": 10577588270,
       "name": "🦸 +1 Superhero Evolution",
-      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
+      "verdict": "LIKELY VULNERABLE ΓÇö game reacted to fake product",
       "checks": 3,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": true,
-      "lastCheck": "2026-10-12T22:56:07Z",
+      "lastCheck": "2026-10-12T22:32:10Z",
       "reporter": "0CHil01"
     },
     {
