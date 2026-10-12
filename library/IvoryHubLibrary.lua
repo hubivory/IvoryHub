@@ -4078,6 +4078,31 @@ do
             end)
             pcall(function()
                 secShare:CreateButton({
+                    Name = "Join Game",
+                    Callback = function()
+                        local g = selectedShare
+                        if not g or not tonumber(g.placeId) then
+                            Library.Notify({ Title = "Ivory", Content = "Select a game from the list first", Type = "Error" })
+                            return
+                        end
+                        local placeId = tonumber(g.placeId)
+                        if placeId == tonumber(game.PlaceId) then
+                            Library.Notify({ Title = "Ivory", Content = "You are already in this game", Type = "Info" })
+                            return
+                        end
+                        local ok, err = pcall(function()
+                            game:GetService("TeleportService"):Teleport(placeId, Players.LocalPlayer)
+                        end)
+                        if ok then
+                            Library.Notify({ Title = "Ivory", Content = "Joining " .. tostring(g.name) .. "...", Type = "Success" })
+                        else
+                            Library.Notify({ Title = "Ivory", Content = "Teleport failed: " .. tostring(err), Type = "Error" })
+                        end
+                    end,
+                })
+            end)
+            pcall(function()
+                secShare:CreateButton({
                     Name = "Like Selected",
                     Callback = function()
                         local g = selectedShare
