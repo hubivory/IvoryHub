@@ -3653,60 +3653,12 @@ do
                 end
             end)
 
-            -- Outbound FireServer/InvokeServer counts: many "vulnerable" games
-            -- only tell the server "grant it" after the finished signal.
-            local outboundHits = 0
-            local outboundEnabled = true
-            local rawMt = nil
-            local rawOldNamecall = nil
-            pcall(function()
-                if typeof(hookmetamethod) == "function" and typeof(getnamecallmethod) == "function" then
-                    local old
-                    old = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
-                        if outboundEnabled then
-                            local method = getnamecallmethod()
-                            if method == "FireServer" or method == "InvokeServer" then
-                                outboundHits = outboundHits + 1
-                            end
-                        end
-                        return old(self, ...)
-                    end))
-                elseif getrawmetatable and setreadonly then
-                    rawMt = getrawmetatable(game)
-                    rawOldNamecall = rawMt.__namecall
-                    setreadonly(rawMt, false)
-                    rawMt.__namecall = function(self, ...)
-                        if outboundEnabled then
-                            local method = getnamecallmethod and getnamecallmethod() or ""
-                            if method == "FireServer" or method == "InvokeServer" then
-                                outboundHits = outboundHits + 1
-                            end
-                        end
-                        return rawOldNamecall(self, ...)
-                    end
-                    setreadonly(rawMt, true)
-                end
-            end)
-
             local function remoteTake()
                 local n = remoteHits
                 remoteHits = 0
                 return n
             end
-            local function outboundTake()
-                local n = outboundHits
-                outboundHits = 0
-                return n
-            end
             local function disconnectRemotes()
-                outboundEnabled = false
-                if rawMt and rawOldNamecall then
-                    pcall(function()
-                        setreadonly(rawMt, false)
-                        rawMt.__namecall = rawOldNamecall
-                        setreadonly(rawMt, true)
-                    end)
-                end
                 for _, c in ipairs(remoteConns) do pcall(function() c:Disconnect() end) end
                 remoteConns = {}
             end
@@ -3717,7 +3669,6 @@ do
 
             -- Phase 1: baseline - what does this game do WITHOUT any fake purchase?
             remoteTake()
-            outboundTake()
             local baseBefore = _gptSnapshotState()
             if _gptDetail then
                 pcall(function() _gptDetail:SetText("Measuring baseline activity (2s)...") end)
@@ -3725,19 +3676,16 @@ do
             task.delay(2, function()
                 local baseDiffs = _gptStateDiff(baseBefore, _gptSnapshotState())
                 local baseRemotes = remoteTake()
-                local baseOutbound = outboundTake()
                 local noisy = {}
                 for _, d in ipairs(baseDiffs) do
                     noisy[statKey(d)] = true
                 end
 
                 -- Phase 2: fire each product/pass one at a time and sample
-                -- outbound only in a short window after that specific fire.
-                -- Taking the MAX window (not the sum over the whole run) avoids
-                -- counting steady gameplay traffic as a "burst".
+                -- inbound remote replies in a short window after that fire.
+                -- No metatable hooks - those are what get you banned.
                 local before = _gptSnapshotState()
                 local fired = {}
-                local maxEarlyOut = 0
                 local maxEarlyIn = 0
                 local earlyWindows = {}
                 local toFire = {}
@@ -3757,7 +3705,6 @@ do
                 task.spawn(function()
                     for i, item in ipairs(toFire) do
                         if i > 1 then task.wait(0.15) end
-                        outboundTake()
                         remoteTake()
                         local k = item.kind or _gptDetectKind(item.id)
                         _gptFire(k, item.id)
@@ -3768,10 +3715,8 @@ do
                             end)
                         end
                         task.wait(0.4)
-                        local nOut = outboundTake()
                         local nIn = remoteTake()
-                        table.insert(earlyWindows, string.format("%s:%d send", tostring(item.id), nOut))
-                        if nOut > maxEarlyOut then maxEarlyOut = nOut end
+                        table.insert(earlyWindows, string.format("%s:%d recv", tostring(item.id), nIn))
                         if nIn > maxEarlyIn then maxEarlyIn = nIn end
                     end
 
@@ -3792,18 +3737,18 @@ do
                         end
                     end
 
-                    local outBaseRate = baseOutbound / 2.0
-                    -- Expected outbound chance in one 0.4s sample window.
-                    local outExpected04 = outBaseRate * 0.4
-                    -- A grant handler FireServers within a few hundred ms of the
-                    -- signal. Idle games with 2+ immediate sends are almost
-                    -- always a real grant attempt; busy games need a clear spike.
-                    local outboundSpike = maxEarlyOut >= 2 and maxEarlyOut >= outExpected04 * 3 + 1
+                    local baseRate = baseRemotes / 2.0
+                    -- Expected inbound chance in one 0.4s sample window.
+                    local inExpected04 = baseRate * 0.4
+                    -- Server replies to a grant request within a few hundred ms
+                    -- of the purchase signal. Idle games with 2+ immediate
+                    -- replies are almost always a real reaction.
+                    local inboundSpike = maxEarlyIn >= 2 and maxEarlyIn >= inExpected04 * 3 + 1
 
                     local lines = {
                         "Fired " .. #fired .. " items: " .. table.concat(fired, ", "),
-                        string.format("Baseline: %d recv / %d send remotes / 2s, %d stat drifts", baseRemotes, baseOutbound, #baseDiffs),
-                        string.format("Peak 0.4s window after a fire: %d send / %d recv (chance send ~%.2f)", maxEarlyOut, maxEarlyIn, outExpected04),
+                        string.format("Baseline: %d recv remotes / 2s, %d stat drifts", baseRemotes, #baseDiffs),
+                        string.format("Peak 0.4s window after a fire: %d recv (chance ~%.2f)", maxEarlyIn, inExpected04),
                         "Per-item windows: " .. table.concat(earlyWindows, ", "),
                         "Purchase signal listeners: " .. (#listening > 0 and table.concat(listening, ", ") or "none"),
                     }
@@ -3816,8 +3761,8 @@ do
 
                     if #realDiffs > 0 then
                         finish("LIKELY VULNERABLE - game granted something after fake purchase", table.concat(lines, "\n"))
-                    elseif outboundSpike then
-                        finish("POSSIBLY VULNERABLE - server call right after purchase signal", table.concat(lines, "\n") .. "\nClient told the server right after the signal; grant may only apply server-side.")
+                    elseif inboundSpike then
+                        finish("POSSIBLY VULNERABLE - server replied right after purchase signal", table.concat(lines, "\n") .. "\nServer reacted; grant may only apply server-side.")
                     else
                         finish("NOT VULNERABLE (no reaction beyond normal traffic)", table.concat(lines, "\n") .. "\nListeners and steady remote chatter alone do not count as vulnerable.")
                     end
