@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T17:23:37.983Z",
+  "updatedAt": "2026-10-12T17:23:50.441Z",
   "games": [
     {
       "placeId": 120475074479690,
@@ -12,7 +12,7 @@
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-12T17:23:37Z",
+      "lastCheck": "2026-10-12T17:23:49Z",
       "reporter": "chtkara"
     },
     {
