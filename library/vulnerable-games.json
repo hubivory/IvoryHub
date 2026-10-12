@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T00:47:08.077Z",
+  "updatedAt": "2026-10-12T01:07:47.166Z",
   "games": [
     {
       "placeId": 97874266291114,
@@ -126,12 +126,12 @@
       "gameId": 9561553764,
       "name": "Duelos de Asesinato",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 2,
+      "checks": 3,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-12T00:46:34Z",
+      "lastCheck": "2026-10-12T01:07:46Z",
       "reporter": "Nosequeponetxd1"
     },
     {
