@@ -3527,13 +3527,20 @@ do
             if _gptDetail then
                 pcall(function() _gptDetail:SetText(detail) end)
             end
+            local nType = "Info"
+            if verdict:find("NOT") then
+                nType = "Warning"
+            elseif verdict:find("VULNERABLE") then
+                nType = "Success"
+            end
             Library.Notify({
                 Title = "Ivory",
                 Content = verdict,
-                Type = (verdict:find("VULNERABLE") or verdict:find("likely")) and "Success" or (verdict:find("NOT") and "Warning" or "Info"),
+                Type = nType,
                 Duration = 6,
             })
-            if verdict:find("LIKELY") or verdict:find("POSSIBLY") then
+            -- Only hard-evidence verdicts go to the shared Working Games list.
+            if verdict:find("LIKELY VULNERABLE") then
                 task.spawn(function()
                     local ok, entry = pcall(_gptReportWorkingGame, verdict)
                     if ok and entry then
@@ -3550,7 +3557,7 @@ do
 
         local function runWithItems()
             if #_gptItems == 0 then
-                finish("NOT VULNERABLE ΓÇö no products or passes on this place", "No developer products or gamepasses found.\nNothing to fake-purchase.")
+                finish("NOT VULNERABLE - no products or passes on this place", "No developer products or gamepasses found.\nNothing to fake-purchase.")
                 return
             end
 
@@ -3577,40 +3584,90 @@ do
                 end
             end)
 
-            local before = _gptSnapshotState()
-            local kind = cheapest.kind or _gptDetectKind(cheapest.id)
-            _gptFire(kind, cheapest.id)
-            if #_gptItems > 1 and kind == "Product" then
-                for _, item in ipairs(_gptItems) do
-                    if item.kind == "Gamepass" then
-                        _gptFire("Gamepass", item.id)
-                        break
-                    end
-                end
+            local function remoteTake()
+                local n = remoteHits
+                remoteHits = 0
+                return n
+            end
+            local function disconnectRemotes()
+                for _, c in ipairs(remoteConns) do pcall(function() c:Disconnect() end) end
+                remoteConns = {}
             end
 
-            task.delay(2.5, function()
-                for _, c in ipairs(remoteConns) do pcall(function() c:Disconnect() end) end
-                local after = _gptSnapshotState()
-                local diffs = _gptStateDiff(before, after)
-                local lines = {
-                    "Test fired: " .. tostring(kind) .. " " .. tostring(cheapest.id),
-                    "Listening on Finished signals: " .. (#listening > 0 and table.concat(listening, ", ") or "none detected"),
-                    "Remote events after fire: " .. tostring(remoteHits),
-                }
-                if #diffs > 0 then
-                    table.insert(lines, "State changes: " .. table.concat(diffs, "; "))
-                    finish(string.format("LIKELY VULNERABLE ΓÇö game reacted to fake %s", kind:lower()), table.concat(lines, "\n"))
-                elseif #listening > 0 then
-                    table.insert(lines, "No state change in 2.5s.")
-                    finish("POSSIBLY VULNERABLE ΓÇö game listens for purchase finished", table.concat(lines, "\n"))
-                elseif remoteHits > 0 then
-                    table.insert(lines, "No leaderstat change, but remotes fired.")
-                    finish("POSSIBLY VULNERABLE ΓÇö remotes fired after signal", table.concat(lines, "\n"))
-                else
-                    table.insert(lines, "No reaction detected.")
-                    finish("NOT VULNERABLE (no client reaction detected)", table.concat(lines, "\n") .. "\nServer may still validate, or game grants only on real purchase.")
+            local function statKey(line)
+                return line:match("^(.-)%s") or line
+            end
+
+            -- Phase 1: baseline - what does this game do WITHOUT any fake purchase?
+            remoteTake()
+            local baseBefore = _gptSnapshotState()
+            if _gptDetail then
+                pcall(function() _gptDetail:SetText("Measuring baseline activity (2s)...") end)
+            end
+            task.delay(2, function()
+                local baseDiffs = _gptStateDiff(baseBefore, _gptSnapshotState())
+                local baseRemotes = remoteTake()
+                local noisy = {}
+                for _, d in ipairs(baseDiffs) do
+                    noisy[statKey(d)] = true
                 end
+
+                -- Phase 2: fire the fake purchase and watch what changes.
+                local before = _gptSnapshotState()
+                local kind = cheapest.kind or _gptDetectKind(cheapest.id)
+                _gptFire(kind, cheapest.id)
+                if #_gptItems > 1 and kind == "Product" then
+                    for _, item in ipairs(_gptItems) do
+                        if item.kind == "Gamepass" then
+                            _gptFire("Gamepass", item.id)
+                            break
+                        end
+                    end
+                end
+                if _gptDetail then
+                    pcall(function() _gptDetail:SetText("Watching reaction (2.5s)...") end)
+                end
+
+                task.delay(2.5, function()
+                    disconnectRemotes()
+                    local after = _gptSnapshotState()
+                    local diffs = _gptStateDiff(before, after)
+                    local fireRemotes = remoteTake()
+
+                    -- Ignore stats that were already drifting during the baseline
+                    -- (passive income, auto-farm tickers, etc).
+                    local realDiffs = {}
+                    for _, d in ipairs(diffs) do
+                        if not noisy[statKey(d)] then
+                            table.insert(realDiffs, d)
+                        end
+                    end
+
+                    local baseRate = baseRemotes / 2.0
+                    local expected = baseRate * 2.5
+                    local remoteBurst = fireRemotes >= 2 and fireRemotes >= expected + 2
+
+                    local lines = {
+                        "Test fired: " .. tostring(kind) .. " " .. tostring(cheapest.id),
+                        string.format("Baseline: %d remotes / 2s, %d stat drifts", baseRemotes, #baseDiffs),
+                        string.format("After fire: %d remotes / 2.5s (expected ~%.1f)", fireRemotes, expected),
+                        "Purchase signal listeners: " .. (#listening > 0 and table.concat(listening, ", ") or "none"),
+                    }
+                    if #baseDiffs > 0 then
+                        table.insert(lines, "Baseline drift (ignored): " .. table.concat(baseDiffs, "; "))
+                    end
+                    if #diffs > 0 and #realDiffs > 0 then
+                        table.insert(lines, "New state changes: " .. table.concat(realDiffs, "; "))
+                    end
+
+                    if #realDiffs > 0 then
+                        finish(string.format("LIKELY VULNERABLE - game granted something after fake %s", kind:lower()), table.concat(lines, "\n"))
+                    elseif remoteBurst then
+                        finish("POSSIBLY VULNERABLE - remote burst right after signal", table.concat(lines, "\n") .. "\nNo grant detected; server may still validate.")
+                    else
+                        finish("NOT VULNERABLE (no reaction beyond normal traffic)", table.concat(lines, "\n") .. "\nListening on purchase signals alone is normal and was not counted.")
+                    end
+                end)
             end)
         end
 
