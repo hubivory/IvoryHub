@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T08:53:39.907Z",
+  "updatedAt": "2026-10-12T10:27:08.123Z",
   "games": [
     {
       "placeId": 136162036182779,
@@ -14,6 +14,19 @@
       "confirmed": false,
       "lastCheck": "2026-10-12T07:55:37Z",
       "reporter": "RaminLVE"
+    },
+    {
+      "placeId": 74102906764176,
+      "gameId": 10440833423,
+      "name": "[✨] Penanam Serakah 🌱 ",
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-12T10:27:06Z",
+      "reporter": "rejaaaaaa4"
     },
     {
       "placeId": 91296119701853,
