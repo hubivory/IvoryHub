@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T20:59:06.020Z",
+  "updatedAt": "2026-10-12T21:41:24.705Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -188,13 +188,13 @@
       "placeId": 88047783411976,
       "gameId": 10765091041,
       "name": "Open Sea For Animals!",
-      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 2,
+      "verdict": "LIKELY VULNERABLE ΓÇö game reacted to fake product",
+      "checks": 3,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
-      "confirmed": false,
-      "lastCheck": "2026-10-12T17:32:55Z",
+      "confirmed": true,
+      "lastCheck": "2026-10-12T21:41:25Z",
       "reporter": "chtkara"
     },
     {
