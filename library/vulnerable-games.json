@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T07:55:37.646Z",
+  "updatedAt": "2026-10-12T08:03:27.042Z",
   "games": [
     {
       "placeId": 136162036182779,
@@ -211,6 +211,19 @@
       "confirmed": false,
       "lastCheck": "2026-10-11T20:52:44Z",
       "reporter": "XiaBuilds"
+    },
+    {
+      "placeId": 15318113891,
+      "gameId": 5283219861,
+      "name": "Lethal Ape (BTM)",
+      "verdict": "MANUAL REPORT",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-12T08:03:26Z",
+      "reporter": "speaker_98429"
     }
   ]
 }
