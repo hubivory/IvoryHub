@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T23:08:36.398Z",
+  "updatedAt": "2026-10-12T23:48:02.179Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -235,6 +235,19 @@
       "confirmed": false,
       "lastCheck": "2026-10-12T17:28:24Z",
       "reporter": "chtkara"
+    },
+    {
+      "placeId": 12629753855,
+      "gameId": 3717264063,
+      "name": "nico's nextbots [open world]",
+      "verdict": "POSSIBLY VULNERABLE - server replied right after purchase signal",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-12T23:48:01Z",
+      "reporter": "Auroxx"
     },
     {
       "placeId": 88047783411976,
