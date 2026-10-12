@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T17:39:49.146Z",
+  "updatedAt": "2026-10-12T17:40:04.027Z",
   "games": [
     {
       "placeId": 120475074479690,
@@ -98,12 +98,12 @@
       "gameId": 10563114921,
       "name": "Steal An Egg",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 1,
+      "checks": 2,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-12T17:39:48Z",
+      "lastCheck": "2026-10-12T17:40:03Z",
       "reporter": "chtkara"
     }
   ]
