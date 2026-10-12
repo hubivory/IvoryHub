@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T06:52:45.910Z",
+  "updatedAt": "2026-10-12T06:55:01.958Z",
   "games": [
     {
       "placeId": 91296119701853,
@@ -20,12 +20,12 @@
       "gameId": 10532995815,
       "name": "[🎃] Mine Antarctica",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 1,
+      "checks": 2,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-12T06:52:44Z",
+      "lastCheck": "2026-10-12T06:55:00Z",
       "reporter": "hemmanuel1313"
     },
     {
