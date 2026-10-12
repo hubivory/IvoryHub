@@ -3639,7 +3639,6 @@ do
                 end
                 if not target then target = _gptItems[1] end
             end
-            local cheapest = target
 
             local remoteHits = 0
             local remoteConns = {}
@@ -3732,71 +3731,96 @@ do
                     noisy[statKey(d)] = true
                 end
 
-                -- Phase 2: fire ONLY the target item. Firing every product/pass
-                -- causes UI/analytics remotes that look like a reaction.
+                -- Phase 2: fire each product/pass one at a time and sample
+                -- outbound only in a short window after that specific fire.
+                -- Taking the MAX window (not the sum over the whole run) avoids
+                -- counting steady gameplay traffic as a "burst".
                 local before = _gptSnapshotState()
-                local kind = target.kind or _gptDetectKind(target.id)
-                local fired = { kind .. " " .. tostring(target.id) }
-                _gptFire(kind, target.id)
-                if _gptDetail then
-                    pcall(function() _gptDetail:SetText("Watching reaction (2s)...") end)
+                local fired = {}
+                local maxEarlyOut = 0
+                local maxEarlyIn = 0
+                local earlyWindows = {}
+                local toFire = {}
+                local firedIds = {}
+                if target and tonumber(target.id) then
+                    table.insert(toFire, target)
+                    firedIds[tostring(target.id)] = true
+                end
+                for _, item in ipairs(_gptItems) do
+                    local id = tostring(item.id)
+                    if not firedIds[id] then
+                        table.insert(toFire, item)
+                        firedIds[id] = true
+                    end
                 end
 
-                -- Outbound is sampled only in the first 400ms after the signal:
-                -- that's when a grant handler would FireServer, and before
-                -- ongoing gameplay traffic drowns it out.
-                task.delay(0.4, function()
-                    local earlyOut = outboundTake()
-                    local earlyIn = remoteTake()
-
-                    task.delay(1.6, function()
-                        disconnectRemotes()
-                        local after = _gptSnapshotState()
-                        local diffs = _gptStateDiff(before, after)
-                        local fireRemotes = remoteTake() + earlyIn
-                        local fireOutbound = outboundTake() + earlyOut
-
-                        -- Ignore stats that were already drifting during the baseline
-                        -- (passive income, auto-farm tickers, etc).
-                        local realDiffs = {}
-                        for _, d in ipairs(diffs) do
-                            if not noisy[statKey(d)] then
-                                table.insert(realDiffs, d)
-                            end
+                task.spawn(function()
+                    for i, item in ipairs(toFire) do
+                        if i > 1 then task.wait(0.15) end
+                        outboundTake()
+                        remoteTake()
+                        local k = item.kind or _gptDetectKind(item.id)
+                        _gptFire(k, item.id)
+                        table.insert(fired, k .. " " .. tostring(item.id))
+                        if _gptDetail then
+                            pcall(function()
+                                _gptDetail:SetText(string.format("Firing %d/%d: %s %s\nSampling reaction (0.4s)...", i, #toFire, k, tostring(item.id)))
+                            end)
                         end
+                        task.wait(0.4)
+                        local nOut = outboundTake()
+                        local nIn = remoteTake()
+                        table.insert(earlyWindows, string.format("%s:%d send", tostring(item.id), nOut))
+                        if nOut > maxEarlyOut then maxEarlyOut = nOut end
+                        if nIn > maxEarlyIn then maxEarlyIn = nIn end
+                    end
 
-                        local baseRate = baseRemotes / 2.0
-                        local expected = baseRate * 2.0
-                        -- Inbound burst alone is weak in busy games; require a
-                        -- clear jump, not +2 noise.
-                        local remoteBurst = fireRemotes >= 4 and fireRemotes >= expected * 1.5 + 4
-                        local outBaseRate = baseOutbound / 2.0
-                        local outExpectedEarly = outBaseRate * 0.4
-                        -- Outbound is diagnostic only - it never flips the verdict.
-                        -- Gameplay FireServer looks identical to a grant remote.
+                    if _gptDetail then
+                        pcall(function() _gptDetail:SetText("Watching for grants (2s)...") end)
+                    end
+                    task.wait(2)
+                    disconnectRemotes()
+                    local after = _gptSnapshotState()
+                    local diffs = _gptStateDiff(before, after)
 
-                        local lines = {
-                            "Fired: " .. table.concat(fired, ", "),
-                            string.format("Baseline: %d recv / %d send remotes / 2s, %d stat drifts", baseRemotes, baseOutbound, #baseDiffs),
-                            string.format("After fire: %d recv / %d send / 2s (first 400ms: %d send / %d recv)", fireRemotes, fireOutbound, earlyOut, earlyIn),
-                            string.format("Early send expected by chance: ~%.2f", outExpectedEarly),
-                            "Purchase signal listeners: " .. (#listening > 0 and table.concat(listening, ", ") or "none"),
-                        }
-                        if #baseDiffs > 0 then
-                            table.insert(lines, "Baseline drift (ignored): " .. table.concat(baseDiffs, "; "))
+                    -- Ignore stats that were already drifting during the baseline
+                    -- (passive income, auto-farm tickers, etc).
+                    local realDiffs = {}
+                    for _, d in ipairs(diffs) do
+                        if not noisy[statKey(d)] then
+                            table.insert(realDiffs, d)
                         end
-                        if #diffs > 0 and #realDiffs > 0 then
-                            table.insert(lines, "New state changes: " .. table.concat(realDiffs, "; "))
-                        end
+                    end
 
-                        if #realDiffs > 0 then
-                            finish("LIKELY VULNERABLE - game granted something after fake purchase", table.concat(lines, "\n"))
-                        elseif remoteBurst then
-                            finish("POSSIBLY VULNERABLE - remote traffic spiked after signal", table.concat(lines, "\n") .. "\nNo grant detected; server may still validate.")
-                        else
-                            finish("NOT VULNERABLE (no reaction beyond normal traffic)", table.concat(lines, "\n") .. "\nListeners and remote chatter alone do not count as vulnerable.")
-                        end
-                    end)
+                    local outBaseRate = baseOutbound / 2.0
+                    -- Expected outbound chance in one 0.4s sample window.
+                    local outExpected04 = outBaseRate * 0.4
+                    -- A grant handler FireServers within a few hundred ms of the
+                    -- signal. Idle games with 2+ immediate sends are almost
+                    -- always a real grant attempt; busy games need a clear spike.
+                    local outboundSpike = maxEarlyOut >= 2 and maxEarlyOut >= outExpected04 * 3 + 1
+
+                    local lines = {
+                        "Fired " .. #fired .. " items: " .. table.concat(fired, ", "),
+                        string.format("Baseline: %d recv / %d send remotes / 2s, %d stat drifts", baseRemotes, baseOutbound, #baseDiffs),
+                        string.format("Peak 0.4s window after a fire: %d send / %d recv (chance send ~%.2f)", maxEarlyOut, maxEarlyIn, outExpected04),
+                        "Per-item windows: " .. table.concat(earlyWindows, ", "),
+                        "Purchase signal listeners: " .. (#listening > 0 and table.concat(listening, ", ") or "none"),
+                    }
+                    if #baseDiffs > 0 then
+                        table.insert(lines, "Baseline drift (ignored): " .. table.concat(baseDiffs, "; "))
+                    end
+                    if #diffs > 0 and #realDiffs > 0 then
+                        table.insert(lines, "New state changes: " .. table.concat(realDiffs, "; "))
+                    end
+
+                    if #realDiffs > 0 then
+                        finish("LIKELY VULNERABLE - game granted something after fake purchase", table.concat(lines, "\n"))
+                    elseif outboundSpike then
+                        finish("POSSIBLY VULNERABLE - server call right after purchase signal", table.concat(lines, "\n") .. "\nClient told the server right after the signal; grant may only apply server-side.")
+                    else
+                        finish("NOT VULNERABLE (no reaction beyond normal traffic)", table.concat(lines, "\n") .. "\nListeners and steady remote chatter alone do not count as vulnerable.")
+                    end
                 end)
             end)
         end
