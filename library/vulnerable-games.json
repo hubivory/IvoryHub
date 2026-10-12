@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T01:19:48.032Z",
+  "updatedAt": "2026-10-12T02:58:10.600Z",
   "games": [
     {
       "placeId": 91296119701853,
@@ -40,6 +40,19 @@
       "confirmed": false,
       "lastCheck": "2026-10-11T20:44:29Z",
       "reporter": "XiaBuilds"
+    },
+    {
+      "placeId": 115283052130481,
+      "gameId": 8633637129,
+      "name": "🔥Phonk Troll Tower🎵",
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-12T02:58:10Z",
+      "reporter": "jadenbrig53"
     },
     {
       "placeId": 71940604330107,
