@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T17:41:47.952Z",
+  "updatedAt": "2026-10-12T17:45:08.216Z",
   "games": [
     {
       "placeId": 120475074479690,
@@ -26,6 +26,19 @@
       "voters": {},
       "confirmed": false,
       "lastCheck": "2026-10-12T17:29:39Z",
+      "reporter": "chtkara"
+    },
+    {
+      "placeId": 126987974021910,
+      "gameId": 10155360168,
+      "name": "[NEW ITEMS!] Illegal Soccer",
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-12T17:45:07Z",
       "reporter": "chtkara"
     },
     {
