@@ -2923,12 +2923,14 @@ do
 
         local function statusOf(res)
             if type(res) ~= "table" then return nil end
-            return tonumber(res.StatusCode or res.status or res.StatusCode)
+            return tonumber(res.StatusCode or res.Status or res.statusCode or res.status or res.Code or res.code)
         end
 
         local function bodyOf(res)
             if type(res) == "string" then return res end
-            if type(res) == "table" then return res.Body or res.body end
+            if type(res) == "table" then
+                return res.Body or res.body or res.ResponseBody or res.responseBody or res.data
+            end
             return nil
         end
 
@@ -3105,6 +3107,11 @@ do
                 return games
             end
         end
+        -- Cloud empty or unreachable: keep unsaved local entries
+        if #_gptSharedGames > 0 then
+            _gptLoadVotes()
+            return _gptSharedGames
+        end
         -- 2) GitHub raw seed list
         local games = {}
         local body = _gptHttpGet(SHARED_LIST_URL)
@@ -3227,11 +3234,13 @@ do
             end
         end
 
-        if not remote then
-            -- Last resort: verify GET of list endpoint
+        -- Empty remote is a failed save, not success — never wipe local with [].
+        if not remote or #remote == 0 then
             local verifyBody = _gptHttpGet(GPT_SHARED_API)
-            remote = _gptParseGamesJson(verifyBody)
-            if not remote then
+            local verify = _gptParseGamesJson(verifyBody)
+            if verify and #verify > 0 then
+                remote = verify
+            else
                 if not silent then
                     Library.Notify({
                         Title = "Ivory",
@@ -3245,6 +3254,7 @@ do
         end
 
         _gptSharedGames = remote
+        pcall(_gptSaveLocalList, remote)
 
         if not silent then
             Library.Notify({
@@ -3298,42 +3308,45 @@ do
         end
         _gptSharedGames = games
         _gptSaveLocalList(games)
+        if _gptRefreshShareUi then pcall(_gptRefreshShareUi) end
         task.spawn(function()
             pcall(_gptPushSharedList, games)
         end)
 
-        local payload = HttpService:JSONEncode({
-            version = 1,
-            updatedAt = entry.lastCheck,
-            games = games,
-        })
-
-        -- Best-effort shared write paths
-        if GPT_DISCORD_WEBHOOK ~= "" then
-            task.spawn(function()
-                _gptHttpPost(GPT_DISCORD_WEBHOOK, HttpService:JSONEncode({
-                    content = string.format("**Ivory GPT** ΓÇö %s\nPlaceId `%s` | GameId `%s`\nVerdict: **%s**\nBy: %s",
-                        name, tostring(placeId), tostring(gameId), verdict, entry.reporter),
-                }))
-            end)
-        end
-        task.spawn(function()
-            local okCreate, res = pcall(function()
-                return game:HttpPostAsync("https://jsonblob.com/api/jsonBlob", payload, Enum.HttpContentType.ApplicationJson)
-            end)
-            if not okCreate then
-                pcall(function()
-                    local r = request and request({
-                        Url = "https://jsonblob.com/api/jsonBlob",
-                        Method = "POST",
-                        Headers = { ["Content-Type"] = "application/json" },
-                        Body = payload,
-                    })
+        -- Optional backup paths — must never abort the report
+        pcall(function()
+            local payload = HttpService:JSONEncode({
+                version = 1,
+                updatedAt = entry.lastCheck,
+                games = games,
+            })
+            if GPT_DISCORD_WEBHOOK ~= "" then
+                task.spawn(function()
+                    pcall(_gptHttpPost, GPT_DISCORD_WEBHOOK, HttpService:JSONEncode({
+                        content = string.format("**Ivory GPT** - %s\nPlaceId `%s` | GameId `%s`\nVerdict: **%s**\nBy: %s",
+                            name, tostring(placeId), tostring(gameId), verdict, entry.reporter),
+                    }))
                 end)
             end
+            task.spawn(function()
+                local okCreate = pcall(function()
+                    return game:HttpPostAsync("https://jsonblob.com/api/jsonBlob", payload, Enum.HttpContentType.ApplicationJson)
+                end)
+                if not okCreate then
+                    pcall(function()
+                        if typeof(request) == "function" then
+                            request({
+                                Url = "https://jsonblob.com/api/jsonBlob",
+                                Method = "POST",
+                                Headers = { ["Content-Type"] = "application/json" },
+                                Body = payload,
+                            })
+                        end
+                    end)
+                end
+            end)
         end)
 
-        if _gptRefreshShareUi then pcall(_gptRefreshShareUi) end
         return entry
     end
 
@@ -3604,8 +3617,8 @@ do
                 Type = nType,
                 Duration = 6,
             })
-            -- Only hard-evidence verdicts go to the shared Working Games list.
-            if verdict:find("LIKELY VULNERABLE") then
+            -- Working Games list: any positive verdict
+            if verdict:find("LIKELY VULNERABLE") or verdict:find("POSSIBLY VULNERABLE") then
                 task.spawn(function()
                     local ok, entry = pcall(_gptReportWorkingGame, verdict)
                     if ok and entry then
@@ -3614,6 +3627,8 @@ do
                             Content = "Reported to Working Games: " .. tostring(entry.name),
                             Type = "Success",
                         })
+                    elseif not ok then
+                        warn("[Ivory] report failed: " .. tostring(entry))
                     end
                 end)
             end
@@ -4174,12 +4189,22 @@ do
                     Name = "Report This Game",
                     Callback = function()
                         task.spawn(function()
-                            local entry = _gptReportWorkingGame("MANUAL REPORT")
+                            local ok, entry = pcall(_gptReportWorkingGame, "MANUAL REPORT")
+                            if not ok or type(entry) ~= "table" then
+                                Library.Notify({
+                                    Title = "Ivory",
+                                    Content = "Report failed: " .. tostring(ok and "no entry" or entry),
+                                    Type = "Error",
+                                    Duration = 8,
+                                })
+                                return
+                            end
                             selectedShare = entry
                             local pushOk = false
                             if GPT_SHARED_API ~= "" then
                                 pushOk = _gptPushSharedList(_gptSharedGames, true)
                             end
+                            if _gptRefreshShareUi then pcall(_gptRefreshShareUi) end
                             Library.Notify({
                                 Title = "Ivory",
                                 Content = string.format("Reported: %s%s",
