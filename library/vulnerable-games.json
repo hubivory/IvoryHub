@@ -1,18 +1,18 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T17:17:07.127Z",
+  "updatedAt": "2026-10-12T17:17:20.436Z",
   "games": [
     {
       "placeId": 96510596525082,
       "gameId": 10685282333,
       "name": "Ball VS Ball",
       "verdict": "POSSIBLY VULNERABLE - server replied right after purchase signal",
-      "checks": 2,
+      "checks": 3,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-12T17:14:51Z",
+      "lastCheck": "2026-10-12T17:17:19Z",
       "reporter": "chtkara"
     }
   ]
