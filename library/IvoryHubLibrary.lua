@@ -3259,6 +3259,29 @@ do
         return true, remote
     end
 
+    local function _gptResetSharedList()
+        local resetUrl = GPT_SHARED_API:gsub("/gpt/games%s*$", "/gpt/reset")
+        local body = _gptHttpGet(resetUrl)
+        local games = _gptParseGamesJson(body)
+        if not games then
+            pcall(function()
+                if typeof(request) == "function" then
+                    request({ Url = GPT_SHARED_API, Method = "DELETE", Headers = { ["Accept"] = "application/json" } })
+                elseif typeof(http_request) == "function" then
+                    http_request({ Url = GPT_SHARED_API, Method = "DELETE", Headers = { ["Accept"] = "application/json" } })
+                end
+            end)
+            body = _gptHttpGet(GPT_SHARED_API)
+            games = _gptParseGamesJson(body)
+        end
+        if not games then
+            return false, _gptSnippet(body or "no body")
+        end
+        _gptSharedGames = games
+        pcall(_gptSaveLocalList, games)
+        return true, games
+    end
+
     local function _gptFindSharedIndex(games, placeId, gameId)
         for i, g in ipairs(games) do
             if tonumber(g.placeId) == tonumber(placeId) or (gameId and tonumber(g.gameId) == tonumber(gameId)) then
@@ -4199,6 +4222,23 @@ do
                     Callback = function()
                         task.spawn(function()
                             _gptPushSharedList(_gptSharedGames, false)
+                        end)
+                    end,
+                })
+            end)
+            pcall(function()
+                secShare:CreateButton({
+                    Name = "Reset Cloud List",
+                    Callback = function()
+                        task.spawn(function()
+                            local ok, ret, detail = pcall(_gptResetSharedList)
+                            if ok and ret and type(detail) == "table" then
+                                if _gptRefreshShareUi then pcall(_gptRefreshShareUi) end
+                                Library.Notify({ Title = "Ivory", Content = "Cloud list reset (" .. #detail .. " games left)", Type = "Success" })
+                            else
+                                local msg = ok and tostring(detail or ret) or tostring(ret)
+                                Library.Notify({ Title = "Ivory", Content = "Reset failed: " .. msg, Type = "Error", Duration = 8 })
+                            end
                         end)
                     end,
                 })

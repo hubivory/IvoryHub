@@ -205,6 +205,30 @@ export default {
       return json(data);
     }
 
+    // Wipe the shared Working Games list (KV + GitHub).
+    // DELETE /gpt/games  or  GET /gpt/reset (executor-friendly)
+    const isReset =
+      (path === "/gpt/games" && request.method === "DELETE") ||
+      (path === "/gpt/reset" && request.method === "GET");
+    if (isReset) {
+      if (GPT_WRITE_TOKEN) {
+        const auth = request.headers.get("Authorization") || "";
+        const token = request.headers.get("X-Ivory-Token") || "";
+        const urlTok = url.searchParams.get("token") || "";
+        const okAuth =
+          auth === "Bearer " + GPT_WRITE_TOKEN ||
+          token === GPT_WRITE_TOKEN ||
+          urlTok === GPT_WRITE_TOKEN;
+        if (!okAuth) return json({ error: "unauthorized" }, 401);
+      }
+      try {
+        const saved = await saveList(env, { version: 1, games: [] });
+        return json(saved);
+      } catch (e) {
+        return json({ error: "reset failed", detail: String(e && e.message || e) }, 400);
+      }
+    }
+
     // GET fallback for executors that break on PUT/POST bodies
     if (path === "/gpt/report" && request.method === "GET") {
       try {
