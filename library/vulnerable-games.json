@@ -1,7 +1,20 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T06:55:01.958Z",
+  "updatedAt": "2026-10-12T07:55:37.646Z",
   "games": [
+    {
+      "placeId": 136162036182779,
+      "gameId": 7447878628,
+      "name": "[♟️] Deutsche Stimme ",
+      "verdict": "POSSIBLY VULNERABLE ΓÇö remotes fired after signal",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-12T07:55:37Z",
+      "reporter": "RaminLVE"
+    },
     {
       "placeId": 91296119701853,
       "gameId": 8243724761,
