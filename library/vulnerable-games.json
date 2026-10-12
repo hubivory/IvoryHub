@@ -1,7 +1,20 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T17:23:33.363Z",
+  "updatedAt": "2026-10-12T17:23:37.983Z",
   "games": [
+    {
+      "placeId": 120475074479690,
+      "gameId": 10753751277,
+      "name": "[🎃] Steal From The Rich!",
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
+      "checks": 2,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-12T17:23:37Z",
+      "reporter": "chtkara"
+    },
     {
       "placeId": 78316302475702,
       "gameId": 10210355263,
