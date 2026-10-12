@@ -3472,7 +3472,7 @@ do
     end
 
     local function _gptSnapshotState()
-        local snap = { stats = {}, items = 0, attrs = {} }
+        local snap = { stats = {}, items = 0, attrs = {}, pattrs = {}, cattrs = {}, tools = {}, chn = {}, walk = 0, jump = 0 }
         local lp = Players.LocalPlayer
         pcall(function()
             local ls = lp:FindFirstChild("leaderstats")
@@ -3484,7 +3484,12 @@ do
         end)
         pcall(function()
             local backpack = lp:FindFirstChild("Backpack")
-            if backpack then snap.items = #backpack:GetChildren() end
+            if backpack then
+                snap.items = #backpack:GetChildren()
+                for _, c in ipairs(backpack:GetChildren()) do
+                    snap.tools[c.Name] = (snap.tools[c.Name] or 0) + 1
+                end
+            end
         end)
         pcall(function()
             local ch = lp.Character
@@ -3492,9 +3497,43 @@ do
                 for _, v in ipairs(ch:GetChildren()) do
                     if v:IsA("ValueBase") then snap.attrs[v.Name] = v.Value end
                 end
+                for _, c in ipairs(ch:GetChildren()) do
+                    snap.chn[c.Name] = (snap.chn[c.Name] or 0) + 1
+                end
+                local hum = ch:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    snap.walk = hum.WalkSpeed or 0
+                    snap.jump = hum.JumpPower or 0
+                end
+            end
+        end)
+        pcall(function()
+            for k, v in pairs(lp:GetAttributes()) do
+                snap.pattrs[k] = tostring(v)
+            end
+        end)
+        pcall(function()
+            local ch = lp.Character
+            if ch then
+                for k, v in pairs(ch:GetAttributes()) do
+                    snap.cattrs[k] = tostring(v)
+                end
             end
         end)
         return snap
+    end
+
+    local function _gptMergeCountDiff(diffs, a, b, label)
+        local keys = {}
+        for k in pairs(a) do keys[k] = true end
+        for k in pairs(b) do keys[k] = true end
+        for k in pairs(keys) do
+            local av = a[k] or 0
+            local bv = b[k] or 0
+            if av ~= bv then
+                table.insert(diffs, string.format("%s %s %d->%d", label, tostring(k), av, bv))
+            end
+        end
     end
 
     local function _gptStateDiff(a, b)
@@ -3506,6 +3545,32 @@ do
             if b.attrs[k] ~= v then table.insert(diffs, string.format("char.%s changed", k)) end
         end
         if a.items ~= b.items then table.insert(diffs, string.format("backpack %d->%d", a.items, b.items)) end
+        _gptMergeCountDiff(diffs, a.tools, b.tools, "tool")
+        _gptMergeCountDiff(diffs, a.chn, b.chn, "charChild")
+        local pk = {}
+        for k in pairs(a.pattrs) do pk[k] = true end
+        for k in pairs(b.pattrs) do pk[k] = true end
+        for k in pairs(pk) do
+            local av, bv = a.pattrs[k], b.pattrs[k]
+            if av ~= bv then
+                table.insert(diffs, string.format("attr.%s %s->%s", tostring(k), tostring(av), tostring(bv)))
+            end
+        end
+        local ck = {}
+        for k in pairs(a.cattrs) do ck[k] = true end
+        for k in pairs(b.cattrs) do ck[k] = true end
+        for k in pairs(ck) do
+            local av, bv = a.cattrs[k], b.cattrs[k]
+            if av ~= bv then
+                table.insert(diffs, string.format("cattr.%s %s->%s", tostring(k), tostring(av), tostring(bv)))
+            end
+        end
+        if a.walk ~= b.walk then
+            table.insert(diffs, string.format("WalkSpeed %s->%s", tostring(a.walk), tostring(b.walk)))
+        end
+        if a.jump ~= b.jump then
+            table.insert(diffs, string.format("JumpPower %s->%s", tostring(a.jump), tostring(b.jump)))
+        end
         return diffs
     end
 
@@ -3561,15 +3626,20 @@ do
                 return
             end
 
-            local cheapest = nil
-            for _, item in ipairs(_gptItems) do
-                if item.kind == "Product" then
-                    if not cheapest or (tonumber(item.price) or 1e9) < (tonumber(cheapest.price) or 1e9) then
-                        cheapest = item
+            -- Prefer whatever the user picked in the dropdown; otherwise cheapest product.
+            local target = _gptSelected
+            if not target or not tonumber(target.id) then
+                target = nil
+                for _, item in ipairs(_gptItems) do
+                    if item.kind == "Product" then
+                        if not target or (tonumber(item.price) or 1e9) < (tonumber(target.price) or 1e9) then
+                            target = item
+                        end
                     end
                 end
+                if not target then target = _gptItems[1] end
             end
-            if not cheapest then cheapest = _gptItems[1] end
+            local cheapest = target
 
             local remoteHits = 0
             local remoteConns = {}
@@ -3584,12 +3654,60 @@ do
                 end
             end)
 
+            -- Outbound FireServer/InvokeServer counts: many "vulnerable" games
+            -- only tell the server "grant it" after the finished signal.
+            local outboundHits = 0
+            local outboundEnabled = true
+            local rawMt = nil
+            local rawOldNamecall = nil
+            pcall(function()
+                if typeof(hookmetamethod) == "function" and typeof(getnamecallmethod) == "function" then
+                    local old
+                    old = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
+                        if outboundEnabled then
+                            local method = getnamecallmethod()
+                            if method == "FireServer" or method == "InvokeServer" then
+                                outboundHits = outboundHits + 1
+                            end
+                        end
+                        return old(self, ...)
+                    end))
+                elseif getrawmetatable and setreadonly then
+                    rawMt = getrawmetatable(game)
+                    rawOldNamecall = rawMt.__namecall
+                    setreadonly(rawMt, false)
+                    rawMt.__namecall = function(self, ...)
+                        if outboundEnabled then
+                            local method = getnamecallmethod and getnamecallmethod() or ""
+                            if method == "FireServer" or method == "InvokeServer" then
+                                outboundHits = outboundHits + 1
+                            end
+                        end
+                        return rawOldNamecall(self, ...)
+                    end
+                    setreadonly(rawMt, true)
+                end
+            end)
+
             local function remoteTake()
                 local n = remoteHits
                 remoteHits = 0
                 return n
             end
+            local function outboundTake()
+                local n = outboundHits
+                outboundHits = 0
+                return n
+            end
             local function disconnectRemotes()
+                outboundEnabled = false
+                if rawMt and rawOldNamecall then
+                    pcall(function()
+                        setreadonly(rawMt, false)
+                        rawMt.__namecall = rawOldNamecall
+                        setreadonly(rawMt, true)
+                    end)
+                end
                 for _, c in ipairs(remoteConns) do pcall(function() c:Disconnect() end) end
                 remoteConns = {}
             end
@@ -3600,6 +3718,7 @@ do
 
             -- Phase 1: baseline - what does this game do WITHOUT any fake purchase?
             remoteTake()
+            outboundTake()
             local baseBefore = _gptSnapshotState()
             if _gptDetail then
                 pcall(function() _gptDetail:SetText("Measuring baseline activity (2s)...") end)
@@ -3607,6 +3726,7 @@ do
             task.delay(2, function()
                 local baseDiffs = _gptStateDiff(baseBefore, _gptSnapshotState())
                 local baseRemotes = remoteTake()
+                local baseOutbound = outboundTake()
                 local noisy = {}
                 for _, d in ipairs(baseDiffs) do
                     noisy[statKey(d)] = true
@@ -3615,24 +3735,34 @@ do
                 -- Phase 2: fire the fake purchase and watch what changes.
                 local before = _gptSnapshotState()
                 local kind = cheapest.kind or _gptDetectKind(cheapest.id)
-                _gptFire(kind, cheapest.id)
-                if #_gptItems > 1 and kind == "Product" then
-                    for _, item in ipairs(_gptItems) do
-                        if item.kind == "Gamepass" then
-                            _gptFire("Gamepass", item.id)
-                            break
-                        end
+                local fired = {}
+                local function fireItem(item)
+                    if not item or not tonumber(item.id) then return end
+                    local k = item.kind or _gptDetectKind(item.id)
+                    _gptFire(k, item.id)
+                    table.insert(fired, k .. " " .. tostring(item.id))
+                end
+                -- Selected item first (user intent), then every product/pass so we
+                -- don't miss the one the game actually trusts.
+                fireItem(target)
+                local firedIds = { [tostring(target.id)] = true }
+                for _, item in ipairs(_gptItems) do
+                    local id = tostring(item.id)
+                    if not firedIds[id] then
+                        fireItem(item)
+                        firedIds[id] = true
                     end
                 end
                 if _gptDetail then
-                    pcall(function() _gptDetail:SetText("Watching reaction (2.5s)...") end)
+                    pcall(function() _gptDetail:SetText("Watching reaction (3s)...") end)
                 end
 
-                task.delay(2.5, function()
+                task.delay(3, function()
                     disconnectRemotes()
                     local after = _gptSnapshotState()
                     local diffs = _gptStateDiff(before, after)
                     local fireRemotes = remoteTake()
+                    local fireOutbound = outboundTake()
 
                     -- Ignore stats that were already drifting during the baseline
                     -- (passive income, auto-farm tickers, etc).
@@ -3644,13 +3774,18 @@ do
                     end
 
                     local baseRate = baseRemotes / 2.0
-                    local expected = baseRate * 2.5
+                    local expected = baseRate * 3.0
                     local remoteBurst = fireRemotes >= 2 and fireRemotes >= expected + 2
+                    local outBaseRate = baseOutbound / 2.0
+                    local outExpected = outBaseRate * 3.0
+                    -- One extra client->server call above normal is a strong
+                    -- "tell the server to grant it" signal.
+                    local outboundBurst = fireOutbound >= 1 and fireOutbound >= outExpected + 1
 
                     local lines = {
-                        "Test fired: " .. tostring(kind) .. " " .. tostring(cheapest.id),
-                        string.format("Baseline: %d remotes / 2s, %d stat drifts", baseRemotes, #baseDiffs),
-                        string.format("After fire: %d remotes / 2.5s (expected ~%.1f)", fireRemotes, expected),
+                        "Fired: " .. table.concat(fired, ", "),
+                        string.format("Baseline: %d recv / %d send remotes / 2s, %d stat drifts", baseRemotes, baseOutbound, #baseDiffs),
+                        string.format("After fire: %d recv / %d send / 3s (recv exp ~%.1f, send exp ~%.1f)", fireRemotes, fireOutbound, expected, outExpected),
                         "Purchase signal listeners: " .. (#listening > 0 and table.concat(listening, ", ") or "none"),
                     }
                     if #baseDiffs > 0 then
@@ -3661,9 +3796,9 @@ do
                     end
 
                     if #realDiffs > 0 then
-                        finish(string.format("LIKELY VULNERABLE - game granted something after fake %s", kind:lower()), table.concat(lines, "\n"))
-                    elseif remoteBurst then
-                        finish("POSSIBLY VULNERABLE - remote burst right after signal", table.concat(lines, "\n") .. "\nNo grant detected; server may still validate.")
+                        finish("LIKELY VULNERABLE - game granted something after fake purchase", table.concat(lines, "\n"))
+                    elseif outboundBurst or remoteBurst then
+                        finish("POSSIBLY VULNERABLE - remote traffic spiked after signal", table.concat(lines, "\n") .. "\nNo grant detected; server may still validate.")
                     else
                         finish("NOT VULNERABLE (no reaction beyond normal traffic)", table.concat(lines, "\n") .. "\nListening on purchase signals alone is normal and was not counted.")
                     end
