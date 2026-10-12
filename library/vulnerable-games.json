@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T21:41:24.705Z",
+  "updatedAt": "2026-10-12T22:32:10.065Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -118,6 +118,19 @@
       "confirmed": true,
       "lastCheck": "2026-10-12T17:36:19Z",
       "reporter": "chtkara"
+    },
+    {
+      "placeId": 97824450589417,
+      "gameId": 10577588270,
+      "name": "🦸 +1 Superhero Evolution",
+      "verdict": "LIKELY VULNERABLE ΓÇö game reacted to fake product",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": true,
+      "lastCheck": "2026-10-12T22:32:10Z",
+      "reporter": "0CHil01"
     },
     {
       "placeId": 96510596525082,
