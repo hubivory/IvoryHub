@@ -3732,76 +3732,71 @@ do
                     noisy[statKey(d)] = true
                 end
 
-                -- Phase 2: fire the fake purchase and watch what changes.
+                -- Phase 2: fire ONLY the target item. Firing every product/pass
+                -- causes UI/analytics remotes that look like a reaction.
                 local before = _gptSnapshotState()
-                local kind = cheapest.kind or _gptDetectKind(cheapest.id)
-                local fired = {}
-                local function fireItem(item)
-                    if not item or not tonumber(item.id) then return end
-                    local k = item.kind or _gptDetectKind(item.id)
-                    _gptFire(k, item.id)
-                    table.insert(fired, k .. " " .. tostring(item.id))
-                end
-                -- Selected item first (user intent), then every product/pass so we
-                -- don't miss the one the game actually trusts.
-                fireItem(target)
-                local firedIds = { [tostring(target.id)] = true }
-                for _, item in ipairs(_gptItems) do
-                    local id = tostring(item.id)
-                    if not firedIds[id] then
-                        fireItem(item)
-                        firedIds[id] = true
-                    end
-                end
+                local kind = target.kind or _gptDetectKind(target.id)
+                local fired = { kind .. " " .. tostring(target.id) }
+                _gptFire(kind, target.id)
                 if _gptDetail then
-                    pcall(function() _gptDetail:SetText("Watching reaction (3s)...") end)
+                    pcall(function() _gptDetail:SetText("Watching reaction (2s)...") end)
                 end
 
-                task.delay(3, function()
-                    disconnectRemotes()
-                    local after = _gptSnapshotState()
-                    local diffs = _gptStateDiff(before, after)
-                    local fireRemotes = remoteTake()
-                    local fireOutbound = outboundTake()
+                -- Outbound is sampled only in the first 400ms after the signal:
+                -- that's when a grant handler would FireServer, and before
+                -- ongoing gameplay traffic drowns it out.
+                task.delay(0.4, function()
+                    local earlyOut = outboundTake()
+                    local earlyIn = remoteTake()
 
-                    -- Ignore stats that were already drifting during the baseline
-                    -- (passive income, auto-farm tickers, etc).
-                    local realDiffs = {}
-                    for _, d in ipairs(diffs) do
-                        if not noisy[statKey(d)] then
-                            table.insert(realDiffs, d)
+                    task.delay(1.6, function()
+                        disconnectRemotes()
+                        local after = _gptSnapshotState()
+                        local diffs = _gptStateDiff(before, after)
+                        local fireRemotes = remoteTake() + earlyIn
+                        local fireOutbound = outboundTake() + earlyOut
+
+                        -- Ignore stats that were already drifting during the baseline
+                        -- (passive income, auto-farm tickers, etc).
+                        local realDiffs = {}
+                        for _, d in ipairs(diffs) do
+                            if not noisy[statKey(d)] then
+                                table.insert(realDiffs, d)
+                            end
                         end
-                    end
 
-                    local baseRate = baseRemotes / 2.0
-                    local expected = baseRate * 3.0
-                    local remoteBurst = fireRemotes >= 2 and fireRemotes >= expected + 2
-                    local outBaseRate = baseOutbound / 2.0
-                    local outExpected = outBaseRate * 3.0
-                    -- One extra client->server call above normal is a strong
-                    -- "tell the server to grant it" signal.
-                    local outboundBurst = fireOutbound >= 1 and fireOutbound >= outExpected + 1
+                        local baseRate = baseRemotes / 2.0
+                        local expected = baseRate * 2.0
+                        -- Inbound burst alone is weak in busy games; require a
+                        -- clear jump, not +2 noise.
+                        local remoteBurst = fireRemotes >= 4 and fireRemotes >= expected * 1.5 + 4
+                        local outBaseRate = baseOutbound / 2.0
+                        local outExpectedEarly = outBaseRate * 0.4
+                        -- Outbound is diagnostic only - it never flips the verdict.
+                        -- Gameplay FireServer looks identical to a grant remote.
 
-                    local lines = {
-                        "Fired: " .. table.concat(fired, ", "),
-                        string.format("Baseline: %d recv / %d send remotes / 2s, %d stat drifts", baseRemotes, baseOutbound, #baseDiffs),
-                        string.format("After fire: %d recv / %d send / 3s (recv exp ~%.1f, send exp ~%.1f)", fireRemotes, fireOutbound, expected, outExpected),
-                        "Purchase signal listeners: " .. (#listening > 0 and table.concat(listening, ", ") or "none"),
-                    }
-                    if #baseDiffs > 0 then
-                        table.insert(lines, "Baseline drift (ignored): " .. table.concat(baseDiffs, "; "))
-                    end
-                    if #diffs > 0 and #realDiffs > 0 then
-                        table.insert(lines, "New state changes: " .. table.concat(realDiffs, "; "))
-                    end
+                        local lines = {
+                            "Fired: " .. table.concat(fired, ", "),
+                            string.format("Baseline: %d recv / %d send remotes / 2s, %d stat drifts", baseRemotes, baseOutbound, #baseDiffs),
+                            string.format("After fire: %d recv / %d send / 2s (first 400ms: %d send / %d recv)", fireRemotes, fireOutbound, earlyOut, earlyIn),
+                            string.format("Early send expected by chance: ~%.2f", outExpectedEarly),
+                            "Purchase signal listeners: " .. (#listening > 0 and table.concat(listening, ", ") or "none"),
+                        }
+                        if #baseDiffs > 0 then
+                            table.insert(lines, "Baseline drift (ignored): " .. table.concat(baseDiffs, "; "))
+                        end
+                        if #diffs > 0 and #realDiffs > 0 then
+                            table.insert(lines, "New state changes: " .. table.concat(realDiffs, "; "))
+                        end
 
-                    if #realDiffs > 0 then
-                        finish("LIKELY VULNERABLE - game granted something after fake purchase", table.concat(lines, "\n"))
-                    elseif outboundBurst or remoteBurst then
-                        finish("POSSIBLY VULNERABLE - remote traffic spiked after signal", table.concat(lines, "\n") .. "\nNo grant detected; server may still validate.")
-                    else
-                        finish("NOT VULNERABLE (no reaction beyond normal traffic)", table.concat(lines, "\n") .. "\nListening on purchase signals alone is normal and was not counted.")
-                    end
+                        if #realDiffs > 0 then
+                            finish("LIKELY VULNERABLE - game granted something after fake purchase", table.concat(lines, "\n"))
+                        elseif remoteBurst then
+                            finish("POSSIBLY VULNERABLE - remote traffic spiked after signal", table.concat(lines, "\n") .. "\nNo grant detected; server may still validate.")
+                        else
+                            finish("NOT VULNERABLE (no reaction beyond normal traffic)", table.concat(lines, "\n") .. "\nListeners and remote chatter alone do not count as vulnerable.")
+                        end
+                    end)
                 end)
             end)
         end
