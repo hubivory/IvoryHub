@@ -1,7 +1,20 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T01:07:47.166Z",
+  "updatedAt": "2026-10-12T01:14:18.011Z",
   "games": [
+    {
+      "placeId": 91296119701853,
+      "gameId": 8243724761,
+      "name": "[🎃] Cultiva un pez 🐟 ",
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-12T01:14:17Z",
+      "reporter": "sakurapro019"
+    },
     {
       "placeId": 97874266291114,
       "gameId": 10631775021,
