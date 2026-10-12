@@ -1,5 +1,19 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T16:36:51.193Z",
-  "games": []
+  "updatedAt": "2026-10-12T16:42:26.992Z",
+  "games": [
+    {
+      "placeId": 115283052130481,
+      "gameId": 8633637129,
+      "name": "🔥Phonk Troll Tower🎵",
+      "verdict": "LIKELY VULNERABLE - test",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": true,
+      "lastCheck": "2026-10-12T00:00:00Z",
+      "reporter": "tester"
+    }
+  ]
 }
