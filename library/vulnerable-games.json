@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T17:28:47.186Z",
+  "updatedAt": "2026-10-12T17:29:39.881Z",
   "games": [
     {
       "placeId": 120475074479690,
@@ -13,6 +13,19 @@
       "voters": {},
       "confirmed": false,
       "lastCheck": "2026-10-12T17:23:49Z",
+      "reporter": "chtkara"
+    },
+    {
+      "placeId": 109203247742910,
+      "gameId": 10763764817,
+      "name": "[🎃] Swing For Eggs",
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-12T17:29:39Z",
       "reporter": "chtkara"
     },
     {
