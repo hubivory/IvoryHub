@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T17:34:12.536Z",
+  "updatedAt": "2026-10-12T17:35:07.542Z",
   "games": [
     {
       "placeId": 120475074479690,
@@ -45,13 +45,13 @@
       "placeId": 111543903102439,
       "gameId": 10765298801,
       "name": "+1 Stone Skipping",
-      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 1,
+      "verdict": "LIKELY VULNERABLE ΓÇö game reacted to fake product",
+      "checks": 2,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
-      "confirmed": false,
-      "lastCheck": "2026-10-12T17:34:11Z",
+      "confirmed": true,
+      "lastCheck": "2026-10-12T17:35:07Z",
       "reporter": "chtkara"
     },
     {
