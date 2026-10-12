@@ -206,21 +206,17 @@ export default {
     }
 
     // Wipe the shared Working Games list (KV + GitHub).
-    // DELETE /gpt/games  or  GET /gpt/reset (executor-friendly)
+    // Owner-only: requires RESET_KEY secret (?key= or Authorization: Bearer).
+    // Disabled entirely if the secret is not set.
     const isReset =
       (path === "/gpt/games" && request.method === "DELETE") ||
       (path === "/gpt/reset" && request.method === "GET");
     if (isReset) {
-      if (GPT_WRITE_TOKEN) {
-        const auth = request.headers.get("Authorization") || "";
-        const token = request.headers.get("X-Ivory-Token") || "";
-        const urlTok = url.searchParams.get("token") || "";
-        const okAuth =
-          auth === "Bearer " + GPT_WRITE_TOKEN ||
-          token === GPT_WRITE_TOKEN ||
-          urlTok === GPT_WRITE_TOKEN;
-        if (!okAuth) return json({ error: "unauthorized" }, 401);
-      }
+      if (!env.RESET_KEY) return json({ error: "reset disabled" }, 403);
+      const auth = request.headers.get("Authorization") || "";
+      const urlTok = url.searchParams.get("key") || "";
+      const okAuth = urlTok === env.RESET_KEY || auth === "Bearer " + env.RESET_KEY;
+      if (!okAuth) return json({ error: "forbidden" }, 403);
       try {
         const saved = await saveList(env, { version: 1, games: [] });
         return json(saved);
