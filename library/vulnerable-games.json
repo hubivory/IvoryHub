@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T19:24:34.359Z",
+  "updatedAt": "2026-10-12T19:24:45.803Z",
   "games": [
     {
       "placeId": 120475074479690,
@@ -137,12 +137,12 @@
       "gameId": 10516888336,
       "name": "Game",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 4,
+      "checks": 5,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-12T19:24:33Z",
+      "lastCheck": "2026-10-12T19:24:45Z",
       "reporter": "giyoshi27"
     },
     {
