@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-13T14:10:31.799Z",
+  "updatedAt": "2026-10-13T14:24:52.310Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -486,6 +486,19 @@
       "confirmed": true,
       "lastCheck": "2026-10-13T04:56:54Z",
       "reporter": "XiaBuilds"
+    },
+    {
+      "placeId": 97393041934796,
+      "gameId": 5000084391,
+      "name": "Сервер распада ",
+      "verdict": "POSSIBLY VULNERABLE - server replied right after purchase signal",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-13T14:24:50Z",
+      "reporter": "killer_VIP7779"
     }
   ]
 }
