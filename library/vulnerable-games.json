@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-13T04:27:41.118Z",
+  "updatedAt": "2026-10-13T04:52:08.681Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -315,6 +315,19 @@
       "confirmed": false,
       "lastCheck": "2026-10-12T17:28:24Z",
       "reporter": "chtkara"
+    },
+    {
+      "placeId": 97838337412007,
+      "gameId": 10765708310,
+      "name": "Jewelry Empire",
+      "verdict": "POSSIBLY VULNERABLE - server replied right after purchase signal",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-13T04:52:07Z",
+      "reporter": "XiaBuilds"
     },
     {
       "placeId": 142823291,
