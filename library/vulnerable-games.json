@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-13T17:15:06.218Z",
+  "updatedAt": "2026-10-13T17:15:30.221Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -453,12 +453,12 @@
       "gameId": 2380077519,
       "name": "Slap Battles - New Players",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 3,
+      "checks": 5,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-13T17:15:05Z",
+      "lastCheck": "2026-10-13T17:15:29Z",
       "reporter": "bmwm5_asco"
     },
     {
