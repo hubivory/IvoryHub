@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-13T16:27:23.207Z",
+  "updatedAt": "2026-10-13T16:27:58.051Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -191,12 +191,12 @@
       "gameId": 10765298801,
       "name": "+1 Stone Skipping",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 5,
+      "checks": 6,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": true,
-      "lastCheck": "2026-10-12T17:36:19Z",
+      "lastCheck": "2026-10-13T16:27:57Z",
       "reporter": "chtkara"
     },
     {
@@ -255,13 +255,13 @@
       "placeId": 108628039999641,
       "gameId": 10756011174,
       "name": "Chapter 1 (FARMHOUSE)",
-      "verdict": "MANUAL REPORT",
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
       "checks": 9,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-13T16:27:22Z",
+      "lastCheck": "2026-10-13T11:00:46Z",
       "reporter": "XKingTIM"
     },
     {
