@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-13T04:09:14.188Z",
+  "updatedAt": "2026-10-13T04:13:46.188Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -196,6 +196,19 @@
       "confirmed": false,
       "lastCheck": "2026-10-12T17:17:19Z",
       "reporter": "chtkara"
+    },
+    {
+      "placeId": 2753915549,
+      "gameId": 994732206,
+      "name": "Blox Fruits",
+      "verdict": "POSSIBLY VULNERABLE - server replied right after purchase signal",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-13T04:13:45Z",
+      "reporter": "Riyaiscool627"
     },
     {
       "placeId": 94217045453265,
