@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-13T07:53:57.989Z",
+  "updatedAt": "2026-10-13T07:54:03.026Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -452,13 +452,13 @@
       "placeId": 122274956316208,
       "gameId": 10765523466,
       "name": "Steve the Craftsman",
-      "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
-      "checks": 2,
+      "verdict": "POSSIBLY VULNERABLE - server replied right after purchase signal",
+      "checks": 3,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": true,
-      "lastCheck": "2026-10-13T07:53:57Z",
+      "lastCheck": "2026-10-13T07:54:02Z",
       "reporter": "YJGAMING781"
     },
     {
