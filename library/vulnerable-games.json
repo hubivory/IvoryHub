@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-13T04:56:55.160Z",
+  "updatedAt": "2026-10-13T04:58:10.735Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -222,6 +222,19 @@
       "confirmed": false,
       "lastCheck": "2026-10-13T04:13:45Z",
       "reporter": "Riyaiscool627"
+    },
+    {
+      "placeId": 131509286525576,
+      "gameId": 9160437923,
+      "name": "Death Ride",
+      "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": true,
+      "lastCheck": "2026-10-13T04:58:09Z",
+      "reporter": "XiaBuilds"
     },
     {
       "placeId": 94217045453265,
