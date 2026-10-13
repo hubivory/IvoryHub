@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-13T20:51:13.217Z",
+  "updatedAt": "2026-10-13T21:53:14.291Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -308,14 +308,14 @@
       "gameId": 9506013695,
       "name": "DUELS [🌸SAKURA]",
       "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
-      "checks": 2,
+      "checks": 4,
       "likes": 0,
       "dislikes": 1,
       "voters": {
         "11042500133": "dislike"
       },
       "confirmed": true,
-      "lastCheck": "2026-10-13T14:10:29Z",
+      "lastCheck": "2026-10-13T21:53:14Z",
       "reporter": "Noxvior"
     },
     {
