@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-13T21:59:48.114Z",
+  "updatedAt": "2026-10-13T23:08:43.069Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -211,6 +211,19 @@
       "confirmed": true,
       "lastCheck": "2026-10-13T16:28:33Z",
       "reporter": "chtkara"
+    },
+    {
+      "placeId": 114786176505608,
+      "gameId": 9403708294,
+      "name": "💣 Bomba de Tempo",
+      "verdict": "MANUAL REPORT",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-13T23:08:44Z",
+      "reporter": "666ty155"
     },
     {
       "placeId": 97824450589417,
