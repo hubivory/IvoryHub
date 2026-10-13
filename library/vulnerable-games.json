@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-13T01:38:49.932Z",
+  "updatedAt": "2026-10-13T01:42:40.386Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -274,6 +274,19 @@
       "confirmed": true,
       "lastCheck": "2026-10-12T21:41:25Z",
       "reporter": "chtkara"
+    },
+    {
+      "placeId": 155615604,
+      "gameId": 73885730,
+      "name": "Prison Life",
+      "verdict": "MANUAL REPORT",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-13T01:42:37Z",
+      "reporter": "Broken_SPW0"
     },
     {
       "placeId": 107778070777162,
