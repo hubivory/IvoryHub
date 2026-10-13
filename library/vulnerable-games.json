@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-13T20:51:01.918Z",
+  "updatedAt": "2026-10-13T20:51:13.217Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -269,12 +269,12 @@
       "gameId": 10756011174,
       "name": "Chapter 1 (FARMHOUSE)",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 9,
+      "checks": 10,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-13T11:00:46Z",
+      "lastCheck": "2026-10-13T20:51:10Z",
       "reporter": "XKingTIM"
     },
     {
@@ -341,7 +341,7 @@
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-13T20:31:25Z",
+      "lastCheck": "2026-10-13T20:43:16Z",
       "reporter": "Gamingf5664"
     },
     {
