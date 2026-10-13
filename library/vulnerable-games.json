@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-13T07:53:26.180Z",
+  "updatedAt": "2026-10-13T07:53:57.989Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -8,9 +8,11 @@
       "name": "[ 🌮 LATAM ] Asesinos VS Sheriffs ",
       "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
       "checks": 1,
-      "likes": 0,
+      "likes": 1,
       "dislikes": 0,
-      "voters": {},
+      "voters": {
+        "10869972295": "like"
+      },
       "confirmed": true,
       "lastCheck": "2026-10-12T19:29:51Z",
       "reporter": "sr_hp66"
@@ -451,12 +453,12 @@
       "gameId": 10765523466,
       "name": "Steve the Craftsman",
       "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
-      "checks": 1,
+      "checks": 2,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": true,
-      "lastCheck": "2026-10-13T07:53:24Z",
+      "lastCheck": "2026-10-13T07:53:57Z",
       "reporter": "YJGAMING781"
     },
     {
