@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-13T02:06:34.807Z",
+  "updatedAt": "2026-10-13T02:06:36.707Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -196,6 +196,21 @@
       "confirmed": false,
       "lastCheck": "2026-10-12T19:00:21Z",
       "reporter": "Manny127124"
+    },
+    {
+      "placeId": 72387437800091,
+      "gameId": 9506013695,
+      "name": "DUELS [🌸SAKURA]",
+      "verdict": "MANUAL REPORT",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 1,
+      "voters": {
+        "11042500133": "dislike"
+      },
+      "confirmed": false,
+      "lastCheck": "2026-10-13T02:06:33Z",
+      "reporter": "Noxvior"
     },
     {
       "placeId": 11156779721,
