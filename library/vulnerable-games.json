@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-13T06:34:12.025Z",
+  "updatedAt": "2026-10-13T06:34:13.465Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -85,12 +85,12 @@
       "gameId": 10195997258,
       "name": "[🐈‍⬛] Pull a Lucky Fish",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 1,
+      "checks": 2,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-13T06:34:11Z",
+      "lastCheck": "2026-10-13T06:34:12Z",
       "reporter": "IlovejoshuaLenin"
     },
     {
