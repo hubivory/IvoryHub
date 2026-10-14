@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-14T15:56:33.337Z",
+  "updatedAt": "2026-10-14T15:56:39.293Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -569,13 +569,13 @@
       "placeId": 97393041934796,
       "gameId": 5000084391,
       "name": "Сервер распада ",
-      "verdict": "MANUAL REPORT",
-      "checks": 2,
+      "verdict": "POSSIBLY VULNERABLE - server replied right after purchase signal",
+      "checks": 3,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-14T15:51:09Z",
+      "lastCheck": "2026-10-14T15:56:37Z",
       "reporter": "killer_VIP7779"
     },
     {
@@ -588,7 +588,7 @@
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-14T15:56:32Z",
+      "lastCheck": "2026-10-14T15:46:40Z",
       "reporter": "jeep_0601"
     }
   ]
