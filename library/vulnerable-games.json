@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-14T07:54:30.684Z",
+  "updatedAt": "2026-10-14T07:54:50.418Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -112,13 +112,13 @@
       "placeId": 6447798030,
       "gameId": 2404080894,
       "name": "[MADNESS] Funky Friday",
-      "verdict": "MANUAL REPORT",
-      "checks": 20,
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
+      "checks": 21,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-14T07:49:49Z",
+      "lastCheck": "2026-10-14T07:54:48Z",
       "reporter": "NOHAXH4LFIE"
     },
     {
