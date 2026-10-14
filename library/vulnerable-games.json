@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-14T20:23:13.495Z",
+  "updatedAt": "2026-10-14T21:06:37.064Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -205,13 +205,13 @@
       "placeId": 4601350214,
       "gameId": 1511883870,
       "name": "[RPG] Aldeia: Ember",
-      "verdict": "LIKELY VULNERABLE ΓÇö game reacted to fake product",
-      "checks": 2,
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
+      "checks": 3,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": true,
-      "lastCheck": "2026-10-14T19:25:45Z",
+      "lastCheck": "2026-10-14T21:06:59Z",
       "reporter": "clergegafk0"
     },
     {
