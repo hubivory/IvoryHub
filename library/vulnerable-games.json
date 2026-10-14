@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-14T22:32:49.813Z",
+  "updatedAt": "2026-10-14T23:01:03.756Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -161,6 +161,19 @@
       "confirmed": true,
       "lastCheck": "2026-10-12T22:54:35Z",
       "reporter": "Fluagplaw"
+    },
+    {
+      "placeId": 80139795758532,
+      "gameId": 9210599831,
+      "name": "[HALLOWEEN 🎃] AIMBOT ",
+      "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": true,
+      "lastCheck": "2026-10-14T23:01:02Z",
+      "reporter": "awita877975689"
     },
     {
       "placeId": 6447798030,
