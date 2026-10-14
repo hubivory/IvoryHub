@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-14T21:31:01.294Z",
+  "updatedAt": "2026-10-14T22:10:37.315Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -449,6 +449,19 @@
       "confirmed": false,
       "lastCheck": "2026-10-14T10:27:10Z",
       "reporter": "giyoshi27"
+    },
+    {
+      "placeId": 6872274481,
+      "gameId": 2619619496,
+      "name": "Game",
+      "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": true,
+      "lastCheck": "2026-10-14T22:10:36Z",
+      "reporter": "Robloxiank2p2c3i3w"
     },
     {
       "placeId": 117311404196294,
