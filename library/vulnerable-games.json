@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-14T22:10:37.315Z",
+  "updatedAt": "2026-10-14T22:32:28.839Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -579,6 +579,19 @@
       "confirmed": true,
       "lastCheck": "2026-10-14T20:23:12Z",
       "reporter": "Robloxiank2p2c3i3w"
+    },
+    {
+      "placeId": 3025990139,
+      "gameId": 1091907805,
+      "name": "Simulador de Desempacotamento [ATUALIZAÇÃO]",
+      "verdict": "LIKELY VULNERABLE ΓÇö game reacted to fake product",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": true,
+      "lastCheck": "2026-10-14T22:32:28Z",
+      "reporter": "Duzin7_w"
     },
     {
       "placeId": 124596094333302,
