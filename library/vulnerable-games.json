@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-14T16:17:57.000Z",
+  "updatedAt": "2026-10-14T16:17:59.661Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -21,7 +21,7 @@
       "placeId": 97393041934796,
       "gameId": 5000084391,
       "name": "Сервер распада ",
-      "verdict": "MANUAL REPORT",
+      "verdict": "POSSIBLY VULNERABLE - server replied right after purchase signal",
       "checks": 3,
       "likes": 1,
       "dislikes": 0,
@@ -29,7 +29,7 @@
         "11465580993": "like"
       },
       "confirmed": false,
-      "lastCheck": "2026-10-14T15:51:09Z",
+      "lastCheck": "2026-10-14T15:56:37Z",
       "reporter": "killer_VIP7779"
     },
     {
@@ -584,13 +584,13 @@
       "placeId": 126509999114328,
       "gameId": 7326934954,
       "name": "存活99个夜晚",
-      "verdict": "MANUAL REPORT",
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
       "checks": 3,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-14T16:17:51Z",
+      "lastCheck": "2026-10-14T15:46:40Z",
       "reporter": "jeep_0601"
     }
   ]
