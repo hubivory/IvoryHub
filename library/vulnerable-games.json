@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-14T01:24:32.721Z",
+  "updatedAt": "2026-10-14T01:59:31.441Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -308,12 +308,12 @@
       "gameId": 9051406594,
       "name": "Dueling Grounds ⚔️ ",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 1,
+      "checks": 2,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-12T19:00:21Z",
+      "lastCheck": "2026-10-14T01:59:30Z",
       "reporter": "Manny127124"
     },
     {
