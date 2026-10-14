@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-14T15:16:52.829Z",
+  "updatedAt": "2026-10-14T15:46:41.247Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -577,6 +577,19 @@
       "confirmed": false,
       "lastCheck": "2026-10-13T14:24:50Z",
       "reporter": "killer_VIP7779"
+    },
+    {
+      "placeId": 126509999114328,
+      "gameId": 7326934954,
+      "name": "存活99个夜晚",
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-14T15:46:40Z",
+      "reporter": "jeep_0601"
     }
   ]
 }
