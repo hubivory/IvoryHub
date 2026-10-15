@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-15T02:57:50.745Z",
+  "updatedAt": "2026-10-15T02:58:40.679Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -442,12 +442,12 @@
       "gameId": 2822776643,
       "name": "Elemental Magic Arena [🌊]",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 40,
+      "checks": 41,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-15T02:57:48Z",
+      "lastCheck": "2026-10-15T02:58:37Z",
       "reporter": "Gamingf5664"
     },
     {
