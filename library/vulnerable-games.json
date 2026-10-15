@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-15T02:10:26.811Z",
+  "updatedAt": "2026-10-15T02:10:46.663Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -219,12 +219,12 @@
       "gameId": 10684750879,
       "name": "[PET🐶]+1 Loot To Forge",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 1,
+      "checks": 2,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-15T02:10:26Z",
+      "lastCheck": "2026-10-15T02:10:46Z",
       "reporter": "Luthfi_Rafa1"
     },
     {
