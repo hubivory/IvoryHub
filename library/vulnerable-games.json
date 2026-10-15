@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-15T21:23:03.144Z",
+  "updatedAt": "2026-10-15T21:25:44.568Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -250,7 +250,7 @@
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-15T21:23:02Z",
+      "lastCheck": "2026-10-15T18:38:13Z",
       "reporter": "Lawakaitun8X3"
     },
     {
@@ -283,13 +283,13 @@
       "placeId": 123720558354386,
       "gameId": 10765012427,
       "name": "[UPD] Build the Pyramid!",
-      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 1,
+      "verdict": "LIKELY VULNERABLE ΓÇö game reacted to fake product",
+      "checks": 2,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
-      "confirmed": false,
-      "lastCheck": "2026-10-12T19:18:37Z",
+      "confirmed": true,
+      "lastCheck": "2026-10-15T21:38:36Z",
       "reporter": "biglthedestroyer439"
     },
     {
