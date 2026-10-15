@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-15T10:32:33.894Z",
+  "updatedAt": "2026-10-15T10:32:35.349Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -702,12 +702,12 @@
       "gameId": 9224753153,
       "name": "Vagrant Survival [0.9]",
       "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
-      "checks": 1,
+      "checks": 2,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": true,
-      "lastCheck": "2026-10-15T10:32:32Z",
+      "lastCheck": "2026-10-15T10:32:34Z",
       "reporter": "eli_74454"
     },
     {
