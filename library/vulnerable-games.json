@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-15T12:38:33.858Z",
+  "updatedAt": "2026-10-15T12:51:32.145Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -709,6 +709,19 @@
       "confirmed": true,
       "lastCheck": "2026-10-15T10:32:34Z",
       "reporter": "eli_74454"
+    },
+    {
+      "placeId": 5970745461,
+      "gameId": 2150346856,
+      "name": "بلوكات التعدين",
+      "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": true,
+      "lastCheck": "2026-10-15T12:51:31Z",
+      "reporter": "giwywejb"
     },
     {
       "placeId": 126509999114328,
