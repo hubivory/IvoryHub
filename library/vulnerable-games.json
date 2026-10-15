@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-15T05:42:52.592Z",
+  "updatedAt": "2026-10-15T07:57:46.450Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -683,6 +683,19 @@
       "confirmed": true,
       "lastCheck": "2026-10-13T04:56:54Z",
       "reporter": "XiaBuilds"
+    },
+    {
+      "placeId": 93665675606483,
+      "gameId": 10466483099,
+      "name": "UGC限定オビー[AFKまたはプレイ]",
+      "verdict": "POSSIBLY VULNERABLE - server replied right after purchase signal",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-15T07:57:45Z",
+      "reporter": "kadon_0801"
     },
     {
       "placeId": 126509999114328,
