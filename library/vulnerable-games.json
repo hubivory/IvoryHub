@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-15T07:57:46.450Z",
+  "updatedAt": "2026-10-15T08:23:01.006Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -429,12 +429,12 @@
       "gameId": 3989768869,
       "name": "El Juego de Supervivencia [UPD!]",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 2,
+      "checks": 3,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-13T17:39:36Z",
+      "lastCheck": "2026-10-15T08:22:54Z",
       "reporter": "cristopro6677"
     },
     {
