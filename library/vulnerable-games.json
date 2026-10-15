@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-15T18:22:59.607Z",
+  "updatedAt": "2026-10-15T18:34:59.363Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -519,13 +519,13 @@
       "placeId": 129305872972839,
       "gameId": 9272395657,
       "name": "Forsaken Combat Fighting",
-      "verdict": "POSSIBLY VULNERABLE - server replied right after purchase signal",
-      "checks": 1,
+      "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
+      "checks": 2,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
-      "confirmed": false,
-      "lastCheck": "2026-10-15T18:22:58Z",
+      "confirmed": true,
+      "lastCheck": "2026-10-15T18:34:58Z",
       "reporter": "Sp4rkzjasper"
     },
     {
