@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-15T17:17:24.067Z",
+  "updatedAt": "2026-10-15T17:19:08.674Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -395,6 +395,19 @@
       "confirmed": false,
       "lastCheck": "2026-10-13T04:13:45Z",
       "reporter": "Riyaiscool627"
+    },
+    {
+      "placeId": 4924922222,
+      "gameId": 1686885941,
+      "name": "Brookhaven 🏡 RP",
+      "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": true,
+      "lastCheck": "2026-10-15T17:19:07Z",
+      "reporter": "sono_foderico988"
     },
     {
       "placeId": 98266188628997,
