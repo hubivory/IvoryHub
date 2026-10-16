@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-16T20:06:04.504Z",
+  "updatedAt": "2026-10-16T21:05:49.214Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -200,6 +200,19 @@
       "confirmed": true,
       "lastCheck": "2026-10-12T22:54:35Z",
       "reporter": "Fluagplaw"
+    },
+    {
+      "placeId": 90568084448279,
+      "gameId": 9294074907,
+      "name": "[FPS] One Tap",
+      "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": true,
+      "lastCheck": "2026-10-16T21:05:48Z",
+      "reporter": "porkbun244"
     },
     {
       "placeId": 80139795758532,
