@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-16T17:59:10.487Z",
+  "updatedAt": "2026-10-16T18:13:17.661Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -722,6 +722,19 @@
       "confirmed": true,
       "lastCheck": "2026-10-12T21:41:25Z",
       "reporter": "chtkara"
+    },
+    {
+      "placeId": 115305706413475,
+      "gameId": 10769101936,
+      "name": "Pa Deliber",
+      "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": true,
+      "lastCheck": "2026-10-16T18:13:17Z",
+      "reporter": "CozySparkle"
     },
     {
       "placeId": 155615604,
