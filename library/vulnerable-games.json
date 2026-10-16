@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-16T18:13:17.661Z",
+  "updatedAt": "2026-10-16T20:06:04.504Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -70,6 +70,19 @@
       "confirmed": false,
       "lastCheck": "2026-10-12T23:08:35Z",
       "reporter": "CGGGxKER1"
+    },
+    {
+      "placeId": 134001816760598,
+      "gameId": 10388903695,
+      "name": "[🎃] MemeDash [BETA] ",
+      "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": true,
+      "lastCheck": "2026-10-16T20:06:03Z",
+      "reporter": "B4CAN32"
     },
     {
       "placeId": 138686218420016,
