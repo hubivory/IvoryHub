@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-16T01:12:49.147Z",
+  "updatedAt": "2026-10-16T01:13:07.323Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -167,12 +167,12 @@
       "gameId": 9656201728,
       "name": "[🛡️ GUILDS] Dungeon Lootr",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 5,
+      "checks": 6,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-16T01:12:49Z",
+      "lastCheck": "2026-10-16T01:13:07Z",
       "reporter": "Chyrckys"
     },
     {
