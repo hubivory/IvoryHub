@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-16T01:43:45.291Z",
+  "updatedAt": "2026-10-16T01:55:18.260Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -375,12 +375,12 @@
       "gameId": 10577588270,
       "name": "🦸 +1 Superhero Evolution",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 4,
+      "checks": 5,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": true,
-      "lastCheck": "2026-10-13T01:12:24Z",
+      "lastCheck": "2026-10-16T01:55:17Z",
       "reporter": "0CHil01"
     },
     {
