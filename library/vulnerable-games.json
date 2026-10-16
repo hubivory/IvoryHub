@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-16T21:05:49.214Z",
+  "updatedAt": "2026-10-16T22:21:11.139Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -852,6 +852,19 @@
       "confirmed": true,
       "lastCheck": "2026-10-13T04:56:54Z",
       "reporter": "XiaBuilds"
+    },
+    {
+      "placeId": 9415887955,
+      "gameId": 3515656039,
+      "name": "The Backrooms VR : Escape",
+      "verdict": "POSSIBLY VULNERABLE - server replied right after purchase signal",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-16T22:21:10Z",
+      "reporter": "disomli"
     },
     {
       "placeId": 93665675606483,
