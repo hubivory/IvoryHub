@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-17T12:24:56.451Z",
+  "updatedAt": "2026-10-17T12:51:44.260Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -1010,6 +1010,19 @@
       "confirmed": true,
       "lastCheck": "2026-10-17T08:55:55Z",
       "reporter": "TRALALAMARILLO"
+    },
+    {
+      "placeId": 122789100578830,
+      "gameId": 8468366390,
+      "name": "Vùng đất bị lây nhiễm",
+      "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": true,
+      "lastCheck": "2026-10-17T12:51:43Z",
+      "reporter": "baoanh250812_36"
     },
     {
       "placeId": 5970745461,
