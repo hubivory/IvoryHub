@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-17T17:11:16.939Z",
+  "updatedAt": "2026-10-17T17:11:18.721Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -52,12 +52,12 @@
       "gameId": 9561553764,
       "name": "[☣️] Murder Duels",
       "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
-      "checks": 2,
+      "checks": 3,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": true,
-      "lastCheck": "2026-10-17T17:11:19Z",
+      "lastCheck": "2026-10-17T17:11:22Z",
       "reporter": "Riyaiscool627"
     },
     {
