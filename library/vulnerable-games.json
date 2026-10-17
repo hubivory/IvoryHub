@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-17T01:52:00.331Z",
+  "updatedAt": "2026-10-17T02:26:34.726Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -789,6 +789,19 @@
       "confirmed": true,
       "lastCheck": "2026-10-16T18:13:17Z",
       "reporter": "CozySparkle"
+    },
+    {
+      "placeId": 92203078151244,
+      "gameId": 9637870945,
+      "name": "Pandemonium",
+      "verdict": "POSSIBLY VULNERABLE - server replied right after purchase signal",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-17T02:26:34Z",
+      "reporter": "bedwarznoob56"
     },
     {
       "placeId": 155615604,
