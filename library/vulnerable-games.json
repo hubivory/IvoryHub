@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-17T05:07:30.153Z",
+  "updatedAt": "2026-10-17T05:45:04.747Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -698,6 +698,19 @@
       "confirmed": false,
       "lastCheck": "2026-10-14T02:10:58Z",
       "reporter": "chtkara"
+    },
+    {
+      "placeId": 17577256698,
+      "gameId": 6017624138,
+      "name": "Hutan [Voice Chat]",
+      "verdict": "POSSIBLY VULNERABLE - server replied right after purchase signal",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-17T05:45:04Z",
+      "reporter": "ss_s630"
     },
     {
       "placeId": 97838337412007,
