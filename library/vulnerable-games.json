@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-17T01:22:11.518Z",
+  "updatedAt": "2026-10-17T01:23:00.707Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -16,6 +16,21 @@
       "confirmed": true,
       "lastCheck": "2026-10-12T19:29:51Z",
       "reporter": "sr_hp66"
+    },
+    {
+      "placeId": 2991153085,
+      "gameId": 1079978427,
+      "name": "Pelarian Asam!",
+      "verdict": "MANUAL REPORT",
+      "checks": 1,
+      "likes": 1,
+      "dislikes": 0,
+      "voters": {
+        "11244025033": "like"
+      },
+      "confirmed": false,
+      "lastCheck": "2026-10-17T01:22:09Z",
+      "reporter": "Muhammadnizam3104563"
     },
     {
       "placeId": 97393041934796,
@@ -774,19 +789,6 @@
       "confirmed": true,
       "lastCheck": "2026-10-16T18:13:17Z",
       "reporter": "CozySparkle"
-    },
-    {
-      "placeId": 2991153085,
-      "gameId": 1079978427,
-      "name": "Pelarian Asam!",
-      "verdict": "MANUAL REPORT",
-      "checks": 1,
-      "likes": 0,
-      "dislikes": 0,
-      "voters": {},
-      "confirmed": false,
-      "lastCheck": "2026-10-17T01:22:09Z",
-      "reporter": "Muhammadnizam3104563"
     },
     {
       "placeId": 155615604,
