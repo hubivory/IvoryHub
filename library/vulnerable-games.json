@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-17T02:26:34.726Z",
+  "updatedAt": "2026-10-17T03:35:54.987Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -514,6 +514,19 @@
       "confirmed": false,
       "lastCheck": "2026-10-16T22:32:35Z",
       "reporter": "XKingTIM"
+    },
+    {
+      "placeId": 75882626617183,
+      "gameId": 10245012052,
+      "name": "Dan FFA",
+      "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": true,
+      "lastCheck": "2026-10-17T03:34:56Z",
+      "reporter": "onlastflight"
     },
     {
       "placeId": 131509286525576,
