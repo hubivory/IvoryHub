@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-17T15:43:30.365Z",
+  "updatedAt": "2026-10-17T15:43:32.283Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -260,12 +260,12 @@
       "gameId": 6331902150,
       "name": "[N] Forsaken",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 2,
+      "checks": 5,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-17T15:43:29Z",
+      "lastCheck": "2026-10-17T15:43:31Z",
       "reporter": "CrxhFVmsgV"
     },
     {
