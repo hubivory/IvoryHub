@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-17T08:33:13.823Z",
+  "updatedAt": "2026-10-17T08:34:04.736Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -403,12 +403,12 @@
       "gameId": 8901107688,
       "name": "🎃 Killer's arena",
       "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
-      "checks": 1,
+      "checks": 3,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": true,
-      "lastCheck": "2026-10-17T20:30:14Z",
+      "lastCheck": "2026-10-17T20:31:05Z",
       "reporter": "NATHANSKy41002"
     },
     {
