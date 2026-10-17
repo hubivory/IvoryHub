@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-17T08:54:36.193Z",
+  "updatedAt": "2026-10-17T08:55:58.000Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -402,13 +402,13 @@
       "placeId": 70923197964305,
       "gameId": 8901107688,
       "name": "🎃 Killer's arena",
-      "verdict": "POSSIBLY VULNERABLE - server replied right after purchase signal",
+      "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
       "checks": 12,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": true,
-      "lastCheck": "2026-10-17T20:51:37Z",
+      "lastCheck": "2026-10-17T20:48:26Z",
       "reporter": "NATHANSKy41002"
     },
     {
@@ -984,6 +984,19 @@
       "confirmed": true,
       "lastCheck": "2026-10-15T10:32:34Z",
       "reporter": "eli_74454"
+    },
+    {
+      "placeId": 116621455286191,
+      "gameId": 10598167210,
+      "name": "Vóxeles",
+      "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": true,
+      "lastCheck": "2026-10-17T08:55:55Z",
+      "reporter": "TRALALAMARILLO"
     },
     {
       "placeId": 5970745461,
