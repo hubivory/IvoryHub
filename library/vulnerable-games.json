@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-17T20:23:47.650Z",
+  "updatedAt": "2026-10-17T20:30:29.105Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -664,13 +664,13 @@
       "placeId": 120617974337690,
       "gameId": 10516888336,
       "name": "Game",
-      "verdict": "LIKELY VULNERABLE ΓÇö game reacted to fake product",
-      "checks": 17,
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
+      "checks": 19,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": true,
-      "lastCheck": "2026-10-17T20:23:47Z",
+      "lastCheck": "2026-10-17T20:30:28Z",
       "reporter": "giyoshi27"
     },
     {
