@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-17T07:46:51.013Z",
+  "updatedAt": "2026-10-17T07:47:37.895Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -711,6 +711,19 @@
       "confirmed": false,
       "lastCheck": "2026-10-17T05:45:04Z",
       "reporter": "ss_s630"
+    },
+    {
+      "placeId": 110470672231288,
+      "gameId": 7964539330,
+      "name": "INSANE Troll Slap Tower 😈",
+      "verdict": "MANUAL REPORT",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-17T07:47:35Z",
+      "reporter": "michirojanb"
     },
     {
       "placeId": 97838337412007,
