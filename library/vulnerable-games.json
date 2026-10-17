@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-17T15:43:32.283Z",
+  "updatedAt": "2026-10-17T15:50:04.813Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -116,13 +116,13 @@
       "placeId": 128119795963270,
       "gameId": 7856039629,
       "name": "[🎃] Murder Mystery DUELS",
-      "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
-      "checks": 2,
+      "verdict": "MANUAL REPORT",
+      "checks": 3,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": true,
-      "lastCheck": "2026-10-14T13:27:29Z",
+      "lastCheck": "2026-10-17T15:50:03Z",
       "reporter": "NPC_DEADRAILS2"
     },
     {
