@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-17T04:11:44.718Z",
+  "updatedAt": "2026-10-17T04:11:55.029Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -169,12 +169,12 @@
       "gameId": 10501944811,
       "name": "[🎃UPD] Beat the Anime Boss",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 10,
+      "checks": 11,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-17T04:11:44Z",
+      "lastCheck": "2026-10-17T04:11:54Z",
       "reporter": "wecza1515"
     },
     {
