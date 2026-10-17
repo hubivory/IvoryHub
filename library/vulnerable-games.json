@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-17T20:30:52.604Z",
+  "updatedAt": "2026-10-17T20:30:53.562Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -665,12 +665,12 @@
       "gameId": 10516888336,
       "name": "Game",
       "verdict": "MANUAL REPORT",
-      "checks": 21,
+      "checks": 22,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": true,
-      "lastCheck": "2026-10-17T20:30:52Z",
+      "lastCheck": "2026-10-17T20:30:53Z",
       "reporter": "giyoshi27"
     },
     {
