@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-17T15:50:04.813Z",
+  "updatedAt": "2026-10-17T17:11:16.939Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -51,13 +51,13 @@
       "placeId": 120851538706364,
       "gameId": 9561553764,
       "name": "[☣️] Murder Duels",
-      "verdict": "POSSIBLY VULNERABLE - server replied right after purchase signal",
-      "checks": 1,
+      "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
+      "checks": 2,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
-      "confirmed": false,
-      "lastCheck": "2026-10-13T04:09:13Z",
+      "confirmed": true,
+      "lastCheck": "2026-10-17T17:11:19Z",
       "reporter": "Riyaiscool627"
     },
     {
