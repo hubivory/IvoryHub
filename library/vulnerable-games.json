@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-17T11:33:55.967Z",
+  "updatedAt": "2026-10-17T12:16:08.616Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -763,6 +763,19 @@
       "confirmed": true,
       "lastCheck": "2026-10-16T12:01:57Z",
       "reporter": "rtggv19"
+    },
+    {
+      "placeId": 3101667897,
+      "gameId": 1119466531,
+      "name": "Lendas da Velocidade ⚡",
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-17T12:16:07Z",
+      "reporter": "KL_SLK099"
     },
     {
       "placeId": 72540294758218,
