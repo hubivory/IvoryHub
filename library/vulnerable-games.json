@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-17T17:11:18.721Z",
+  "updatedAt": "2026-10-17T18:06:50.484Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -893,6 +893,19 @@
       "confirmed": true,
       "lastCheck": "2026-10-14T20:23:12Z",
       "reporter": "Robloxiank2p2c3i3w"
+    },
+    {
+      "placeId": 117539213094671,
+      "gameId": 10514280922,
+      "name": "Roll A Gnome",
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-17T18:06:49Z",
+      "reporter": "Pozite04"
     },
     {
       "placeId": 3025990139,
