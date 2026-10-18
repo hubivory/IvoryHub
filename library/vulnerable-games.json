@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-18T20:46:47.239Z",
+  "updatedAt": "2026-10-18T20:46:51.931Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -9,9 +9,10 @@
       "verdict": "LIKELY VULNERABLE - game granted something after fake purchase",
       "checks": 1,
       "likes": 1,
-      "dislikes": 0,
+      "dislikes": 1,
       "voters": {
-        "10869972295": "like"
+        "10869972295": "like",
+        "10924053846": "dislike"
       },
       "confirmed": true,
       "lastCheck": "2026-10-12T19:29:51Z",
