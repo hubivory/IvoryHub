@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-18T10:27:34.013Z",
+  "updatedAt": "2026-10-18T10:27:54.904Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -78,12 +78,12 @@
       "gameId": 10187294555,
       "name": "[⛰️] ขุดแร่บนภูเขา ",
       "verdict": "LIKELY VULNERABLE ΓÇö game reacted to fake product",
-      "checks": 8,
+      "checks": 9,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": true,
-      "lastCheck": "2026-10-18T10:27:30Z",
+      "lastCheck": "2026-10-18T10:27:52Z",
       "reporter": "CGGGxKER1"
     },
     {
