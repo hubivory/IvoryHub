@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-18T03:04:06.489Z",
+  "updatedAt": "2026-10-18T05:11:33.381Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -1075,6 +1075,19 @@
       "confirmed": false,
       "lastCheck": "2026-10-14T17:21:59Z",
       "reporter": "jeep_0601"
+    },
+    {
+      "placeId": 74102906764176,
+      "gameId": 10440833423,
+      "name": "贪婪的种植者 🌱 ",
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": false,
+      "lastCheck": "2026-10-18T05:11:32Z",
+      "reporter": "rork_ayc"
     }
   ]
 }
