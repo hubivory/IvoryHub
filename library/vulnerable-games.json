@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-18T20:47:05.339Z",
+  "updatedAt": "2026-10-18T21:51:32.853Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -809,12 +809,12 @@
       "gameId": 66654135,
       "name": "Murder Mystery 2",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 7,
+      "checks": 8,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-16T02:17:15Z",
+      "lastCheck": "2026-10-18T21:51:32Z",
       "reporter": "nowayulosetome"
     },
     {
