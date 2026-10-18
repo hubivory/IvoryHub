@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-18T18:02:29.311Z",
+  "updatedAt": "2026-10-18T18:08:11.995Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -338,12 +338,12 @@
       "gameId": 8307114974,
       "name": "[SEASON 3] Operation One",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 11,
+      "checks": 12,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-18T18:02:29Z",
+      "lastCheck": "2026-10-18T18:08:11Z",
       "reporter": "Susyeruff"
     },
     {
