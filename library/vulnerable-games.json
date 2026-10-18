@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-18T18:13:49.436Z",
+  "updatedAt": "2026-10-18T18:14:09.408Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -130,12 +130,12 @@
       "gameId": 10759638075,
       "name": "[🎃] Pets Universe!",
       "verdict": "LIKELY VULNERABLE ΓÇö game reacted to fake product",
-      "checks": 2,
+      "checks": 3,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": true,
-      "lastCheck": "2026-10-18T18:13:45Z",
+      "lastCheck": "2026-10-18T18:14:05Z",
       "reporter": "Vim3rs"
     },
     {
