@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-19T14:53:11.419Z",
+  "updatedAt": "2026-10-19T16:02:49.279Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -821,13 +821,13 @@
       "placeId": 12355337193,
       "gameId": 4348829796,
       "name": "MVSD | Murderers VS Sheriffs Duels",
-      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 6,
+      "verdict": "MANUAL REPORT",
+      "checks": 7,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": true,
-      "lastCheck": "2026-10-16T17:57:23Z",
+      "lastCheck": "2026-10-19T15:02:21Z",
       "reporter": "lawndur"
     },
     {
