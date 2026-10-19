@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-19T16:02:49.279Z",
+  "updatedAt": "2026-10-19T16:05:10.497Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -613,13 +613,13 @@
       "placeId": 7243409883,
       "gameId": 2822776643,
       "name": "Elemental Magic Arena [🌊]",
-      "verdict": "MANUAL REPORT",
-      "checks": 138,
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
+      "checks": 139,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": true,
-      "lastCheck": "2026-10-19T14:53:10Z",
+      "lastCheck": "2026-10-19T16:05:10Z",
       "reporter": "Gamingf5664"
     },
     {
@@ -821,13 +821,13 @@
       "placeId": 12355337193,
       "gameId": 4348829796,
       "name": "MVSD | Murderers VS Sheriffs Duels",
-      "verdict": "MANUAL REPORT",
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
       "checks": 7,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": true,
-      "lastCheck": "2026-10-19T15:02:21Z",
+      "lastCheck": "2026-10-16T17:57:23Z",
       "reporter": "lawndur"
     },
     {
