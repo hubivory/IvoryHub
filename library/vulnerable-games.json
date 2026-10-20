@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-20T06:08:33.783Z",
+  "updatedAt": "2026-10-20T06:08:43.330Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -17,6 +17,21 @@
       "confirmed": true,
       "lastCheck": "2026-10-12T19:29:51Z",
       "reporter": "sr_hp66"
+    },
+    {
+      "placeId": 9872472334,
+      "gameId": 3647333358,
+      "name": "Evadir ",
+      "verdict": "MANUAL REPORT",
+      "checks": 32,
+      "likes": 1,
+      "dislikes": 0,
+      "voters": {
+        "5817759175": "like"
+      },
+      "confirmed": false,
+      "lastCheck": "2026-10-20T06:08:32Z",
+      "reporter": "cudoboi999"
     },
     {
       "placeId": 2991153085,
@@ -634,19 +649,6 @@
       "confirmed": false,
       "lastCheck": "2026-10-19T14:30:26Z",
       "reporter": "NeoPonce29"
-    },
-    {
-      "placeId": 9872472334,
-      "gameId": 3647333358,
-      "name": "Evadir ",
-      "verdict": "MANUAL REPORT",
-      "checks": 32,
-      "likes": 0,
-      "dislikes": 0,
-      "voters": {},
-      "confirmed": false,
-      "lastCheck": "2026-10-20T06:08:32Z",
-      "reporter": "cudoboi999"
     },
     {
       "placeId": 129305872972839,
