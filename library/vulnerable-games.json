@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-20T06:08:43.330Z",
+  "updatedAt": "2026-10-20T06:08:50.155Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -22,15 +22,15 @@
       "placeId": 9872472334,
       "gameId": 3647333358,
       "name": "Evadir ",
-      "verdict": "MANUAL REPORT",
-      "checks": 32,
+      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
+      "checks": 33,
       "likes": 1,
       "dislikes": 0,
       "voters": {
         "5817759175": "like"
       },
       "confirmed": false,
-      "lastCheck": "2026-10-20T06:08:32Z",
+      "lastCheck": "2026-10-20T06:08:48Z",
       "reporter": "cudoboi999"
     },
     {
