@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-20T13:36:23.003Z",
+  "updatedAt": "2026-10-20T16:28:59.617Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -1058,12 +1058,12 @@
       "gameId": 911750776,
       "name": "Xương gãy IV",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 5,
+      "checks": 6,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-20T05:13:35Z",
+      "lastCheck": "2026-10-20T16:29:52Z",
       "reporter": "flexoix"
     },
     {
