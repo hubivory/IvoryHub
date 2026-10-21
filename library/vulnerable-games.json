@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-21T07:44:03.357Z",
+  "updatedAt": "2026-10-21T10:47:52.716Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -642,12 +642,12 @@
       "gameId": 10244001346,
       "name": "Escape de la isla de Mrbeast",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 2,
+      "checks": 3,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-19T14:30:26Z",
+      "lastCheck": "2026-10-21T10:47:51Z",
       "reporter": "NeoPonce29"
     },
     {
