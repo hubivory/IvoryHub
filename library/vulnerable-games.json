@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-22T08:08:19.200Z",
+  "updatedAt": "2026-10-22T10:44:12.589Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -302,12 +302,12 @@
       "gameId": 10155360168,
       "name": "[NEW ITEMS!] Illegal Soccer",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 2,
+      "checks": 3,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-17T22:26:19Z",
+      "lastCheck": "2026-10-22T10:44:12Z",
       "reporter": "chtkara"
     },
     {
