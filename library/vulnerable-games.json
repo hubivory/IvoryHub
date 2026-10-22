@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-22T14:36:04.325Z",
+  "updatedAt": "2026-10-22T19:01:56.664Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -458,12 +458,12 @@
       "gameId": 5995470825,
       "name": "🔥Hypershot",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 2,
+      "checks": 3,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-19T14:26:23Z",
+      "lastCheck": "2026-10-22T19:01:55Z",
       "reporter": "Snowyymum"
     },
     {
