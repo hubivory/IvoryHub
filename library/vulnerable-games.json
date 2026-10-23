@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-23T02:29:49.069Z",
+  "updatedAt": "2026-10-23T07:10:23.814Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -328,12 +328,12 @@
       "gameId": 9534705677,
       "name": "[Ranked Arcade]",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 13,
+      "checks": 14,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-22T00:41:22Z",
+      "lastCheck": "2026-10-23T07:10:13Z",
       "reporter": "Lawakaitun8X3"
     },
     {
