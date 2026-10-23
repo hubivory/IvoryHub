@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-23T15:22:22.758Z",
+  "updatedAt": "2026-10-23T15:23:58.924Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -667,13 +667,13 @@
       "placeId": 120617974337690,
       "gameId": 10516888336,
       "name": "Game",
-      "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 25,
+      "verdict": "POSSIBLY VULNERABLE ΓÇö remotes fired after signal",
+      "checks": 26,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": true,
-      "lastCheck": "2026-10-21T15:05:43Z",
+      "lastCheck": "2026-10-23T15:23:58Z",
       "reporter": "giyoshi27"
     },
     {
