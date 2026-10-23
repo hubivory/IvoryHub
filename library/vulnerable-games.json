@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-23T08:33:14.877Z",
+  "updatedAt": "2026-10-23T08:33:23.869Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -720,12 +720,12 @@
       "gameId": 10764627709,
       "name": "Huss Valley",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 10,
+      "checks": 11,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-23T08:33:13Z",
+      "lastCheck": "2026-10-23T08:33:21Z",
       "reporter": "chtkara"
     },
     {
