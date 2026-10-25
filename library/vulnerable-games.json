@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-25T15:36:56.289Z",
+  "updatedAt": "2026-10-25T16:20:10.414Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -636,6 +636,19 @@
       "confirmed": true,
       "lastCheck": "2026-10-25T14:45:29Z",
       "reporter": "Gamingf5664"
+    },
+    {
+      "placeId": 79226825467411,
+      "gameId": 10765279487,
+      "name": "Embaralhar um ovo",
+      "verdict": "LIKELY VULNERABLE ΓÇö game reacted to fake product",
+      "checks": 1,
+      "likes": 0,
+      "dislikes": 0,
+      "voters": {},
+      "confirmed": true,
+      "lastCheck": "2026-10-25T16:20:09Z",
+      "reporter": "MD_GB05"
     },
     {
       "placeId": 108645230905176,
