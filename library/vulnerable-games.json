@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-25T05:15:58.040Z",
+  "updatedAt": "2026-10-25T06:03:07.762Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -185,12 +185,12 @@
       "gameId": 10035204815,
       "name": "[🎃EVENT] Ride A Pet",
       "verdict": "POSSIBLY VULNERABLE ΓÇö game listens for purchase finished",
-      "checks": 4,
+      "checks": 5,
       "likes": 0,
       "dislikes": 0,
       "voters": {},
       "confirmed": false,
-      "lastCheck": "2026-10-23T21:11:31Z",
+      "lastCheck": "2026-10-25T06:03:06Z",
       "reporter": "Jack_far"
     },
     {
