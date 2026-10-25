@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-25T17:16:32.946Z",
+  "updatedAt": "2026-10-25T17:16:35.134Z",
   "games": [
     {
       "placeId": 129714054840627,
@@ -22,7 +22,7 @@
       "placeId": 9872472334,
       "gameId": 3647333358,
       "name": "Evadir ",
-      "verdict": "MANUAL REPORT",
+      "verdict": "POSSIBLY VULNERABLE ΓÇö remotes fired after signal",
       "checks": 72,
       "likes": 1,
       "dislikes": 0,
@@ -30,7 +30,7 @@
         "5817759175": "like"
       },
       "confirmed": false,
-      "lastCheck": "2026-10-25T17:16:31Z",
+      "lastCheck": "2026-10-25T12:12:24Z",
       "reporter": "cudoboi999"
     },
     {
